@@ -1,0 +1,370 @@
+######################################################################################################################
+#
+# JeVois Smart Embedded Machine Vision Toolkit - Copyright (C) 2016 by Laurent Itti, the University of Southern
+# California (USC), and iLab at USC. See http://iLab.usc.edu and http://jevois.org for information about this project.
+#
+# This file is part of the JeVois Smart Embedded Machine Vision Toolkit.  This program is free software; you can
+# redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software
+# Foundation, version 2.  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+# License for more details.  You should have received a copy of the GNU General Public License along with this program;
+# if not, write to the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+#
+# Contact information: Laurent Itti - 3641 Watt Way, HNB-07A - Los Angeles, CA 90089-2520 - USA.
+# Tel: +1 213 740 3527 - itti@pollux.usc.edu - http://iLab.usc.edu - http://jevois.org
+######################################################################################################################
+
+
+####################################################################################################
+JeVois embedded machine vision framework INSTALL
+####################################################################################################
+
+This guide assumes a fresh Ubuntu 16.10 install.
+
+Getting JeVois to install requires several steps, outlined below:
+
+1. Install some needed utilities and other packages on your Linux computer
+
+2. Download the JeVois source code. It is organized into 4 packages:
+
+   - jevois: The core C++17 JeVois software.
+   - jevoisbase: The base collection of 25+ machine vision modules for JeVois.
+   - smaplemodule: A sample standalone module for JeVois, use as a template for new modules.
+   - jevois-sdk: The framework that provides a Linux kernel and operating system for a JeVois camera, to be flashed
+     to a microSD card.
+
+3. Download and compile OpenCV 3.2 for your host computer, from source.
+
+4. Setup jevois-sdk, cross-compile all the programs that will run on the camera, cross-compile its kernel.
+
+5. Compile jevois and jevoisbase for host computer. You can then run it on your computer using any camera.
+
+6. Cross-compile jevois and jevoisbase for the JeVois platform hardware.
+
+7. Installed the kernel, operating system, and cross-compiled jevois and jevoisbase to microSD.
+
+Getting all these steps done will take some time. The most difficult step is to get the entire jevois-sdk, including
+Linux kernel, cross-compiled from scratch -- this can easily take 10 hours. For this reason, you may bypass this step by
+downloading a precompiled SDK (see below).
+
+For all the commands below, we recommend that you copy and paste them one line at a time. If you have opened this
+INSTALL file in emacs, you would do:
+
+- triple left click on one line, which entirely selects it
+- move mouse to a terminal window and middle-click to paste and run that one line
+
+####################################################################################################
+EASY INSTALL OPTION
+####################################################################################################
+
+Downloading, compiling and configuring everything in this guide can easily take more than 10 hours.
+
+JeVois provides a pre-compiled, pre-configured package for easy installation if you are using Ubuntu 16.10
+
+To use the easy install, proceed as follows:
+
+cd
+wget http://jevois.org/data/jevois-easy-1.0.tbz
+tar jxvf jevois-easy-1.0.tbz
+./jevois-easy-install.sh
+
+Just press RETURN to answer yes by default to all the questions.
+
+The easy install script installs OpenCV 3.2, jevois, jevoisbase, samplemodule, and jevois-sdk
+
+It is tailored for Ubuntu 16.10 64-bit only.
+
+After you run the easy install script, keep reading below but skip over all the ADVANCED steps
+
+####################################################################################################
+ADVANCED: Install necessary packages on your host computer
+####################################################################################################
+
+# Open a terminal, then type:
+
+sudo apt-get update
+sudo apt-get install build-essential gcc-6 g++-6 guvcview subversion cmake emacs git mercurial doxygen-gui graphviz
+sudo apt-get install libboost-all-dev libjpeg-turbo8-dev autoconf libeigen3-dev screen lsb lib32stdc++6
+sudo apt-get install gcc-4.7-arm-linux-gnueabi gcc-6-arm-linux-gnueabihf g++-6-arm-linux-gnueabihf gawk u-boot-tools
+sudo ln -s /usr/bin/arm-linux-gnueabi-gcc-4.7 /usr/bin/arm-linux-gnueabi-gcc
+
+# to prevent nautilus from opening 3 windows each time you insert a JeVois microSD card:
+gsettings set org.gnome.desktop.media-handling automount-open false
+
+# Set the following environment variables in your ~/.bashrc
+export JEVOIS_SRC_ROOT=${HOME}/jevois
+export JEVOIS_ROOT=/jevois
+
+####################################################################################################
+ADVANCED: Download JeVois source code
+####################################################################################################
+
+# Create a directory for jevois installed module files on host. We install in /jevois on host to mirror the setup on the
+# platform (which also installs all the machine vision modules in /jevois):
+
+sudo mkdir /jevois
+sudo chmod 777 /jevois
+
+# Get the sources from github
+cd
+git clone https://github.com/jevois/jevois.git
+git clone https://github.com/jevois/jevoisbase.git
+git clone https://github.com/jevois/jevois-sdk.git
+git clone https://github.com/jevois/samplemodule.git
+
+####################################################################################################
+ADVANCED: Installing OpenCV 3.2.0 on a Linux host system:
+####################################################################################################
+
+Note: for compatibility with the JeVois hardware platform build, which downloads the latest "release" code, make
+sure you install that same release code on your host as well, as some modules, APIs, etc may differ between the
+release and latest github versions.
+
+sudo apt-get install libgtk2.0-dev pkg-config python-dev python-numpy libdc1394-22 libdc1394-22-dev libjpeg-dev libpng-dev libtiff5-dev libjasper-dev libavcodec-dev libavformat-dev libswscale-dev libxine2-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libv4l-dev libtbb-dev libqt4-dev libfaac-dev libmp3lame-dev libopencore-amrnb-dev libopencore-amrwb-dev libtheora-dev libvorbis-dev libxvidcore-dev x264 v4l-utils unzip qt5-default python3-numpy
+
+mkdir ~/opencv32
+cd ~/opencv32
+
+wget https://github.com/opencv/opencv/archive/3.2.0.tar.gz
+tar zxvf 3.2.0.tar.gz
+rm -f 3.2.0.tar.gz
+
+wget https://github.com/opencv/opencv_contrib/archive/3.2.0.tar.gz
+tar zxvf 3.2.0.tar.gz
+rm -f 3.2.0.tar.gz
+
+# Run cmake to generate the makefile:
+cd opencv-3.2.0/
+mkdir build
+cd build
+
+# Note: for now we disable building the hdf module in opencv_contrib as it needs to be patched on ubuntu 16.04 to
+# properly find hdf5.h in the system headers.
+
+# Note: we need to disable OpenGL support in OpenCV as otherwise it will conflict with OpenGL-ES which we use for GPU
+# image processing in JeVois:
+
+cmake -DCMAKE_BUILD_TYPE=RELEASE -DCMAKE_INSTALL_PREFIX=/usr/local -DWITH_TBB=ON -DWITH_V4L=ON -DWITH_QT=ON -DWITH_OPENGL=OFF -DWITH_VTK=OFF -DWITH_CUDA=OFF -DBUILD_opencv_python2=OFF -DBUILD_opencv_python3=OFF -DWITH_PYTHON=OFF -DBUILD_EXAMPLES=ON -DINSTALL_C_EXAMPLES=OFF -DOPENCV_EXTRA_MODULES_PATH=~/opencv32/opencv_contrib-3.2.0/modules -DBUILD_opencv_hdf=OFF -DENABLE_PRECOMPILED_HEADERS=Off ..
+
+# Compile (replace 50 below by your number of cores):
+make -j 50
+
+# install:
+sudo make install
+
+# This installs into /usr/local/
+# The sample programs are in /usr/local/share/OpenCV/samples/
+
+####################################################################################################
+ADVANCED: SPECIAL CASE: Compiling OpenCV 3.2 on Raspberry Pi 3 host
+####################################################################################################
+
+This step is only if your host computer is a Raspberry Pi 3.
+
+# First, build tbb from source before you continue with OpenCV:
+wget https://www.threadingbuildingblocks.org/sites/default/files/software_releases/source/tbb43_20150611oss_src.tgz
+tar xvf tbb43_20150611oss_src.tgz
+cd tbb43_20150611oss
+make tbb CXXFLAGS="-DTBB_USE_GCC_BUILTINS=1 -D__TBB_64BIT_ATOMICS=0" 
+cd build/linux_armv7_gcc_cc4.9.2_libc2.19_kernel4.4.21_release/
+source tbbvars.sh
+
+# remove these from the apt-get list for OpenCV shown above: libtbb-dev libfaac-dev
+# and otherwise proceed with downloading and installing OpenCV 3.2 as detailed above.
+
+# Also we need g++6 to compile jevois code, it is not provided by raspbian but we can get it:
+sudo apt-get update
+sudo apt-get upgrade
+sudo vim /etc/apt/sources.list # replace 'jessie' with 'stretch' in there
+sudo apt-get update
+sudo apt-get install gcc-6 g++-6 # this will also pull in boost-1.61
+sudo vim /etc/apt/sources.list # revert back to 'jessie' from 'stretch' in there
+sudo apt-get update
+
+####################################################################################################
+Compiling JeVois library and base apps
+####################################################################################################
+
+You can compile the JeVois software to run on almost any Linux computer. You can use a standard USB webcam to develop
+and test your algorithms rapidly. Once ready, you can cross-compile the exact same code for execution on the hardware
+platform. Both host and platform compilation is possible at the same time.
+
+JeVois uses CMake, which simplifies the dual compilation for host hardware (typically, Intel x86_64 CPU) and platform
+hardware (ARM CPU). CMake compiles everything in a directory you create, thus we can create two directories, one for
+native compilation on the host computer, and one for cross-compilation for the platform hardware.
+
+In the instructions below, we use:
+
+hbuild directory for the files compiled for the HOST
+pbuild directory for the files compiled for the PLATFORM
+
+####################################################################################################
+Compiling JeVois library and base apps for host computer
+####################################################################################################
+
+cd jevois
+./rebuild-host.sh
+cd hbuild
+make doc
+cd ..
+
+cd ../jevoisbase
+
+cd Contrib
+./reinstall.sh  # do this only once, will download some contributed packages and patch them
+cd ..
+
+./rebuild-host.sh
+
+# FOR INFORMATION: rebuild-host is roughly equivalent to:
+
+mkdir hbuild && cd hbuild
+cmake ..
+make -j 48     # replace 48 by your number of CPU cores
+make doc       # optional, to build the documentation
+
+# Library and executables are in the current directory (jevois/hbuild)
+sudo make install
+
+# install to /usr/local by default. In there, will install library under lib/, apps under bin/, include files under
+# include/, and doc file under share/doc/jevois/
+
+# Make sure your system will look for libraries in /usr/local/lib so it can find libjevois.so:
+sudo sh -c 'echo /usr/local/lib > /etc/ld.so.conf.d/jevois'
+sudo ldconfig
+
+# Plug in any USB webcam and try it:
+jevois-daemon
+
+# you can use the command-line interface in the shell where you started jevois-daemon
+# for example, try "help" or "listmappings"
+
+# to start with a specific mapping:
+jevois-daemon --videomapping=19
+
+# just issue a CTRL-C in the terminal where you started jevois-daemon to quit.
+
+####################################################################################################
+ADVANCED: Compiling the jevois-sdk from scratch
+####################################################################################################
+
+# NOTE: This can easily take a full day of downloading and compiling. The process is also not fully automatic yet as
+# there are a few errors in some external libraries that need to be manually fixed.
+
+cd
+git clone https://github.com/jevois/jevois-sdk.git    # if not already done above
+cd jevois-sdk
+rm -rf out
+
+# Configure buildroot:
+cd buildroot
+make mrproper
+cp configs/sun8i_defconfig .config
+make xconfig  # OPTIONAL -- do not mess with these settings unless you know what you are doing
+cp .config configs/sun8i_defconfig  # OPTIONAL: if you modified some configs
+cd ..
+
+# Configure kernel
+cd linux-3.4
+make mrproper
+cp config-jevois .config
+make xconfig # OPTIONAL -- do not mess with these settings unless you know what you are doing
+cp .config config-jevois # OPTIONAL: if you modified some configs
+cd ..
+
+# configure sunxi build system: choose sun8iw5p1, linux, kernel 3.4, jevois-a33
+./build.sh config
+
+# build it
+./build.sh
+
+# after some hours, fails on downloading tbb, protobuf, vgg files, etc for OpenCV. This appears to be a problem with
+# cmake as compiled by buildroot, maybe missing ssl support in buildroot's curl or such. Let us use Ubuntu's host cmake
+# instead:
+
+mv out/sun8iw5p1/linux/common/buildroot/host/usr/bin/cmake out/sun8iw5p1/linux/common/buildroot/host/usr/bin/cmake.orig
+cp /usr/bin/cmake out/sun8iw5p1/linux/common/buildroot/host/usr/bin/
+rm -rf out/sun8iw5p1/linux/common/buildroot/build/opencv*
+
+./build.sh
+
+# tbb fails to compile:
+
+emacs out/sun8iw5p1/linux/common/buildroot/build/opencv3-3.2.0/3rdparty/tbb/arm_linux_stub.cpp
+
+# add bool param 'x' to: void affinity_helper::protect_affinity_mask(bool x) {}
+
+./build.sh
+
+# fails on tbb compilation in waldboost:
+# there is a problem in tbb destroy_process_mask, just put an empty inline definition in tbb_misc.h
+
+emacs out/sun8iw5p1/linux/common/buildroot/build/opencv3-3.2.0/3rdparty/tbb/tbb44_20160128oss/src/tbb/tbb_misc.h
+
+./build.sh
+
+# fails on oprofile,
+emacs out/sun8iw5p1/linux/common/buildroot/build/oprofile-1.1.0/libutil++/op_bfd.cpp
+
+# replace line 546: 	if (!verbose)
+# with: if (!(cverb << (vbfd & vlevel1)))
+# and comment out line 538: bool const verbose = cverb << (vbfd & vlevel1);
+
+./build.sh
+
+# make an sd card (note: the SD card at this point will not yet have JeVois software, see next step below):
+./jevois-build.sh
+
+####################################################################################################
+Compiling JeVois library and base apps for hardware platform
+####################################################################################################
+
+This requires that the jevois-sdk, buildroot (for the filesystem on the SD card), and the linux kernel 3.4 for the
+platform be built already (see above).
+
+cd ~/jevois
+./rebuild-platform.sh
+
+cd ../jevoisbase
+./rebuild-platform.sh
+
+# FOR INFORMATION: rebuild-platform is roughly equivalent to:
+
+mkdir pbuild && cd pbuild
+cmake -DJEVOIS_PLATFORM=ON ..
+make -j 48     # replace 48 by your number of CPU cores
+sudo make install
+
+####################################################################################################
+Flashing it all to microSD
+####################################################################################################
+
+# rebuild-platform.sh in jevois/ installs the compiled files to buildroot in jevois-sdk
+
+# by default, however, rebuild-platform.sh in jevoisbase/ creates a package to be dropped onto the microSD
+
+# to install directly to buildroot, run:
+
+cd ~/jevoisbase
+./rebuild-platform.sh -DJEVOIS_MODULES_TO_BUILDROOT=ON
+
+# Now you are ready to burn everything to microSD:
+
+cd ~/jevois-sdk
+./jevois-build.sh
+
+# once you know what you are doing, you can instruct jevois-build.sh to not ask any questions. Just be absolutely
+# certain that you are using the right device for your SD card, so that you do not destroy your main hard drive because
+# of a small typo:
+
+./jevois-build.sh -y /dev/sdX
+
+
+####################################################################################################
+Re-flashing after some code update:
+####################################################################################################
+
+cd ~/jevois ; ./rebuild-platform.sh
+cd ~/jevoisbase ; ./rebuild-platform.sh -DJEVOIS_MODULES_TO_BUILDROOT=ON
+cd ~/jevois-sdk ; ./jevois-build.sh -y /dev/sdX
+

@@ -1,0 +1,16 @@
+/*! \page UserSerial Serial port user guide
+
+The hardware serial port (UART port) on your JeVois smart camera is TTL-level (not RS-232 levels) and supports both 3.3V
+and 5V logic.
+
+The logic voltage to use is supplied by the connected microcontroller to the smart camera (RED wire, IOREF voltage. This
+voltage should be provided by your micro-controller and should be the voltage at which your RX and TX signals
+operate). Arduino boards provide the IOREF pin for this purpose. Thus, a 5V Arduino will output 5V to IOREF, and will
+use 5V levels for RX and TX. In contrast, a 3.3V Arduino will output 3.3V to IOREF and will use 3.3V levels for RX and
+TX.
+
+To connect to an Arduino board, you would typically do as follows:
+
+\image html serial-arduino.png
+
+*/

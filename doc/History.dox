@@ -1,0 +1,171 @@
+/*! \page History Historical background behind the JeVois framework
+\tableofcontents
+
+
+
+\section invt The iLab Neuromorphic Vision C++ Toolkit
+
+Back in 1995, we started what has become the iLab Neuromorphic Vision C++ Toolkit. The tolkit allows one to develop
+neuroscience-inspired computer vision models. The core elements provided by this toolkit are:
+
+- Low-level helper classes, including Point2D, Rectangle, PixRGB<T>, Range, Timer, XWindow, etc.
+
+- Template Image<T> and ImageSet<T> classes with hundreds of image processing functions and copy-on-write / ref-counting
+  semantics.
+
+- Image I/O functions for read/write to image files or video streams (various formats).
+
+- Low-level neural network simulation classes, such as LeakyInterator and LeakyIntFire neurons and backprop perceptron
+  classes.
+
+- High-level neuromorphic classes, including a hierarchy of low-level visual feature Channels for the computation of
+  neural maps responding to color, intensity, orientation, motion, corners, T-junctions, etc; a Winner-Take-All maximum
+  selector network; a Saliency Map network to represent conspicuous locations in a visual scene; a Visual Buffer
+  short-term visual memory endowed with internal competitive dynamics; a Visual Cortex class that orchestrates the
+  computations of a variable collection of feature channels; a Brain class that holds a Visual Cortex, Saccade
+  Controller for the simulation of eye/head movements, Task-Relevance Map to memorize locations of interest in a scene,
+  Shape Estimator to roughly segment objects in a scene, a set of SIFT classes that implement David Lowe's
+  Scale-Invariant Feature Transform model for object/scene recognition, etc.
+
+- Neuromorphic models of visual attention (to find locations in an image or video stream that are likely to attract the
+  eyes of a human observer or to surprise the observer), contour integration (to simulate how elongated contours are
+  strong attractors of attention in human observers), object recognition (using various strategies including matching
+  feature vectors, backprop perceptrons, hierarchical feedforward feature extraction models, etc), intelligent
+  knowledge-based vidual agents that perform high-level scene understanding, rapid computation of the ``gist'' or coarse
+  semantic category of an entire scene (e.g., indoors vs. outdoors), and many more!
+
+- Hardware interfacing, to Video4Linux and IEEE-1394 (FireWire) cameras, audio/dsp, serial ports, serial servo
+  controllers, GPS units, etc. This only works under Linux.
+
+- Parallel processing classes for the simulation of complex models over Beowulf clusters of computers.
+
+- Neuromorphic modeling environment which facilitates the run-time selection of plug-in model components, the management
+  of persistent model tuning parameters, and the generation/parsing of command-line options for various models based on
+  the collection of model components which they implement.
+
+This toolkit has been used by thousands of major universities, research labs, and corporations worldwide. It is fully
+open-source (GPL). The toolkit is available at http://iLab.usc.edu/toolkit/
+
+\image html cnca.gif
+\image html saliency-maemo.png
+
+\section nrt The Neuromorphic Robotics Toolkit
+
+In 2010, we started the Neuromorphic Robotics Toolkit. The main goal was to facilitate the deployment of more complex
+models that would run on collections of computers with mixed architectures (different CPU models, various CPU+GPU
+combinations, etc). NRT provides a Blackboard-based message passing architecture that allows one to easily transfer any
+C++ data structure from one computer to another. When running multiple threads on a single machine, those transfers come
+at negligible cost (zero-copy of the data), and when they are between physically distinct machines on a network, the
+framework handles the serialization (or marshalling) of the data transparently (it makes no difference to a user whether
+a particular model runs on one machine or on a network of machines, except for execution speed).
+
+At its heart, the Neuromorphic Robotics Toolkit is a C++ library and a set of tools to help you write high-performance
+modular software. NRT provides a framework in which developers can design lightweight, interchangeable processing
+modules which communicate by passing messages. NRT also provides libraries for performing various robotics related
+processing such as Image Processing, PointCloud Processing, etc.
+
+\image html nrt1.png
+
+\subsection corefeat Core NRT features
+
+NRT is a C++-14 framework.
+
+Modular programming is a technique in which a software system is composed of self-contained, interchangeable components
+with defined interfaces. Because each module is self-contained, it can be tested independently from the rest of the
+system. Furthermore, having well-defined interfaces between modules allows researchers to effectively communicate their
+components' requirements and capabilities to the rest of the team.
+
+After reviewing several existing modular programming frameworks, we determined the following set of requirements:
+
+-# Transmission of arbitrary C++ data types between modules. You are not limited to a small list of simple types like
+   in many other message-passing frameworks, which often force you to convert your native complex data structures into
+   their simple types.
+-# Zero-copy transmission of messages when modules are instantiated on the same machine.
+-# Transparent serialization (marshalling) of messages over the network when modules are instantiated on different
+machines, with no difference to a user or a programmer whether a message is transmitted locally or across a network
+(apart, of course, from transmission time).
+-# Statically (compile-time) defined module interfaces to avoid the sprawling of error-prone, string-based naming of
+module ports or publish/subscribe topics that plague most existing message passing frameworks.
+-# Enhanced ability to re-use modules by allowing (1) generic messages concepts and generic modules that can
+manipulate any message type (e.g., message queues) and (2) splittable messages such that complex composite messages
+can be broken down into elementary parts, which may then be processed independently before being re-assembled.
+
+The Neuromorphic Robotics Toolkit is our solution to this list of requirements. Beyond these, it also provides a
+graphical tool for managing and creating networks of connected modules, and a suite of administration tools for
+starting, configuring, and stopping systems.
+
+\subsection progmodel Programming model of NRT
+
+The core inspiration for NRT is to consider the brain as an agency of concurrent specialized knowledge
+sources, whereby multiple such sources work together towards solving a complex problem. This vision is
+not new, and has been implemented in many early artificial intelligence systems, including VISIONS
+(Hanson & Riseman, 1978), HEARSAY-II (Erman et al., 1980), and Copycat (Hofstadter & Mitchell, 1995).
+
+In this computing paradigm, a common knowledge base, <a href="http://en.wikipedia.org/wiki/Blackboard_system">the
+blackboard</a>, is iteratively updated:
+
+- beginning with a problem definition and prior knowledge;
+
+- each knowledge source (i.e., software agent or module) is triggered as its pre-requisites for processing are met
+  by the current contents of the blackboard (i.e., appropriate messages are posted);
+
+- working in parallel, each specialist knowledge source may update the blackboard with a partial solution,
+  suggestions, or additional information, allowing other knowledge sources to trigger;
+
+- Over time, the specialists hence work together towards a solution.
+
+Other groups have also explored schema-based and blackboard architectures in robotics (e.g., Arkin, 1989; Brooks,
+1991; Xu & van Brussel, 1997) as well as in cognitive science (e.g., van der Velde & de Kamps, 2006). Here, with NRT
+we developed the necessary tools to bring these kinds of architectures to a new level of user friendliness through the
+use of highly modular, transparently distributed, graphical-oriented programming.
+
+Novice users can assemble complex systems running on collections of computers by simply dragging and connecting
+software modules (the blackboard agents), where the modules interact via a distributed Blackboard Federation system
+behind the scenes (connections represent posting/subscribing of/to messages). Similar graphical programming metaphors
+have proven particularly effective in previous systems, including Khoros/Cantata, AVS (Advanced Visual Systems Inc.),
+Lego Mindstorms, Flowstone, and many others. While these previous frameworks have often been limited to single-CPU
+systems and simpler point-to-point information flow between modules, we have used our blackboard-based NRT framework
+on machines ranging from clusters with 288 CPU cores + 2048 GPU cores, to a single laptop, or even a 10-Watt netbook
+(Intel Atom).
+
+A number of new features allow NRT to eliminate some of the major caveats of similar previous systems, described
+throughout this documentation.
+
+Initial development of NRT started under the DARPA Neovision2 project. NRT was developed to allow us to build a
+neuro-inspired machine vision system that can attend to, track, and recognize up to 10 object categories (cars,
+trucks, boats, people, etc) in high-definition aerial video.
+
+NRT is still mainly for internal development in Prof Itti's lab at the University of Southern California. But it is
+open-source (GPL license) and will be released for public use once all features are deemed sufficiently robust. In the
+meantime, interested readers may want to check out the documentation at http://nrtkit.org
+
+\image html neo2-diagram.png "Above: Flowchart of how different visual processes may give rise to visual scene understanding."
+
+\image html neo2-net.png "Above: Corresponding implementation as a large NRT system."
+
+\image html neo2-demo.png "Above: Sample system output. Cars are marked in blue, people in yellow, cyclists in pink."
+
+\section jevois The JeVois Smart Embedded Machine Vision Toolkit
+
+The JeVois framework benefits from our previous research with INVT and NRT. It is mainly geared towards embedded systems
+with a single processor, and towards stream-based processing (one image in form the camera, one image out to USB). Many
+of the innovations which we have developed for INVT and NRT have been ported to JeVois, including chiefly the ability to
+construct complex machine vision pipelines using re-usable components which have runtime-tunable parameters, and
+providing a framework to ease the development of new components and their parameters.
+
+JeVois is a C++-17 framework.
+
+Some features of our previous frameworks have been dropped but could be quite easily added, including a powerful Image
+class template (JeVois only provides a minimal RawImage class, and conversions to OpenCV's image class), blackboard
+architecture, and message passing including serialization.
+
+New features specific to JeVois include kernel-level USB Gadget driver, kernel-level full-featured camera chip driver,
+user interface classes, and a new Engine component to orchestrate the flow of data from camera to processing to output
+over a USB link.
+
+These features are presented in more details throughout this documentation. JeVois is open-source (GPL
+license). Development of JeVois was in part made possible through a research and outreach grant from the National
+Science Foundation, Expeditions in Computing program.
+
+
+*/

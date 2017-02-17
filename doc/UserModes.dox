@@ -1,0 +1,17 @@
+/*! \page UserModes User guide to video modes and mappings
+
+Your JeVois smart camera is a very flexible embedded Linux computer that can run a wide range of machine vision
+algorithms.
+
+Which algorithm runs is selected either 1) by a host computer connected to JeVois over the USB link, or 2) using the
+command-line interface when no host computer is used (and JeVois is only connected, for example, to an Arduino).
+
+When using a host computer, selection of a particular machine vision algorithm is achieved by selecting a particular
+video resolution on the host computer, as briefly mentioned in \ref UserStart
+
+
+
+- \subpage PixelFormats
+- \subpage VideoMapping
+
+*/

@@ -1,0 +1,22 @@
+# Usage: astyle < file.c --options=~/jevois/scripts/astylerc > newfile.c
+
+--indent-namespaces
+--indent=spaces=2
+--break-closing-brackets
+--keep-one-line-blocks
+--keep-one-line-statements
+--indent-classes
+--convert-tabs
+--indent-cases
+#--quiet
+--preserve-date
+--suffix=none
+--lineend=linux
+--fill-empty-lines
+--align-pointer=middle
+--align-reference=middle
+--pad-header
+--pad-paren-out
+--pad-oper
+--indent-preproc-define
+--indent-preproc-cond

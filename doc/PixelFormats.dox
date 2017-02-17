@@ -1,0 +1,63 @@
+/*! \page PixelFormats Advanced topic: Image pixel formats
+
+<h1>Pixel formats supported by JeVois</h1>
+
+<ul>
+
+<li>\b BAYER \b RGGB: The sensor in the camera of JeVois provides color output, but not every pixel has 3 separate red,
+green, and blue photo-sensitive elements. Indeed, because the human eye perceives colors with lower visual acuity than
+it perceives shapes (based on luminosity), many camera sensor manufacturers provide high-resolution luminance
+information but lower resolution color information. In the so-called Bayer RGGB sensor type (used in the JeVois sensor),
+the camera sensor has one photosensitive element per pixel, and alternating color filters are placed in front of
+alternating pixels.
+
+See this excellent Wikipedia entry for more information: https://en.wikipedia.org/wiki/Bayer_filter
+
+<li>\b YUYV: This is also a popular format where luminance information is available at full resolution, while color
+information is only provided at a lower resolution, by having two adjacent pixels share the same color information. This
+mode is of particular interest in JeVois because the camera sensor chip can output it natively (i.e., the sensor chip
+contains hardware that converts from RGGB to YUYV on the fly) and it is quite easy to use (each pixel just has 2 bytes,
+one for luminance and one for color information). In JeVois, we wrote simple functions that allow one to draw text,
+lines, circles, etc directly into YUYV images, so that the demo displays shown by many of the demo vision modules
+directly are created in YUYV format, eliminating the need to convert to and from more standard RGB image representation
+(which takes a lot of CPU time). YUYV is also sometimes called YUV422 interleaved.
+
+<li>\b GREY: This is a greyscale format, which has no color information and uses one byte per pixel.
+
+<li>\b RGB565 / \b RGBP: This is a format where three R, G, and B values for each pixel are packed into only 2 bytes, by
+using a smaller number of bits for each value (5 bits for red, 6 bits for green, 5 bits for blue, total 16 bits). The
+JeVois hardware sensor can also natively capture in RGBP format, and the JeVois GPU and output (render) results of its
+processing into RGBP format, thus RGBP is also a format of interest.
+
+Unfortunately, \c guvcview does not seem to properly work in RGBP mode. It just fails to allocate the image and
+crashes. This is maybe because JeVois is the first USB camera to actually be capable of outputting RGBP and that code has
+not been thoroughly tested in guvcview. We will work with the guvcview team on fixing this. In the meantime, \c ffplay
+or \c ffmpeg are alternative video capture software that work well with RGBP, although they do not provide a graphical
+interface as nice and complete as \c guvcview.
+
+<li>\b BGR24: This is a mode where 3 bytes are used for each pixel, to encode red, green, and blue. This is computed on
+the JeVois CPU through interpolation from either native RGGB, RGBP, or YUYV. Thus it is not often used as it requires
+significant CPU time to create. Note that JeVois uses BGR24 (as opposed to RGB24) mostly because BGR24 is the native
+color format used by OpenCV.
+
+<li>\b MJPG: This is a compressed mode popular on many USB cameras. Each video frame is basically compressed as a JPEG
+image. The compression is also done by the JeVois CPU and hence uses some computing resources. For this reason, it is
+also not as widely used in the bundled demos.
+
+</ul>
+
+Note that guvcview shows some additional pixels format, which actually are not declared by the JeVois camera as being
+supported by the JeVois hardware. It seems that guvcview provides those by converting from the natively supported ones
+which are listed above. It varies by host computer, guvcview version, etc. On our hosts, we see additional pixel formats
+under "Camera Output" in guvcview for RGB3, YU12, YV12. And when we try to select them, sometimes guvcview crashes. Just
+do not use them, stick to the native modes of GREY, RGGB, MJPG, RGBP, and YUYV.
+
+<h1>Video mapping concept</h1>
+
+A vision processing mode in JeVois is determined by the combination of pixel format, image resolution, and
+framerate. You can play with all these parameters in your camera software to trigger different modes. For example, in
+the default JeVois disk image, 320x240@60fps in MJPEG format uses the PassThrough vision module (no processing, just
+output the raw captured images after compressing them to MJPEG) while 320x240@60fps in YUYV format uses the SaveVideo
+module (which can capture and save video to the microSD card).
+
+*/

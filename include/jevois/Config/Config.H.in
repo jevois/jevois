@@ -1,0 +1,85 @@
+// ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// JeVois Neuromorphic Embedded Vision Toolkit - Copyright (C) 2016 by Laurent Itti, the University of Southern
+// California (USC), and iLab at USC. See http://iLab.usc.edu and http://jevois.org for information about this project.
+//
+// This file is part of the JeVois Neuromorphic Embedded Vision Toolkit.  This program is free software; you can
+// redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software
+// Foundation, version 2.  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+// without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+// License for more details.  You should have received a copy of the GNU General Public License along with this program;
+// if not, write to the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+//
+// Contact information: Laurent Itti - 3641 Watt Way, HNB-07A - Los Angeles, CA 90089-2520 - USA.
+// Tel: +1 213 740 3527 - itti@pollux.usc.edu - http://iLab.usc.edu - http://jevois.org
+// ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#pragma once
+
+//! Variables set by CMake
+#define JEVOIS_VERSION_MAJOR @JEVOIS_VERSION_MAJOR@
+#define JEVOIS_VERSION_MINOR @JEVOIS_VERSION_MINOR@
+#define JEVOIS_VENDOR "@JEVOIS_VENDOR@"
+#define JEVOIS_SOVERSION "@JEVOIS_SOVERSION@"
+#cmakedefine JEVOIS_PLATFORM
+#cmakedefine JEVOIS_LDEBUG_ENABLE
+#cmakedefine JEVOIS_TRACE_ENABLE
+#cmakedefine JEVOIS_USE_SYNC_LOG
+#cmakedefine JEVOIS_LOG_TO_FILE
+
+//! Software version, combined
+#define JEVOIS_VERSION ( (JEVOIS_VERSION_MAJOR << 16) + JEVOIS_VERSION_MINOR )
+
+//! Macro to stringify a value
+#define JEVOIS_MACRO_STRING(s) JEVOIS_MACRO_STR(s)
+
+//! Macro to stringify a value
+#define JEVOIS_MACRO_STR(s) #s
+
+//! Software version, as string
+#define JEVOIS_VERSION_STRING JEVOIS_MACRO_STRING(JEVOIS_VERSION_MAJOR) "." JEVOIS_MACRO_STRING(JEVOIS_VERSION_MINOR)
+
+//! Root path for runtime jevois config files, videomappings.cfg, modules, etc
+#define JEVOIS_ROOT_PATH "@JEVOIS_ROOT@"
+
+//! Base path for modules
+#define JEVOIS_MODULE_PATH JEVOIS_ROOT_PATH "/modules"
+
+//! Base path for config files
+#define JEVOIS_CONFIG_PATH JEVOIS_ROOT_PATH "/config"
+
+//! Location of the engine videomappings.cfg definition file
+#define JEVOIS_ENGINE_CONFIG_FILE JEVOIS_CONFIG_PATH "/videomappings.cfg"
+
+//! Location of the engine init script file
+#define JEVOIS_ENGINE_INIT_SCRIPT JEVOIS_CONFIG_PATH "/initscript.cfg"
+
+//! Relative name of optinal default parameters to load for each Module
+#define JEVOIS_MODULE_PARAMS_FILENAME "params.cfg"
+
+//! Relative name of an Engine script to load for each Module
+#define JEVOIS_MODULE_SCRIPT_FILENAME "script.cfg"
+
+// Doxygen does not like the macros below, so replace them by no-ops when compiling the documentation:
+#ifdef JEVOIS_DOXYGEN
+#define JEVOIS_UNUSED_PARAM(x) x
+#define JEVOIS_UNUSED_FUNC(x) x
+#else
+
+//! Helper to avoid compiler warnings about unused parameters, we explicitly marked them unused in implementation
+/*! This is from here: http://stackoverflow.com/questions/3599160/unused-parameter-warnings-in-c-code */
+#ifdef __GNUC__
+#  define JEVOIS_UNUSED_PARAM(x) JEVOIS_UNUSED_ ## x __attribute__((__unused__))
+#else
+#  define JEVOIS_UNUSED_PARAM(x) JEVOIS_UNUSED_ ## x
+#endif
+
+//! Helper to avoid compiler warnings about unused functions, we explicitly marked them unused in implementation
+/*! This is from here: http://stackoverflow.com/questions/3599160/unused-parameter-warnings-in-c-code */
+#ifdef __GNUC__
+#  define JEVOIS_UNUSED_FUNC(x) __attribute__((__unused__)) JEVOIS_UNUSED_ ## x
+#else
+#  define JEVOIS_UNUSED_FUNC(x) JEVOIS_UNUSED_ ## x
+#endif
+
+#endif

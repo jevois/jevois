@@ -1,0 +1,404 @@
+/*! \page ModuleTutorial Tutorial on how to write new machine vision modules for JeVois
+
+\section overview Overview
+
+Machine vision modules are programmed as a single class that derives from jevois::Module, which specifies the basic
+interface.
+
+As an initial (slightly over-simplified) idea, the overall workflow for JeVois vision modules is that they implement a
+processing function that will receive an image captured by camera sensor, and a pre-allocated output image that will be
+sent to the host computer over USB. The task of the processing function is to fill in the output image with results that
+arise from processing the input image.
+
+In this tutorial, we first show you how to program a few very simple modules, to bring in the necessary
+concepts. Towards the end of this tutorial, we will point you to further detailed reading.
+
+\subsection mappings Pixel formats and video mappings
+
+As a reminder, the JeVois smart camera can capture images in the following camera pixel formats: YUYV, BAYER, or
+RGB565. These formats are the ones that are supported by the camera sensor chip.
+
+JeVois can send a wider range of pixel formats to a host connected over USB: YUYV, GREY, MJPG, BAYER, RGB565, and BGR24.
+
+For explanations about these formats, please see \ref UserModes for details.
+
+\subsection videomappings Camera to USB video mappings
+
+A module is invoked when a particular image resolution and pixel format is selected by a host computer over USB. A list
+of video mappings associate a given output resolution and pixel type to the corresponding camera resolution and pixel
+type that should be used and to the machine vision module that should be invoked. Again see \ref UserModes for details.
+
+Because an output video format is selected by the host computer, it is not negotiable. If a video mapping has been
+specified in \c videomappings.cfg that invokes a particular machine vision module, that module just must perform (or throw an
+exception), and process the images that it receives from the camera to generate the desired output images.
+
+
+
+// ####################################################################################################
+\section getstarted Getting started: a pass-through module
+
+Let us program a pass-through module: This module just copies the pixel data from the image received from the camera
+into the image that will be sent over USB. A pass-through module hence makes your JeVois smart camera behave like a
+regular USB camera.
+
+Here is the complete, working code. We will look at it step-by-step below:
+
+\includelineno tutorial1.C
+
+Explanations:
+
+- Lines 1 - 4: All machine vision modules should derive from jevois::Module, which establishes the interface through
+  which the JeVois Engine will work with your module.
+
+- Line 8: Our module does not need to do anything at construction time, so we just use the inherited constructor from
+  the base Module class, that is, we do nothing more at construction than what the base class needs to do. See for
+  example http://en.cppreference.com/w/cpp/language/using_declaration for more information about inheriting
+  constructors.
+
+- Line 11: It is good practice in derived classes (like this module is) to declare and implement a destructor marked \c
+  virtual. See for example http://www.geeksforgeeks.org/g-fact-37/ for more info.
+
+- Line 14, syntax for process(): The JeVois Engine will call the function process() on your module when it is loaded as
+  the current machine vision module. The syntax for process() is defined in the Module base class. We recommend using
+  the \c override keyword so that the compiler will check for you that you are indeed implementing this exact function
+  that Engine will use, as opposed to, if you had made a typo in your declaration of process on line 14, just declaring
+  a new function with a slightly different syntax (in which case, Engine would not call this function and your module
+  would do nothing).
+
+- Line 14, InputFrame and OutputFrame: These two classes are helpers that will allow your process() function to gain
+  access to the input and output images, when they are needed. To optimize throughput and your use of the CPU in JeVois,
+  we here adopt a design similar to that of std::future for InputFrame and OutputFrame: you can think of these as
+  handles to images which may or may not yet be available, but will be available for sure at some time in the future. By
+  the time process is called, only those handles to those future images are given to you. If you do not need the images
+  quite yet and first want to do some preliminary setup in your process() function, you just keep those handles ready
+  for future use. When you are ready to use one of the images, you just call get() onto its handle, which will return
+  the actual image. If the image is not ready yet, for example, it is still being captured by the camera sensor, then
+  get() will block until the image is ready for you. For more information, please read and understand the concept of
+  futures and promises in C++11. You may want to check out this nice tutorial:
+  http://thispointer.com/c11-multithreading-part-8-stdfuture-stdpromise-and-returning-values-from-thread/ or others on
+  the web.
+
+- Line 14, arguments use move semantics: You probably noticed the && signs after InputFrame and OutputFrame. These mean
+  that the arguments to process are passed using move semantics. This is not very important here, and just stems from
+  the following fact: Because InputFrame and OutputFrame connect to the camera sensor and to the USB interface directly,
+  we forbid anyone other than Engine from creating them. So you cannot construct an InputFrame, only Engine can. Engine
+  constructs the InputFrame and OutputFrame for you using its private access to the camera and USB interface. Then it
+  just hands the constructed objects over to your process() function and forgets about them. For more information about
+  move semantics, you can for example check out
+  http://www.cprogramming.com/c++11/rvalue-references-and-move-semantics-in-c++11.html or other general C++11 tutorials
+  on the web.
+
+- Line 17: In the pass-through module, we have nothing to do until we have both the input and the output images. So we
+  just call get() on inimg to first get the image from the camera. The image may be available immediately, or get() may
+  block until it is available. The returned RawImage is a minimalistic data structure which basically tells you the
+  image width, height, pixel type, and gives you access to the array of pixels. It is a lightweight structure, copying a
+  RawImage will just share the pixel array rather than copying it. This is the same behavior as in cv::Mat in OpenCV.
+
+- Line 20: Likewise, we cannot do anything in pass-through until we also have the output image, so here we just get it,
+  which may block until it is available. In more complex modules, one could start processing the input image in a thread
+  while at the same time waiting for the output image in another thread. We will study examples of this later.
+
+- Line 23: A vision module can enforce some requirements on the input and output image sizes and pixel formats. This is
+  achieved by using the require() function of RawImage. For pass-through, we are going to support any input image
+  dimensions and pixels, but, since we will not do any processing of the pixel data and will just copy it over to the
+  output, we must enforce that the output image dimensions and pixel type exactly match those of the input.
+
+- Line 26: Now we are ready to fill-in the output image's pixel array, using pixel data from the input image. Note how
+  the output image's pixel array has already been allocated by Engine (and by the USB driver). It is not negotiable, as
+  it is set by the host computer connected to your JeVois camera, and by users on the host computer selecting a video
+  resolution and mode that they wish to receive. Do not attempt to change image size or format, or to re-allocate the
+  pixel array held by outimg. Just accept the dimensions, pixel type, and pixel array address of outimg and write pixel
+  data into the pixel array. Note some details about RawImage here:
+  - pixels<type>() returns a read-only pointer to the pixel array, cast'd to the desired type
+  - pixelsw<type>() returns a read-write pointer to the pixel array, cast'd to the desired type
+  - buf is simply a smart pointer to the pixel array, also with array size (in bytes) information
+
+- Line 29: Now that we are done with the input image, we can let the Camera know. The camera is using a fixed set of
+  pre-allocated (in the linux kernel), memory-mapped buffers into which the hardware in the CPU chip that connects to
+  the camera sensor can directly write using direct memory access (DMA). So it is important to release a buffer as soon
+  as you do not neede it anymore, so that the camera can use it to capture future video frames.
+
+- Line 32: The same buffer logic applies to the USB driver.
+
+- Line 37: This macro adds a few plain C-language hooks that will allow the module to be loaded and instantiated at
+  run-time as a C++ class, from the shared library (.so) file that is obtained by compiling this module. It is a
+  required statement for each JeVois module.
+
+// ####################################################################################################
+\section addopencv Adding some image processing: an image format conversion module
+
+Let us now see how one can easily use OpenCV to actually process images received from the camera. We here develop a
+simple image format conversion module: It can convert from any pixel format that is available on the camera sensor
+(YUYV, BAYER, RGB565) to any pixel format that is exposed by JeVois to a host connected over USB (YUYV, GREY, MJPG,
+BAYER, RGB565, BGR24).
+
+To keep this example module simple, we will use image conversion functions in two steps:
+
+- convert from camera image format to BGR24, which is the default format for color images in OpenCV (with 8-bit for each
+  of Blue, Green, and Red channels for each pixel). Indeed, many of the pixel format conversion functions used in JeVois
+  are implemented using OpenCV.
+
+- convert from BGR24 to the format requested by the host computer over USB.
+
+This is not always the most efficient way of doing such conversion (requires two passes), but it avoids the
+combinatorial explosion of the number of format conversion functions that need to be written, and it runs fast enough on
+the JeVois processor anyway.
+
+\includelineno tutorial2.C
+
+Let us focus on the new things:
+
+- Line 23: the RawImage class provided by JeVois is mainly intended as a smart pointer to pixel buffer data that has
+  been allocated in the Linux kernel. It is not intended for processing, except that we have written a number of
+  functions to make simple drawings (a circle, a rectangle, some text, etc) directly into raw images that will be sent
+  over USB. Hence, when one wants to process an image, usually we convert it to OpenCV or some other image format first,
+  depending on the vision algorithm which we want to implement. This conversion can happen in two ways:
+  - zero-copy: If one can directly use the camera's pixel format as is, then functions are provided by JeVois to simply
+    re-interpret a RawImage as an OpenCV cv::Mat image, by sharing the pixel data between the two. This method is not
+    shown here but is the preferred approach if you can work directly with the camera's pixel type.
+
+  - conversion to a different pixel format: If one also wants a different pixel format that is not natively provided by
+    the camera sensor chip, then one would create a new OpenCV cv::Mat image, with its own pixel array memory distinct
+    from that of the source RawImage. JeVois then provides functions that can convert from any camera pixel format to
+    several different OpenCV pixel formats. Here we use one of these, convertToCvBGR().
+
+- Line 26: Once the input image has been converted to OpenCV into a newly allocated pixel array that is separate from
+  that of the raw input image, we do not need the raw input image anymore, we will keep working with the OpenCV image
+  only. So we can give the memory buffer associated with our raw input image back to the camera so that it can use it to
+  capture a future video frame.
+
+- Line 29: We have already done half of the work (from camera format to BGR), but now to proceed with the second half
+  (from BGR to format requested by USB host), we need to have the output image ready. So we request it here and will
+  possibly wait for it.
+
+- Line 32: In this simple tutorial, we will not allow any rescaling of the image size. So we require that the output
+  resolution should be the same as the input resolution. We have no requirement on the output pixel type, hence we here
+  just specify \c outimg.fmt as the required output pixel type (that is, we just say that whichever pixel format has
+  been selected by the USB host and is already in the output image is ok with us).
+
+- Line 35: Now we convert from our OpenCV BGR image into the format requested by the USB host, using some helper
+  conversion function that is part of the JeVois framework.
+
+- Line 38: We are done and ready to send the converted image to the host computer over USB.
+
+// ####################################################################################################
+\section addparams Adding module parameters and using OpenCV: an edge detection module
+
+Most machine vision modules provide parameters which allow one to tune their operation. These include thresholds,
+algorithm modes, accuracy settings, and others.
+
+Many frameworks, such as OpenCV, thus by and large rely on functions with many parameters. For example, the way one
+invokes a Canny edge detector in OpenCV is to call the function:
+
+\code
+void Canny(InputArray image, OutputArray edges, double threshold1, double threshold2, int apertureSize = 3, bool L2gradient = false)
+\endcode
+
+Beyond possible confusion about which value goes to which argument in the long list (which languages such as Python
+solve by allowing access to arguments by name), one major issue with this approach is that either every function using
+Canny must provide a mechanism for the user to set the parameters (threshold1, threshold2, etc), or, in most cases,
+those will just end up being hardwired, limiting the applicability of the end application to different image sizes,
+environment types, etc.
+
+In contrast, in the JeVois framework, one would create a Canny Module, with Parameter settings for the thresholds, where
+Parameter is a rich wrapper around the actual parameter value.  The concept of parameter in the JeVois framework
+embodies a wrapper around a single value of any type, with associated documentation (description), default values,
+possible specification of valid values, accessor functions to obtain or change the value, and optional callback
+functions that are triggered when the value is changed. Parameters are intended to be used in objects that inherit from
+Component (Module inherits from Component, more about Component later - for now just equate Component with Module). The
+goal of parameters is to expose parameters of a given vision algorithm in such a way that any piece of code that is
+using that algorithm will automatically inherit and expose these parameters.
+
+Setting parameters can be done by code that will use the vision algorithm that has parameters, but, more often, it is
+left to the user. In a particular vision pipeline, resonable default values may be provided for the parameters at the
+beginning, then leaving those parameters accessible to end users who may want to modify them. Modification of parameters
+in JeVois is handled either at the start of the application by parsing command-line arguments, when a new processing
+Module is instantiated, or while it is running, by interacting with the Engine that manages the system via its Serial
+ports.
+
+The way in which we have implemented Parameter in the JeVois framework may seem unorthodox at first, but is the best way
+we have found so far in terms of minimizing burden when writing new algorithms with lots of parameters. In our earlier
+framework, the iLab Neuromorphic Vision Toolkit (iNVT) started in 1995, parameters were included into algorithm
+components as member variables. The burden to programmers was so high that often they just did not include parameters
+and hardwired values instead, just to avoid that burden. The burden comes from the requirements:
+
+- we want to be able to support parameters of any type
+- we want each parameter to have a name, description, default value, specification of valid values
+- we want parameters to appear in related groups in the help message
+- we want to support callbacks, i.e., functions that are called when one tries to change the parameter value
+- we want the callback to be a member function of the Module that owns a given parameter,
+  since changing that parameter value will typically trigger some re-organization in that Module (otherwise
+  the callback might not be needed).
+
+Possible implementation using class data members for parameters (similar to what we used in iNVT), here shown for a
+sample \c int parameter to specify the size of a queue held in a class MyModule that derives from Module:
+
+\code
+ParamDef<int> sizeparamdef("size", "Queue size", 5, Range<int>(1, 100));
+
+class MyModule : public jevois::Module
+{
+  public:
+      Param<int> sizeparam; // ouch
+
+      void sizeParamCallback(int newval) { myqueue.resize(newval); }
+
+      MyModule(std::string const & instance) : jevois::Module(instance),
+                                               sizeparam(sizeparamdef)  // ouch
+      {
+        sizeparam.setCallback(&MyModule::sizeParamCallback); // ouch
+        // We cannot set the callback in the constructor initializer list because MyModule is not yet constructed at that time
+      }
+};
+\endcode
+
+So we basically end up with 3 names that people have no idea what to do with and will just use confusing names for
+(sizeparamdef, sizeparam, sizeParamCallback), and we have to 1) specify the definition of name, description, etc
+somewhere using some arbitrary name (here sizeparamdef), then add the member variable for the param to the module
+using some other name (here sizeparam), then construct the param which would typically require linking it to its
+definition so we can get the default value and such, and finally hook the callback up (note how MyComp is not fully
+constructed yet when we construct sizeparam hence referencing sizeParamCallback() at that time is dubious at best). In
+reality, things are even worse since typically the paramdef, module class declaration, and module implementation,
+could be in 3 different files.
+
+The approach we developed for the Neuromorphic Robotics Toolkit (NRT) and refined for JeVois works as follows:
+
+- each parameter is a unique new class type. We create that type once with one name, and it holds the parameter
+  value and the definition data. This is further facilitated by the
+  JEVOIS_DECLARE_PARAMETER(ParamName, ParamType, ...) variadic macro.
+      
+- for parameters with callbacks, their class type includes a pure virtual onParamChange(param, value) function
+  that will need to be implemented by the host module. This is facilitated by the
+  JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(ParamName, ParamType, ...) variadic macro. The first argument of
+  onParamChange() is the parameter class type, so that a host module with many parameters will have many
+  different onParamChange() function, one per parameter that has a callback.
+
+- moduless inherit from their parameters using variadic templates to make inheriting from multiple parameters
+  short and easy.  
+
+- each parameter exposes simple functions get(), set(), etc (see ParameterCore and ParameterBase). In a module
+  that has many parameters, accessing parameters is achieved by disambiguating on which base class (i.e., which
+  parameter) one wants to access the get(), set(), etc function, which is achieved by calling param_x::get() vs
+  param_y::get(), etc
+
+- No need to declare parameter member variables (we inherit from them instead).
+- No need to do anything at construction of the component.
+- No need to manually hook the callback function in the component host class to the parameter.
+- Strong compile-time checking that the programmer did not forget to write the callback function for each
+  parameter that was declared as having a callback.
+- Only one name used throughout for that parameter and all its associated machinery (definition, callback).
+- It is easy to write scripts that search the source tree for information about all the parameters of a component,
+  since those are always all specified in the Parameter< ... > inheritance statement.
+
+
+Let's dive in and implement an edge detection module that uses the Canny function from OpenCV and exposes its parameters
+so that users can play with them over the serial command-line interface:
+
+\includelineno tutorial3.C
+
+- Line 7: It is a good idea to group all the parameters that work together under some category. To achieve that, we here
+  create a parameter category. Parameters that belong to a given category will appear together when one types \c help in
+  the command-line interface.
+
+- Lines 9 - 12: We declare 4 parameters. For each one, we specify
+  - name for the parameter (needs to be syntaxically valid for use as a C++ class name).
+  - type of the parameter value (can be any valid C++ type, including any custom class you have created).
+  - description of the parameter that will appear in the help message and documentation of the module.
+  - default value for the parameter.
+  - optional: specification of valid values, from a list of accepted values, or a range, a range with a step, or a
+    regex. Here we only specify this for the \c aperture parameter, which is constrained to taking values from 3 to 53.
+  - optional: a parameter category used to group related parameters together in the help message.
+
+- Line 16: Our module inherits from <A
+  HREF="http://jevois.org/doc/classjevois_1_1Parameter_3_01Param_00_01Tail_8_8_8_4.html">jevois::Parameter</A> with all
+  our desired parameters passed as template arguments. Indeed, <A
+  HREF="http://jevois.org/doc/classjevois_1_1Parameter_3_01Param_00_01Tail_8_8_8_4.html">jevois::Parameter</A> is a
+  variadic class template that can take any number of template arguments; it will simply add each parameter as a base to
+  our module class one by one. Because we en up inheriting from each parameter, this means that our module 'is' a \c
+  thresh1 parameter, and also 'is' a \c thresh2 parameter, etc. While it may seem unorthodox at first that a module 'is'
+  each of its parameters (as opposed to 'having' them as would be the case using data members for parameters), this
+  greatly lessens the burden onto programmers as explained above.
+
+- Line 32: We convert the input image to greyscale since we will apply the edge detection algorithm in greyscale mode.
+
+- Line 40: Note how here we require V4L2_PIX_FMT_GREY as our output format, since the results from the edge detection
+  algorithm will be a greyscale image.
+
+- Line 43: Here is an example of zero-copy, reinterpretation of a RawImage as a cv::Mat image with pre-allocated, shared
+  pixel array. Thanks to this, the result of the cv::Canny function, which will be computed into the \c edges cv::Mat
+  image, can be directly sent to the host over USB, since the \c edges image shares its pixel data with our output raw
+  image.
+
+- Line 44: Invoke the Canny edge detection function from OpenCV, passing our parameter values to it. Because our module
+  'is' a \c thresh1, and also 'is' a \c thresh2, etc and each of these parameters provides a get() function to access
+  its value, we need to disambiguate which get() we want to call, which is achieved by explicitly specifying onto which
+  base class (i.e., which parameter) we want to call get(). Thus, we use syntax \c thresh1::get() to invoke the get()
+  function of our \c thresh1 base class, and so on for the other parameters. Other parameter functions are disambiguated
+  in the same way, for example \c thresh1::set(value) would set the value of parameter \c thresh1 at runtime.
+
+- Lines 51 - 54: Parameter \c l2grad was declared on line 12 as having a callback. So here is the implementation of that
+  callback. Here we just show an information message (which will show up in the command-line interface). If you have
+  declared the parameter with callback (as we did on line 12), your code will not compile unless you here provide the
+  implementation for onParamChange(), that is, we check at compile time for proper implementation of every callback that
+  has been requested for parameters.
+
+// ####################################################################################################
+\section multithreaded Multi-threading: running 4 edge detection algorithms in parallel
+
+The JeVois smart camera features a quad-core processor, allowing you to run several operations in parallel.
+
+C++11 provides great facilities that make writing parallel code very easy, namely:
+
+- lambda functions: These are functions that are declared and defined "on the fly" just where they are needed and
+  usually with the intent that they will be used only once in that place. Importantly, they can access all variables
+  that are present in the scope under which the lambda function is created. This makes it easy to write simple functions
+  that will run in a thread of execution and will use the variables available at the time of lambda creation.
+
+- std::async function to launch a function in a new thread of operation. std::async returns an std::future, which is a
+  handle to the possible future result of the function, once it has completed. If one calls get() on that future, the
+  caller will block until the thread executing our function has completed.
+
+
+Let's have a look by implementing an enhanced edge detection module, which runs 4 Canny algorithms using 4 different
+sets of parameters (e.g., from very fine to very coarse edge detections). We will place the 4 resulting edge images one
+on top of the other, resulting in an output image that is 4x as tall as the input image.
+
+\includelineno tutorial4.C
+
+Let us look at what is new compared to the previous example:
+
+- Lines 7 - 14: We have two more parameters now, \c thresh1delta and \c thresh2delta which are the amount by which we
+  will increment thresh1 and thresh2 in each of the threads. So the first edge detector will use thresh1, the second
+  will use thresh1 + thresh1delta, the third thresh1 + 2 * thresh1delta, etc
+
+- Line 41: Our output image will store the 4 edge maps one on top of the other, hence we require the output image to be
+  the same width but 4x as tall as the input image.
+
+- Line 44: The destructor of std::future will implicitly call get() if that has not yet been done when the future is
+  destroyed (runs out of scope). So if we do not store the futures returned when we use std::async below somewhere, they
+  will be destroyed, and our process will be blocked until the processing requested on each iteration of the loop below
+  is complete, thereby executing the 4 edge detections one after the other. To execute them in parallel, we will keep
+  the futures returned by std::async alive until we are ready to collect all the results from our 4 threads.
+
+- Line 46: we launch 3 parallel threads using std::async, and we will run the 4th edge detector in the current thread.
+
+- Line 47: Each thread will run a lambda function that will be given access (by reference) all the variables that exist
+  in the current scope ([&] notation), and that takes one \c int argument \c i (the instance number of the edge detector
+  we want to run).
+
+- Line 50: as said in the comments, we create a cv::Mat that has pixels in our raw output imag earray, \c i images down.
+
+- Lines 52 - 53: We run Canny in thread \c i using parameters thresh1 + i * thresh1delta, etc
+
+- Lines 57 - 59: This is essentially the same code as in our lambda function, but we do not need to create yet another
+  thread using std::async for our 4th edge detector, we can just run it in the current thread.
+
+- Line 61: by the time we get here, the 4th invovation of cv::Canny has completed. The other 3 should hence be ready as
+  well.
+
+- Line 66: we just wait until all threads are complete by running a get() on each future. Note that get() features
+  exception forwarding, i.e., it could throw if the function running in the thread threw. Here we just catch, warn, and
+  ignore any exception.
+
+
+*/

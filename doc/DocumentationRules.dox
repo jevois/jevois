@@ -1,0 +1,128 @@
+/*! \page DocumentationRules Documentation rules and guidelines
+  \tableofcontents
+
+\warning This page contains a lot of broken stuff, it needs major fixing
+
+
+\section tags Tagging your code
+
+Use the following instead of plain strings in your comments:
+
+- \\todo will add an item to the todo list
+- \\test will add an item to the test list
+- \\bug will add an item to the bug list
+- \\deprecated will add an item to the deprecated list
+
+For example:
+
+\code
+//! Cool class
+/*! Class that does something cool.
+    \todo Make it hot too */
+class CoolClass { ... };
+\endcode
+
+\section grel Modules, groups of related functions
+
+Generally speaking, our goal is that users should be able to access information:
+
+- by browsing over the Modules section of the doc
+- by search for a name, or browsing the various class lists, file lists, etc
+- through linking between related doc pages
+
+See how it's done for GenericImage.
+
+- First, in GenericImage.H we start with a top-level group, which will appear nicely under the \c Modules section of
+  the documentation:
+\code
+  /*! \defgroup genericimage GenericImage class and concepts
+
+      GenericImage is a thin wrapper for an Image of any pixel type. Writing general algorithms that work with
+      GenericImage allows them to apply to any image type. */
+  \endcode
+- Then, we document GenericImage itself, make it belong to the genericimage group:
+\code
+/*! GenericImage class
+    ...
+    \ingroup genericimage */
+class GenericImage { ... };
+\endcode
+- Finally, if you want to cross-link to other groups, use the \\see command; for example:
+\code
+  /*! \defgroup genericimageoperators GenericImage Operators
+      ...
+      \ingroup genericimage
+      \see image */
+
+  /*! @{ */ // **********************************************************************
+  ...
+  /*! @} */ // **********************************************************************
+\endcode
+
+And note how we use the arrobas curly braces to here include into our group all the operators that will be defined.
+
+\note Why use this rather than a bunch of \\relates directives in each of the operators? This would make each operator
+appear in the doc page of the GenericImage class, which is great except that it masks teh general comment block we have
+about how all GenericImage operators work, promote pixels, etc.
+
+\section enumhelp Helper enums or other helpers
+
+For classes that have helpers, for example, some enums that define parameters of functions associated with the
+class: Just define your group to only include the class; then indicate for each helper that it relates to the
+class. This will list the helpers in the doc page of the class, as opposed to cluttering the page of your group. See for
+example how it's done in Image.H where:
+- we define a group called 'image'
+- in the doc of Image we mention that it is in the group image
+- but in the doc of ImageInitPolicy and ImageFlags we simply mark those as related to the Image class as opposed to
+  being in the group. Thus they will appear in the doc of the image class but not in the page describing the group. This
+  is the desired behavior as in the group's page we want a clear and uncluttered high-level view, while in the class
+  documentation we need to know the details.
+
+However, for enums that are only used in functions and cannot be related to a class, we mush add those to the group
+where the function belongs. Have a look at Text.H for an example: TextAnchor is documented and added to textdrawing
+group, like the drawText() function is.
+
+
+\section macro Documenting macros
+
+- All internal JeVois macros (not to be used directly by users) should have a name that starts with \c JEVOIS_MACRO_
+
+- All JeVois macros that users may use should have a name that starts with \c JEVOIS_
+
+- Simple macros that just define a value can be documented like classes, variables, etc
+
+- macros that declare a complex function whose internal guts are of no interest to end users should be documented as
+  follows. First, in a .H file, only write a documentation block attached to nothing and that includes a \\def for the
+  macro name:
+  \code
+  //! Optional brief description of the macro
+  /*! \def JEVOIS_MY_MACRO(x, y)
+      \hideinitializer
+
+      Convenience macro to achieve blah. */
+  \endcode
+  Then, in an Impl.H file hidden in the details/ subdirectory, define your macro but do not document the macro
+  definition itself. Finally, to create a link to your macro definition from within some other documentation, use
+  \code
+  /*! blah blah. See for example #JEVOIS_MY_MACRO(x, y) */
+  \endcode
+  See for example #JEVOIS_DEFINE_ENUM_CLASS(name, SEQ) in Types/Enum.H and Types/details/EnumImpl.H
+
+\section enums JeVois Enums
+
+  For enums defined using JeVois_DEFINE_ENUM_CLASS, we basically manually instruct doxygen that we are creating a new
+  class. Adapt the following to your own enums:
+@code
+  //! Hypothetical BoundedSet insert policy
+  /*! \class BoundedSetInsertPolicy
+      When trying to push a new element into the set, if it matches one already in the set:
+
+      - if \c jevois::BoundedSetInsertPolicy::Preserve, keep the old one and discard the new incoming one, or,
+      - if \c jevois::BoundedSetInsertPolicy::Replace, replace the old one with the new one.
+
+      \relates BoundedSet */
+  JEVOIS_DEFINE_ENUM_CLASS(BoundedSetInsertPolicy, (Preserve) (Replace) );
+@endcode
+
+
+*/

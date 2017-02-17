@@ -1,0 +1,302 @@
+/*! \page MicroSD MicroSD card organization and files
+
+
+\section microsd1 How the MicroSD card is organized
+
+The MicroSD card in your JeVois smart camera contains all the software that runs on the smart camera's processor. This
+includes:
+
+- Files necessary to boot (start up) and configure low-level hardware elements, such as the DDR3 memory and microSD card
+  drivers, and a Linux kernel.
+
+- Linux operating system, including standard Linux command-line utilities, and many libraries such as OpenCV, boost,
+  Eigen3, etc.
+
+- JeVois machine vision modules and data.
+
+\section microsd2 Using your MicroSD card with a desktop or laptop computer
+
+Modifying the contents of your MicroSD card, for example to add new machine vision modules or to get video files that
+were recorded by JeVois, is achieved by taking the MicroSD card out of your JeVois smart camera and connecting it to a
+desktop or laptop computer.
+
+\image html microsd-insert.png
+
+\warning Your JeVois smart camera features a \b push-push MicroSD card slot. You push the card in until it clicks to
+load it, and you push it in again until it clicks and then ejects to unload it. Do you try to pull the MicroSD card out
+or you might damage the MicroSD card slot of your JeVois smart camera.
+
+There are two basic ways of accessing the MicroSD card on a desktop or laptop:
+
+- Use a USB Card Reader, sold in most computer stores, and connect it to a USB port of your desktop or laptop
+
+\image html microsd-usb.jpg
+
+- Use a Micro-SD to SD card adapter, and insert the SD card into your computer if it has a slot for it (e.g., Mac
+  laptop):
+
+\image html microsd-sd.jpg
+
+\image html microsd-sdmac.jpg
+
+\section microsd2 MicroSD partitions and partition types
+
+The card is organized into three partitions (logical volumes):
+
+- \b BOOT (DOS/Windows FAT32 format): contains files needed for startup, including Linux kernel
+
+- \b LINUX (Linux ext4 format, may not show up when reading MicroSD card on Windows and Mac computers): Contains Linux
+  operating system and programs
+
+- \b JEVOIS (DOS/Windows FAT32 format): Contains all JeVois machine vision modules and data files, including possibly
+  files created by the smart camera (e.g., when saving video to microSD).
+
+
+Because the LINUX partition is of type ext4, which is the native file system for Linux, but is not recognized by default
+on Windows and Mac, when you read your MicroSD card on a Windows or Mac computer, you may not be able to see it or to
+access it. That is usually not a problem as only advanced hackers (who will be programming on Linux computers) would
+ever need to modify the contents of the LINUX partition.
+
+For regular users, all you need is in the JEVOIS partition, as further detailed below.
+
+Here is an example of what happens on a Mac laptop when you insert the MicroSD card: Two volumes appear, BOOT and
+JEVOIS, and one can browse the files in both of them. The LINUX volume does not appear on this Mac (but note that third
+party apps are available to allow Macs to read ext4 partitions as well).
+
+\warning The MicroSD card also has two additional and essential "files" that are stored directly onto specific sectors
+(physical flash disk locations) on the card. These are two bootloader (system startup) files which are the first two
+files loaded when the JeVois embedded processor starts. Because the processor does not yet know about partitions, file
+systems, etc at that early startup stage, all it knows how to do is to read raw sectors from the SD card. You usually do
+not need to modify these two special files. But beware that if you want to copy the contents of one JeVois MicroSD card
+to a new card, you need to do a full physical sector-by-sector copy. Instructions for how to do this are provided in
+\ref NewMicroSD.
+
+\image html microsd-mac.png
+
+\section microsd3 Contents
+
+Here is an abbreviated tree of the files present on a typical JeVois microSD card:
+
+\verbatim
+├── BOOT  ########## (16 MB FAT32 partition)
+│   ├── script.bin               # low-level hardware configuration file
+│   ├── uEnv.txt                 # optional command-line arguments for the Linux Kernel
+│   └── uImage                   # Linux kernel
+
+
+├── LINUX ########## (1 GB Linux ext4 partition)
+│   ├── bin                      ### Directory for standard Unix commands
+│   │   ├── ash                  # some Unix command
+│   │   ├── bash                 # some other Unix command
+│   │   ├── busybox              # ...
+│   │   ├── cat
+
+...
+
+│   ├── etc                      ### Directory for Unix configuration files
+│   │   ├── fstab
+│   │   ├── group
+│   │   ├── hostname
+│   │   ├── hosts
+
+...
+
+│   ├── lib                      ### Directory for Unix system libraries
+│   │   ├── ld-2.23.so
+│   │   ├── ld-linux-armhf.so.3
+│   │   ├── libatomic.so.1.2.0
+│   │   ├── libc-2.23.so
+│   │   ├── libcrypt-2.23.so
+│   │   ├── libc.so.6
+│   │   ├── libdl-2.23.so
+│   │   ├── libgcc_s.so
+│   │   ├── libm-2.23.so
+│   │   ├── libm.so.6
+│   │   ├── libnsl-2.23.so
+
+...
+
+│   ├── sbin                     ### Directory for system administration Unix commands
+│   │   ├── arp
+│   │   ├── blkid
+│   │   ├── devmem
+│   │   ├── fdisk
+│   │   ├── freeramdisk
+│   │   ├── fsck
+
+...
+
+│   ├── tmp                      ### Scratch directory for temporary files
+│   ├── usr                      ### Directory for user Unix commands and shared data
+│   │   ├── bin
+│   │   │   ├── ar
+│   │   │   ├── attr
+│   │   │   ├── awk
+│   │   │   ├── basename
+│   │   │   ├── bunzip2
+│   │   │   ├── bzcat
+
+...
+
+│   │   ├── lib                  ### Directory for Unix user libraries
+│   │   │   ├── libattr.so.1.1.0
+│   │   │   ├── libavcodec.so.56.60.100
+│   │   │   ├── libavdevice.so.56.4.100
+│   │   │   ├── libavfilter.so.5.40.101
+│   │   │   ├── libavformat.so.56.40.101
+│   │   │   ├── libavheap.so
+│   │   │   ├── libavresample.so.2.1.0
+│   │   │   ├── libavutil.so.54.31.100
+│   │   │   ├── libbfd-2.25.51.so
+│   │   │   ├── libbfd-2.26.1.so
+│   │   │   ├── libblas.so
+│   │   │   ├── libboost_atomic.so.1.61.0
+│   │   │   ├── libboost_chrono.so.1.61.0
+│   │   │   ├── libboost_container.so.1.61.0
+
+...
+
+│   │   ├── sbin
+│   │   │   ├── addgroup         ### Directory for more Unix system administration commands
+│   │   │   ├── adduser
+│   │   │   ├── arping
+│   │   │   ├── chroot
+
+...
+
+│   │   └── share                ### Directory for shared data used by Unix commands
+│   │       ├── awk
+│   │       │   ├── assert.awk
+│   │       │   ├── bits2str.awk
+│   │       │   ├── cliff_rand.awk
+│   │       │   ├── ctime.awk
+│   │       │   ├── ftrans.awk
+│   │       │   ├── getopt.awk
+│   │       │   ├── gettime.awk
+
+...
+│   └── var                      ### Directory for Unix system log files and other volatile files
+│       ├── cache
+│       ├── lib
+│       │   └── misc
+│       ├── lock
+│       ├── log
+│       ├── run
+│       ├── spool
+│       └── tmp
+
+
+
+├── JEVOIS ########## (6+ GB FAT32 partition)
+│   ├── config                   ### Directory for JeVois engine configuration file
+│   │   ├── initscript.cfg
+│   │   ├── JeVois.cmake
+│   │   ├── jevois_config.cmake
+│   │   ├── params.cfg
+│   │   └── videomappings.cfg
+│   ├── data                     ### Directory for optional user data, some JeVois modules also save outputs into it
+│   ├── lib                      ### Directory for JeVois libraries, i.e., collections of shared vision algorithms
+│   │   └── JeVois               # One sub-directory for each JeVois "Vendor" (provider of JeVois modules)
+│   │       └── libjevoisbase.so.1.0
+│   ├── modules                  ### Directory for JeVois machine vision modules
+│   │   └── JeVois               # One sub-directory for each JeVois "Vendor" (provider of JeVois modules)
+│   │       ├── Convert          # One directory for each module
+│   │       │   ├── Convert.so   # The compiled module code that will be loaded when that module is selected
+│   │       │   ├── icon.png     # Extra data about the module
+│   │       │   ├── modinfo.html
+│   │       │   ├── modinfo.yaml
+│   │       │   └── screenshot1.png
+│   │       ├── DemoArUco
+│   │       │   ├── calibration.yaml
+│   │       │   ├── DemoArUco.so
+│   │       │   ├── icon.png
+│   │       │   ├── modinfo.html
+│   │       │   ├── modinfo.yaml
+│   │       │   ├── screenshot1.png
+│   │       │   └── screenshot2.png
+│   │       ├── DemoGPU
+│   │       │   ├── DemoGPU.so
+│   │       │   ├── icon.png
+│   │       │   ├── modinfo.html
+│   │       │   ├── modinfo.yaml
+│   │       │   ├── screenshot1.png
+│   │       │   ├── shaders      # This module uses auxiliary files for GPU shader code
+│   │       │   │   ├── blurfragshader.glsl
+│   │       │   │   ├── dilatefragshader.glsl
+│   │       │   │   ├── erodefragshader.glsl
+│   │       │   │   ├── medianfragshader.glsl
+│   │       │   │   ├── multfragshader.glsl
+│   │       │   │   ├── simplefragshader.glsl
+│   │       │   │   ├── simplevertshader.glsl
+│   │       │   │   ├── sobelfragshader.glsl
+│   │       │   │   ├── threshfragshader.glsl
+│   │       │   │   ├── twirlfragshader.glsl
+│   │       │   │   └── yuvfragshader.glsl
+│   │       │   └── video1.mkv
+
+...
+
+│   │       ├── DemoSalGistFaceObj
+│   │       │   ├── DemoSalGistFaceObj.so
+│   │       │   ├── facedetector
+│   │       │   │   ├── haarcascade_eye_tree_eyeglasses.xml
+│   │       │   │   └── haarcascade_frontalface_alt.xml
+│   │       │   ├── icon.png
+│   │       │   ├── modinfo.html
+│   │       │   ├── modinfo.yaml
+│   │       │   ├── movie.avi
+│   │       │   ├── screenshot1.png
+│   │       │   └── tiny-dnn     # This module uses auxiliary files for neural network data
+│   │       │       ├── CIFAR10
+│   │       │       │   ├── batches.meta.txt
+│   │       │       │   ├── data_batch_1.bin
+│   │       │       │   ├── data_batch_2.bin
+│   │       │       │   ├── data_batch_3.bin
+│   │       │       │   ├── data_batch_4.bin
+│   │       │       │   ├── data_batch_5.bin
+│   │       │       │   ├── readme.html
+│   │       │       │   ├── test_batch.bin
+│   │       │       │   └── weights.tnn
+│   │       │       └── MNIST
+│   │       │           ├── t10k-images.idx3-ubyte
+│   │       │           ├── t10k-labels.idx1-ubyte
+│   │       │           ├── train-images.idx3-ubyte
+│   │       │           ├── train-labels.idx1-ubyte
+│   │       │           └── weights.tnn
+
+...
+
+│   │       ├── SaliencySURF
+│   │       │   ├── icon.png
+│   │       │   ├── images       # Images of the things this module can recognize
+│   │       │   │   ├── books.png
+│   │       │   │   ├── doorframe.png
+│   │       │   │   ├── doorlock2.png
+│   │       │   │   ├── doorlock.png
+│   │       │   │   ├── lightswitch2.png
+│   │       │   │   ├── lightswitch.png
+│   │       │   │   ├── spot25.png
+│   │       │   │   ├── spot26.png
+│   │       │   │   └── usbbatt.png
+│   │       │   ├── modinfo.html
+│   │       │   ├── modinfo.yaml
+│   │       │   ├── params.cfg
+│   │       │   ├── SaliencySURF.so
+│   │       │   └── screenshot1.png
+
+...
+
+│   ├── packages                 ### Simply copy downloaded .jvpkg files here and JeVois will unpack and install them
+│   └── scripts
+│       ├── astylerc
+│       ├── docinstall.sh
+│       ├── extract-code-snippets.pl
+│       ├── jevois-modinfo.pl
+│       └── list-sources.sh
+
+...
+
+\endverbatim
+
+*/
+

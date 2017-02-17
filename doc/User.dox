@@ -1,0 +1,19 @@
+/*! \page User User guide
+
+JeVois combines video capture and machine vision processing directly in the smart camera. Here is how to get started
+with using it.
+
+- \subpage UserQuick
+- \subpage UserStartLinux
+- \subpage UserStartWindows
+- \subpage UserStartMac
+- \subpage UserStartCaveats
+- \subpage UserModes
+- \subpage UserDemos
+- \subpage MicroSD
+- \subpage NewMicroSD
+- \subpage UserSerial
+- \subpage UserCli
+- \subpage ArduinoTutorial
+
+*/

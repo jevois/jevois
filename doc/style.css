@@ -1,0 +1,65 @@
+
+/*
+TD.md { background-color: #aae0ff }
+FONT.keyword       { color: #008000 }
+FONT.keywordtype   { color: #604020 }
+FONT.keywordflow   { color: #e08000 }
+FONT.comment       { color: #800000 }
+FONT.preprocessor  { color: #806020 }
+FONT.stringliteral { color: #002080 }
+FONT.charliteral   { color: #008080 }
+*/
+
+
+/* The iLab CSS for doxygen */
+
+body, table, div, p, dl {
+	font-family: Helvetica, Lucida Grande, Verdana, Geneva, Arial, sans-serif;
+/*	font-size: 100%;*/
+}
+
+/* @group Heading Levels */
+
+h1 {    color: navy;
+        background: #e0e0ff;
+        font-size: 170%;
+        font-weight: 500;
+        padding: 0.5em;
+}
+
+h2 {    color: navy;
+        background: #f0f0FF;
+        font-size: 155%;
+        font-weight: 500;
+        padding: 0.4em;
+}
+
+h3 {    color: black;
+        background: #f8f8FF;
+        font-size: 145%;
+        font-weight: 500;
+        padding: 0.3em;
+}
+
+h4 {    color: black;
+        font-size: 135%;
+        padding: 0.2em;
+        font-weight: 500;
+	border-bottom: 2px solid #AAD0FF;
+}
+
+h5 {    color: black;
+        font-size: 125%;
+        padding: 0.1em;
+        font-weight: 500;
+	border-bottom: 1px solid #AAD0FF;
+}
+
+/*
+h1,h2,h3,h4,h5,h6 {
+        font-family: Helvetica, Arial, Verdana, sans-serif;
+        font-weight: 500;
+        margin-left: 0%;
+        margin-right: 0%;
+}
+*/

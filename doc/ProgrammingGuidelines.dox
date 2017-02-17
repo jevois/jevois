@@ -1,0 +1,401 @@
+/*! \page ProgrammingGuidelines General programming guidelines for contributors to core JeVois framework
+
+
+\note These programming guidelines are for programmers who wish to contribute to the core JeVois framework
+(libjevois.so) and are quite strict. For programmers who just wish to program a new machine vision module that uses the
+JeVois core framework, quidelines are much looser and are described in the documentation of jevoisbase.
+
+\section general General rules and indentation
+
+- JeVois uses doxygen for documentation, with the exclamation mark (!) comment style. You should learn about doxygen and
+  look at how the rest of JeVois is documented before you start writing code. Undocumented or improperly documented code
+  is subject to deletion. Also see <A href="DocumentationRules.html">here</A> for more explanations of tricky
+  documentation cases (once you know the basics of doxygen).
+
+- JeVois treats all warnings as errors. So your code will not compile if you have warnings. This is a feature: if your
+  code has warnings, you are doing something wrong! /*If you are including files from a library not written by you and
+  that has warnings, you can use the following:
+
+  \code
+  JEVOIS_BEGIN_UNCHECKED_INCLUDES
+  #include <trashystuff.h>
+  JEVOIS_END_UNCHECKED_INCLUDES
+  \endcode
+
+- Source code line length is 120. Add this to your \c ~/.emacs to set it:
+
+  \verbatim
+  ;; set default line wrap len:
+  (setq default-fill-column 120)
+  \endverbatim
+
+- JeVois uses astyle to ensure uniform indentation styles across our various text editors. A style file is included with
+  JeVois, and can be found in jevois/scripts/astylerc. To use this style file, invoke astyle using the –options flag,
+  e.g.
+
+  \code 
+  astyle myfile --options=/path/to/nrt/scripts/astylerc
+  \endcode
+
+- Indentation matching this style is as defined by the following emacs rules, on top of the default C mode of emacs
+  indentation (ad this to your \c ~/.emacs to activate):
+
+  \verbatim
+  ;; JeVois indentation style for C++ and such
+  (defun my-c-mode-common-hook ()
+    (local-set-key "\C-h" 'backward-delete-char)
+    ;; this will make sure spaces are used instead of tabs
+    (setq tab-width 4 indent-tabs-mode nil)
+    (setq indent-tabs-mode 'nil)
+    (setq c-basic-offset 2)
+    (c-set-offset 'substatement-open 0)
+    (c-set-offset 'statement-case-open 0)
+    (c-set-offset 'case-label 0)
+    (c-set-offset 'brace-list-open 0)
+    (c-set-offset 'access-label -2)
+    (c-set-offset 'inclass 4)
+    (c-set-offset 'member-init-intro 4)
+    ;; include possible ! as comment start string so that indentation starts after it
+    (setq comment-start-skip "/\\*+!* *\\|//+ *")
+     
+    ;; type C-c C-s or C-c C-o while editing to see what other rules to add here...
+  )
+  
+  (add-hook 'c-mode-hook 'my-c-mode-common-hook)
+  (add-hook 'c++-mode-hook 'my-c-mode-common-hook)
+  (add-hook 'perl-mode-hook 'my-c-mode-common-hook)
+  (add-hook 'cperl-mode-hook 'my-c-mode-common-hook)
+  (add-hook 'emacs-lisp-mode-hook 'my-c-mode-common-hook)
+  (add-hook 'nroff-mode-hook 'my-c-mode-common-hook)
+  (add-hook 'tcl-mode-hook 'my-c-mode-common-hook)
+  (add-hook 'makefile-mode-hook 'my-c-mode-common-hook)
+  \endverbatim
+
+- If you use vi, use this configuration:
+
+  \verbatim
+  
+  "-------------Essential JeVois Style Compliance Settings-------------
+   
+  " Disable old-school vi compatability
+  set nocompatible
+  
+  " Allow plugins to control our indentation
+  filetype plugin indent on
+  
+  " Set each auto-indent level to equal two spaces
+  set shiftwidth=2
+  
+  " Let each tab equal two spaces
+  set tabstop=2
+  
+  " Make sure vim turns all tabs into spaces
+  set expandtab
+  
+  " Make vim indent our code properly
+  set smartindent
+  
+  " Make the maximum line length equal 120
+  set textwidth=120
+  
+  "-------------Other cool vim tricks-------------
+  
+  " Use a cool menu when autocompleting filenames, commands, etc...
+  set wildmenu
+  set wildmode=list:longest
+  
+  " Make vim automatically change directories to the directory of any file you open. 
+  " This means that when you open a file, then want to open another using :tabe, :o, etc,
+  " you can just type in the relative path from the file you're currently editing.
+  set autochdir
+  
+  " When editing the JeVois library, it is a total pain when you are editing a .H file in nrt/include/whatever/whatever, 
+  " and then decide you need to edit the source .C file in the nrt/src/whatever/whatever. This little function will 
+  " automatically back track in the directory tree for you, find the corresponding .C or .H file, and open it in a new
+  " tab. 
+  " To use it, just type ,o (that's a comma, and then a lower-case o). 
+  function! OpenOther()
+    if expand("%:e") == "C"
+      exe "tabe" fnameescape(expand("%:p:r:s?src?include?").".H")
+    elseif expand("%:e") == "H"
+      exe "tabe" fnameescape(expand("%:p:r:s?include?src?").".C")
+    endif
+  endfunction
+  nmap ,o :call OpenOther()<CR>
+
+  \endverbatim
+
+\section fileorg Files organization
+
+- JeVois uses exclusively filename extensions .H and .C for C++ files.
+
+- JeVois uses CamelCase convention for file names and for class names. An exception is helper classes used for template
+  meta-programming, which usually use lowercase_with_underscores names, to resemble the STL (see more details
+  below).
+
+- The JeVois Library is mainly split into the jevois/include/jevois/ and jevois/src/jevois/ directories. These
+  directories are then further split into Core, Debug, Image, etc. The build system creates a shared library,
+  libjevois.so from these files. Vision modules programmers use the JeVois library by including the appropriate header
+  (.H) files under jevois/include and by linking against libjevois.so (details below). When adding to the core JeVois
+  framework (as opposed to just writing new vision modules), please keep in mind:
+
+  + Each directory under jevois/ should contain files which can be logically grouped together - e.g. the Debug directory
+    is for debugging functions and classes, Image is for image processing, etc. Each of these directories contains a
+    group of classes which implement a specific feature.
+
+  + All header files must be named with a .H extension, and should go into the include directory.  Header files should
+    be split such that all backend functionality which users don't need do know about should be hidden away in a \c
+    details subdirectory.  In general, such backend functionality can be split into a Helpers file which contains any
+    helper classes and can be included before the body of a class definition, and a Impl implementation file which
+    includes any inline code. For example, the Parameter framework involves the main definitions and programming
+    interface in jevois/include/jevois/Component/Parameter.H, which relies on some helper classes (which programmers
+    using Parameter do not need to knwo about) defined in jevois/include/jevois/Component/details/ParameterHelpers.H,
+    and has some inline implementation code (which programmers using Parameter also do not need to know about) defined
+    in jevois/include/jevois/Component/details/ParameterImpl.H. This organization makes it easy to generate user
+    documentation that omits all of the nasty implementation details.
+
+  + All non-inline, non-template implementation source files should be named with a .C extension, and should go into the
+    jevois/src/ directory following the same relative path as its .H file.
+
+  + As much code as possible should be moved into .C files so that users don't have to recompile our .H files over and
+    over again. The big exception to this is template code, which in most cases must go into .H files.
+
+  + All header and source files should include the boilerplate preamble/license. Just copy it from another file.
+
+- Class member variables have names starting with "its" to indicate to humans reading the code that they are member
+  variables.
+
+- JeVois member functions use camelCase starting with a lowercase letter.
+
+- JeVois free functions usually use name_with_underscores, or camelCase starting with a lowercase letter.
+
+- Generally speaking, one file per class. File name and class name must match exactly. If several classes conceptually
+  belong together, then it is ok to put them in the same file.
+
+- All .H files use include guards, which will prevent the file from being included several times, thereby generating
+  some errors about things being re-defined. No .C file uses include guards. We use a pragma supported by g++ for
+  include guards:
+
+  \code
+#pragma once
+
+// ....
+
+  \endcode
+
+- A new class will hence typically involve the following set of files:
+
+  + \c include/jevois/XXX/MyClass.H: only contains declarations and documentation. Absolutely no actual implementation
+    code.  Only declare in this file things of interest to programmers who will use your class and who do not need to
+    care about exactly how it works internally. Everything in this file should be documented using doxygen markup.
+
+  + \c include/jevois/XXX/details/MyClassHelpers.H: contains supporting declarations that must be known before the main
+    declarations in MyClass.H can take effect. For example, if the end user will only use a derived class and the base
+    class contains no information that they should care about, declare the base class in details/MyClassHelpers.H and
+    towards the top of MyClass.H include details/MyClassHelpers.H. There is no doxygen markup in this file, and
+    documentation is optional, mainly geared towards advanced programmers.
+
+  + \c include/jevois/XXX/details/MyClassImpl.H: contains inlined and template implementation ONLY. There is no doxygen
+    markup in this file, and documentation is optional, mainly geared towards advanced programmers.
+
+  + \c src/jevois/XXX/MyClass.C: contains all non-template, non-inline implementation. Documentation is optional.
+
+  See for example the following files:
+
+   + jevois/include/jevois/Component/details/ParameterHelpers.H preliminaries of no interest to programmers just using
+   the JeVois framework
+
+   + jevois/include/jevois/Component/Parameter.H documented interface for programmers using the JeVois framework
+
+   + jevois/include/jevois/Component/details/ParameterImpl.H inline functions and templates implementation of no
+   interest to programmers just using the JeVois framework
+
+   + jevois/src/jevois/Component/Parameter.C does not exist because Parameter is a fully-templated, fully inline class,
+   but could contain any non-template, non-inline implementation of no interest to programmers just using the JeVois
+   framework
+
+- To find particular words in JeVois source code, we recommend adding the following macro to your
+\c ~/.bash_aliases or \c ~/.bashrc:
+\verbatim
+# do a grep on c sources (e.g., for kernel, u-boot, etc) or c++ sources (for JeVois, NRT, etc)
+xg () {
+   grep $* `find . -name "*.[hcHC]"`
+}
+\endverbatim
+
+You can use it as follows, for example to find all files that refer to the function \c warnAndRethrowException()
+provided by JeVois to help programmers with handling of exceptions:
+\verbatim
+itti@iLab1:~/jevois/software/jevois$ xg warnAndRethrowException
+./include/jevois/Debug/Log.H:      try { do_something_risky(); } catch (...) { jevois::warnAndRethrowException(); }
+./include/jevois/Debug/Log.H:  void warnAndRethrowException[[noreturn]]();
+./src/jevois/Debug/Log.C:void jevois::warnAndRethrowException()
+\endverbatim
+Reveals that it is declared in Log.H and implemented in Log.C, so you can now open those files for more information.
+
+\section constcorr Const Correctness
+
+JeVois uses exclusively the right-to-left convention for const qualifications. This is because it is the best way to
+  unambiguously read statements that have const in them, just read them aloud from right to left. For example:
+
+\code
+int const * prt1; // ptr1 is pointer to const int (read from right to left; can change pointer address, but not the int value pointed to)
+int * const ptr2; // ptr2 is a const pointer to int (cannot change the address, but can change the int value)
+int const * const ptr3; // ptr3 is a const pointer to a const int (const address, const value)
+\endcode
+
+  See http://en.wikipedia.org/wiki/Const-correctness for more details and examples. Also see this one:
+  http://www.dansaks.com/articles/1999-02%20const%20T%20vs%20T%20const.pdf and that one:
+  http://www.parashift.com/c++-faq-lite/const-correctness.html
+
+- JeVois is const-correct code (except for bugs and omissions!). When writing nrt code, make sure it is
+  const-correct. For example:
+  - input arguments to a function are typically received by const reference. For example:
+\code
+void myfunc(std::string const & arg);
+\endcode
+  - a member function that does not modify any member variables of an object should be declared const. For example:
+\code
+class MyClass
+{
+  public:
+    int getX() const
+    { return x; } // since we do not modify x or anything else in MyClass, getX() is declared const
+  private:
+    int x;
+}
+\endcode
+  - a temporary variable that will not be modified should be declared const. For example:
+\code
+double const perimeter = 2.0 * M_PI * radius;  // assuming perimeter will not be modified later
+\endcode
+  - a mutex in a class should typically be declared \c mutable, which will allow it to be locked/unlocked on const
+    instances of the class or in const member functions of the class.
+  - For return values of functions: return a const ref if possible (i.e., you are returning a const ref to something
+    which will not disappear soon, typically use this for accessor functions of your classes, when returning one of the
+    data members of the class), otherwise return by value (non-const). While returning by non-const value may pose
+    dangers, it also allows move semantics. This is particularly important if you return a vector, a string, etc as by
+    returning it by non-const value it will actually be moved (in most cases) as opposed to copied.
+
+  - on rare occasions, it is more desirable to keep a member function const even though it might modify some member
+    non-mutable variables of a class, if logically speaking this makes more sense. You have to use your judgments for
+    these cases, and use a \c const_cast inside the function. For example, consider the implementation of the
+    className() accessor function in Component, which returns the name of the component's class. itsClassName is
+    declared in Component.H as a const string data member of Component, which makes sense since the class name cannot be
+    modified for any Component. As for all const data members, the only way to assign a value to itsClassName is hence
+    during construction. But we would like to report the class name of any class derived from Component, which is not
+    accessible during construction of the base Component class. For this reason, we will set the class name the first
+    time it is requested (at which point we know the object derived from Component will be fully constructed):
+\code
+std::string const & jevois::Component::className() const
+{
+  boost::shared_lock<boost::shared_mutex> lck(itsMetaMtx);
+
+  // We need the (derived!) component to be fully constructed for demangle to work, hence the const_cast here:
+  if (itsClassName.empty()) *(const_cast<std::string *>(&itsClassName)) = jevois::demangle(typeid(*this).name());
+
+  return itsClassName;
+}
+\endcode
+    so we use \c const_cast to set the const member variable itsClassName the first time it is requested.
+  - see http://en.wikipedia.org/wiki/Const-correctness for more details and examples.
+
+\section localvar Local variables
+
+- Local variable names should favor longer more descriptive names over shorter ones. E.g.
+
+\code
+// Bad...
+for (int i = 0; i < c; ++i);
+ 
+// Better...
+for (int itemIdx = 0; itemIdx < itemCount; ++itemIdx);
+\endcode
+
+\section useinline Proper use of inline, virtual, override, final, etc
+
+- In declarations, do not write inline (e.g., in class declarations). Inline is an implementation detail and people just
+  looking at your interface (declarations) should not be bothered with it.
+
+- In definitions (implementation of functions), that's the right place to add inline. For template functions, add inline
+  to the same line as the template.
+
+Example:
+
+\code
+  template <class T>
+  class Stuff
+  {
+    public:
+      void doit();   // NO INLINE HERE IN DECLARATION
+  };
+
+  ...
+  
+  // IN IMPLEMENTATION FILE:
+  template <class T> inline
+  Stuff<T>::doit()
+  { ... }
+\endcode
+
+- The rule for virtual, override, final is the opposite as for inline: specify it in your declarations (users of your
+  classes need to know what is virtual and can safely be reimplemented by derived classes), omit it from your
+  definitions (once a function has been declared virtual, it will stay that way).
+
+\section capi Capitalization rules
+
+- Class names should be written in CamelCase starting with an uppercase character, for example:
+
+  \code
+  class MyCoolClass;
+  class ImageSegmenter;
+  \edncode
+
+- Variables should be camelCase starting with a lowercase character, for example:
+  \code
+  bool isRunning;
+  size_t arraySize;
+  \endcode
+
+- Member variables should be camelCase starting with the prefix “its”, for example:
+
+  \code
+  class MyClass
+  {
+    size_t itsCounter;
+    std::vector<int> itsStorage;
+  }
+  \endcode
+
+- Function names should be camelCase starting with a lowercase character, for example:
+
+  \code
+  void doSomething(int paramOne);
+   
+  class MyClass
+  {
+    void doSomethingElse(int paramTwo);
+  }
+  \endcode
+
+- Typedef's which are just simple aliases for types should be CamelCase starting with an uppercase character, for
+  example:
+
+  \code
+  typedef nrt::Dims<float> FloatingDims;
+  \endcode
+
+- Anything that is the result of any fancy metaprogramming (e.g. static const variables or typedefs set by compile-time
+  checks) should be written in all lowercase with underscores separating the words, for example:
+
+  \code
+  template <class T1, class T2> 
+  struct simple_promotion
+  {
+    // Even though this is a typedef, we use lowercase and an underscore to emphasize
+    // that it is part of some fancy metaprogramming
+    typedef decltype(*(T1*)nullptr + *(T2*)nullptr)) promoted_type;
+  };
+  \endcode
+
+*/

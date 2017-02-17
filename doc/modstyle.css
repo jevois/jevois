@@ -1,0 +1,74 @@
+body, table, div, p, dl {
+    font-family: Helvetica, Lucida Grande, Verdana, Geneva, Arial, sans-serif;
+}
+
+table.modinfo {
+    border-collapse: collapse;
+    background-color: #f0f0f0;
+}
+
+table.modinfotop {
+    border-collapse: collapse;
+    background-color: #f0f0f0;
+}
+
+td.modinfoname { color: navy; font-size: 110%; font-weight: 500; padding: 0px; }
+
+td.modinfosynopsis { color: navy; font-weight: 200; padding: 0px; }
+
+table.modinfoauth {
+    border-collapse: collapse;
+    background-color: #f0f0ff;
+}
+
+td.modinfodesc { color: navy; padding: 10px; }
+
+table.modinfoshots {
+    background-color: #e0e0ff;
+    padding: 30px;
+    width: 100%;
+}
+
+table.modinfopar {
+    border-collapse: collapse;
+    background-color: white;
+    width: 100%;
+}
+
+th.modinfopar {
+    background-color: #e0e0ff;
+    border-bottom: 1px solid #ddd;
+    text-align: left;
+    padding: 10px;
+}
+
+td.modinfopar {
+    border-bottom: 1px solid #ddd;
+    text-align: left;
+    padding: 10px;
+}
+
+tr.modinfopar:nth-child(even) { background-color: #f2f2ff }
+tr.modinfopar:nth-child(odd) { background-color: #f8f8ff }
+
+table.modinfomisc {
+    border-collapse: collapse;
+    background-color: #f2f2ff;
+    width: 100%;
+}
+
+th.modinfomisc {
+    text-align: left;
+}
+td.modinfomisc {
+    text-align: left;
+}
+
+td.videomapping {
+    background-color: #e0e0ff;
+    text-align: left;
+}
+
+em {
+    color: blue;
+}

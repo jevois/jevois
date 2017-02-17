@@ -1,0 +1,70 @@
+/*! \page UserStartMac Getting started with Mac host computer
+\tableofcontents
+
+The JeVois smart camera is used like a regular USB camera. To get started with a Mac host computer:
+
+<ul>
+<li>Download a disk image from http://jevois.org and flash it to a MicroSD card.
+
+<li>Insert MicroSD card into JeVois smart camera, with the MicroSD contacts pointing up as shown above.
+
+<li>Connect camera to a host computer. The smart camera requires up to 3.5 Watts of power, which is above the limit of
+what a single USB 2.0 port is designed to supply, but is within the limits of a single USB 3.0 port. It is important to
+use a high-quality USB-to-miniUSB cable that can carry that full power without loss. Look for a cable with 24awg power
+wires. It is recommended that you use a USB 3.0 port on your host computer, as those provide more power. If that is not
+available, you can use a USB Y-cable to connect to two USB 2.0 ports on your host computer, or to one USB 2.0 port and
+one external USB power supply (e.g., phone charger). Make sure that you do not use a USB hub, unless that hub has a
+strong external power supply (transformer, wall adapter).
+
+<li>Observe the LED on the smart camera next to the USB connector:
+  - Green: Power is on and is strong enough.
+  - After about 3 seconds: Flash orange: The camera sensor chip has been detected and initialized.
+  - After about 5 seconds: Solid orange: The smart camera is ready for use.
+  - Wait a few more seconds for your host computer to detect the camera and prepare itself for video capture.
+
+<li>Start a video capture software. Here we will use the bundled-in PhotoBooth app that is in your Applications
+directory.
+
+Launch PhotoBooth from your Applications folder. You should see this:
+
+\image html photobooth1.png
+
+Photobooth does not give you access to contrast, exposure, etc controls. But you can get thrid-party apps from the App
+Store to do that. Here is for example using Webcam Settings after getting it from the App Store (free):
+
+\image html mac-webcam-settings.png
+
+You can also try VLC, Skype, Facetime, etc. The built-in Photobooth app is very picky and will refuse to use the camera
+if the camera exposes greyscale video modes, too many modes, etc. It also does not allow you to select video
+resolution. To use the JeVois camera on a mac it is recommended that you configure it with only one available video
+resolution (one entry in your \c videomappings.cfg file). See caveats below.
+
+Selection of different machine vision algorithms is achieved by selecting different video resolutions in your video
+capture software. However, on Mac OSX, we have not yet found many apps that would allow a user to select a particular
+video resolution and framerate. For example, the buit-in PhotoBooth app does not provide any control over the camera. An
+exception is to use ffplay for OSX: Download the pre-compiled ffplay binary from the ffmpeg web site at
+https://ffmpeg.org/download.html#build-mac (it is free), and then open a Terminal (in Applications, under Utilities) and
+run:
+
+\verbatim
+~/bin/ffplay -f avfoundation -i "JeVois" -video_size 640x300 -framerate 60 -pixel_format yuyv422
+\endverbatim
+(assuming you saved ffplay into your ~/bin/ directory).
+
+Note that on Mac, the latency (delay or lag between capture and display) is horrible with many video capture apps,
+including ffplay. This is not a limitation of JeVois. When used with a Linux host, there is no lag.
+
+<li>Make sure you quit your camera viewing software before you unplug your JeVois smart camera. Otherwise your host
+computer may become awfully confused trying to use a camera that does not exist anymore.
+
+<li>No shutdown procedure is needed before powering off your JeVois camera. Just close your video capture software and
+unplug the camera.
+
+</ul>
+
+// ##############################################################################################################
+\section troubleshoot Troubleshooting
+
+Nothing here so far.
+
+*/

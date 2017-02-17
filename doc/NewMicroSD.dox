@@ -1,0 +1,139 @@
+/*! \page NewMicroSD How to format a new MicroSD card for JeVois
+
+JeVois expects a very specific organization of partitions (logical volumes) and files onto its MicroSD. In addition, two
+low-level bootloader (hardware startup) "files" must be present on the MicroSD card at specific physical locations
+(sectors). For this reasons, care must be taken when preparing a MicroSD card for use with JeVois.
+
+\section newmicrosd1 Easy approach: Download and flash a JeVois disk image
+
+The simplest approach is to download and flash a pre-configured JeVois disk image. Those are available at jevois.org and
+contain all the operating system, supporting data, and core JeVois software. After you have prepared a new MicroSD card
+using a JeVois disk image, you will be able to add new machine vision modules to it very easily using a laptop or
+desktop computer.
+
+\subsection newmicrosdlinux Flashing a JeVois disk image: Linux
+
+The easiest on Linux is to use \c dd in a terminal. First, identify the device assigned to your SD card. On Ubuntu, go
+to your Ubuntu menu and type 'disks' and then start the Disks program.
+
+\image html newmicrosd-ubuntu2.png
+
+Click on the icon that most likely is your MicroSD card and examine carefully the information that is displayed, such as
+the size, brand name, etc. Once you are positive that this is your new MicroSD card, note the device name displayed
+towards the bottom. Here it is \c /dev/sdf and this is the name we will use to write the JeVois disk image to.
+
+\verbatim
+cd Downloads
+sudo dd if=jevois-image-1.0-8G.dd of=/dev/sdX bs=1M
+sync
+\endverbatim
+
+where you should replace \c sdX above by the name of the device that you noted in the previous step. Make sure you wait
+until the \c sync command (which flushes disk caches) is complete, otherwise not all the disk image data might have been
+committed to your MicroSD yet. You can now eject the MicroSD card and insert it into your JeVois smart camera.
+
+For the \c dd command, \c if specifies the source file (or device), \c of specifies the destination file (or device),
+and \c bs is the block size to use.
+
+\warning Make sure you double-check and triple-check the name of the device you use. One small typo and you could
+destroy the contents of your computer's hard drive.
+
+\subsection newmicrosdwindows Flashing a JeVois disk image: Windows
+
+
+You can use USBWriter from https://sourceforge.net/p/usbwriter/wiki/Documentation/
+
+You can also try the [USB Image Tool](http://www.alexpage.de/usb-image-tool/download/)
+or the [Win32 Disk Imager](https://sourceforge.net/projects/win32diskimager/)
+
+See instructions [here](http://www.runeaudio.com/documentation/quick-start/sd-card-setup-windows/) for how to use these
+tools.
+
+
+\subsection newmicrosdmac Flashing a JeVois disk image: Mac
+
+The easiest on Mac is to use \c dd in a terminal. First, identify the device assigned to your SD card. For that, open a
+Terminal (located in Applications -> Utilities -> Terminal), and type:
+
+\verbatim
+diskutil list
+\endverbatim
+
+You should see something like what is shown below, revealing that our MicroSD card is assigned to \c /dev/disk1 on this
+particular mac:
+
+\image html newmicrosd-mac.png
+
+Be sure to check the name and size as this is the device that we are now going to erase. In the terminal, type:
+
+\verbatim
+diskutil unmountDisk /dev/diskX
+cd Downloads
+sudo dd if=jevois-image-1.0-8G.dd of=/dev/diskX bs=1M
+sync
+\endverbatim
+
+where you should replace \c diskX above by the name of the device that you noted in the previous step. Make sure you
+wait until the \c sync command (which flushes disk caches) is complete, otherwise not all the disk image data might have
+been committed to your MicroSD yet. You can now eject the MicroSD card and insert it into your JeVois smart camera.
+
+For the \c dd command, \c if specifies the source file (or device), \c of specifies the destination file (or device),
+and \c bs is the block size to use.
+
+\warning Make sure you double-check and triple-check the name of the device you use. One small typo and you could
+destroy the contents of your computer's hard drive.
+
+On Mac, you can also try the [RPi SD card
+builder](https://alltheware.wordpress.com/2012/12/11/easiest-way-sd-card-setup/) to flash your SD card.
+
+\section copymicrosd Copying a JeVois MicroSD to another
+
+In addition to the partitions and files that you can see, the JeVois MicroSD card also has two additional and essential
+"files" that are stored directly onto specific sectors (physical flash disk locations) on the card. These are two
+bootloader (system startup) files which are the first two files loaded when the JeVois embedded processor
+starts. Because the processor does not yet know about partitions, file systems, etc at that early startup stage, all it
+knows how to do is to read raw sectors from the SD card. You usually do not need to modify these two special files. But
+beware that if you want to copy the contents of one JeVois MicroSD card to a new card, you need to do a full physical
+sector-by-sector copy.
+
+If you have customized a JeVois MicroSD card, for example installing many machine vision modules onto it, and you want
+to make a copy to another, new MicroSD card, proceed as follows:
+
+On Linux and mac, you would use \c dd again, first to dump your existing MicroSD to a file on your desktop or laptop,
+and then we will write that file to the new MicroSD card:
+
+\code{.py}
+# Insert source card:
+
+sudo dd if=/dev/sdX of=mycard.dd bs=1M
+
+sync
+
+# Properly eject source card.
+
+# Insert destination (blank) card:
+
+sudo dd if=mycard.dd of=/dev/sdX bs=1M
+
+sync
+
+\endcode
+
+For the \c dd command, \c if specifies the source file (or device), \c of specifies the destination file (or device),
+and \c bs is the block size to use.
+
+On Windows, use USBWriter again.
+
+
+\section newmicrosd2 More complex approach: Write a new MicroSD card using the full JeVois build-from-source process
+
+Another way to create a MicroSD card for JeVois is to use the compilation and installation scripts provided with the
+JeVois development environment.
+
+This allows you to install a custom kernel, custom hardware configuration, custom Linux installation with possibly new
+system libraries and programs, etc.
+
+This is not recommended for novice users and is for Linux only. The procedure is detailed as part of the programmer
+manual.
+
+*/

@@ -1,0 +1,54 @@
+/*! \page Hardware Overview of the JeVois-A33 hardware platform
+\tableofcontents
+
+\image html kickstarter-main.png
+
+Features at a glance:
+
+- 1.3MP camera capable of video capture at
+  - SXGA (1280 x 1024): up to 15 fps (frames/second)
+  - VGA (640 x 480): up to 30 fps
+  - CIF (352 x 288): up to 60 fps
+  - QVGA (320 x 240): up to 60 fps
+  - QCIF (176 x 144): up to 120 fps
+  - QQVGA (160 x 120): up to 60 fps
+  - QQCIF (88 x 72): up to 120 fps
+
+- Quad-core ARM Cortex A7 processor, default clock 1.35GHz. Supports hard floating-point operations (VFPv4) and NEON
+  SIMD multimedia instructions.
+
+- Dual-core MALI-400 GPU (graphics processing unit), supports OpenGL-ES 2.0.
+
+- 256MB DDR3-1600 SDRAM.
+
+- USB-powered (requires USB 3.0 port or Y-cable to two USB 2.0 ports). Maximum power usage 3.5 Watts, with 1.5 Watt -
+  2.5 Watt typical depending on which machine vision algorithm is running on the JeVois processor.
+
+- Integrated cooling fan ensures that CPU and GPU can run at their maximum frequency even under sustained full
+  processing load (system chip typically runs at less than 50C under full load for days or weeks, whereas the first
+  threshold to start reducting clock speed to avoid processor overheating is at 75C).
+
+- USB Video Class (UVC) compliant interface to a host computer, JeVois platform shows up as a standard USB webcam with
+  no need to install drivers on Windows, MacOS, Android, and Linux (iOS detects the device but does not seem to support
+  webcam class devices as of iOS 9, either from JeVois or from other manufacturers we tested).
+
+- Dual-voltage serial port (UART 5V or 3.3V, selected through a VCC-IO pin), allows the device to comunicate directly
+  with Arduino or other embedded controllers.
+
+- Micro-SD socket holds embedded operating system, JeVois machine vision modules, and can store user data (e.g., video
+  captured by the device).
+
+- One two-color LED: Green: power is good (USB ports are not too weak to power the device). Orange: power is good and
+  camera is streaming video frames.
+
+- Plastic case included with 4 holes for secure mounting.
+
+\image html proto-legend.jpg
+
+The JeVois hardware is the result of state of the art electronics design and manufacturing. The actual size of the
+photograph below is less than 30mm (1.2 inch) wide.
+
+\image html pcb-closeup-low.jpg
+
+
+*/

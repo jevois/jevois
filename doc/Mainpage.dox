@@ -1,0 +1,60 @@
+/*! \mainpage JeVois Smart Embedded Machine Vision Toolkit
+
+\section welcome Welcome to the documentation of the JeVois Smart Embedded Machine Vision Toolkit.
+
+\note This documentation is still under development and is not finished yet. We estimate that it will be finished in
+February 2017.
+
+The JeVois toolkit is primarily designed to run on embedded smart camera hardware, although it can also run on recent
+Linux-based computers, including Raspberry Pi. The toolkit facilitates image capture from a camera sensor, processing of
+the captured images through some machine vision algorithm, and sending the processed results to a host computer over a
+USB link.
+
+To the host computer, a JeVois smart camera appears like a regular USB webcam, and is fully plug-and-play with no driver
+installation needed on reasonably recent versions of Windows, MacOS, and Linux: A JeVois smart camera is compliant with
+the USB Video Class (UVC) revision 1.1. Like with regular USB webcams, users can select image resolution, framerate, and
+adjust camera settings such as brightness, exposure, color balance, etc. But a JeVois smart camera outputs images that
+are the results of processing camera frames through some vision algorithm, as opposed to simply outputing the raw camera
+frames like a regular USB webcam.
+
+In addition to video outputs, a JeVois smart camera includes one hardware serial port and one serial-over-USB
+port. Simple text strings can be sent by the smart camera over these ports, for example to indicate the coordinates at
+which an object of interest was found in the camera video stream. These are intended for use by embedded controllers,
+including Arduino or any other that supports serial communications (UART with TTL levels at 3.3V or 5V). Users or
+micro-controllers can also send simple text commands to the smart camera over the serial ports.
+
+\image html hardware-proto.jpg "Early JeVois platform prototype with quad-core ARM processor inside. Back view shows Mini-USB port, serial port, Micro-SD slot, and status LED."
+
+The JeVois smart camera is a compact (39mm x 32mm x 19mm, or 1.5" x 1.25" x 0.75"), USB-powered, self-contained and
+powerful quad-core ARM computer running the Linux operating system. For ease of programming and configuration, all of
+the operating system, core JeVois software, and any necessary data files are stored on a single high-speed Micro-SD card
+that can easily be removed and plugged into a desktop or laptop computer. This also makes the platform "unbrickable" and
+very hacking-friendly.
+
+The JeVois software framework combines custom Linux kernel drivers for camera sensor and for USB output, written in C,
+and a custom high-level vision processing framework, written in C++-17. This framework is designed for easy integration
+with other open-source libraries, including tiny-dnn, OpenCV, boost, zBar, Eigen, turbojpeg, etc. The JeVois operating
+system infrastructure is built using the buildroot framework, for which hundreds of libraries and modules are already
+available, and adding new libraries or modules is relatively easy. The core JeVois software is managed by cmake, which
+makes it easy to create new vision processing modules, and which allows simultaneous compilation of the same source code
+for a host computer (e.g., Intel-based Linux desktop used for development, debugging and testing) and for the platform
+hardware (ARM processor).
+
+\image html frameworks.png "Hardware and software JeVois frameworks"
+
+\section contents Table of contents
+
+- \subpage Handling
+- \subpage Hardware
+- \subpage User
+- \subpage Concepts
+- \subpage Navigation
+- \subpage Programmer
+- \subpage History
+
+*/
+
+/*! \defgroup core Core classes and definitions
+
+    Core types, components, hardware drivers, debugging tools, etc */
+
