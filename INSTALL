@@ -64,7 +64,7 @@ JeVois provides a pre-compiled, pre-configured package for easy installation if 
 To use the easy install, proceed as follows:
 
 cd
-/bin/rm -rf jevois jevoisbase jevois-sdk jevois-easy-1.0.tbz
+/bin/rm -rf jevois jevoisbase jevois-sdk samplemodule jevois-easy-1.0.tbz
 wget http://jevois.org/data/jevois-easy-1.0.tbz
 tar jxvf jevois-easy-1.0.tbz
 ./jevois-easy-install.sh
