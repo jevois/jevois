@@ -245,13 +245,13 @@ install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/Config/initscript.cfg"
 #  DESTINATION "${JEVOIS_MODULES_ROOT}" COMPONENT bin)
 
 # Figure out subversion version, to use during packaging:
-find_package(Subversion QUIET)
-if (Subversion_FOUND)
-  Subversion_WC_INFO(${CMAKE_CURRENT_SOURCE_DIR} JEVOIS)
-  set(SUBVERSION_REVISION ${JEVOIS_WC_REVISION})
-else (Subversion_FOUND)
-  set(SUBVERSION_REVISION "unknown")
-endif (Subversion_FOUND)
+#find_package(Subversion QUIET)
+#if (Subversion_FOUND)
+#  Subversion_WC_INFO(${CMAKE_CURRENT_SOURCE_DIR} JEVOIS)
+#  set(SUBVERSION_REVISION ${JEVOIS_WC_REVISION})
+#else (Subversion_FOUND)
+set(SUBVERSION_REVISION "unknown")
+#endif (Subversion_FOUND)
 
 # Create packages (Debian, RPM): in build/, just type 'cpack' to create the package.
 # To list the files created in a package, run: dpkg --contents <package.deb>

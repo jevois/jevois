@@ -74,7 +74,27 @@ The easy install script installs OpenCV 3.2, jevois, jevoisbase, samplemodule, a
 
 It is tailored for Ubuntu 16.10 64-bit only.
 
-After you run the easy install script, keep reading below but skip over all the ADVANCED steps
+After you run the easy install script, just plug in a USB camera and try
+
+jevois-daemon
+
+which should launch jevois compiled for the host computer. You should see the saliency demo in a window.
+You can interact with the JeVois system by typing commands in the terminal in which you started jevois-daemon.
+For example, try:
+
+info
+
+help
+
+listmappings
+
+To start jevois-daemon in a specific mode, find its number in the listmapping list, then CTRL-C to quit
+jevois-daemon, and finally
+
+jevois-daemon --videomapping=19
+
+to start it again in using that new video mapping (here, mapping 19 was for Demo QR-code according
+to listmappings).
 
 ####################################################################################################
 ADVANCED: Install necessary packages on your host computer
