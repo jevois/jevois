@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-# USAGE moduledoc.pl <module.C>
+# USAGE jevois-modinfo.pl <module.C>
 # writes out modinfo.yaml
 
 use Text::Wrap;
@@ -11,12 +11,12 @@ use File::Spec::Unix;
 use HTML::Entities;
 #use strict;
 
-my $tmpdirname = "/tmp/moduledoctemp$$".time();
+my $tmpdirname = "/tmp/jevois-modinfotemp$$".time();
 
 # Parse out the module header filename from the command line
 my $num_args = $#ARGV + 1;
 if ($num_args != 1) {
-  print STDERR "Usage: moduledoc.pl <file.C|filestem>\n";
+  print STDERR "Usage: jevois-modinfo.pl <file.C|filestem>\n";
   exit(-1);
 }
 my $inputFilename = $ARGV[0];
@@ -77,7 +77,7 @@ print DOXYFILE "AUTOLINK_SUPPORT       = YES\n"; # for cross-ref to jevois doc
 print DOXYFILE "BUILTIN_STL_SUPPORT    = YES\n"; # for cross-ref to jevois doc
 #print DOXYFILE "TAGFILES               = $ENV{'JEVOIS_SRC_ROOT'}/../jevoisbase/doc/jevoisbase.tag=/basedoc\n";
 #print DOXYFILE "TAGFILES               = $ENV{'JEVOIS_SRC_ROOT'}/doc/jevois.tag=/doc $ENV{'JEVOIS_SRC_ROOT'}/../jevoisbase/doc/jevoisbase.tag=/basedoc\n";
-print DOXYFILE "TAGFILES               = $ENV{'JEVOIS_SRC_ROOT'}/doc/jevois.tag=/doc\n";
+#print DOXYFILE "TAGFILES               = $ENV{'JEVOIS_SRC_ROOT'}/doc/jevois.tag=/doc\n";
 
 # We here create some custom doxygen tags to allow code writers to input more manifest data in their doc:
 my @dtags = qw/ email mainurl supporturl otherurl address copyright license distribution 

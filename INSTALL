@@ -41,7 +41,7 @@ Getting JeVois to install requires several steps, outlined below:
 
 6. Cross-compile jevois and jevoisbase for the JeVois platform hardware.
 
-7. Installed the kernel, operating system, and cross-compiled jevois and jevoisbase to microSD.
+7. Install the kernel, operating system, and cross-compiled jevois and jevoisbase to microSD.
 
 Getting all these steps done will take some time. The most difficult step is to get the entire jevois-sdk, including
 Linux kernel, cross-compiled from scratch -- this can easily take 10 hours. For this reason, you may bypass this step by
@@ -61,7 +61,7 @@ Downloading, compiling and configuring everything in this guide can easily take 
 
 JeVois provides a pre-compiled, pre-configured package for easy installation if you are using Ubuntu 16.10
 
-To use the easy install, proceed as follows:
+To use the easy install, proceed as follows (make sure you have at least 30GB of free space in your home directory):
 
 cd
 /bin/rm -rf jevois jevoisbase jevois-sdk samplemodule jevois-easy-*.*.tbz

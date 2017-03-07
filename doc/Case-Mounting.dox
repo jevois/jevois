@@ -1,0 +1,15 @@
+/*! \page CaseMounting JeVois case mounting guidelines
+
+The JeVois smart camera provides 4 holes for secure mounting onto a robot or other.
+
+\warning The holes are not threaded at the factory. When you thread screws into them, the plastic of the case will be
+formed into a thread by your screws. It is advised that you only mount your JeVois smart camera with screws once. Doing
+it several times may wear off the plastic of the holes in the camera case and may result in loose screws.
+
+\warning Hole depth in the JeVois camera case is a bit over 5mm. Plan for maximum 5mm screw length to avoid hitting
+the bottom of the screw holes in the case.
+
+\image html case-mounting.png
+
+*/
+

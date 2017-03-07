@@ -6,7 +6,9 @@ The JeVois smart camera is used like a regular USB camera. To get started with a
 <ul>
 <li>Download a disk image from http://jevois.org and flash it to a MicroSD card.
 
-<li>Insert MicroSD card into JeVois smart camera, with the MicroSD contacts pointing up as shown above.
+<li>Insert MicroSD card into JeVois smart camera, with the MicroSD contacts pointing up as shown below.
+
+\image html sd-insert.png
 
 <li>Connect camera to a host computer. The smart camera requires up to 3.5 Watts of power, which is above the limit of
 what a single USB 2.0 port is designed to supply, but is within the limits of a single USB 3.0 port. It is important to

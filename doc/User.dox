@@ -15,5 +15,6 @@ with using it.
 - \subpage UserSerial
 - \subpage UserCli
 - \subpage ArduinoTutorial
+- \subpage CaseMounting
 
 */
