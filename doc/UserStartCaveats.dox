@@ -13,7 +13,8 @@
 
 - On Windows, selecting camera resolution and exposure, etc settings has become difficult too. You may want to explore
   third-party apps for that, or, like on Macs, configure your videomappings.cfg with only one available video
-  resolution.
+  resolution. We have had success with using AMCap to allow selection of video modes in Windows, as detailed in the
+  UserStartWindows instructions.
 
 - iOS support: Using an OTG cable connected to an iPad (iOs 9), the iPad reported that the devide is not supported, for
   any USB camera (not only the JeVois smart camera). It seems that iOS does not support USB cameras.

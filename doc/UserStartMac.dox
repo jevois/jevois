@@ -10,6 +10,8 @@ The JeVois smart camera is used like a regular USB camera. To get started with a
 
 \image html sd-insert.png
 
+\image html microsd-fully-inserted.jpg
+
 <li>Connect camera to a host computer. The smart camera requires up to 3.5 Watts of power, which is above the limit of
 what a single USB 2.0 port is designed to supply, but is within the limits of a single USB 3.0 port. It is important to
 use a high-quality USB-to-miniUSB cable that can carry that full power without loss. Look for a cable with 24awg power
@@ -37,9 +39,9 @@ Store to do that. Here is for example using Webcam Settings after getting it fro
 \image html mac-webcam-settings.png
 
 You can also try VLC, Skype, Facetime, etc. The built-in Photobooth app is very picky and will refuse to use the camera
-if the camera exposes greyscale video modes, too many modes, etc. It also does not allow you to select video
+if the camera exposes BAYER or RGB565 video modes, too many modes, etc. It also does not allow you to select video
 resolution. To use the JeVois camera on a mac it is recommended that you configure it with only one available video
-resolution (one entry in your \c videomappings.cfg file). See caveats below.
+resolution (one entry in your \c videomappings.cfg file). See UserModes for more info.
 
 Selection of different machine vision algorithms is achieved by selecting different video resolutions in your video
 capture software. However, on Mac OSX, we have not yet found many apps that would allow a user to select a particular
@@ -65,7 +67,7 @@ unplug the camera.
 </ul>
 
 // ##############################################################################################################
-\section troubleshoot Troubleshooting
+\section troubleshootmac Troubleshooting
 
 Nothing here so far.
 

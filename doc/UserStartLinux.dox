@@ -10,6 +10,8 @@ The JeVois smart camera is used like a regular USB camera. To get started with a
 
 \image html sd-insert.png
 
+\image html microsd-fully-inserted.jpg
+
 <li>Connect camera to a host computer. The smart camera requires up to 3.5 Watts of power, which is above the limit of
 what a single USB 2.0 port is designed to supply, but is within the limits of a single USB 3.0 port. It is important to
 use a high-quality USB-to-miniUSB cable that can carry that full power without loss. Look for a cable with 24awg power
@@ -78,7 +80,7 @@ unplug the camera.
 </ul>
 
 // ##############################################################################################################
-\section troubleshoot Troubleshooting
+\section troubleshootlinux Troubleshooting
 
 If things are not working right, try to type \c dmesg in a Linux terminal and observe towards the end of what is
 printed. You should see something like this:

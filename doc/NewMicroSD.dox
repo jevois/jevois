@@ -11,7 +11,34 @@ contain all the operating system, supporting data, and core JeVois software. Aft
 using a JeVois disk image, you will be able to add new machine vision modules to it very easily using a laptop or
 desktop computer.
 
-\subsection newmicrosdlinux Flashing a JeVois disk image: Linux
+\subsection Easy microSD flashing for Windows/Mac/Linux using Etcher by resin.io
+
+Etcher is a free an open-source program to burn disk images to USB drived and SD cards, which is cross-platform and
+provides an easy graphical interface that looks the same on Windows, Mac, and Linux.
+
+- Download and install the free and open-source [Etcher](https://etcher.io/)
+
+- Download JeVois MicroSD image file from [JeVois Start](http://jevois.org/start/) and unzip the file. You should now
+  have a microSD image file named jevois-image-1.0-8G.img or similar.
+  \note In some early releases, we used extension .dd instead of .img, if that is your case, please rename the file
+  extension from .dd to .img before you proceed to the next step.
+
+- Attach your microSD card to your computer using a USB-to-microSD adapter or other method (e.g., microSD-to-SD adapter
+  on Macs with an SD slot).
+
+- Start Etcher.
+
+- Select the .img image file you downloaded and unzipped.
+
+- Select the drive corresponding to your microSD card.
+
+- Click flash and wait until complete. Your card is ready to be inserted into your JeVois smart camera.
+
+\image html etcher.png
+
+\subsection newmicrosdlinux More conventional flashing a JeVois disk image: Linux
+
+Use these instructions if the easy flashing with Etcher, as described above, somehow does not work for you.
 
 The easiest on Linux is to use \c dd in a terminal. First, identify the device assigned to your SD card. On Ubuntu, go
 to your Ubuntu menu and type 'disks' and then start the Disks program.
@@ -22,9 +49,13 @@ Click on the icon that most likely is your MicroSD card and examine carefully th
 the size, brand name, etc. Once you are positive that this is your new MicroSD card, note the device name displayed
 towards the bottom. Here it is \c /dev/sdf and this is the name we will use to write the JeVois disk image to.
 
+\note Make sure you unzip the file you download. Do not try to flash the .zip file to microSD, it will not work.
+
 \verbatim
 cd Downloads
-sudo dd if=jevois-image-1.0-8G.dd of=/dev/sdX bs=1M
+wget http://jevois.org/data/jevois-image-latest-8G.zip
+unzip jevois-image-latest-8G.zip
+sudo dd if=jevois-image-1.0-8G.img of=/dev/sdX bs=1M  # exact .img file name may vary
 sync
 \endverbatim
 
@@ -32,25 +63,39 @@ where you should replace \c sdX above by the name of the device that you noted i
 until the \c sync command (which flushes disk caches) is complete, otherwise not all the disk image data might have been
 committed to your MicroSD yet. You can now eject the MicroSD card and insert it into your JeVois smart camera.
 
+\note In some early releases, we used extension .dd instead of .img, both work in the same way here.
+
 For the \c dd command, \c if specifies the source file (or device), \c of specifies the destination file (or device),
 and \c bs is the block size to use.
 
 \warning Make sure you double-check and triple-check the name of the device you use. One small typo and you could
 destroy the contents of your computer's hard drive.
 
-\subsection newmicrosdwindows Flashing a JeVois disk image: Windows
 
+
+\subsection newmicrosdwindows More conventional flashing a JeVois disk image: Windows
+
+Use these instructions if the easy flashing with Etcher, as described above, somehow does not work for you.
+
+\note Make sure you unzip the file you download. Do not try to flash the .zip file to microSD, it will not work.
 
 You can use USBWriter from https://sourceforge.net/p/usbwriter/wiki/Documentation/
 
 You can also try the [USB Image Tool](http://www.alexpage.de/usb-image-tool/download/)
 or the [Win32 Disk Imager](https://sourceforge.net/projects/win32diskimager/)
 
+\note In some early releases, we used extension .dd instead of .img, if that is your case, please rename the file
+extension from .dd to .img before you proceed to the next step.
+
 See instructions [here](http://www.runeaudio.com/documentation/quick-start/sd-card-setup-windows/) for how to use these
 tools.
 
 
-\subsection newmicrosdmac Flashing a JeVois disk image: Mac
+\subsection newmicrosdmac More conventional flashing a JeVois disk image: Mac
+
+Use these instructions if the easy flashing with Etcher, as described above, somehow does not work for you.
+
+\note Make sure you unzip the file you download. Do not try to flash the .zip file to microSD, it will not work.
 
 The easiest on Mac is to use \c dd in a terminal. First, identify the device assigned to your SD card. For that, open a
 Terminal (located in Applications -> Utilities -> Terminal), and type:
@@ -69,13 +114,17 @@ Be sure to check the name and size as this is the device that we are now going t
 \verbatim
 diskutil unmountDisk /dev/diskX
 cd Downloads
-sudo dd if=jevois-image-1.0-8G.dd of=/dev/diskX bs=1M
+wget http://jevois.org/data/jevois-image-latest-8G.zip
+unzip jevois-image-latest-8G.zip
+sudo dd if=jevois-image-1.0-8G.img of=/dev/diskX bs=1M # exact .img file name may vary
 sync
 \endverbatim
 
 where you should replace \c diskX above by the name of the device that you noted in the previous step. Make sure you
 wait until the \c sync command (which flushes disk caches) is complete, otherwise not all the disk image data might have
 been committed to your MicroSD yet. You can now eject the MicroSD card and insert it into your JeVois smart camera.
+
+\note In some early releases, we used extension .dd instead of .img, both work in the same way here.
 
 For the \c dd command, \c if specifies the source file (or device), \c of specifies the destination file (or device),
 and \c bs is the block size to use.
@@ -105,7 +154,7 @@ and then we will write that file to the new MicroSD card:
 \code{.py}
 # Insert source card:
 
-sudo dd if=/dev/sdX of=mycard.dd bs=1M
+sudo dd if=/dev/sdX of=mycard.img bs=1M
 
 sync
 
@@ -113,7 +162,7 @@ sync
 
 # Insert destination (blank) card:
 
-sudo dd if=mycard.dd of=/dev/sdX bs=1M
+sudo dd if=mycard.img of=/dev/sdX bs=1M
 
 sync
 
