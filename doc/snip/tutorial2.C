@@ -4,14 +4,14 @@
 #include <opencv2/imgproc/imgproc.hpp>
 
 // Simple module to convert between any supported camera grab formats and USB output formats
-class Convert : public jevois::Module
+class TutorialConvert : public jevois::Module
 {
   public:
     // Default base class constructor ok
     using jevois::Module::Module;
 
     // Virtual destructor for safe inheritance
-    virtual ~Convert() { }
+    virtual ~TutorialConvert() { }
 
     // Processing function
     virtual void process(jevois::InputFrame && inframe, jevois::OutputFrame && outframe) override
@@ -19,7 +19,7 @@ class Convert : public jevois::Module
       // Wait for next available camera image:
       jevois::RawImage inimg = inframe.get();
 
-      // Convert it to BGR24:
+      // TutorialConvert it to BGR24:
       cv::Mat imgbgr = jevois::rawimage::convertToCvBGR(inimg);
   
       // Let camera know we are done processing the input image:
@@ -31,7 +31,7 @@ class Convert : public jevois::Module
       // Require that output has same dims as input, allow any output format:
       outimg.require("output", inimg.width, inimg.height, outimg.fmt);
 
-      // Convert from BGR to desired output format:
+      // TutorialConvert from BGR to desired output format:
       jevois::rawimage::convertCvBGRtoRawImage(imgbgr, outimg);
       
       // Send the output image with our processing results to the host over USB:
@@ -40,4 +40,4 @@ class Convert : public jevois::Module
 };
 
 // Allow the module to be loaded as a shared object (.so) file:
-JEVOIS_REGISTER_MODULE(Convert);
+JEVOIS_REGISTER_MODULE(TutorialConvert);

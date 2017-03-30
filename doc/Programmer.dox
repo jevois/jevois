@@ -6,6 +6,8 @@ The following pages will help you program with JeVois.
 
 - \subpage ProgrammingGuidelines
 - \subpage DocumentationRules
+- \subpage ProgrammerSource
+- \subpage ProgrammerSDK
 - \subpage ModuleTutorial
 
 */

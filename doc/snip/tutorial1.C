@@ -1,14 +1,14 @@
 #include <jevois/Core/Module.H>
 
 // Simple module that just passes the captured camera frames through to USB host
-class PassThrough : public jevois::Module
+class TutorialPassThrough : public jevois::Module
 {
   public:
     // Default base class constructor ok
     using jevois::Module::Module;
 
     // Virtual destructor for safe inheritance
-    virtual ~PassThrough() { }
+    virtual ~TutorialPassThrough() { }
 
     // Processing function
     virtual void process(jevois::InputFrame && inframe, jevois::OutputFrame && outframe) override
@@ -34,4 +34,4 @@ class PassThrough : public jevois::Module
 };
 
 // Allow the module to be loaded as a shared object (.so) file:
-JEVOIS_REGISTER_MODULE(PassThrough);
+JEVOIS_REGISTER_MODULE(TutorialPassThrough);

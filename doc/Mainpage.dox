@@ -2,8 +2,7 @@
 
 \section welcome Welcome to the documentation of the JeVois Smart Embedded Machine Vision Toolkit.
 
-\note This documentation is still under development and is not finished yet. We estimate that it will be finished in
-February 2017.
+New users, be sure to check out [JeVois Start](/start/start.html).
 
 The JeVois toolkit is primarily designed to run on embedded smart camera hardware, although it can also run on recent
 Linux-based computers, including Raspberry Pi. The toolkit facilitates image capture from a camera sensor, processing of
