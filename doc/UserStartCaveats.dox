@@ -6,7 +6,8 @@
   JeVois smart camera. Mac OSX seems to just decide which resolution to use and gives you no control over it. To use
   your JeVois smart camera with a Mac and to ensure a specific video resolution, you should edit the videomappings.cfg
   of your smart camera and keep only one resolution in that file. OSX will then have no other choice but to use that
-  one.
+  one.  If you are a programmer, success has been reported using OpenCV to grab frames from JeVois on Mac, see
+  http://jevois.org/qa/index.php?qa=114
 
 - On Mac, there is no access to camera controls (exposure, contrast, etc). Some third-party apps are availeble for this,
   however. For example the "Webcam Settings" app available on the Apple app store.
@@ -14,7 +15,8 @@
 - On Windows, selecting camera resolution and exposure, etc settings has become difficult too. You may want to explore
   third-party apps for that, or, like on Macs, configure your videomappings.cfg with only one available video
   resolution. We have had success with using AMCap to allow selection of video modes in Windows, as detailed in the
-  UserStartWindows instructions.
+  UserStartWindows instructions. If you are a programmer, success has been reported using OpenCV to grab frames from
+  JeVois on Mac, see http://jevois.org/qa/index.php?qa=114 as this may work for Windows as well.
 
 - iOS support: Using an OTG cable connected to an iPad (iOs 9), the iPad reported that the devide is not supported, for
   any USB camera (not only the JeVois smart camera). It seems that iOS does not support USB cameras.

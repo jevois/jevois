@@ -4,7 +4,7 @@
 
 use File::Basename;
 
-my @excludes=qw/screenshot*.* icon*.* video*.* modinfo.* *.H *.C *.h *.c *.cpp/;
+my @excludes=qw/screenshot*.* icon*.* video*.* modinfo.* *.H *.C *.h *.c *.cpp jvpkg-exclude.cfg/;
 
 my @elist = `find . -name jvpkg-exclude.cfg`;
 foreach my $e (@elist) {

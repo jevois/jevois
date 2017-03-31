@@ -1,0 +1,88 @@
+/*! \page CompilingJeVoisBase Compiling JeVoisBase software from source
+
+JeVoisBase vision software is in a repository called \c jevoisbase and located at https://github.com/jevois
+
+It provides a base collection of 25+ machine vision modules. Those are the modules that are bundled with the JeVois
+smart camera by default. They provide a wide range of machine vision algorithms, including visual attention and gist of
+a scene, object recognition, QRcode decoding, object tracking, road following, etc.
+
+Compiling JeVoisBase software from source is only supported on Ubuntu Linux (version 16.10 amd64 recommended).
+
+Before you attempt to compile JeVoisBase, you should go through the [INSTALL
+instructions](https://github.com/jevois/jevois/blob/master/INSTALL) at least once. As part of this, you will download
+all JeVoisBase software and all necessary Ubuntu packages.
+
+Theory
+------
+
+The JeVoisBase core software is written in C++-17. It uses the facilities provided by the JeVois core software, and
+implements machine vision modules that can run on the JeVois smart camera.
+
+The JeVoisBase software is configured and compiled using [CMake](https://cmake.org), like the JeVois software.
+
+Like the core JeVois software, it can be compiled natively on your Linux computer (\b host mode), in which case
+video will be captured from any connected camera, and video output will be to your computer's display. It can also be
+cross-compiled for the CPU inside the JeVois smart camera (\b platform mode), in which case video will be captured
+from the video sensor inside the JeVois camera, and video output will be streamed over the USB link.
+
+Because several machine vision modules in JeVoisBase use the same components, such as for example a visual attention
+component, JeVoisBase is architectured as:
+
+- \c libjevoisbase.so contains all the components, i.e., elementary machine vision algorithms
+- Modules then simply connect a collection of those components together, to the camera input, and to the video streaming
+  output over USB.
+
+Full reconfiguration and compilation
+------------------------------------
+
+Scripts are provided to recompile everything:
+
+- \c rebuild-host.sh will
+  + Compile natively for your computer's CPU
+  + Object files will be in \c hbuild/ which the script creates
+  + Modules and libraries will be installed in \c /jevois (to match their location on the platform hardware)
+  + Thus, modules are ready to use immediately on your computer.
+
+- \c rebuild-platform.sh will
+  + Cross-compile for the CPU inside the JeVois smart camera (arm-gnueabi-hf)
+  + Object files will be in \c pbuild/ which the script creates
+  + if you specify \c ./rebuild-platform.sh \c -DJEVOIS_MODULES_TO_BUILDROOT=ON
+    - Modules will be installed in \c /jevois within jevois-sdk
+    - Thus, because all target files are stored into the jevois-sdk, they will be ready to be flashed to
+       microSD that can then be inserted into your JeVois smart camera.
+  + Otherwise, libraries and modules will be installed into the \c jvpkg directory in jevoisbase
+    - To pack those files, cd to pbuild and type 'make jvpkg', which will create \c jevoisbase/JeVois_jevoisbase.jvpkg
+    - You can then drop this into the \c packages/ directory of a JeVois microSD to install the package
+      next time you start your JeVois smart camera. See \ref ProgrammerSDK for more info.
+
+Once jevoisbase is compiled and installed for host, you can try it out using \ref JeVoisDaemon.
+
+Partial re-compilation
+----------------------
+
+The scripts \c rebuild-host.sh and \c rebuild-platform.sh clear and recompile everything.
+
+You should run them at least once.
+
+Then, if you are just changing a few files, you can only recompile what is needed, as follows:
+
+- for host:
+\verbatim
+cd hbuild
+make -j 4    # replace 4 by the number of cores on your desktop computer
+sudo make install
+make doc     # if desired
+\endverbatim
+
+- for platform
+\verbatim
+cd pbuild
+make -j 4    # replace 4 by the number of cores on your desktop computer
+make install # if desired
+make jvpkg   # if desired
+\endverbatim
+
+
+
+*/
+

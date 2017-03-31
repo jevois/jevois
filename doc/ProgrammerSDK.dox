@@ -1,0 +1,175 @@
+/*! \page ProgrammerSDK Programmer SDK and writing new modules
+
+The JeVois programmer software development kit (SDK) allows you to create your own machine vision modules for
+JeVois. The SDK is a complex beast as it not only comprises the JeVois core software, but also a custom Linux kernel for
+your JeVois camera, and the full Linux operating system and set of utilities that run inside the JeVois camera.
+
+Getting started with the JeVois Programmer SDK
+==============================================
+
+To get started with the programmer SDK, follow the instructions in the [INSTALL file of the jevois
+repository](https://github.com/jevois/jevois/blob/master/INSTALL).
+
+Writing new modules: A single standalone module
+===============================================
+
+Take a look at the samplemodule directory you installed as part of installing the SDK. It is a template for a new
+module. Here are quick steps on how to use it to get started with your own new module:
+
+\verbatim
+
+# Make your own copy:
+cp -r samplemodule mymodule
+
+# Pick a class name for your module, say MyAlgo, then rename the .C file of the module:
+cd mymodule/src/Modules
+mv SampleModule MyAlgo
+mv MyAlgo/SampleModule.C MyAlgo/MyAlgo.C
+
+# Rename the class inside the module's .C file:
+sed -i s/SampleModule/MyAlgo/g MyAlgo/MyAlgo.C
+
+cd ../..
+
+# Choose your vendor name and put it in CMakeLists.txt
+emacs CMakeLists.txt  # Change the value of JEVOIS_VENDOR from SampleVendor to your name (no spaces or special chars)
+
+# Now edit your module to actually do something interesting, and update all the custom doxygen tags in the inline doc of
+# the module, such as @videomapping, and so on.
+
+# Also check out icon.png and other files (in MyAlgo) and update them as appropriate.
+\endverbatim
+
+You can then compile using
+
+\verbatim
+./rebuild-host.sh
+./rebuild-platform.sh
+\endverbatim
+
+as you did with jevois and jevoisbase when installing the SDK.
+
+Note that rebuild-platform.sh compiles your module and then installs everything under a directory named mymodule/jvpkg
+
+Adding your module to a microSD card
+------------------------------------
+
+Once you have all the compiled and auxiliary files (icon.png, etc) in mymodule/jvpkg, you are ready to pack it:
+
+\verbatim
+cd pbuild
+make jvpkg
+\endverbatim
+
+This creates a file
+
+\verbatim
+mymodule/VendorName_MyAlgo.jvpkg
+\endverbatim
+
+Insert a properly installed JeVois MicroSD (follow the steps at [JeVois Start](http://jevois.org/start) to make one from
+a disk image) into your computer, and copy the .jvpkg file into the packages/ directory of the JEVOIS partition of your
+microSD.
+
+Your smart camera will unpack, configure, and delete the .jvpkg file next time it starts up.
+
+Make sure you allow enough time for it to do that work. It may take several minutes (depending on your module's file
+size, microSD card speed, etc).
+
+Remember to also edit config/videomappings.cfg in the JEVOIS partition of your microSD to add a new mapping that will
+use your module.
+
+For more information:
+
+- jvpkg packages are created by \c ~/jevois/scripts/jevois-jvpkg.pl (invoked by \c make \c jvpkg)
+- and they are unpacked by \c ~/jevois/bin/jevois.sh (running on the platform)
+
+Module documentation and metadata
+---------------------------------
+
+A really nasty perl script, ~/jevois/scripts/jevois-modinfo.pl, will parse your module to generate a single-page
+documentation for it. This script is a mess and its operation is quite brittle. It is invoked automatically when you
+compile your module (see rules in ~/jevois/CMakeModules/jevois.cmake).
+
+The script creates modinfo.html (and modinfo.yaml, currently not used) by parsing your modules and other files in its
+directory.
+
+Special doxygen tags in your module's doc will be parsed, here are some examples:
+
+- @@author Sample Author
+- @@videomapping YUYV 640 480 28.5 YUYV 640 480 28.5 SampleVendor SampleModule
+- @@email sampleemail\@samplecompany.com
+- @@address 123 First Street, Los Angeles, CA 90012
+- @@copyright Copyright (C) 2017 by Sample Author
+- @@mainurl http://samplecompany.com
+- @@supporturl http://samplecompany.com/support
+- @@otherurl http://samplecompany.com/about
+- @@license GPL v3
+- @@distribution Unrestricted
+- @@restrictions None
+
+Specially named files will also be used if present:
+
+- icon.png (or any other extension, like .jpg, etc): an icon for your module.
+- screenshot*.*: screenshots, will appear in the doc in the same order as \c ls lists them.
+- video*.*: demo videos, will appear in the doc in the same order as \c ls lists them.
+- videomappings.cfg - any videomappings that should be installed when your module is installed. This usually is a subset
+  of all the mappings listed in the doc using the doxygen tags.
+- postinstall: a script that will be executed after your module is unpackes
+- params.cfg: parameters values that should get set when the module is loaded
+- script.cfg: script of jevois comand-line interface commands that should be run when the module is loaded.
+- jvpkg-exclude.cfg: list of files that should not be included into the jvpkg package. Same format as in
+  tar --exclude-from
+
+Partial compilation
+-------------------
+
+The scripts \c rebuild-host.sh and \c rebuild-platform.sh clear and recompile everything.
+
+You should run them at least once.
+
+Then, if you are just changing a few files, you can only recompile what is needed, as follows:
+
+- for host:
+\verbatim
+cd hbuild
+make -j 4   # replace 4 by the number of cores on your desktop computer
+sudo make install
+\endverbatim
+
+- for platform
+\verbatim
+cd pbuild
+make -j 4   # replace 4 by the number of cores on your desktop computer
+make install
+make jvpkg
+\endverbatim
+
+
+Writing new modules: A collection with shared components
+========================================================
+
+In this more complex scenario, you wish to create a collection of modules, and some component algorithms will be shared
+by several modules.
+
+The preferred approach is then to write the shared algorithms as jevois \ref Component objects, and to compile them all
+into a shared library (.so). Each module that uses some of the components will then automatically trigger the loading of
+the shared library. This is the approach taken in \c jevoisbase
+
+For guidance on this, inspect the CMakeLists.txt in jevoisbase
+
+Note how several CMake macros have been defined to assist you; those are in jevois/CMakeModules/jevois.cmake
+
+In jevoisbase, we compile everything that is under src/Components into libjevoisbase.so
+
+Then, we compile each module under src/Modules into each oen .so file, which is marked as depending upon
+libjevoisbase.so
+
+To create your own, roughly the first 50 lines of the jevoisbase CMakeLists.txt should be preserved and modified for
+your project. The rest of the jevoisbase CMakeLists.txt is basically to add required dependencies, such as on the ZBar
+library, the OpenCV library, etc and those will vary with your specific project.
+
+
+
+
+*/
