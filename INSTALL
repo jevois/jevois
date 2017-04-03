@@ -244,6 +244,9 @@ cmake ..
 make -j 48     # replace 48 by your number of CPU cores
 make doc       # optional, to build the documentation
 
+# If you get an Internal Compiler Error, maybe you are running out of memory during compilation. Try to use -j 1
+# (compile one source file at a time rather than several in parallel).
+
 # Library and executables are in the current directory (jevois/hbuild)
 sudo make install
 
@@ -355,6 +358,9 @@ mkdir pbuild && cd pbuild
 cmake -DJEVOIS_PLATFORM=ON ..
 make -j 48     # replace 48 by your number of CPU cores
 sudo make install
+
+# If you get an Internal Compiler Error, maybe you are running out of memory during compilation. Try to use -j 1
+# (compile one source file at a time rather than several in parallel).
 
 ####################################################################################################
 Flashing it all to microSD
