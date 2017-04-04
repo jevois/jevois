@@ -19,10 +19,10 @@ module. Here are quick steps on how to use it to get started with your own new m
 \verbatim
 
 # Make your own copy:
-cp -r samplemodule mymodule
+cp -r samplemodule myalgo
 
 # Pick a class name for your module, say MyAlgo, then rename the .C file of the module:
-cd mymodule/src/Modules
+cd myalgo/src/Modules
 mv SampleModule MyAlgo
 mv MyAlgo/SampleModule.C MyAlgo/MyAlgo.C
 
@@ -60,7 +60,7 @@ You can then compile using
 
 as you did with jevois and jevoisbase when installing the SDK.
 
-Note that rebuild-platform.sh compiles your module and then installs everything under a directory named mymodule/jvpkg
+Note that rebuild-platform.sh compiles your module and then installs everything under a directory named myalgo/jvpkg
 
 \note If you get an error 'cc1plus: fatal error: jevois/Config/Config.H: No such file or directory', just run
 \c rebuild-platform.sh in your \c jevois repository.
@@ -68,7 +68,7 @@ Note that rebuild-platform.sh compiles your module and then installs everything 
 Adding your module to a microSD card
 ------------------------------------
 
-Once you have all the compiled and auxiliary files (icon.png, etc) in mymodule/jvpkg, you are ready to pack it:
+Once you have all the compiled and auxiliary files (icon.png, etc) in myalgo/jvpkg, you are ready to pack it:
 
 \verbatim
 cd pbuild
@@ -78,7 +78,7 @@ make jvpkg
 This creates a file
 
 \verbatim
-mymodule/MyVendor_MyAlgo.jvpkg
+myalgo/MyVendor_MyAlgo.jvpkg
 \endverbatim
 
 Insert a properly installed JeVois MicroSD (follow the steps at [JeVois Start](http://jevois.org/start) to make one from
@@ -110,6 +110,7 @@ directory.
 Special doxygen tags in your module's doc will be parsed, here are some examples:
 
 - @@author Sample Author
+- @@displayname My Algo (only needed if you want to display a different name than the class name)
 - @@videomapping YUYV 640 480 28.5 YUYV 640 480 28.5 SampleVendor SampleModule
 - @@email sampleemail\@samplecompany.com
 - @@address 123 First Street, Los Angeles, CA 90012
@@ -129,8 +130,10 @@ Specially named files will also be used if present:
 - videomappings.cfg - any videomappings that should be installed when your module is installed. This usually is a subset
   of all the mappings listed in the doc using the doxygen tags.
 - postinstall: a script that will be executed after your module is unpackes
-- params.cfg: parameters values that should get set when the module is loaded
-- script.cfg: script of jevois comand-line interface commands that should be run when the module is loaded.
+- params.cfg: parameters values that should get set when the module is loaded. These are set before the
+  module is initialized.
+- script.cfg: script of jevois comand-line interface commands that should be run when the module is loaded. This is
+  run after the module is initialized.
 - jvpkg-exclude.cfg: list of files that should not be included into the jvpkg package. Same format as in
   tar --exclude-from
 

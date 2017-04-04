@@ -19,7 +19,7 @@ class TutorialConvert : public jevois::Module
       // Wait for next available camera image:
       jevois::RawImage inimg = inframe.get();
 
-      // TutorialConvert it to BGR24:
+      // Convert it to BGR24:
       cv::Mat imgbgr = jevois::rawimage::convertToCvBGR(inimg);
   
       // Let camera know we are done processing the input image:

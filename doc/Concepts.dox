@@ -1,7 +1,88 @@
 /*! \page Concepts Concepts used throughout this documentation
 \tableofcontents
 
+Basic theory of operation
+=========================
 
+\image html frameworks.png "Hardware and software JeVois frameworks"
+
+While anything is possible since the JeVois smart camera implements a full Linux computer (though with no display), the
+standard modes of operation are as follows:
+
+Operation with streaming video output
+-------------------------------------
+
+- When the JeVois smart camera is connected to a host computer over USB, it announces itself to that computer as two
+  virtual USB devices: a webcam, and a serial-over-USB interface.
+
+- Users on the host computer start a video capture software and select a video format, resolution, and framerate.
+  
+- The JeVois Engine software running on the smart camera handles this user request by first looking up a video
+  mapping, which establishes a correspondence between the user-selected video format (this is the \b output video
+  format for the JeVois smart camera), a camera sensor video format (this is the \c camera format for the JeVois smart
+  camera), and a machine vision algorithm to use (this is a JeVois \b module). The \b camera and \b output formats do
+  not ave to be the same; for example, many modules create enhanced video outputs with several panels that may show
+  processing results, messages to users, etc alongside the video frames grabbed from the camera sensor.
+
+- The Engine then configures the onboard camera sensor for the desired camera format, resolution and framerate, and
+  loads the desired machine vision module. Video streaming and machine vision processing starts immediately.
+
+- On every video frame,
+  + the Engine captures a frame (image) from the camera sensor.
+  + the frame is sent to the machine vision processing module, along with an empty image buffer that has the selected
+    output resolution and format.
+  + the machine vision module is invoked and it should analyze the camera image and fill in the output image buffer
+    with its processing results.
+  + the Engine then sends the resulting output image to the host computer over USB.
+  + The Engine runs any command received over its 4-pin serial port (typically, connected to an Arduino or similar),
+    or over its serial-over-USB port. These commands can be requests to adjust camera sensor parameters (exposure,
+    contract, etc) or machine vision processing parameters (various thresholds or modes, as implemented by each
+    machine vision module).
+  + The Engine is then ready to loop to the next video frame.
+
+
+Operation with streaming video out is useful in at least two basic scenarios:
+
+- for demo and debugging/development purposes, the JeVois smart camera streams live video with additional annotations
+  that show the results of its processing. Those can be visualized by human users to check how well the algorithm is
+  working. But this is not a full machine vision pipeline (since the back-end is a human visual system).
+
+- for pre-processing purposes, the JeVois smart camera captures and pre-processes images, and then the host computer
+  captures those pre-processed frames and processes them further. An example is to run a visual attention algorithm on
+  the JeVois camera, extract 3 regions of interest around the 3 most interesting locations in the scene, and stream
+  those 3 regions to the host computer. The host computer can then do further processing, such as object recognition, in
+  those 3 regions. The host computer may not display anything to a human user, but might instead just control an
+  autonomous robot.
+
+Operation with no video output
+------------------------------
+
+- The JeVois smart camera is powered from a USB power source, such as a USB charger or USB battery bank.
+
+- A configuration file on the microSD card inside the smart camera may instruct it to immediately launch a particular
+  machine vision module, or a controller (e.g., Arduino) connected to the smart camera's 4-pin serial port may instruct
+  the JeVois smart camera to load a given machine vision module.
+
+- The Engine then configures the onboard camera sensor for the desired camera format, resolution and framerate, and
+  loads the desired machine vision module.
+
+- On every video frame,
+  + the Engine captures a frame (image) from the camera sensor.
+  + the frame is sent to the machine vision processing module.
+  + the machine vision module is invoked and it should analyze the camera image. It would then also usually send
+    short text messages about the results of its processing to the 4-pin serial port.
+  + The Engine runs any command received over its 4-pin serial port.
+  + The Engine is then ready to loop to the next camera frame.
+
+Operation with no video output is usually the preferred mode for autonomous systems. All of the processing happens on
+the JeVois camera and no host computer is necessary at all. A small controller receives the vision results over the
+4-pin serial link and controls various motors or actuators.
+
+
+For more details
+================
+
+See \ref Navigation
 
 
 */

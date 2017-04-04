@@ -3,5 +3,35 @@
 
 
 
+- Start with understanding the following user-level concepts:
+  + \ref PixelFormats
+  + \ref VideoMapping
+  + \ref UserDemos
+  + \ref UserSerial
+  + \ref UserCli
+  + \ref MicroSD
+
+- Then have a look at the following core C++ classes:
+  + \ref component
+  + \ref jevois::InputFrame and \ref jevois::OutputFrame
+  + \ref jevois::Module
+  + \ref jevois::Engine
+  + \ref jevois::VideoInput and \ref jevois::Camera
+  + \ref jevois::UserInterface and \ref jevois::Serial
+  + \ref jevois::VideoOutput
+
+- Then see essential support classes and functions:
+  + \ref types
+  + \ref image
+  + \ref coordhelpers
+  + \ref utils
+  + \ref debugging
+
+- The \ref Programmer and \ref ModuleTutorial will show you how to write, compile, and run your own machine vision
+modules.
+
+
+- [The documentation of the JeVoisBase collection of modules](/basedoc/) provides many examples of working modules that
+  will inspire you to write your own.
 
 */

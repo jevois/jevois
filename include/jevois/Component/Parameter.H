@@ -42,7 +42,7 @@ namespace jevois
       - Then understand how one may specify valid values for parameters: \ref validvalues
       - Then have a look at how one may define the name, type, description, default value, category, and optionally
         valid values for a parameter: ParameterDef
-      - Then you are ready for Parameter
+      - Then you are ready for [Parameter](classjevois_1_1Parameter_3_01Param_00_01Tail_8_8_8_4.html)
 
       The other classes in this documentation modules are mainly for support of the above ones. */
 

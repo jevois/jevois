@@ -310,7 +310,7 @@ so that users can play with them over the serial command-line interface:
   - default value for the parameter.
   - optional: specification of valid values, from a list of accepted values, or a range, a range with a step, or a
     regex. Here we only specify this for the \c aperture parameter, which is constrained to taking values from 3 to 53.
-  - optional: a parameter category used to group related parameters together in the help message.
+  - a parameter category used to group related parameters together in the help message.
 
 - Line 16: Our module inherits from <A
   HREF="http://jevois.org/doc/classjevois_1_1Parameter_3_01Param_00_01Tail_8_8_8_4.html">jevois::Parameter</A> with all
@@ -403,5 +403,12 @@ Let us look at what is new compared to the previous example:
   exception forwarding, i.e., it could throw if the function running in the thread threw. Here we just catch, warn, and
   ignore any exception.
 
+
+// ####################################################################################################
+\section moremoduletutorial
+
+For more, see:
+- \ref ProgrammerSDK for how to create and compile a new module
+- [the documentation of the JeVoisBase collection of modules](/basedoc/)
 
 */
