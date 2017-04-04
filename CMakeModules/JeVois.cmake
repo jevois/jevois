@@ -77,7 +77,7 @@ endmacro()
 ####################################################################################################
 # Helper to start a project:
 macro(jevois_project_set_flags)
-  # Pass the compiler flags to cmake (doing this before project() gives problems); same with th einstall prefix:
+  # Pass the compiler flags to cmake (doing this before project() gives problems); same with the install prefix:
   set(CMAKE_C_FLAGS "-std=gnu99 ${JEVOIS_CFLAGS} -I${JEVOIS_INSTALL_PREFIX}/include -include jevois/Config/Config.H")
   set(CMAKE_CXX_FLAGS "-std=c++17 ${JEVOIS_CFLAGS} -I${JEVOIS_INSTALL_PREFIX}/include -include jevois/Config/Config.H")
   set(CMAKE_INSTALL_PREFIX ${JEVOIS_INSTALL_PREFIX})

@@ -33,12 +33,20 @@ cd ../..
 
 # Choose your vendor name and put it in CMakeLists.txt
 emacs CMakeLists.txt  # Change the value of JEVOIS_VENDOR from SampleVendor to your name (no spaces or special chars)
-
-# Now edit your module to actually do something interesting, and update all the custom doxygen tags in the inline doc of
-# the module, such as @videomapping, and so on.
-
-# Also check out icon.png and other files (in MyAlgo) and update them as appropriate.
 \endverbatim
+
+A script has been created in \c jevois/scripts to automate this process:
+
+\verbatim
+# USAGE: jevois-create-module.sh <VendorName> <ModuleName> <DirName>
+
+~/jevois/scripts/jevois-create-module.sh MyVendor MyAlgo mymodule
+\endverbatim
+
+Now edit your module to actually do something interesting, and update all the custom doxygen tags in the inline doc of
+the module, such as @@videomapping, and so on.
+
+Also check out icon.png and other files in the directory where the source code is, and update them as appropriate.
 
 You can then compile using
 
@@ -50,6 +58,9 @@ You can then compile using
 as you did with jevois and jevoisbase when installing the SDK.
 
 Note that rebuild-platform.sh compiles your module and then installs everything under a directory named mymodule/jvpkg
+
+\note If you get an error 'cc1plus: fatal error: jevois/Config/Config.H: No such file or directory', just run
+\c rebuild-platform.sh in your \c jevois repository.
 
 Adding your module to a microSD card
 ------------------------------------
@@ -64,12 +75,11 @@ make jvpkg
 This creates a file
 
 \verbatim
-mymodule/VendorName_MyAlgo.jvpkg
+mymodule/MyVendor_MyAlgo.jvpkg
 \endverbatim
 
 Insert a properly installed JeVois MicroSD (follow the steps at [JeVois Start](http://jevois.org/start) to make one from
-a disk image) into your computer, and copy the .jvpkg file into the packages/ directory of the JEVOIS partition of your
-microSD.
+a disk image) into your computer, and copy the .jvpkg file into the JEVOIS:/packages/ directory of your microSD.
 
 Your smart camera will unpack, configure, and delete the .jvpkg file next time it starts up.
 

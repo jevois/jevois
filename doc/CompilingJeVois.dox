@@ -78,7 +78,7 @@ make install
 Advanced configuration flags
 ----------------------------
 
-The scripts \c rebuild-host.sh and \c rebuild-platform.sh pass down any command-line arguments to cmake. Available fags
+The scripts \c rebuild-host.sh and \c rebuild-platform.sh pass down any command-line arguments to cmake. Available flags
 include (see CMakeLists.txt in jevois/ for the latest):
 
 - \c -DJEVOIS_LDEBUG_ENABLE=ON Enable debug-level messages. Those are turned off by default so that they do not use any

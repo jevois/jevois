@@ -79,7 +79,7 @@ make doc     # if desired
 cd pbuild
 make -j 4    # replace 4 by the number of cores on your desktop computer
 make install # if desired
-make jvpkg   # if desired
+make jvpkg   # if desired and if you did not specify -DJEVOIS_MODULES_TO_BUILDROOT=ON when running rebuild-platform.sh
 \endverbatim
 
 

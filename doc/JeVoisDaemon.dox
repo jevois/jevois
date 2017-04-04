@@ -4,6 +4,22 @@ The main executable that is created when compiling the JeVois framework is \c je
 a JeVois \ref Engine that will orchestrate the flow of data from camera sensor to machine vision processing to video
 streaming over USB.
 
+\note \c jevois-deamon can run on host (when compiling jevois for host), in which case all machine vision algorithms
+will run on your host computer. In this mode, you would usually use a regular USB camera, or you might want to use the
+JeVois smart camera configured with only pass-through video mappings (so that the JeVois camera does not do any
+processing on its own). See \ref UserModes and [the PassThrough
+module](http://jevois.org/moddoc/PassThrough/modinfo.html). Running jevois-daemon on the host with the JeVois camera in
+pass-through mode is often useful to collect training data (for example, pictures of objects to recognize later) as they
+are seen by the JeVois camera.
+
+\note \c jevois-daemon also runs on the JeVois smart camera hardware, immediately as soon as it is plugged in and has
+booted up. In such case, the smart camera hardware is doing all the machine vision processing. When operating in this
+mode, normally you would not want to run jevois-daemon again on the host computer, as this would amount to running
+jevois-daemon twice, back to back. One exception is for the collection of training data as described above. Instead, you
+would usually want to run a plain video viewer on your host, such as guvcview, or some custom machine vision code which
+you have developed, which will grab video frames from the JeVois camera and will then process them further on your host
+computer.
+
 Running jevois-daemon on host
 =============================
 
@@ -113,11 +129,12 @@ jevois-daemon config files
 jevois-daemon uses several config files, source is in jevois/Config/ and they get installed into /jevois/config/ on host
 and JEVOIS:/jevois/config/ on platform microSD.
 
-- videomappings.cfg Lits of available videomappings, see \ref UserModes
+- \c videomappings.cfg Lits of available videomappings, see \ref UserModes
 
-- params.cfg Parameters that get set on startup, this is equivalent to specifying these parameters from the command-line
+- \c params.cfg Parameters that get set on startup, this is equivalent to specifying these parameters from the
+  command-line
 
-- initscript.cfg Script that gets run on startup, you can put in this file any valid commands as you have typed them
+- \c initscript.cfg Script that gets run on startup, you can put in this file any valid commands as you have typed them
   interactively, see \ref UserCli for more info.
 
 Running jevois-daemon on platform
