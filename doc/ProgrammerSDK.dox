@@ -38,9 +38,12 @@ emacs CMakeLists.txt  # Change the value of JEVOIS_VENDOR from SampleVendor to y
 A script has been created in \c jevois/scripts to automate this process:
 
 \verbatim
-# USAGE: jevois-create-module.sh <VendorName> <ModuleName> <DirName>
+# USAGE: jevois-create-module.sh <VendorName> <ModuleName>
+# Creates a project directory with name tolower(ModuleName) and populates it:
 
-~/jevois/scripts/jevois-create-module.sh MyVendor MyAlgo mymodule
+~/jevois/scripts/jevois-create-module.sh MyVendor MyAlgo
+
+# Module is setup in myalgo/
 \endverbatim
 
 Now edit your module to actually do something interesting, and update all the custom doxygen tags in the inline doc of
