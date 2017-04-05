@@ -1,12 +1,16 @@
 /*! \page UserDemos User guide to bundled vision modules and demos
 \tableofcontents
 
-Simply click on the icon of each vision module below to see its documentation.
-
 New users, be sure to check out the list of modules and corresponding video resolutions at
 [JeVois Start](/start/start.html#demo-section).
 
-<!--#include file="moddoc.inc" -->
+Advanced users and programmers, full documentation and source code for these modules is in the
+[JeVoisBase documentation](http://jevois.org/basedoc/).
+
+Simply <b>click on the icon of each vision module</b> below to see its documentation.
+
+
+
 
 
 */

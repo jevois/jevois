@@ -48,6 +48,21 @@ namespace jevois
   /*! Note that if str is shorter than prefix, return is false (like in strncmp()). */ 
   bool stringStartsWith(std::string const & str, std::string const & prefix);
 
+  //! Create a string using printf style arguments
+  /*! Example:
+      @code
+      std::string s = nrt::sformat("MyString_%f_%d", 1.0, 2);
+      @endcode 
+
+      One should normally refrain from using sformat(), and instead use streaming operators of C++, one exception is
+      when issuing serial messages that have float numbers in them, the printf-like sytnax of sformat is useful to
+      quickly and easily specify a numerical precision. */
+  std::string sformat(char const * fmt, ...)
+    // NOTE: this __attribute__ tells gcc that it should issue printf-style warnings when compiling calls to sformat(),
+    // treating the 1st argument (fmt) as the format string, and the 2nd and subsequent arguments as the printf-style
+    // parameters
+    __attribute__((format(__printf__, 1, 2)));
+
   // Doxygen is not too good with enable_if, it only documents one version of the function. Here is a workaround:
 #ifdef JEVOIS_DOXYGEN
   //! Convert from string to a type

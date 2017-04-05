@@ -26,6 +26,8 @@
 #include <string.h> // for strncmp
 #include <fstream>
 
+#include <cstdarg> // for va_start, etc
+
 // ####################################################################################################
 std::string jevois::fccstr(unsigned int fcc)
 {
@@ -87,6 +89,54 @@ std::string jevois::join(std::vector<std::string> const & strings, std::string c
 bool jevois::stringStartsWith(std::string const & str, std::string const & prefix)
 {
   return (strncmp(str.c_str(), prefix.c_str(), prefix.length()) == 0);
+}
+
+// ####################################################################################################
+namespace
+{
+  // This code is from NRT, and before that from the iLab C++ neuromorphic vision toolkit
+  std::string vsformat(char const * fmt, va_list ap)
+  {
+    // if we have a null pointer or an empty string, then just return an empty std::string
+    if (fmt == nullptr || fmt[0] == '\0') return std::string();
+
+    int bufsize = 1024;
+    while (true)
+    {
+      char buf[bufsize];
+      
+      int const nchars = vsnprintf(buf, bufsize, fmt, ap);
+      
+      if (nchars < 0)
+      {
+        // Better leave this as LFATAL() rather than LERROR(), otherwise we have to return a bogus std::string (e.g. an
+        // empty string, or "none", or...), which might be dangerous if it is later used as a filename, for example.
+        LFATAL("vsnprintf failed for format '" << fmt << "' with bufsize = " << bufsize);
+      }
+      else if (nchars >= bufsize)
+      {
+        // buffer was too small, so let's double the bufsize and try again:
+        bufsize *= 2;
+        continue;
+      }
+      else
+      {
+        // OK, the vsnprintf() succeeded:
+        return std::string(&buf[0], nchars);
+      }
+    }
+    return std::string(); // can't happen, but placate the compiler
+  }
+}
+
+// ####################################################################################################
+std::string jevois::sformat(char const * fmt, ...)
+{
+  va_list a;
+  va_start(a, fmt);
+  std::string result = vsformat(fmt, a);
+  va_end(a);
+  return result;
 }
 
 // ####################################################################################################
