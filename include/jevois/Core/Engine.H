@@ -132,7 +132,7 @@ namespace jevois
                              SerPort::None, SerPort_Values, ParamCateg);
 
     //! Enum for Parameter \relates jevois::Engine
-    JEVOIS_DEFINE_ENUM_CLASS(CPUmode, (PowerSave) (Conservative) (OnDemand) (Interactive) (Performance) )
+    JEVOIS_DEFINE_ENUM_CLASS(CPUmode, (PowerSave) (Conservative) (OnDemand) (Interactive) (Performance) );
 
     //! Parameter \relates jevois::Engine
     JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(cpumode, CPUmode, "CPU frequency modulation mode",
@@ -143,7 +143,7 @@ namespace jevois
     JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(cpumax, unsigned int, "CPU maximum frequency in MHz",
                                            1344, { 120, 240, 312, 408, 480, 504, 600, 648, 720, 816, 912, 1008,
                                                1044, 1056, 1080, 1104, 1116, 1152, 1200, 1224, 1248, 1296, 1344 },
-                                           ParamCateg)
+                                           ParamCateg);
   }
   
   //! JeVois processing engine - gets images from camera sensor, processes them, and sends results over USB

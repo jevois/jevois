@@ -4,11 +4,11 @@ Your JeVois camera is capable of running a wide range of machine vision algorith
 runs is defined by a configuration file which establishes a mapping between camera resolution, framerate, and pixel
 format, a USB output resolution, and pixel format, and the corresponding machine vision processing module.
 
-The definitions are stored in a file called videomappings.cfg which is in directory config/1.0/ on the JEVOIS partition
-of your microSD card. You can inspect and edit this file.
+The definitions are stored in a file called \c videomappings.cfg which is in directory \c JEVOIS:/config/ on your
+microSD card (source in \c ~/jevois/Config). You can inspect and edit this file.
 
-Here is an example videomappings.cfg file. Lines that start with a # sign are commented out and ignored by the smart
-camera.
+Here is an example \c videomappings.cfg file. Lines that start with a \c # sign are commented out and ignored by the
+smart camera.
 
 \note In the (hopefully near) future, the videomapping.cfg file will be automatically updated as you install new
 modules, and/or a simple user interface to it will be provided. In the meantime, adding or removing vision processing
@@ -19,6 +19,11 @@ file.
 about 50. This is limited by a statically-allocated buffer in the Linux kernel that is used to communicate the
 information about supported USB resolutions to the host computer. If your JeVois camera is not detected by your host
 computer anymore, maybe you have too many active mappings.
+
+\note Some video mappings which work are commented out in \c videomappings.cfg on the pre-installed microSD image. This
+is because Mac OSX will stop detecting the JeVois camera as soon as it exposes BAYER or RGB565 video formats. So, for
+maximum compatibility of the pre-installed microSD image, those are disabled by default. If you are using Linux or
+Windows, try un-commenting (remove the # sign) some of these to activate them.
 
 \verbatim
 ######################################################################################################################
@@ -50,7 +55,7 @@ computer anymore, maybe you have too many active mappings.
 # software.  These modes cannot be chosen by the JeVois system itself. For these modes, the Module's process(inframe,
 # outframe) function will be called on every frame.
 
-# Camera-only modes (when USBmode is NONE) mode mappings have no video output over USB, and are selected by interacting
+# Camera-only (when USBmode is NONE) mode mappings have no video output over USB, and are selected by interacting
 # with the JeVois hardware over serial ports. When USBmode is NONE, USBwidth, USBHeight, and USBfps are ignored and
 # should be set to 0 here. For these modes, the Module's process(inframe) function will be called on every frame. These
 # modes are usually the ones you would use when interfacing the JeVois camera to an Arduino or similar system that

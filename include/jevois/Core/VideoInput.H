@@ -32,7 +32,8 @@ namespace jevois
   {
     public:
       //! Constructor
-      /*! \param nbufs number of video buffers to use, or 0 for automatic. */
+      /*! \param devname name of the device, or movie file, or empty
+          \param nbufs number of video buffers to use, or 0 for automatic. */
       VideoInput(std::string const & devname, unsigned int const nbufs = 0);
 
       //! Virtual destructor for save inheritance

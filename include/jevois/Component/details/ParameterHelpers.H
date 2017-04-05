@@ -41,41 +41,6 @@ namespace jevois
 
 // BEGIN_JEVOIS_CODE_SNIPPET parametermacros.C
 
-// Convenience macro to define a Parameter type. All the ... args are passed to ParameterDef
-#define JEVOIS_DECLARE_PARAMETER(ParamName, ParamType, ...)             \
-  struct ParamName : public virtual jevois::ParameterRegistry, public jevois::ParameterCore<ParamType> \
-  {                                                                     \
-    typedef ParamType type;                                             \
-                                                                        \
-    inline ParamName() : jevois::ParameterCore<ParamType>(jevois::ParameterDef<ParamType>(#ParamName, __VA_ARGS__)) \
-    { jevois::ParameterRegistry::addParameter(this); }                  \
-                                                                        \
-    inline virtual ~ParamName()                                         \
-    { jevois::ParameterRegistry::removeParameter(this); }               \
-                                                                        \
-    inline virtual jevois::Component const * owner() const override     \
-    { return dynamic_cast<jevois::Component const *>(static_cast<jevois::ParameterRegistry const *>(this)); } \
-  };
-
-// Convenience macro to define a Parameter type with callback. All the ... args are passed to ParameterDef
-#define JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(ParamName, ParamType, ...) \
-  struct ParamName : public virtual jevois::ParameterRegistry, public jevois::ParameterCore<ParamType> \
-  {                                                                     \
-    typedef ParamType type;                                             \
-                                                                        \
-    virtual void onParamChange(ParamName const & param, ParamType const & newval) = 0; \
-                                                                        \
-    inline ParamName() : jevois::ParameterCore<ParamType>(jevois::ParameterDef<ParamType>(#ParamName, __VA_ARGS__)) \
-    { setCallback([this](ParamType const & newval) { this->onParamChange(*this, newval); }); \
-      jevois::ParameterRegistry::addParameter(this); }                  \
-                                                                        \
-    inline virtual ~ParamName()                                         \
-    { jevois::ParameterRegistry::removeParameter(this); }               \
-                                                                        \
-    inline virtual jevois::Component const * owner() const override     \
-    { return dynamic_cast<jevois::Component const *>(static_cast<jevois::ParameterRegistry const *>(this)); } \
-  };
-
 // END_JEVOIS_CODE_SNIPPET
 
 #endif

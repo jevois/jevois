@@ -44,7 +44,37 @@ namespace jevois
         valid values for a parameter: ParameterDef
       - Then you are ready for [Parameter](classjevois_1_1Parameter_3_01Param_00_01Tail_8_8_8_4.html)
 
-      The other classes in this documentation modules are mainly for support of the above ones. */
+      The other classes in this documentation module are mainly for support of the above ones.
+
+
+
+      Convenience macro to define a Parameter type
+      --------------------------------------------
+
+      JEVOIS_DECLARE_PARAMETER(ParamName, ParamType, ...)
+      
+      ParamName is the name chosen for the parameter. A new class type will be created with that name, so it must be
+      syntactically correct as a class name. ParamType is the type of the parameter value. The remaining arguments are
+      passed to the constructor of jevois::ParameterDef<T> with T=ParamType.
+  
+      Convenience macro to define a Parameter type, with callback
+      -----------------------------------------------------------
+
+      JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(ParamName, ParamType, ...)
+      
+      ParamName is the name chosen for the parameter. A new class type will be created with that name, so it must be
+      syntactically correct as a class name. ParamType is the type of the parameter value. The remaining arguments are
+      passed to the constructor of jevois::ParameterDef<T> with T=ParamType.
+      
+      In this version with callback, a pure virtual method is included in the new class that is defined, with the
+      following signature:
+      
+      \code
+      virtual void onParamChange(ParamName const & param, ParamType const & newval) = 0;
+      \endcode
+      
+      The host class (typically, a Component) that inherits from Parameter<ParamName> must implement an override of this
+      function. A compile-time error will be issued if that override has not been implemented. */
 
   /*! @{ */ // **********************************************************************
 
@@ -343,32 +373,6 @@ namespace jevois
                     "jevois::Parameter<...> template arguments must all be parameters "
                     "(derive from jevois::ParameterBase");
   };
-
-  //! Convenience macro to define a Parameter type
-  /*! \def JEVOIS_DECLARE_PARAMETER(ParamName, ParamType, ...)
-      \hideinitializer
-      
-      ParamName is the name chosen for the parameter. A new class type will be created with that name, so it must be
-      syntactically correct as a class name. ParamType is the type of the parameter value. The remaining arguments are
-      passed to the constructor of ParameterDef */
-  
-  //! Convenience macro to define a Parameter type
-  /*! \def JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(ParamName, ParamType, ...)
-      \hideinitializer
-      
-      ParamName is the name chosen for the parameter. A new class type will be created with that name, so it must be
-      syntactically correct as a class name. ParamType is the type of the parameter value. The remaining arguments are
-      passed to the constructor of ParameterDef<T> with T=ParamType.
-      
-      In this version with callback, a pure virtual method is included in the new class that is defined, with the
-      following signature:
-      
-      \code
-      virtual void onParamChange(ParamName const & param, ParamType const & newval) = 0;
-      \endcode
-      
-      The host class (typically, a Component) that inherits from Parameter<ParamName> must implement an override of this
-      function. */
   
   /*! @} */ // **********************************************************************
 

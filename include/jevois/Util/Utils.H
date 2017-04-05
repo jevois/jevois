@@ -104,7 +104,7 @@ namespace jevois
 /*! \def XIOCTL(dev, req, mem)
     \hideinitializer
 
-    This macro assumes that req is an identifier (#define) for the corresponding ioctl number.
+    This macro assumes that req is an identifier (\#define) for the corresponding ioctl number.
     \ingroup utils */
 
 // ####################################################################################################

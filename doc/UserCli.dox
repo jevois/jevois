@@ -227,7 +227,7 @@ The default end-of-line behavior for JeVois is "sloppy" which consists of:
 This is configurable upon startup of the JeVois smart camera. Please see the jevois::serial::linestyle parameter of
 jevois::Serial for details. Note, however, that this paremeter becomes hidden after JeVois has started. Hence, you can
 only change serial end-of-line behavior through the initscript.cfg script that is executed upon boot up of the JeVois
-smart camera. See \ref initscript.cfg for details.
+smart camera. See \ref JeVoisDaemon for details.
 
 \subsection cmdgeneral Command-line general commands and parameters
 
@@ -325,8 +325,8 @@ clip them, etc and \c getcam allows you to get back the value that was actually 
 
 Lists all the video mappings, which define the associations between a camera image size, frame rate, and pixel format, a
 USB output image size, frame rate, and pixel format, and which machine vision module to run. The definitions of mappings
-are in the videomappings.cfg file. The \c listmappings command allow you to obtain the numerical index of a given mapping in the
-list, shich you can later use with the \c setmapping command. For example:
+are in the videomappings.cfg file. The \c listmappings command allow you to obtain the numerical index of a given
+mapping in the list, shich you can later use with the \c setmapping command. For example:
 
 \verbatim
 listmappings
@@ -379,7 +379,7 @@ AVAILABLE VIDEO MAPPINGS:
 OK
 \endverbatim
 
-See the section on \ref videomappings.cfg for more information about video mappings.
+See \ref UserModes for more information about video mappings.
 
 \subsubsection cmdsetmapping setmapping <num> - select video mapping <num>, only possible while not streaming to USB
 

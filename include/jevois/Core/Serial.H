@@ -30,42 +30,42 @@ namespace jevois
   {
     static ParameterCategory const ParamCateg("Serial Port Options");
 
-    //! Parameter \relates Serial
+    //! Parameter \relates jevois::Serial
     JEVOIS_DECLARE_PARAMETER(devname, std::string, "Device file name",
                              "", ParamCateg);
 
-    //! Parameter \relates Serial
+    //! Parameter \relates jevois::Serial
     JEVOIS_DECLARE_PARAMETER(baudrate, unsigned int, "Baudrate",
                              115200, { 110, 300, 600, 1200, 2400, 4800, 9600, 14400, 19200, 38400, 57600, 115200,
                                  230400, 460800, 921600, 1000000, 1152000, 1500000, 2000000,
                                  2500000, 3000000, 3500000, 4000000 }, ParamCateg);
 
-    //! Parameter \relates Serial
+    //! Parameter \relates jevois::Serial
     JEVOIS_DECLARE_PARAMETER(format, std::string, "Data format",
                              "8N1", boost::regex("^[5-8][NEO][12]$"), ParamCateg);
 
-    //! Parameter \relates Serial
+    //! Parameter \relates jevois::Serial
     JEVOIS_DECLARE_PARAMETER(flowsoft, bool, "Use soft (XON/XOFF) flow control",
                              false, ParamCateg);
 
-    //! Parameter \relates Serial
+    //! Parameter \relates jevois::Serial
     JEVOIS_DECLARE_PARAMETER(flowhard, bool, "Use hard (RTS/CTS) flow control",
                              false, ParamCateg);
 
-    //! Enum for Parameter \relates Serial
+    //! Enum for Parameter \relates jevois::Serial
     JEVOIS_DEFINE_ENUM_CLASS(LineStyle, (LF) (CR) (CRLF) (Zero) (Sloppy) );
 
-    //! Parameter \relates Serial
+    //! Parameter \relates jevois::Serial
     JEVOIS_DECLARE_PARAMETER(linestyle, LineStyle, "End of line style: LF is for 0x0a [\\n]; CR is for 0x0d [\\r]; "
                              "CRLF is for 0x0d 0x0a [\\r\\n]; Zero is for 0x00 [\\0]; Sloppy accepts any of "
                              "CR, LF, CRLF, 0xd0 (issued by some keyboards instead of Return), and Zero as input "
                              "and issues CRLF in outputs.",
                              LineStyle::Sloppy, LineStyle_Values, ParamCateg);
 
-    //! Enum for Parameter \relates Serial
+    //! Enum for Parameter \relates jevois::Serial
     JEVOIS_DEFINE_ENUM_CLASS(TerminalMode, (Plain) (VT100) );
 
-    //! Parameter \relates Serial
+    //! Parameter \relates jevois::Serial
     JEVOIS_DECLARE_PARAMETER(mode, TerminalMode, "Terminal emulation mode for input",
                              TerminalMode::Plain, TerminalMode_Values, ParamCateg);
   } // namespace serial

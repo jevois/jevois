@@ -26,14 +26,14 @@ directly are created in YUYV format, eliminating the need to convert to and from
 
 <li>\b RGB565 / \b RGBP: This is a format where three R, G, and B values for each pixel are packed into only 2 bytes, by
 using a smaller number of bits for each value (5 bits for red, 6 bits for green, 5 bits for blue, total 16 bits). The
-JeVois hardware sensor can also natively capture in RGBP format, and the JeVois GPU and output (render) results of its
+JeVois hardware sensor can also natively capture in RGBP format, and the JeVois GPU can output (render) results of its
 processing into RGBP format, thus RGBP is also a format of interest.
 
-Unfortunately, \c guvcview does not seem to properly work in RGBP mode. It just fails to allocate the image and
-crashes. This is maybe because JeVois is the first USB camera to actually be capable of outputting RGBP and that code has
-not been thoroughly tested in guvcview. We will work with the guvcview team on fixing this. In the meantime, \c ffplay
-or \c ffmpeg are alternative video capture software that work well with RGBP, although they do not provide a graphical
-interface as nice and complete as \c guvcview.
+Unfortunately, \c guvcview does not seem to properly work in RGBP mode. It just fails to allocate the image buffer and
+crashes. This is maybe because JeVois is the first USB camera to actually be capable of outputting RGBP and that code
+has not been thoroughly tested in guvcview. We will work with the guvcview team on fixing this. In the meantime, \c
+ffplay or \c ffmpeg are alternative video capture software that work well with RGBP, although they do not provide a
+graphical interface as nice and complete as \c guvcview.
 
 <li>\b BGR24: This is a mode where 3 bytes are used for each pixel, to encode red, green, and blue. This is computed on
 the JeVois CPU through interpolation from either native RGGB, RGBP, or YUYV. Thus it is not often used as it requires
