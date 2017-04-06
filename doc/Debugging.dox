@@ -1,0 +1,59 @@
+/*! \page Debugging Debugging JeVois software
+
+
+// ####################################################################################################
+\section debugginghost Debugging on host
+
+The easiest way to debug new machine vision modules on JeVois is to first compile and run them on your desktop (host)
+computer (see \ref CompilingJeVois and \ref CompilingJeVoisBase).
+
+When you run \c jevois-daemon on host (see \ref JeVoisDaemon), error messages will be printed in the terminal window
+from which you started it.
+
+You can also run \c jevois-daemon in gdb (the GNU debugger) and see where it might crash.
+
+// ####################################################################################################
+\section enablingdebugmsg Enabling debug-level messages
+
+You can turn on CMake flags \c JEVOIS_LDEBUG_ENABLE and \c JEVOIS_TRACE_ENABLE when compiling jevois to enable
+extra-verbose debugging messages (see \ref CompilingJeVois). Note that these flags only enable those messages to be
+compiled in. To see them, you also need to set the parameter \c loglevel to \c debug at runtime (see \ref UserCli).
+
+If you change those flags, you should recompile everything from scratch (recompile jevois, jevoisbase, your modules,
+etc).
+
+// ####################################################################################################
+\section debuguboot Debugging the boot process on platform hardware
+
+If you are tinkering with low-level software on your JeVois smart camera hardware and are experiencing difficulties with
+booting up, you can enable boot messages. This requires that you connect to the JeVois 4-pin hardware serial port during
+boot, as the boot messages will be sent to that serial port. This is very useful to troubleshoot any boot issues, or
+even to drop to a login prompt instead of starting up \c jevois-daemon automatically when the smart camera starts.
+
+
+This requires that you connect the 4-pin serial port of your JeVois camera to a terminal. You can use:
+
+- a USB-to-serial cable or dongle (also known as FTDI cable, or USBISP dongle, etc). Then connect it as shown in the
+  \ref UserSerial, and communicate to it using \c screen, HyperTerminal, etc
+
+- an Arduino or other micro-controller
+
+- anything else that provides a TTL-level serial terminal
+
+
+Then, you can:
+
+- edit \c BOOT:uEnv.txt on your microSD to enable verbose boot messages to the serial port
+
+- create an empty file \c BOOT:login, which will be detected by the JeVois camera when it boots up. If that file is
+  present, \c jevois-daemon will not automatically start, and instead you will get a login prompt on the serial
+  console. Username is \c root with no password.
+
+- create an empty file \c BOOT:nousbserial if you wish to not start the serial-over-USB feature for some reason.
+
+- edit the file \c ~/jevois/bin/jevois.sh, which gets installed to microSD as \c LINUX:/usr/bin/jevois.sh, for example
+  to start jevois-daemon in gdb (see \ref JeVoisDaemon).
+
+\image html jevois-boot.png Verbose boot messages and login prompt over the 4-pin serial port
+
+*/

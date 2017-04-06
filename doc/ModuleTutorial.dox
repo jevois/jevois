@@ -405,9 +405,10 @@ Let us look at what is new compared to the previous example:
 
 
 // ####################################################################################################
-\section moremoduletutorial
+\section moremoduletutorial For more Module tutorials and examples
 
 For more, see:
+
 - \ref ProgrammerSDK for how to create and compile a new module
 - [the documentation of the JeVoisBase collection of modules](/basedoc/)
 
