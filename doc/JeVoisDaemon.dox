@@ -98,7 +98,6 @@ Engine Options:
 
   --videomapping (int) default=[-1]
     Index of Video Mapping to use, or -1 to use the default mapping
-       Exported By: engine
 
   --camreg (bool) default=[false]
     Enable raw access to camera registers through setcamreg and getcamreg

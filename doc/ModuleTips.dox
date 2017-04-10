@@ -68,6 +68,5 @@ Use imgToStd() to convert from image coordinates to the standardized coordinates
 
 Use stdToImg() for the converse.
 
-
 */
 
