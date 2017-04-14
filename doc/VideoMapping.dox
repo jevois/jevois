@@ -25,6 +25,16 @@ is because Mac OSX will stop detecting the JeVois camera as soon as it exposes B
 maximum compatibility of the pre-installed microSD image, those are disabled by default. If you are using Linux or
 Windows, try un-commenting (remove the # sign) some of these to activate them.
 
+To avoid having your JeVois smart camera just hang because of parsing werror, for example in case of malformed or
+duplicate video mappings in the \c videomappings.cfg file, the following policy has been adopted:
+
+- if a mapping is malformed (missing fields, wrong fields, etc) it will be skipped.
+- if there is no mapping with USB output in the file, one will be added, YUYV 640x480 \@ 30fps PassThrough.
+- if there is no default mapping (marked with a *), the first mapping with USB output will be selected as default.
+- if two mappings have identical USB output resolution, pixel format, and frame rate, the second one will be slowed down
+  by 1 fps (and so on if more than two conflicts).
+
+
 \verbatim
 ######################################################################################################################
 #

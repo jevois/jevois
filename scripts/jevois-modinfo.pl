@@ -77,7 +77,7 @@ print DOXYFILE "AUTOLINK_SUPPORT       = YES\n"; # for cross-ref to jevois doc
 print DOXYFILE "BUILTIN_STL_SUPPORT    = YES\n"; # for cross-ref to jevois doc
 #print DOXYFILE "TAGFILES               = $ENV{'JEVOIS_SRC_ROOT'}/../jevoisbase/doc/jevoisbase.tag=/basedoc\n";
 #print DOXYFILE "TAGFILES               = $ENV{'JEVOIS_SRC_ROOT'}/doc/jevois.tag=/doc $ENV{'JEVOIS_SRC_ROOT'}/../jevoisbase/doc/jevoisbase.tag=/basedoc\n";
-#print DOXYFILE "TAGFILES               = $ENV{'JEVOIS_SRC_ROOT'}/doc/jevois.tag=/doc\n";
+print DOXYFILE "TAGFILES               = $ENV{'JEVOIS_SRC_ROOT'}/doc/jevois.tag=/doc\n";
 
 # We here create some custom doxygen tags to allow code writers to input more manifest data in their doc:
 my @dtags = qw/ email mainurl supporturl otherurl address copyright license distribution 
@@ -332,9 +332,22 @@ if ($fullhtml)
     print OF "<META NAME=\"rating\" CONTENT=\"General\"><META NAME=\"distribution\" CONTENT=\"Global\">\n";
     print OF "<META NAME=\"revisit-after\" CONTENT=\"15 days\"><META NAME=\"author\" CONTENT=\"Laurent Itti, JeVois\">\n";
     print OF "<META NAME=\"description\" CONTENT=\"JeVois Smart Embedded Machine Vision Toolkit - module $className\">\n";
-    print OF "<link rel=\"stylesheet\" type=\"text/css\" href=\"/modstyle.css\"> </head> <body>\n";
-}
 
+    print OF "<link href='http://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800' rel='stylesheet' type='text/css'>\n";
+    print OF "<link rel=\"stylesheet\" href=\"/start/assets/plugins/bootstrap/css/bootstrap.min.css\">\n";
+    print OF "<link rel=\"stylesheet\" href=\"/start/assets/plugins/font-awesome/css/font-awesome.css\">\n";
+    print OF "<link rel=\"stylesheet\" href=\"/start/assets/plugins/prism/prism.css\">\n";
+    print OF "<link rel=\"stylesheet\" href=\"/start/assets/plugins/lightbox/dist/ekko-lightbox.min.css\">\n";
+    print OF "<link rel=\"stylesheet\" href=\"/start/assets/plugins/elegant_font/css/style.css\">\n";
+    print OF "<link id=\"theme-style\" rel=\"stylesheet\" href=\"/start/assets/css/styles.css\">\n";
+    print OF "<!--[if lt IE 9]>
+      <script src=\"https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js\"></script>
+      <script src=\"https://oss.maxcdn.com/respond/1.4.2/respond.min.js\"></script>
+    <![endif]-->\n";
+
+    print OF "<link rel=\"stylesheet\" type=\"text/css\" href=\"/modstyle.css\">\n";
+    print OF "</head> <body class=\"body-blue\">\n";
+}
 
 # The main table has only one column, we will place sub-tables when we need more columns:
 print OF "<table class=modinfo><tr><td>\n";
@@ -346,9 +359,8 @@ print OF "<tr><td class=modinfosynopsis>$synopsis</td></tr></table></td></tr></t
 print OF "<tr><td><table class=modinfoauth width=100%><tr><td>By ". join(", ", @authors) . "</td><td>$tagdata{'email'}</td><td>$tagdata{'mainurl'}</td>";
 print OF "<td>$tagdata{'license'}</td></tr></table></td></tr>\n";
 
-print OF "<tr><td>&nbsp;</td></tr>\n";
-
 # Video mappings: We need to clean them up first
+print OF "<tr><td><table class=videomapping>\n";
 my $vm = $tagdata{'videomapping'};
 my @vm2 = split(/,/, $vm);
 my @vmap; my $ii = 0; my $vvv = "";
@@ -369,13 +381,11 @@ foreach $v (@vmap) {
     $v =~ s/^\s+//; $v =~ s/\s+/\&nbsp\;/g;
     print OF "<tr><td class=videomapping><b>Video Mapping: </b>$v</td></tr>\n";
 }
+print OF "</table></td></tr>\n";
 
 # description:
-print OF "<tr><td>&nbsp;</td></tr>\n";
-
-print OF "<tr><td class=modinfodesc>$htmldescription</td></tr>\n";
-
-print OF "<tr><td>&nbsp;</td></tr>\n";
+# note: doxygen opens a div but does not close it?
+print OF "<tr><td class=modinfodesc><h2>Module Documentation</h2>$htmldescription</div></td></tr>\n";
 
 # screenshots and videos:
 print OF "<tr><td><table class=modinfoshots><tr>\n";
@@ -384,12 +394,10 @@ my @videos = glob("video*.*");
 if ($#screenshots == -1 && $#videos == -1) {
     print OF "<td>This module has no screenshots and no videos</td>\n";
 } else {
-    foreach my $sc (@screenshots) { print OF "<td><a href=\"$sc\"><img src=\"$sc\" width=128></img></a></td>\n"; }
+    foreach my $sc (@screenshots) { print OF "<td><a href=\"$sc\"><img src=\"$sc\" width=128></a></td>\n"; }
     foreach my $vd (@videos) { print OF "<td><a href=\"$vd\">VIDEO</a></td>\n"; }
 }
 print OF "</tr></table></td></tr>";
-
-print OF "<tr><td>&nbsp;</td></tr>\n";
 
 # parameters:
 print OF "<tr><td><table class=modinfopar><tr><th class=modinfopar>Parameter</th><th class=modinfopar>Type</th><th class=modinfopar>Description</th><th class=modinfopar>Default</th><th class=modinfopar>Valid&nbsp;Values</th></tr>\n";
@@ -403,8 +411,6 @@ if ($#modparams == -1) {
     }
 }
 print OF "</table></td></tr>\n";
-
-print OF "<tr><td>&nbsp;</td></tr>\n";
 
 # table for all the tag data:
 print OF "<tr><td><table class=modinfomisc>\n";
@@ -430,7 +436,7 @@ print OF "</table></td></tr>\n";
 
 # end of master table:
 print OF "</table>\n";
-if ($fullhtml) { print OF "</html>\n"; }
+if ($fullhtml) { print OF "</body></html>\n"; }
 close OF;
 
 # Delete our temporary directory
