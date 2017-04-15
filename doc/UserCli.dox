@@ -85,7 +85,8 @@ runscript <filename> - run script commands in specified file
 setcam <ctrl> <val> - set camera control <ctrl> to value <val>
 getcam <ctrl> - get value of camera control <ctrl>
 listmappings - list all available video mappings
-setmapping <num> - select video mapping <num>, only possible while not streaming to USB
+setmapping <num> - select video mapping <num>, only possible while not streaming
+setmapping2 <CAMmode> <CAMwidth> <CAMheight> <CAMfps> <Vendor> <Module> - set no-USB-out video mapping defined on the fly, while not streaming
 ping - returns 'ALIVE'
 serlog <string> - forward string to the serial port(s) specified by the serlog parameter
 serout <string> - forward string to the serial port(s) specified by the serout parameter
@@ -381,7 +382,7 @@ OK
 
 See \ref UserModes for more information about video mappings.
 
-\subsubsection cmdsetmapping setmapping <num> - select video mapping <num>, only possible while not streaming to USB
+\subsubsection cmdsetmapping setmapping <num> - select video mapping <num>, only possible while not streaming
 
 Usually, video mappings are selected by the host computer, by selecting a given output resolution, frame rate, and pixel
 format. In some instances, however, \c setmapping is useful:
@@ -404,13 +405,20 @@ will return
 OK
 \endverbatim
 
-if the host computer is not currently streaming video from JeVois over USB, and the mapping will then be changed to 0. But if video is streaming to the host computer, the answer will be:
+if the host computer is not currently streaming video from JeVois over USB, and the mapping will then be changed to
+0. But if video is streaming to the host computer, the answer will be:
 
 \verbatim
 ERR Command error [setmapping 0]: Cannot set mapping while streaming: Stop your webcam program on the host computer first.
 \endverbatim
 
 Simply close your camera capture software on th ehost computer and try again.
+
+\note If you issue a \b setmapping command and then open a video viewing software on your host computer, most likely
+that software will override what you just did with \b setmapping, and will select a mapping of its own choice
+anyway. Hence, indeed, \b setmapping is usually only useful to select modes with NONE USB output. Also see \b
+setmapping2 which may be better in terms of avoiding confusion that may arise when setting a mapping by index, where
+that index may change as the \b videomapping.cfg file is edited.
 
 \note For mappings that stream output video over USB, the host computer also determines when to start streaming (when
 you start your camera capture software on the host) and when to stop streaming (when you quit that program). However,
@@ -422,7 +430,25 @@ do addtional configurations before streaming. For example, one may select a mode
 save camera frames to disk, then set parameters of that module to select a given file name and video encoding format,
 and only then start streaming.
 
-When a mode with USB output of type NONE is selected, two additional commands become available:
+When a mode with USB output of type NONE is selected, two additional commands become available: \b streamon and \b
+streamoff, detailed below.
+
+\subsubsection cmdsetmapping2 setmapping2 <CAMmode> <CAMwidth> <CAMheight> <CAMfps> <Vendor> <Module> - set no-USB-out video mapping defined on the fly, while not streaming
+
+This allows one to define and set on the fly a new video mapping that has no USB output.
+
+This command is very useful to configure the JeVois smart camera from an embedded system like an Arduino, which may not
+have knowledge of the mapping number in \b videomappings.cfg for a particular mapping it wishes to use.
+
+See \ref UserModes for details. Here, because there is no USB output, we only need to specify camera format, resolution,
+and framerate, and which machine vision module to use.
+
+\note A similar command for mappings with USB output is not possible because the JeVois smart camera must announce to
+the host computer the complete list of all supported video resolutions that it can stream over USB, at the time it is
+first connected to the host computer.
+
+Since the selected mapping has no USB video output, two additional commands become available: \b streamon and \b
+streamoff, detailed below.
 
 \subsubsection cmdstreamon streamon - start camera video streaming
 

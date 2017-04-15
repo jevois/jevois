@@ -327,6 +327,7 @@ namespace jevois
       std::list<std::shared_ptr<UserInterface> > itsSerials;
 
       void setFormatInternal(size_t idx); // itsMtx should be locked by caller
+      void setFormatInternal(jevois::VideoMapping const & m); // itsMtx should be locked by caller
 
       // Return help string for a camera control or throw
       std::string camCtrlHelp(struct v4l2_queryctrl & qc, std::set<int> & doneids);
@@ -338,7 +339,7 @@ namespace jevois
       int camctrlid(std::string const & shortname);
 
       bool itsTurbo;
-      bool itsManualStreamon; // allow manusl streamon when outputing video to None or file
+      bool itsManualStreamon; // allow manual streamon when outputing video to None or file
   };
 
 } // namespace jevois

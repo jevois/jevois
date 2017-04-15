@@ -497,6 +497,15 @@ void jevois::Engine::setFormatInternal(size_t idx)
   JEVOIS_TRACE(2);
 
   jevois::VideoMapping const & m = itsMappings[idx];
+  setFormatInternal(m);
+}
+
+// ####################################################################################################
+void jevois::Engine::setFormatInternal(jevois::VideoMapping const & m)
+{
+  // itsMtx should be locked by caller, idx should be valid:
+  JEVOIS_TRACE(2);
+
   LINFO(m.str());
 
   // Now that the module is nuked, we won't have any get()/done()/send() requests on the camera or gadget, thus it is
@@ -920,7 +929,9 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
         s->writeString("getcamreg <reg> - get value of raw camera register <reg>");
       }
       s->writeString("listmappings - list all available video mappings");
-      s->writeString("setmapping <num> - select video mapping <num>, only possible while not streaming to USB");
+      s->writeString("setmapping <num> - select video mapping <num>, only possible while not streaming");
+      s->writeString("setmapping2 <CAMmode> <CAMwidth> <CAMheight> <CAMfps> <Vendor> <Module> - set no-USB-out "
+                     "video mapping defined on the fly, while not streaming");
       if (itsUSBout == false || itsManualStreamon)
       {
         s->writeString("streamon - start camera video streaming");
@@ -1079,6 +1090,31 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
       {
         setFormatInternal(idx);
         return true;
+      }
+    }
+
+    // ----------------------------------------------------------------------------------------------------
+    if (cmd == "setmapping2")
+    {
+      bool was_streaming = itsStreaming.load();
+
+      if (was_streaming)
+      {
+        errmsg = "Cannot set mapping while streaming: ";
+        if (itsUSBout) errmsg += "Stop your webcam program on the host computer first.";
+        else errmsg += "Issue a 'streamoff' command first.";
+      }
+      else
+      {
+        jevois::VideoMapping m;
+        try
+        {
+          std::istringstream full("NONE 0 0 0.0 " + rem); full >> m;
+          setFormatInternal(m);
+          return true;
+        }
+        catch (std::exception const & e) { errmsg = "Error parsing or setting mapping [" + rem + "]: " + e.what(); }
+        catch (...) { errmsg = "Error parsing or setting mapping [" + rem + ']'; }
       }
     }
 

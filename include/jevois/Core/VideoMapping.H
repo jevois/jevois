@@ -70,7 +70,7 @@ namespace jevois
       /*! This function rounds to the nearest 1/100 fps. */
       static float uvcToFps(unsigned int interval);
 
-      //! Convert from fps to USB/UCV interval
+      //! Convert from fps to USB/UVC interval
       static unsigned int fpsToUvc(float fps);
 
       //! Convert from V4L2 interval to fps
@@ -89,9 +89,19 @@ namespace jevois
       //! Convenience function to print out FCC WxH @ fps, for the input (camera) format
       std::string cstr() const;
 
-      //! Convenience function to print out the whole mapping
+      //! Convenience function to print out the whole mapping in a human-friendly way
       std::string str() const;
   };
+
+  //! Stream a VideoMapping out, intended for machines
+  /*! Note that no std::endl is issued at the end.
+      \relates jevois::VideoMapping */
+  std::ostream & operator<<(std::ostream & out, VideoMapping const & m);
+
+  //! Stream a VideoMapping in, intended for machines
+  /*! Note that the assumption is that the mapping is clean (no extra garbage).
+      \relates jevois::VideoMapping */
+  std::istream & operator>>(std::istream & in, VideoMapping & m);
 
   //! Load all the video mappings from the default config file
   /*! \relates VideoMapping */
@@ -102,7 +112,7 @@ namespace jevois
       resolution (from large to small, looking at x first), and 3) framerate (from high to low). 
 
       In case of duplicate output formats, frame rates will be decreased by 1fps for each additional duplicate. This is
-      because we need to present the host computer with distrinct video format sso that a user can select th eone they
+      because we need to present the host computer with distinct video formats so that users can select the one they
       want. For example:
       \verbatim
       YUYV 320 240 60.0 YUYV 320 240 60.0 JeVois SaveVideo
@@ -120,15 +130,15 @@ namespace jevois
       YUYV 320 240 57.0 YUYV 320 240 60.0 VendorZ MyModule
       \endverbatim
 
-      and in \c guvcview or similar program running on a host computer, these 4 mappings will be available since they
-      correspond to 4 different framerates. It is recommended that you issue a \c listmapping command in the JeVois
+      and in \b guvcview or similar program running on a host computer, these 4 mappings will be available since they
+      correspond to 4 different framerates. It is recommended that you issue a \b listmapping command in the JeVois
       command-line interface to confirm the final mappings that are used at runtime after any adjustments; see \ref
       UserCli for details.
 
       defidx is the index of the default format in the resulting vector of mappings. If several default formats are
       specified, the first one prevails. 
 
-      See \ref UserModes for explanations about how to organize videomappings.cfg
+      See \ref UserModes for explanations about how to organize \b videomappings.cfg
       \relates VideoMapping */
   std::vector<VideoMapping> videoMappingsFromStream(std::istream & is, size_t & defidx);
 }
