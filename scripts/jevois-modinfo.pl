@@ -335,10 +335,10 @@ if ($fullhtml)
 
     print OF "<link href='http://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800' rel='stylesheet' type='text/css'>\n";
     print OF "<link rel=\"stylesheet\" href=\"/start/assets/plugins/bootstrap/css/bootstrap.min.css\">\n";
-    print OF "<link rel=\"stylesheet\" href=\"/start/assets/plugins/font-awesome/css/font-awesome.css\">\n";
-    print OF "<link rel=\"stylesheet\" href=\"/start/assets/plugins/prism/prism.css\">\n";
-    print OF "<link rel=\"stylesheet\" href=\"/start/assets/plugins/lightbox/dist/ekko-lightbox.min.css\">\n";
-    print OF "<link rel=\"stylesheet\" href=\"/start/assets/plugins/elegant_font/css/style.css\">\n";
+#    print OF "<link rel=\"stylesheet\" href=\"/start/assets/plugins/font-awesome/css/font-awesome.css\">\n";
+#    print OF "<link rel=\"stylesheet\" href=\"/start/assets/plugins/prism/prism.css\">\n";
+#    print OF "<link rel=\"stylesheet\" href=\"/start/assets/plugins/lightbox/dist/ekko-lightbox.min.css\">\n";
+#    print OF "<link rel=\"stylesheet\" href=\"/start/assets/plugins/elegant_font/css/style.css\">\n";
     print OF "<link id=\"theme-style\" rel=\"stylesheet\" href=\"/start/assets/css/styles.css\">\n";
     print OF "<!--[if lt IE 9]>
       <script src=\"https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js\"></script>
@@ -379,7 +379,7 @@ if ($vvv ne "") { push(@vmap, $vvv); }
 
 foreach $v (@vmap) {
     $v =~ s/^\s+//; $v =~ s/\s+/\&nbsp\;/g;
-    print OF "<tr><td class=videomapping><b>Video Mapping: </b>$v</td></tr>\n";
+    print OF "<tr><td class=videomapping><small><b>Video Mapping: &nbsp; </b></small><tt>$v</tt></td></tr>\n";
 }
 print OF "</table></td></tr>\n";
 

@@ -6,7 +6,7 @@ th, td { padding: 10px; }
 
 table.modinfo {
     border-collapse: collapse;
-    background-color: #303080;
+    background-color: #5050a0;
     color: white;
     border-spacing: 10px;
     width: 100%;
@@ -88,13 +88,13 @@ table.videomapping {
     border-collapse: collapse;
     background-color: #f0f0ff;
     color: black;
-    border-spacing: 5px;
+    border-spacing: 0px;
     width: 100%;
 }
 
 td.videomapping {
     text-align: left;
-    padding: 5px;
+    padding: 2px;
 }
 
 em {
