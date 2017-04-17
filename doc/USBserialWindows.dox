@@ -1,0 +1,46 @@
+/*! \page USBserialWindows Connecting to JeVois using serial-over-USB: Windows host
+
+\section serusbwingen Finding the serial-over-USB device on Windows host
+
+On some versions of Windows, the serial-over-USB port of JeVois will be detected and configured automatically. On other
+versions, however, it may be necessary to install an `inf` file.
+
+- First, have a look in your <b>Device Manager</b> and check whether you have an errored <b>CDC Serial</b> device under
+  <b>Other devices</b>. If not, the JeVois serial-over-USB may have been already detected and configured and you are
+  ready to proceed to the next section.
+  \image html windows-cdc-error.png
+
+- If you see the error device, download this file using right-click and <b>Save Target as ...</b>:
+  http://jevois.org/data/linux-cdc-acm.inf
+
+- In the device manager, right click on the CDC serial which has the error, and select \b Properties.
+
+- Click <b>Update driver</b> then <b>Browse my computer for driver software</b>.
+
+- Select the folder where you saved the <b>linux-cdc-acm.inf</b> file (likely, your Downloads folder, make sure you do
+  not have any other .inf files in there). When Windows complains about this driver not being trusted, select to install
+  anyway.
+
+- Your device manager should update from showing a <b>CDC serial</b> device to <b>Gadget serial</b> and Windows should
+  tell you that the driver was installed successfully. In the example below, the JeVois serial-over-USB port is
+  configured as \b COM6 - this is the port you should use with a serial terminal program.
+  \image html windows-cdc-installed.png
+
+
+\section serusbwinusing Connecting to JeVois
+
+
+We have had good success connecting using [Tera Term](https://ttssh2.osdn.jp/index.html.en) and
+[Termite](https://www.compuphase.com/software_termite.htm). Open the COM port that was created using 115200 8N1.
+
+Termite is quite nice for use with JeVois as it allows you to type and edit a single command line (at the bottom of the
+screen), and it will send the final edited line to JeVois when you press return. Hence it is more typo-friendly than
+some other serial terminal programs.
+
+\image html windows-cdc-teraterm.png Tera Term on Windows 7 connected to JeVois
+
+\image html windows-cdc-termite.png Termite on Windows 7 connected to JeVois
+
+
+*/
+

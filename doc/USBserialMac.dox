@@ -1,0 +1,45 @@
+/*! \page USBserialMac Connecting to JeVois using serial-over-USB: Mac host
+
+\section serusbmacgen Finding the serial-over-USB device on Mac host
+
+
+When the JeVois smart camera is connected to a Mac OSX host, a new serial-over-USB is automatically detected. Its name
+is of the form:
+
+\verbatim
+/dev/tty.usbmodemXXXX
+\endverbatim
+where the `XXXX` characters shown above are replaced by a 4-digit number that depends on yoru exact Mac computer.
+
+To find out the exact name on your machine, open a \b Terminal window (in \b Applications and then \b Utilities), and
+type:
+
+\verbatim
+ls /dev/tty.usbmodem*
+\endverbatim
+
+which should return the device name.
+
+\section serusbmacscreen Using the screen command
+
+You can use the built-in `screen` program to connect to your JeVois camera:
+
+\verbatim
+screen /dev/tty.usbmodemXXXX 115200
+\endverbatim
+where you replace `XXXX` by the number that was returned by the `ls` command above.
+
+Once you are connected, you can issue commands such as `help`, `info`, etc
+
+\note The `screen` program does not (as far as we know) provide an option for command echo (to see what you are
+typing). Hence, as you type, you will not see what you type. This is normal.
+
+\note To scroll up while using `screen`, type `CTRL-A` `ESC` and you can then use the arrow keys or mouse wheel to
+scroll up. Type \c RETURN twice when you are ready to go back to interactive mode.
+
+\section serusbmacother Using other serial terminal programs
+
+Other programs are available for Mac which are more user-friendly than `screen`. For example, we have had good success
+with [ZOC 7](https://www.emtec.com/zoc/).
+
+*/

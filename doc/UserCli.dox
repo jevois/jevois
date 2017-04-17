@@ -10,71 +10,48 @@ available serial ports:
 - Serial-over-USB port that appears to your host computer at the same time as the video camera appears on the serial
   bus.
 
-To use the serial-over-usb port:
+You, or another machine (e.g., an Arduino) can connect to JeVois and issue simple commands to the smart camera. These
+commands allow one to tune camera parameters, vision processing parameters, and general operation of the JeVois smart
+camera.
 
-- Linux: look for the port, for example, inspect messages displayed when you type \c dmesg in a Linux terminal after you
-  have connected your JeVois smart camera. Allow at least 10 seconds for the smart camera to boot up and to be detected
-  by your host computer. The output of the \c dmesg command should contain some messages about detection of your JeVois
-  smart camera, both its video component and its serial port component:
+Things you can do with the JeVois command-line interface include:
+- adjust contrast, exposure, gain, white balance, etc of the camera sensor.
+- show basic informatin about JeVois, such as free RAM memory, CPU frequency, CPU temperature.
+- adjust machine vision parameters, depending on which vision module is currently loaded and running. Many machine
+  vision modules expose parameters for thresholds, operating modes, etc which you can tune using the JeVois command-line
+  interface.
+- run a script that contains any number of valid commands.
+- decide where to send output and log serial messages (to the hardware serial port, to serial-ver-USB, to both, or to
+  none).
+- examine available video modes and machine vision algorithms, and select a particular one.
+- possibly execute custom commands that may be provided by a particular machine vision module.
 
-\verbatim
-[...]
-[4768736.704777] usb 1-1.3: new high-speed USB device number 13 using xhci_hcd
-[4768736.809464] usb 1-1.3: New USB device found, idVendor=1d6b, idProduct=0102
-[4768736.809470] usb 1-1.3: New USB device strings: Mfr=1, Product=2, SerialNumber=0
-[4768736.809473] usb 1-1.3: Product: JeVois-A33 Smart Camera
-[4768736.809476] usb 1-1.3: Manufacturer: JeVois Inc
-[4768736.847915] uvcvideo: Found UVC 1.00 device JeVois-A33 Smart Camera (1d6b:0102)
-[4768736.849892] input: JeVois-A33 Smart Camera as /devices/pci0000:00/0000:00:1c.6/0000:09:00.0/usb1/1-1/1-1.3/1-1.3:1.0/input/input29
-[4768736.851499] cdc_acm 1-1.3:1.2: ttyACM0: USB ACM device
-\endverbatim
-
-The JeVois smart camera was detected as a UVC (USB Video Class) device and a corresponding video device entry was
-created in \c /devices/pci... which typically would then also be aliased to \c /dev/video0 for easier access.
-
-In addition, the serial-over-USB port of the JeVois camera was detected as a CDC-ACM serial port, and was assigned
-device name \c ttyACM0 in this example.
-
-Usually the serial-over-USB port is initalized at \c /dev/ttyACM0 on your host computer. Start a terminal
-program. Default configuration is 115200 8N1. For example:
-
-\verbatim
-sudo screen /dev/ttyACM0 115200
-\endverbatim
-You can also use \c minicom or other serial communication software.
-
-\note Many Linux distributions, including Ubuntu, monitor the connection of modems, so that they can be detected in a
-plug-and-play manner. Because the JeVois serial-over-USB port looks to a host computer like a new modem (this is so that
-no driver is required), your host computer may try to send modem configuration commands to JeVois as you connect
-it. JeVois will safely ignore these commands, but it may take a few minutes for your host computer to give up on trying
-to initialize JeVois as a modem that can dial out over telephone lines. While your host computer is trying to configure
-JeVois as a modem, the commands it sends will interfere with any commands you may type. To avoid this and to allow you
-to use the serial-over-USB port as soon as it is detected by your host, turn off the modem manager feature of your Linux
-host. For example, on Ubuntu:
-
-\verbatim
-sudo killall ModemManager
-\endverbatim
-
-- Windows: start Hyperterminal or similar (e.g., Tera Term, serial monitor feature of the Arduino software), select the
-  serial device, and open it with 115200 8N1.
-
-- Mac: Either use \c screen as for Linux, but with device name /dev/tty.usbmodemXXXX (where XXXX will vary depending on
-  your computer), or other serial software like ZTerm.
-
-\note Note that by default, command echo is turned off, which means that you will not see what you type. This is to
-avoid sending back to an Arduino all the commands it might want to send to the JeVois camera. Most serial communication
-software have an option to "turn on local echo" which will allow you to see what you type but will be handled by your
-serial terminal program as opposed to having JeVois send back all the characters you type.
+\note Note that by default, command echo is turned off, which means that, when you connect to JeVois over a serial link,
+you will not see what you type. This is to avoid sending back to an Arduino all the commands it might want to send to
+the JeVois camera. Most serial communication software have an option to "turn on local echo" which will allow you to see
+what you type but will be handled by your serial terminal program as opposed to having JeVois send back all the
+characters you type.
 
 \note Because the command-line interface is mainly intended for machine-to-machine communication, no editing capability
 is provided at this point. That means that if you type an incorrect character and try to delete it, both the incorrect
-character and the delete character will be sent to JeVois, and your command will just fail. If you have a tendency to
-make many typos as you type, just type your commands in any editor of your choice, and then simply copy and paste them
-into the JeVois command-line interface.
+character and then the delete character will be sent to JeVois, and your command will just fail. If you have a tendency
+to make many typos as you type, just type your commands in any editor of your choice, and then simply copy and paste
+them into the JeVois command-line interface.
 
-Once connected, you can use the command-line interface. Supported commands are as follows (further detailed in the
-following sections):
+Follow these instructions to connect to JeVois using serial-over-USB:
+
+- \subpage USBserialLinux
+- \subpage USBserialWindows
+- \subpage USBserialMac
+
+\note When running JeVois software in \b host mode, you can simply interact with JeVois by typing commands directly in
+the terminal window from which you started jevois-daemon. See \ref JeVoisDaemon for more details.
+
+// ##############################################################################################################
+\section cmdlinestart Command-line interface getting started
+
+Once connected, you can use the command-line interface. Supported commands, general operation parameters, and camera
+sensor controls are as follows (further detailed in the following sections):
 
 \verbatim
 help - print help message
