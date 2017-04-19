@@ -6,4 +6,11 @@ New users, be sure to check out [JeVois Start](/start/start.html).
 
 \image html quickstart.png
 
+For more specific information, see:
+
+- \ref UserStartLinux
+- \ref UserStartWindows
+- \ref UserStartMac
+- \ref UserStartCaveats
+
 */

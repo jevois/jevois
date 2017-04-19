@@ -4,12 +4,16 @@
 
 
 - Start with understanding the following user-level concepts:
+  + \ref Concepts
   + \ref PixelFormats
   + \ref VideoMapping
   + \ref UserDemos
   + \ref UserSerial
   + \ref UserCli
   + \ref MicroSD
+
+- Then make sure you read all the user documentation:
+  + \ref User
 
 - Then have a look at the following core C++ classes:
   + \ref component
@@ -28,7 +32,7 @@
   + \ref debugging
 
 - The \ref Programmer and \ref ModuleTutorial will show you how to write, compile, and run your own machine vision
-modules.
+  modules.
 
 
 - [The documentation of the JeVoisBase collection of modules](/basedoc/) provides many examples of working modules that

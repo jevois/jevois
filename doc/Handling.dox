@@ -6,7 +6,7 @@ Please observe the following precautions when handling your JeVois smart camera:
 
 - Avoid electrostatic discharge by using proper grounding when touching the device.
 - Do not expose to rain.
-- Do not push on the center of the fan. It is held by three small prongs that can very easily break.
+- <b>Do not push on the center of the fan. It is held by three small prongs that can very easily break.</b>
 - Instead, always hold the smart camera from its sides.
 - Do not disassemble. No user-serviceable parts inside.
 - Avoid liquids or moisture.

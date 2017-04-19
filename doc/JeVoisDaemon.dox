@@ -1,7 +1,7 @@
 /*! \page JeVoisDaemon The jevois-daemon executable
 
-The main executable that is created when compiling the JeVois framework is \c jevois-daemon, which basically implements
-a JeVois \ref Engine that will orchestrate the flow of data from camera sensor to machine vision processing to video
+The main executable that is created when compiling the JeVois framework is \b jevois-daemon, which basically implements
+a jevois::Engine that will orchestrate the flow of data from camera sensor to machine vision processing to video
 streaming over USB.
 
 \note \c jevois-deamon can run on host (when compiling jevois for host), in which case all machine vision algorithms

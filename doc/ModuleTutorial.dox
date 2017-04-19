@@ -13,6 +13,8 @@ that arise from processing the input image.
 In this tutorial, we first show you how to program a few very simple modules, to bring in the necessary
 concepts. Towards the end of this tutorial, we will point you to further detailed reading.
 
+Before you start, you should understand \ref Concepts.
+
 \subsection mappings Pixel formats and video mappings
 
 As a reminder, the JeVois smart camera can capture images in the following camera pixel formats: YUYV, BAYER, or
@@ -29,8 +31,8 @@ of video mappings associate a given output resolution and pixel type to the corr
 type that should be used and to the machine vision module that should be invoked. Again see \ref UserModes for details.
 
 Because an output video format is selected by the host computer, it is not negotiable. If a video mapping has been
-specified in \c videomappings.cfg that invokes a particular machine vision module, that module just must perform (or throw an
-exception), and process the images that it receives from the camera to generate the desired output images.
+specified in \b videomappings.cfg that invokes a particular machine vision module, that module just must perform (or
+throw an exception), and process the images that it receives from the camera to generate the desired output images.
 
 
 
@@ -176,7 +178,7 @@ Let us focus on the new things:
 
 - Line 32: In this simple tutorial, we will not allow any rescaling of the image size. So we require that the output
   resolution should be the same as the input resolution. We have no requirement on the output pixel type, hence we here
-  just specify \c outimg.fmt as the required output pixel type (that is, we just say that whichever pixel format has
+  just specify \b outimg.fmt as the required output pixel type (that is, we just say that whichever pixel format has
   been selected by the USB host and is already in the output image is ok with us).
 
 - Line 35: Now we convert from our OpenCV BGR image into the format requested by the USB host, using some helper
@@ -234,7 +236,7 @@ and hardwired values instead, just to avoid that burden. The burden comes from t
   the callback might not be needed).
 
 Possible implementation using class data members for parameters (similar to what we used in iNVT), here shown for a
-sample \c int parameter to specify the size of a queue held in a class MyModule that derives from Module:
+sample \b int parameter to specify the size of a queue held in a class MyModule that derives from Module:
 
 \code
 ParamDef<int> sizeparamdef("size", "Queue size", 5, Range<int>(1, 100));

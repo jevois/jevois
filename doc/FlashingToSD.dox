@@ -1,12 +1,12 @@
 /*! \page FlashingToSD Flashing to microSD card
 
-When you run \c rebuild-platform.sh on jevois and \c ./rebuild-platform.sh \c -DJEVOIS_MODULES_TO_BUILDROOT=ON in
-jevoisbase, compiled files get installed into ~/jevois-sdk
+When you run `./rebuild-platform.sh` in \b jevois and `./rebuild-platform.sh -DJEVOIS_MODULES_TO_BUILDROOT=ON` in
+\b jevoisbase, compiled files get installed into ~/jevois-sdk
 
 The last step to run them on the JeVois smart camera is to flash the whole Linux OS, kernel, JeVois framework (including
-jevois-daemon), and jevoisbase modules to microSD.
+\c jevois-daemon), and jevoisbase modules to microSD.
 
-To do this, go to ~/jevois-sdk and run
+To do this, go to \b ~/jevois-sdk and run
 
 \verbatim
 ./jevois-build.sh
@@ -15,14 +15,14 @@ To do this, go to ~/jevois-sdk and run
 and answer the questions interactively.
 
 Once you have done this a few times and you are confident that you know what you are doing, you can instruct
-jevois-build.sh to not ask any questions. Just be absolutely certain that you are using the right device for your SD
+\c jevois-build.sh to not ask any questions. Just be absolutely certain that you are using the right device for your SD
 card, so that you do not destroy your main hard drive because of a small typo:
 
 \verbatim
 ./jevois-build.sh -y /dev/sdX
 \endverbatim
 
-where you replace /dev/sdX by the device that gets assigned to your microSD card.
+where you replace \b /dev/sdX by the device that gets assigned to your microSD card.
 
 Re-flashing after some code update - full recompilation
 =======================================================

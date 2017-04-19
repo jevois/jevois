@@ -94,6 +94,11 @@ new size.
 
 \image html camtwist-qrcode.png QR-code Demo (320x286 YUYV) using CamTwist on Mac
 
+<li>Make sure you quit your camera viewing software before you unplug your JeVois smart camera. Otherwise your host
+computer may become awfully confused trying to use a camera that does not exist anymore.
+
+<li>No shutdown procedure is needed before powering off your JeVois camera. Just close your video capture software and
+unplug the camera.
 
 </ul>
 
@@ -115,14 +120,6 @@ run:
 
 Note that on Mac, the latency (delay or lag between capture and display) is horrible with many video capture apps,
 including ffplay. This is not a limitation of JeVois. When used with a Linux host, there is no lag.
-
-<li>Make sure you quit your camera viewing software before you unplug your JeVois smart camera. Otherwise your host
-computer may become awfully confused trying to use a camera that does not exist anymore.
-
-<li>No shutdown procedure is needed before powering off your JeVois camera. Just close your video capture software and
-unplug the camera.
-
-</ul>
 
 // ####################################################################################################
 
