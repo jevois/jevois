@@ -463,7 +463,7 @@ void jevois::Camera::writeRegister(unsigned char reg, unsigned char val)
 {
   unsigned char data[2] = { reg, val };
 
-  LDEBUG("Writing 0x" << std::hex << val << " to " << reg);
+  LINFO("Writing 0x" << std::hex << val << " to 0x" << reg);
   XIOCTL(itsFd, _IOW('V', 192, short), data);
 }
 
@@ -473,6 +473,6 @@ unsigned char jevois::Camera::readRegister(unsigned char reg)
   unsigned char data[2] = { reg, 0 };
 
   XIOCTL(itsFd, _IOWR('V', 193, short), data);
-  LDEBUG("Register 0x" << std::hex << reg << " has value " << data[1]);
+  LINFO("Register 0x" << std::hex << reg << " has value 0x" << data[1]);
   return data[1];
 }

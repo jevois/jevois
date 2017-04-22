@@ -1037,8 +1037,9 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
     {
       if (camreg::get())
       {
-        std::istringstream ss(rem); unsigned char reg, val; ss >> reg >> val;
-        itsCamera->writeRegister(reg, val);
+        // Read register and value as strings, then std::stoi to convert to int, supports 0x (and 0 for octal, caution)
+        std::istringstream ss(rem); std::string reg, val; ss >> reg >> val;
+        itsCamera->writeRegister(std::stoi(reg, nullptr, 0), std::stoi(val, nullptr, 0));
         return true;
       }
       errmsg = "Access to camera registers is disabled, enable with --camreg=true";
@@ -1049,7 +1050,7 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
     {
       if (camreg::get())
       {
-        unsigned int val = itsCamera->readRegister(std::stoi(rem));
+        unsigned int val = itsCamera->readRegister(std::stoi(rem, nullptr, 0));
         std::ostringstream os; os << std::hex << val;
         s->writeString(os.str());
         return true;

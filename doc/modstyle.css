@@ -38,6 +38,13 @@ table.modinfoauth {
 
 td.modinfodesc { color: black; background-color: #fafafa; line-height: 175%; padding: 10px; }
 
+table.modinfocfg {
+    background-color: #f0f0ff;
+    width: 100%;
+}
+
+td.modinfocfg { color: black; background-color: #f0f0ff; line-height: 175%; padding: 10px; }
+
 table.modinfoshots {
     background-color: #f0f0ff;
     padding: 30px;

@@ -30,6 +30,51 @@ assigned device name \b ttyACM0 in this example.
 To connect to your JeVois smart camera using the serial-over-USB link, start a terminal program. Default configuration
 is 115200 8N1.
 
+\section serusblinuxperm Permission issues
+
+On Linux, by default, you may not have permission to access the JeVois serial-over-USB port. You can fix this in
+two ways (<b>in our testing, we are still getting a permission denied error for some unknown reason except when we use
+the chmod command below - this doc will need to be fixed when someone figures this out</b>):
+- add your user to the \b dialout group, by issuing
+  \verbatim
+  sudo usermod -a -G dialout $USER
+  groups $USER # check that you are now in the dialout group
+  \endverbatim
+- or just change the access permissions of the port (but note that you will have to do this each time you plugin your
+  JeVois camera):
+  \verbatim
+  sudo chmod 777 /dev/ttyACM0
+  \endverbatim
+
+\note Even after you are added to the \b dialout group, you may still get some permission denied error. In such case,
+try kill or un-install ModemManager, which likely is the culprit:
+\verbatim
+sudo killall ModemManager # to kill it this time, will come back on next reboot
+sudo apt-get remove modemmanager # to get rid of it entirely, you can always re-install it later if ever needed
+\endverbatim
+(but note that in our testing this did not help).
+
+\section serusblinuxtest A trivial test
+
+Try to send a \c ping command to JeVois. This command is just to test that JeVois is alive and well:
+
+\verbatim
+sudo echo ping > /dev/ttyACM0
+\endverbatim
+
+and then get the reply by reading from the JeVois serial device:
+\verbatim
+sudo cat /dev/ttyACM0
+\endverbatim
+
+and you should see
+\verbatim
+ALIVE
+OK
+\endverbatim
+
+Hit \c CTRL-C to stop listening to the serial port.
+
 \section serusblinuxscreen Using the screen command
 
 \verbatim

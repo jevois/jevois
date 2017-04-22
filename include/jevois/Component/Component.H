@@ -365,7 +365,7 @@ namespace jevois
 
           @code
           std::shared_ptr<MyComponent> comp(new MyComponent);
-          int paramValue = comp->getUniqueParamVal<int>("myparam");
+          int paramValue = comp->getParamValUnique<int>("myparam");
           @endcode
 
           @throws jevois::exception::ParameterException if not exactly one Parameter matches the given descriptor. */

@@ -62,11 +62,6 @@ Then, you can:
 
 Also check out this video (somewhat old, things may look a bit different now):
 
-\htmlonly
-<center>
-<iframe width="560" height="315" src="https://www.youtube.com/embed/ul_IsomUJ4I" frameborder="0"
-	allowfullscreen></iframe>
-</center>
-\endhtmlonly
+\youtube{ul_IsomUJ4I}
 
 */

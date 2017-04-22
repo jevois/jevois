@@ -54,7 +54,6 @@ foreach my $ifdef (@ifdeflist) { $ifdefnames= "$ifdefnames ". substr($ifdef, len
 # Create a doxygen config file:
 open  DOXYFILE, ">$tmpdirname/doxy.dxy" or die $!;
 print DOXYFILE "INPUT                  = $tmpdirname/ $inputFilename\n";
-#print DOXYFILE "INPUT                 = $inputFilename $tmpdirname/\n";
 print DOXYFILE "PREDEFINED 			   = $ifdefnames\n";
 print DOXYFILE "OUTPUT_DIRECTORY       = $tmpdirname\n";
 print DOXYFILE "RECURSIVE              = YES\n";
@@ -411,6 +410,23 @@ if ($#modparams == -1) {
     }
 }
 print OF "</table></td></tr>\n";
+
+# reproduce params.cfg if it exists:
+my @tmp = split("/", $inputFilename); $tmp[-1] = "params.cfg"; my $paramscfg = join("/", @tmp);
+if ( -f $paramscfg )
+{
+    my $contents = `/bin/cat $paramscfg`;
+    print OF "<tr><td><table class=modinfocfg><tr><td class=modinfocfg><b>params.cfg file</b><hr><pre>$contents</pre></td></tr></table></td></tr>\n";
+}
+
+# reproduce script.cfg if it exists:
+@tmp = split("/", $inputFilename); $tmp[-1] = "script.cfg"; my $scriptcfg = join("/", @tmp);
+if ( -f $scriptcfg )
+{
+    my $contents = `/bin/cat $scriptcfg`;
+    print OF "<tr><td><table class=modinfocfg><tr><td class=modinfocfg><b>script.cfg file</b><hr><pre>$contents</pre></td></tr></table></td></tr>\n";
+}
+
 
 # table for all the tag data:
 print OF "<tr><td><table class=modinfomisc>\n";
