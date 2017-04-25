@@ -51,6 +51,8 @@ hardware (ARM processor).
 - \subpage Programmer
 - \subpage History
 
+For tutorials on how to use and program JeVois, see the <a href="/tutorials">JeVois Tutorials</a>.
+
 */
 
 /*! \defgroup core Core classes and definitions

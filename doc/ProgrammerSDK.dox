@@ -112,6 +112,7 @@ Special doxygen tags in your module's doc will be parsed, here are some examples
 - @@author Sample Author
 - @@displayname My Algo (only needed if you want to display a different name than the class name)
 - @@videomapping YUYV 640 480 28.5 YUYV 640 480 28.5 SampleVendor SampleModule
+- @@modulecommand mycommand - description of the module-specific command
 - @@email sampleemail\@samplecompany.com
 - @@address 123 First Street, Los Angeles, CA 90012
 - @@copyright Copyright (C) 2017 by Sample Author

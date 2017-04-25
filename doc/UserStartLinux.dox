@@ -33,7 +33,7 @@ When using \c guvcview for the first time, it may hang trying to open the sound 
 avoid this, start \c guvcview the first time from a Linux terminal, like this:
 \verbatim
 sudo apt-get install guvcview
-guvcview -ao none -f YUYV -x 640x360
+guvcview -ao none -f YUYV -x 640x360 # use '-a none' instead of '-ao none' on Raspberry Pi
 \endverbatim
 guvcview will remember to not try to use sound (-ao none) next time you open it. Next time you can start it from the
 Ubuntu menu without requiring a terminal.

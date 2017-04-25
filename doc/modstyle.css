@@ -43,7 +43,7 @@ table.modinfocfg {
     width: 100%;
 }
 
-td.modinfocfg { color: black; background-color: #f0f0ff; line-height: 175%; padding: 10px; }
+td.modinfocfg { color: black; background-color: #f0f0ff; line-height: 125%; padding: 10px; }
 
 table.modinfoshots {
     background-color: #f0f0ff;
@@ -97,13 +97,14 @@ table.videomapping {
     border-collapse: collapse;
     background-color: #f0f0ff;
     color: black;
-    border-spacing: 0px;
+    border-spacing: 2px;
     width: 100%;
+    line-height: 1em;
 }
 
 td.videomapping {
     text-align: left;
-    padding: 2px;
+    padding: 0px;
 }
 
 em {
@@ -123,3 +124,21 @@ code {
     border-radius: 4px
 }
 
+table.modulecommand {
+    border-collapse: collapse;
+    background-color: #f0f0ff;
+    color: black;
+    border-spacing: 5px;
+    width: 100%;
+    line-height: 1em;
+}
+
+td.modulecommand {
+    text-align: left;
+    padding: 5px;
+}
+
+th.modulecommand {
+    text-align: left;
+    padding: 5px;
+}

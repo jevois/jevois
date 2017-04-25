@@ -80,7 +80,7 @@ print DOXYFILE "TAGFILES               = $ENV{'JEVOIS_SRC_ROOT'}/doc/jevois.tag=
 
 # We here create some custom doxygen tags to allow code writers to input more manifest data in their doc:
 my @dtags = qw/ email mainurl supporturl otherurl address copyright license distribution 
- restrictions videomapping subcomponents depends displayname /;
+ restrictions videomapping subcomponents depends displayname modulecommand /;
 #future use?: / recommends suggests conflicts replaces breaks provides /;
 foreach my $kw (@dtags)
 { print DOXYFILE "ALIASES += \"$kw=\\xrefitem $kw \\\"$kw\\\" \\\"$kw\\\"\"\n"; }
@@ -147,7 +147,8 @@ for my $page (@pages)
                     foreach my $c (@curr) { if ($c !~ m/^\s+$/) { push(@data, $c); } }
                 }
             }
-            $tagdata{$tag} = join(", ", @data);
+            if ($tag eq 'modulecommand') { $tagdata{$tag} = join("|", @data); }
+            else { $tagdata{$tag} = join(", ", @data); }
         }
     }
 }
@@ -378,7 +379,7 @@ if ($vvv ne "") { push(@vmap, $vvv); }
 
 foreach $v (@vmap) {
     $v =~ s/^\s+//; $v =~ s/\s+/\&nbsp\;/g;
-    print OF "<tr><td class=videomapping><small><b>Video Mapping: &nbsp; </b></small><tt>$v</tt></td></tr>\n";
+    print OF "<tr><td class=videomapping><small><b>&nbsp;Video Mapping: &nbsp; </b></small><tt>$v</tt></td></tr>\n";
 }
 print OF "</table></td></tr>\n";
 
@@ -397,6 +398,19 @@ if ($#screenshots == -1 && $#videos == -1) {
     foreach my $vd (@videos) { print OF "<td><a href=\"$vd\">VIDEO</a></td>\n"; }
 }
 print OF "</tr></table></td></tr>";
+
+# Custom commands:
+my $cm = $tagdata{'modulecommand'};
+if ($cm ne "")
+{
+    print OF "<tr><td><table class=modulecommand><tr><th class=modulecommand>Custom module commands</th></tr>\n";
+    my @cm2 = split(/\|/, $cm);
+
+    foreach $cm (@cm2) {
+        print OF "<tr><td class=modulecommand>$cm</td></tr>\n";
+    }
+    print OF "</table></td></tr>\n";
+}
 
 # parameters:
 print OF "<tr><td><table class=modinfopar><tr><th class=modinfopar>Parameter</th><th class=modinfopar>Type</th><th class=modinfopar>Description</th><th class=modinfopar>Default</th><th class=modinfopar>Valid&nbsp;Values</th></tr>\n";
