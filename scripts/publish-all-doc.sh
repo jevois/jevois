@@ -4,13 +4,13 @@
 
 
 # First, make the JeVois doc so we get the tagfile for cross-linking to jevoisbase:
-cd $JEVOIS_SRC_ROOT 
+cd $JEVOIS_SRC_ROOT/jevois
 if [ ! -d hbuild ]; then ./rebuild-host.sh; fi
 cd hbuild
 make doc
 
 # Then, extract modinfo doc for all modules:
-cd ../../jevoisbase
+cd $JEVOIS_SRC_ROOT/jevoisbase
 rm -f src/Modules/*/modinfo*
 if [ ! -d hbuild ]; then ./rebuild-host.sh; fi
 cd hbuild
@@ -20,7 +20,7 @@ make -j 50
 make docweb
 
 # Make the jevois doc one more time and publish it:
-cd $JEVOIS_SRC_ROOT 
+cd $JEVOIS_SRC_ROOT/jevois
 cd hbuild
 make docweb
 

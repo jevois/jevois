@@ -95,7 +95,7 @@ ${JEVOIS_SRC_ROOT}")
   
   # add a dependency and command to create the jvpkg package:
   add_custom_target(jvpkg
-    COMMAND ${JEVOIS_SRC_ROOT}/scripts/jevois-jvpkg.pl ../${JEVOIS_VENDOR}_${CMAKE_PROJECT_NAME}.jvpkg
+    COMMAND ${JEVOIS_SRC_ROOT}/jevois/scripts/jevois-jvpkg.pl ../${JEVOIS_VENDOR}_${CMAKE_PROJECT_NAME}.jvpkg
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/jvpkg )
   
   # Check for JEVOIS_ROOT environment variable:
@@ -128,7 +128,7 @@ macro(jevois_setup_modules basedir deps)
 
     # add a dependency and command to build modinfo.yaml:
     add_custom_command(OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/${basedir}/${JV_MODULE}/modinfo.yaml" "${CMAKE_CURRENT_SOURCE_DIR}/${basedir}/${JV_MODULE}/modinfo.html"
-      COMMAND ${JEVOIS_SRC_ROOT}/scripts/jevois-modinfo.pl ${JV_MODULE}.C
+      COMMAND ${JEVOIS_SRC_ROOT}/jevois/scripts/jevois-modinfo.pl ${JV_MODULE}.C
       DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${basedir}/${JV_MODULE}/${JV_MODULE}.C
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${basedir}/${JV_MODULE})
 
