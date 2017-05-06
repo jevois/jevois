@@ -312,30 +312,6 @@ rm -rf out/sun8iw5p1/linux/common/buildroot/build/opencv*
 
 ./build.sh
 
-# tbb fails to compile:
-
-emacs out/sun8iw5p1/linux/common/buildroot/build/opencv3-3.2.0/3rdparty/tbb/arm_linux_stub.cpp
-
-# add bool param 'x' to: void affinity_helper::protect_affinity_mask(bool x) {}
-
-./build.sh
-
-# fails on tbb compilation in waldboost:
-# there is a problem in tbb destroy_process_mask, just put an empty inline definition in tbb_misc.h
-
-emacs out/sun8iw5p1/linux/common/buildroot/build/opencv3-3.2.0/3rdparty/tbb/tbb44_20160128oss/src/tbb/tbb_misc.h
-
-./build.sh
-
-# fails on oprofile,
-emacs out/sun8iw5p1/linux/common/buildroot/build/oprofile-1.1.0/libutil++/op_bfd.cpp
-
-# replace line 546: 	if (!verbose)
-# with: if (!(cverb << (vbfd & vlevel1)))
-# and comment out line 538: bool const verbose = cverb << (vbfd & vlevel1);
-
-./build.sh
-
 # make an sd card (note: the SD card at this point will not yet have JeVois software, see next step below):
 ./jevois-build.sh
 
