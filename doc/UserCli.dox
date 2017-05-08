@@ -423,7 +423,7 @@ and framerate, and which machine vision module to use.
 For example:
 
 \verbatim
-setmaping2 YUYV 640 480 20.0 JeVois DemoArUco
+setmapping2 YUYV 640 480 20.0 JeVois DemoArUco
 \endverbatim
 will load up the \b DemoArUco module and run it with the camera configured for 640x480 \@ 20fps YUYV video caoture.
 
@@ -431,19 +431,33 @@ will load up the \b DemoArUco module and run it with the camera configured for 6
 the host computer the complete list of all supported video resolutions that it can stream over USB, at the time it is
 first connected to the host computer.
 
-Since the selected mapping has no USB video output, two additional commands become available: \b streamon and \b
-streamoff, detailed below.
+\note For mappings with no video streaming over USB (as set using \c setmmapping2), there is no camera capture software
+running on the host that would instruct JeVois to start streaming video. Hence one needs to instruct the JeVois camera
+to start or stop streaming (see \c streamon and \c streamoff commands below). This is done manually so that users can
+decide when to start and stop streaming.
+
+\note \c setmapping2 should be used only with machine vision modules that support processing with no USB output. Those
+will have a <b>process(InputFrame && inframe)</b> function in their source code. If your JeVois smart camera seems to
+not work after a given \c setmapping2 command, try a <code>setpar serlog USB</code> and connect to JeVois using a
+terminal and the serial-over-USB connection. If you see no messages, probably you forgot the \c streamon command. If you
+see error messages, probably your module does not supportprocessing with no USB output.
 
 \subsubsection cmdstreamon streamon - start camera video streaming
 
-This command will only exist if the current video mapping has a USB output of type NONE. 
+This command will only exist if the current video mapping has a USB output of type NONE (including modes selected using
+\c setmapping2).
+
+It will instruct the JeVois smart camera to start streaming video frames from the camera sensor. It is necessary to
+issue a \c streamon command after a video mode with no USB output has been selected. Otherwise, the smart camera will
+just wait for this command indefinitely.
 
 \subsubsection cmdstreamoff streamoff - stop camera video streaming
 
-This command will only exist if the current video mapping has a USB output of type NONE. 
+This command will only exist if the current video mapping has a USB output of type NONE (including modes selected using
+\c setmapping2). It will instruct the JeVois smart camera to stop streaming video frames from the camera sensor.
 
 When using a mapping with USB output of type NONE, you must manually issue a \c streamoff command before you can issue
-your next \c setmapping command.
+your next \c setmapping or \c setmapping2 command.
 
 \subsubsection cmdping ping - returns 'ALIVE'
 

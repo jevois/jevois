@@ -3,14 +3,72 @@
 The hardware serial port (UART port) on your JeVois smart camera is TTL-level (not RS-232 levels) and supports both 3.3V
 and 5V logic.
 
-The logic voltage to use is supplied by the connected microcontroller to the smart camera (RED wire, IOREF voltage. This
-voltage should be provided by your micro-controller and should be the voltage at which your RX and TX signals
-operate). Arduino boards provide the IOREF pin for this purpose. Thus, a 5V Arduino will output 5V to IOREF, and will
-use 5V levels for RX and TX. In contrast, a 3.3V Arduino will output 3.3V to IOREF and will use 3.3V levels for RX and
-TX.
+The logic voltage to use is supplied by the connected microcontroller to the smart camera (RED wire, IOREF
+voltage). This voltage should be provided by your micro-controller and should be the voltage at which your RX and TX
+signals operate). Arduino boards provide the IOREF pin for this purpose. Thus, a 5V Arduino will output 5V to IOREF, and
+will use 5V levels for RX and TX. In contrast, a 3.3V Arduino will output 3.3V to IOREF and will use 3.3V levels for RX
+and TX.
 
 To connect to an Arduino board, you would typically do as follows:
 
 \image html serial-arduino.png
+
+\note Make sure that you do not use voltages in excess of 5.5V on all pins, otherwise you may damage your JeVois unit.
+
+\note Power consumption on the serial port (all pins combined) is less than 1mA. Hence, it is apporpriate to directly
+use the IOREF pin of any Arduino (which, often, is rated for 50mA or less) with JeVois.
+
+\note JeVois is not powered through the pins on the 4-pin serial connector. IOREF is only providing a voltage reference
+that determines which voltages should be used on the RX and TX pins, but IOREF is not connected to the main power supply
+of JeVois in any way. JeVois is exclusively powered through the mini-USB connector.
+
+Changing the serial port settings
+---------------------------------
+
+You can customize the settings of the serial port to match what your microcontroller can support, by editing the file
+<b>JEVOIS:/config/params.cfg</b> on your microSD card (source in <b>~/jevois/Config/params.cfg</b>). The following
+options are supported (see \ref JeVoisDaemon for more configurations options supported at startup, and see \ref
+jevois::Serial for full documentation of the serial interface):
+
+- \b serialdev - name of the serial device. The hardware serial port for the 4-pin connector is always <b>/dev/ttyS0</b>
+  on the JeVois platform.
+  
+- \b serial:mode - Terminal emulation mode for input, should be \b Plain or \b VT100. Default is \b Plain.
+
+- \b serial:baudrate - baud rate to use. Should be one of 110, 300, 600, 1200, 2400, 4800, 9600, 14400, 19200, 38400,
+  57600, 115200, 230400, 460800, 921600, 1000000, 1152000, 1500000, 2000000, 2500000, 3000000, 3500000, 4000000. Default
+  is \b 115200. Note that some of the values listed here, which are supported by the hardware in theory, do not seem to
+  work. Some tuning of the serial drivers for Allwinner chips in the Linux kernel may be required. The value \b 9600 has
+  been confirmed to work and it what you should use if piping the serial data over a Bluetooth BLE link.
+
+- \b serial:linestyle - End of line style: should be
+  + \b LF for 0x0a [\\n];
+  + \b CR for 0x0d [\\r];
+  + \b CRLF for 0x0d 0x0a [\\r\\n];
+  + \b Zero for 0x00 [\\0];
+  + \b Sloppy for any of CR, LF, CRLF, 0xd0 (issued by some keyboards instead of Return), or Zero as input,
+    and CRLF as outputs. \b Sloppy is the default.
+
+- \b serial:format - Data format. Should be a string with 3 characters:
+  + Number of data bits: \b 5 to \b 8, default is \b 8
+  + Parity: \b N for none, \b O for odd, \b E for even. Default is \b N
+  + Stop bits: \b 1 or \b 2. Default is \b 2
+  + Example: \b 8N1 (default)
+
+
+For example, to reduce the serial rate to 9600 bauds when piping teh serial data to a Bluetooth BLE transmitter, \b
+params.cfg should contain:
+
+\verbatim
+serialdev=/dev/ttyS0
+serial:baudrate=9600
+serial:linestyle=LF
+\endverbatim
+
+\note The first line (serialdev=/dev/ttyS0) is necessary for the other options to be accepted. This is because,
+otherwise, the serial port is left undefined (\b serialdev is empty by default) until after \b params.cfg is parsed, and
+will be assigned a default value of /dev/ttyS0 later when jevois-engine starts its operations.
+
+
 
 */
