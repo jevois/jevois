@@ -31,10 +31,12 @@ for f in modules/*/*/postinstall; do
     if [ -f "${f}" ]; then
 	echo "### Running ${f} ###"
 	d=`dirname "${f}"`
-	`( cd ${d} && sh postinstall )`
+	cd "${d}"
+	sh postinstall
 	sync
-	rm -f "${f}"
+	rm -f postinstall
 	sync
+	cd /jevois
     fi
 done
 
