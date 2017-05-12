@@ -15,6 +15,9 @@
 - Then make sure you read all the user documentation:
   + \ref User
 
+- Then check out the
+  + [User tutorials](/tutorials)
+
 - Then have a look at the following core C++ classes:
   + \ref component
   + \ref jevois::InputFrame and \ref jevois::OutputFrame
@@ -37,5 +40,8 @@
 
 - [The documentation of the JeVoisBase collection of modules](/basedoc/) provides many examples of working modules that
   will inspire you to write your own.
+
+- [The programmer tutorials](/tutorials)
+
 
 */

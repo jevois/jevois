@@ -30,9 +30,8 @@ done
 for f in modules/*/*/postinstall; do
     if [ -f "${f}" ]; then
 	echo "### Running ${f} ###"
-	chmod a+x "${f}"
 	d=`dirname "${f}"`
-	exec "(cd \"${d}\" && ./postinstall)"
+	`( cd ${d} && sh postinstall )`
 	sync
 	rm -f "${f}"
 	sync
@@ -60,3 +59,4 @@ if [ "X${use_usbserial}" != "X1" ]; then opts="${opts} --usbserialdev="; fi
 
 # Finally start the jevois daemon:
 /usr/bin/jevois-daemon ${opts}
+
