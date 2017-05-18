@@ -31,7 +31,7 @@ strong external power supply (transformer, wall adapter).
 - Download and install the AMCap software. You can get it for free at http://noeld.com/updates.asp
 
 - Start the AMCap software. Under "Devices" make sure you select your JeVois smart camera (if you have several cameras,
-  for example also a builtin webcam in your laptop computer). Here for example we run the ArUco demo on JeVois and view
+  for example also a built-in webcam in your laptop computer). Here for example we run the ArUco demo on JeVois and view
   the results on a host PC using AMCap:
 
 \image html amcap-aruco.png
@@ -65,6 +65,27 @@ computer may become awfully confused trying to use a camera that does not exist 
 unplug the camera.
 
 </ul>
+
+// ##############################################################################################################
+\section enablegreywindows Enabling greyscale capture
+
+In addition to being able to output color streaming video, JeVois can, when some machine vision algorithms are enabled,
+also stream greyscale video. This is particularly useful when running machine vision algorithms that produce intended
+for further processing on the host computer. For example, see the [Edge Detection
+Module](/moddoc/EdgeDetection/modinfo.html) or the [Optical Flow Module](/moddoc/OpticalFlow/modinfo.html). Under
+windows, AMCap requires an additional filter to be installed in order to be able to capture greyscale video (in USB
+video specifications, greyscale is called Y800 mode).
+
+The instructions below were [contributed](/qa/index.php?qa=346&qa_1=grey-mode-in-amcap-on-windows-10-causes-error) by
+JeVois user [pelrun](/qa/index.php?qa=user&qa_1=pelrun). Many thanks, pelrun!
+
+- Download http://www.gdcl.co.uk/YUVxfm.zip. A mirror copy is [here](/data/YUVxfm.zip).
+- Extract it to <b>c:\\windows\\system32</b>
+- Open a command prompt window with administrator privileges
+- Enter <code>regsvr32 c:\\windows\\system32\\YUVxfm.dll</code> in the command window.
+
+This will install a directshow filter which supports the Y800 mode and will allow you to use the JeVois machine vision
+modules that output greyscale video.
 
 // ##############################################################################################################
 \section troubleshootwindows Troubleshooting

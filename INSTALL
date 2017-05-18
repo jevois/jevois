@@ -316,7 +316,12 @@ rm -rf out/sun8iw5p1/linux/common/buildroot/build/opencv*
 
 emacs out/sun8iw5p1/linux/common/buildroot/build/opencv3-3.2.0/3rdparty/tbb/arm_linux_stub.cpp
 
-# add bool param 'x' to: void affinity_helper::protect_affinity_mask(bool x) {}
+# add bool param 'x' to:
+#    void affinity_helper::protect_affinity_mask() {}
+# so that it becomes:
+#    void affinity_helper::protect_affinity_mask(bool x) {}
+#
+# and save the file.
 
 ./build.sh
 
@@ -325,14 +330,24 @@ emacs out/sun8iw5p1/linux/common/buildroot/build/opencv3-3.2.0/3rdparty/tbb/arm_
 
 emacs out/sun8iw5p1/linux/common/buildroot/build/opencv3-3.2.0/3rdparty/tbb/tbb44_20160128oss/src/tbb/tbb_misc.h
 
+# find:
+#    void destroy_process_mask();
+# end replace by
+#    inline void destroy_process_mask() { }
+#
+# and save the file.
+
 ./build.sh
 
 # fails on oprofile,
 emacs out/sun8iw5p1/linux/common/buildroot/build/oprofile-1.1.0/libutil++/op_bfd.cpp
 
-# replace line 546: 	if (!verbose)
-# with: if (!(cverb << (vbfd & vlevel1)))
+# replace line 546:
+#    if (!verbose)
+# with:
+#    if (!(cverb << (vbfd & vlevel1)))
 # and comment out line 538: bool const verbose = cverb << (vbfd & vlevel1);
+# then save the file.
 
 ./build.sh
 
@@ -379,6 +394,16 @@ cd ~/jevoisbase
 
 cd ~/jevois-sdk
 ./jevois-build.sh
+
+# FIXME: at of May 17, 2017 this only works when using the easy install package if your username is 'ilab' (which was
+# used during creation of the package). Indeed, the user name and path gets hardcoded into some files, paryially
+# defeating our attempts to make this easy by precompiling a lot of things for you. If you get some error related to
+# fakeroot, you need to delete some of the precompiled files and recompile them again. This takes several hours and some
+# manual interaction. You would basically do (from inside the jevois-sdk/ directory):
+
+rm -rf out
+
+# and then follow the instructions for compiling buildroot from scratch starting with line 302 of this INSTALL file.
 
 # once you know what you are doing, you can instruct jevois-build.sh to not ask any questions. Just be absolutely
 # certain that you are using the right device for your SD card, so that you do not destroy your main hard drive because
