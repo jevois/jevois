@@ -365,12 +365,12 @@ cd ~/jevois
 ./rebuild-platform.sh
 
 cd ../jevoisbase
-./rebuild-platform.sh
+./rebuild-platform.sh -DJEVOIS_MODULES_TO_BUILDROOT=ON
 
 # FOR INFORMATION: rebuild-platform is roughly equivalent to:
 
 mkdir pbuild && cd pbuild
-cmake -DJEVOIS_PLATFORM=ON ..
+cmake -DJEVOIS_PLATFORM=ON -DJEVOIS_MODULES_TO_BUILDROOT=ON ..
 make -j 48     # replace 48 by your number of CPU cores
 sudo make install
 
