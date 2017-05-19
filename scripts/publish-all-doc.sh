@@ -28,3 +28,8 @@ make docweb
 cd $JEVOIS_SRC_ROOT 
 cd ../jevois-tutorials
 make docweb
+
+# Make and publish the blog:
+cd $JEVOIS_SRC_ROOT 
+cd ../jevois-blog
+make docweb

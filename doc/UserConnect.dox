@@ -1,0 +1,251 @@
+/*! \page UserConnect Connecting JeVois to Power and Data
+
+
+Basics
+======
+
+The JeVois-A33 smart camera only has two connectors:
+
+- One mini-USB type B 5-pin connector for power (required) and for transmission of video to a host computer (optional,
+  depends on which machine vision module runs inside JeVois);
+
+- One 4-pin JST-SH 1.0mm connector (referred to as <em>micro-serial</em> connector) for optional TTL-level serial (UART)
+  connection to a microcontroller, such as an Arduino.
+
+Power through the mini-USB connector is always required for operation. You should aim to provide the following:
+
+- Regulated 5V +/- 10% voltage.
+
+- No less than 800mA current (so, a total of 4 Watts of power). Less current is possible if you know that you will only
+  be using some machine vision algorithm that does not fully load the CPU inside JeVois, and which will hence yield a
+  lower power requirement.
+
+- No significant current and power flows through the micro-serial port (see \ref UserSerial for additional
+  details). Hence, you cannot power JeVois through the micro-serial port and you always need to power it through the
+  Mini-USB port.
+
+
+Many power and data scenarios are possible. A few examples are given below.
+
+Standard connection to a host computer
+======================================
+
+In the standard connection, JeVois is connected to one USB 3.0 or two USB 2.0 ports of a host computer. The host
+computer provides power to JeVois through its port(s), and also can communicate with JeVois through these ports (e.g.,
+to stream video from JeVois to the host computer).
+
+USB 2.0 ports are rated for 500mA maximum current output (at 5V). Note that voltage is allowed to drop below 5V as
+current usage increases. Hence, connecting JeVois to a single USB 2.0 port may not provide enough power to operate
+JeVois under a broad range of machine vision algorithms. A standard trick, which has been used previously to power
+external hard-drives or CD-Roms that also required more than 500mA of current, is to use a so-called <b>Y-type</b>
+cable, which connects to two USB ports, thereby combining power from both ports, and hence providing up to 1A of current
+to the device. Y-type cables look like this:
+
+\image html UserConnectY.jpg
+
+The wiring is as follows:
+
+- The USB-A connector (big USB connector) that is connected to two wires (black large connector in the picture above,
+  and P1 in the diagram below) will carry both power and data to JeVois.
+
+- The USB-A connector (big USB connector) that is connected to one wire (red large connector in the picture above,
+  and P3 in the diagram below) will carry only power to JeVois.
+  
+- The mini-USB connector (small black above, P2 below) connects to JeVois and provides power and data to it.
+
+
+\image html UserConnectY2.png
+
+Hence:
+
+- When using a Y-type cable with a computer that only supports USB 2.0, the long end of the cable carries power + data
+  and should be connected to your computer (connector P1 in the diagram above), while the short end carries only extra
+  power and can be connected to another USB port on the same computer, to a USB charger, to an externally-powered USB
+  hub, or to a USB battery bank (connector P3 in the diagram above). The mini-USB connector (P2 in the diagram image)
+  always connects to your JeVois smart camera.
+
+- With USB 3.0, current output specification has been increased: A single USB 3.0 port is now rated to provide no less
+  than 900mA of current (which, with 5V voltage, means 4.5 Watts of power).  Thus, a host computer with USB 3.0 ports
+  can power JeVois using one USB 3.0 port only. When using only one USB 3.0 port on a computer, you only need to connect
+  the long end of the cable (which carries power + data) to your computer (connector P1 in the diagram above).
+
+Here is an example of connecting JeVois to two USB ports of a host computer using a Y-type cable:
+
+\image html UserConnectHostY.jpg
+
+USB cable types
+===============
+
+Many USB cable types exist. The cheapest ones usually use the thinnest possible wires which can carry the data. These
+cables may not be appropriate to carry enough power to JeVois, as the very thin wires will not be able to carry enough
+current to JeVois.
+
+In the USA, copper wire diameter is measured using the [American Wire
+Gauge](https://en.wikipedia.org/wiki/American_wire_gauge) or AWG for short. Smaller AWG values mean thicker wires that
+can carry more current with less loss.
+
+The cheapest USB cables may use 30AWG or 32AWG wire size (extremely thin). While this is appropriate for the data lines,
+it is insufficient to power JeVois.
+
+If you purchase mini-USB cables, make sure they feature 24AWG or lower for the two power wires inside the cable (and
+those will usually also feature 28AWG for the two data wires, and hence will be labeled 24/28AWG cables). Sometimes this
+information is written on the cable:
+
+\image html UserConnectAWG.jpg
+
+The above picture shows a cable that has 1 twisted pair (1P) at 28AWG for data, and 2 conductors (2C) at 24AWG for
+power.
+
+\warning We have been able to fail to properly power JeVois by using cheap USB cables of unknown AWG rating, even at
+lengths of 20cm (8 inches). So just because a cable is short does not mean that it will work.
+
+If in doubt, check out https://jevoisinc.com as all the cables there are custom-manufactured and tested to work with
+JeVois under full load. In fact, we have now moved our manufacturing line to all 22AWG power wires to incur the lowest
+possible loss in the power wires (22AWG is even thicker than 24AWG and hence is better to carry current with low loss;
+but 24AWG remains suitable).
+
+Additional connection scenarios
+===============================
+
+Connecting to a host computer with weak USB ports
+-------------------------------------------------
+
+Although USB 2.0 ports should be able provide 500mA of current according to the USB specifications, sometimes they are
+not. This is often the case in small embedded boards, which themselves are powered from a micro-USB connector, then
+relaying some of that power to their own USB ports.
+
+When a host computer's ability to supply power to its USB ports is weak, you can supplement it by using a Y-type cable
+and connecting the short end (power only) to a stable power source. For example:
+
+\image html UserConnectWeakHostCharger.jpg JeVois connected to an embedded board with weak USB ports. We use a USB charger to provide additional power to JeVois
+
+<p>&nbsp;</p>
+
+<p>&nbsp;</p>
+
+\image html UserConnectWeakHostBatt.jpg  JeVois connected to an embedded board with weak USB ports. We use a USB battery bank to provide additional power to JeVois
+
+
+Note how in both cases above we have connected the USB-A plug with two wires (connector P1) to the USB port of the
+embedded computer, so that both power and data flow between JeVois and the embedded computer. We have connected the
+USB-A plug with only one wire (which is for power only, connector P3) to the auxiliary power source. Hence:
+
+- Power will flow from connector P3 via connector P1 to connector P2.
+
+- Data (streaming video from JeVois to the embedded computer) will flow between JeVois (connector P2) and the embedded
+  computer (connector P1).
+
+The micro-USB cable connected to the embedded computer at the right of the pictures is to power that computer, and it
+should be connected to a USB charger, USB power bank, etc. In such case, you would probably want to use a USB power bank
+that provides several USB outputs, as is usually the case with larger USB power banks; or, similarly, a USB charger with
+several outputs (the small white wall charger shown on this page has 2 ports; many USB charger models are available with
+6 ports or more).
+
+Powering JeVois with no host computer
+-------------------------------------
+
+JeVois does not always stream video over its USB port. In some scenarios, it can just work as a standalone computer.
+
+For example, the [Surprise-based Video Recorder machine vision module](/moddoc/SurpriseRecorder/modinfo.html) uses
+JeVois as a smart surveillance camera, which will just monitor the environment and save a short video clip to its
+microSD card each time something surprising is detected. In such scenario, we only need to provide power to JeVois. This
+can be achieved using a USB charger, a USB battery bank, etc as exemplified below.
+
+
+\image html UserConnectCharger.jpg JeVois operating in standalone mode from a USB charger
+
+<p>&nbsp;</p>
+
+<p>&nbsp;</p>
+
+\image html UserConnectUSBbatt.jpg JeVois operating in standalone mode from a USB power bank (battery)
+
+
+No host computer but a micro-controller
+---------------------------------------
+
+In yet other scenarios, JeVois may not stream video over USB but may issue messages over its micro-Serial port, for
+example to provide information to a micro-controller on an autonomous robot.
+
+\image html UserConnectUSBbattArdu1.jpg JeVois operating in standalone mode from a USB power bank (battery), with micro-serial connection (not yet wired up in the photograph) to an Arduino board that is powered from another source via a micro-USB cable shown at right.
+
+A [splitter mini+micro cable](https://www.jevoisinc.com/collections/accessories/products/mini-usb-micro-usb-splitter-cable-15cm-6-in-long) can come in handy for this kind of scenario:
+
+\image html UserConnectUSBbattArdu2.jpg JeVois operating in standalone mode from a USB power bank (battery), here using a splitter mini+micro cable to also power an Arduino from the same battery bank.
+
+Make sure your USB power bank is rated for at least 1A output current.
+
+
+Powering from a single raw Lithium cell
+---------------------------------------
+
+You can use a handy [Step-UP DC/DC
+converter](https://www.jevoisinc.com/collections/accessories/products/step-up-dc-dc-boost-converter-3v-to-usb-5v-1a) to
+power JeVois from sources that provide less than 5V (e.g., a single Lithium cell rated 3.7V nominal). In doing so, you
+are essentially building your own USB battery bank (those contain a Lithium battery plus a DC/DC converter inside).
+
+\image html UserConnectStepUp.jpg
+
+If you want to stream video data to a host computer that is too weak to power JeVois on its own, use a Y-type cable
+instead of the single cable shown above, as we have used in the previous scenarios.
+
+Powering from a power source with voltage greater than 5V
+---------------------------------------------------------
+
+You can use a [Step-down DC/DC
+converter](https://www.jevoisinc.com/collections/accessories/products/step-down-6-24v-in-to-usb-5v-3a-out-dc-dc-converter)
+to power JeVois from power sources that have voltages greater than 5V, such as a 12V car battery. Here we show such a
+converter connected to a cigarette lighter adapter for a car.
+
+\image html UserConnectStepDown.jpg
+
+You can also use a standard cigarette-lighter USB charger (which allows people to charge their phones from the cigarette
+lighter port of their car). Make sure it is rated to provide at least 1A of current.
+
+If you want to stream video data to a host computer that is too weak to power JeVois on its own, use a Y-type cable
+instead of the single cable shown above, as we have used in the previous scenarios.
+
+Using JeVois with an OpenWRT computer to stream video over WIFI
+---------------------------------------------------------------
+
+[OpenWRT](http://openwrt.org) is an open source framework for wired and wireless network routers. OpenWRT has USB camera
+support, and can stream video wirelessly using the <b>mjpg-streamer</b> OpenWRT module, see
+https://wiki.openwrt.org/doc/howto/webcam
+
+You then simply use a Y-type cable to connect JeVois to the USB port of the OpenWRT box and to an additional power
+source (the USB port on the OpenWRT box is unlikely to be able to power JeVois). The OpenWRT box detects JeVois as a
+connected USB camera, and triggers the <b>mjpg-streamer</b> module. There is a bit of messing around with config files
+and options passed down to mjpg-streamer to select the correct resolution and you are good to go. You view the video by
+wirelessly connecting your tablet to the OpenWRT router (which acts as a wifi access point) and then pointing your
+browser to some URL (see the mjpg-streamer doc) where you will see the video from JeVois.
+
+Try a search for "GL-MT300N" or similar. Although we have not used this exact model, it should work just fine since it
+has OpenWRT and also a USB2.0 port to which you can connect JeVois. Note that the CPU in these OpenWRT boxes is quite
+slow (e.g., 200MHz single core) so the framerate at which you will be able to see the video may be limited. We could do
+15fps at 320x240 MJPG in our tests. Because of the slow OpenWRT CPU, you may be better off doing compression to MJPG on
+JeVois and streaming MJPG video out of JeVois, so that the OpenWRT box will just forward the video frames over wifi
+without the need to compress them on the OpenWRT CPU.
+
+
+\image html UserConnectOpenWRT.jpg
+
+
+Measuring power consumption
+---------------------------
+
+You can measure power consumption of JeVois using a [USB power
+tester](https://www.jevoisinc.com/collections/accessories/products/usb-power-meter). Just make sure that use a single
+port to power JeVois (USB 3.0, charger, battery, etc) and not a Y cable, otherwise you may not measure the full power
+that is going into JeVois.
+
+\image html UserConnectPower.jpg JeVois running the burn test and consuming 3.75 Watts (maximum CPU + GPU load)
+
+
+Where to find the correct cables and supplies
+---------------------------------------------
+
+Cables, battery banks, DC/DC converters, etc that have been certified to work with JeVois are available at
+http://jevoisinc.com
+
+*/
+

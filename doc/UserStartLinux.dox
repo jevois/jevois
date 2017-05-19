@@ -33,7 +33,7 @@ When using \c guvcview for the first time, it may hang trying to open the sound 
 avoid this, start \c guvcview the first time from a Linux terminal, like this:
 \verbatim
 sudo apt-get install guvcview
-guvcview -ao none -f YUYV -x 640x360 # use '-a none' instead of '-ao none' on Raspberry Pi
+guvcview -ao none -f YUYV -x 640x360 # On Raspberry Pi host, use '-a none -o none' instead of '-ao none'
 \endverbatim
 guvcview will remember to not try to use sound (-ao none) next time you open it. Next time you can start it from the
 Ubuntu menu without requiring a terminal.
@@ -137,7 +137,7 @@ selected previously
 You can tell \c guvcview to start in a particular mode, for example
 
 \verbatim
-guvcview -ao none -f YUYV -x 640x312
+guvcview -ao none -f YUYV -x 640x312  # On Raspberry Pi host, use '-a none -o none' instead of '-ao none'
 \endverbatim
 
 Will start the saliency + faces + object recognition demo.

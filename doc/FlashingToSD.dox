@@ -42,6 +42,14 @@ cd ~/jevoisbase/pbuild && maje -j 4
 cd ~/jevois-sdk && ./jevois-build.sh -y /dev/sdX
 \endverbatim
 
+Pulling the latest from github and re-flashing - full recompilation
+======================================================================
+
+\verbatim
+cd ~/jevois && git pull && ./rebuild-platform.sh
+cd ~/jevoisbase && git pull && ./rebuild-platform.sh -DJEVOIS_MODULES_TO_BUILDROOT=ON
+cd ~/jevois-sdk && git pull && ./jevois-build.sh -y /dev/sdX
+\endverbatim
 
 Pulling the latest from github and re-flashing - partial recompilation
 ======================================================================

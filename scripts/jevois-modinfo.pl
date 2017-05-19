@@ -189,6 +189,29 @@ $synopsis =~ s/'//g;
 if ($synopsis eq "") { $synopsis = "This author is too lazy to write a synopsis!"; }
 
 ##############################################################################################################
+# Check for process(in,out) and process(in):
+##############################################################################################################
+my @methods = @{$class{public_methods}{members}};
+my $process1 = 0; my $process2 = 0;
+foreach my $m (@methods)
+{
+    my %hash = %{$m};
+    if ($hash{'kind'} eq 'function' && $hash{'name'} eq 'process')
+    {
+        my @methodparams = @{$hash{parameters}};
+        my $gotin = 0; my $gotout = 0;
+        foreach my $p (@methodparams) {
+            my %paramhash = %{$p};
+            if ($paramhash{'type'} eq 'jevois::InputFrame &&') { $gotin = 1; }
+            if ($paramhash{'type'} eq 'jevois::OutputFrame &&') { $gotout = 1; }
+        }
+
+        if ($gotin && $gotout) { $process2 = 1; }
+        if ($gotin && $gotout == 0) { $process1 = 1; }
+    }
+}
+
+##############################################################################################################
 # Extract the description and authors:
 ##############################################################################################################
 my @detailed = @{$class{detailed}{doc}};
@@ -361,6 +384,14 @@ print OF "<td>$tagdata{'license'}</td></tr></table></td></tr>\n";
 
 # Video mappings: We need to clean them up first
 print OF "<tr><td><table class=videomapping>\n";
+
+print OF "<tr><td class=videomapping><small><font color=navy><b>&nbsp;Supports mappings with USB output: &nbsp; </b>";
+if ($process2) { print OF "Yes"; } else { print OF "No"; }
+print OF "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+print OF "<b>Supports mappings with NO USB output: &nbsp; </b>";
+if ($process1) { print OF "Yes"; } else { print OF "No"; }
+print OF "</font></small></td></tr>\n";
+
 my $vm = $tagdata{'videomapping'};
 my @vm2 = split(/,/, $vm);
 my @vmap; my $ii = 0; my $vvv = "";

@@ -45,6 +45,7 @@ hardware (ARM processor).
 
 - \subpage Handling
 - \subpage Hardware
+- \subpage UserConnect
 - \subpage Concepts
 - \subpage Navigation
 - \subpage User
