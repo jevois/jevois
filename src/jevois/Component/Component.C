@@ -324,7 +324,8 @@ void jevois::Component::findParamAndActOnIt(std::vector<std::string> const & des
       if (p.second->name() == descrip[idx])
       {
         // param name is a match, act on it:
-        std::string ur; if (unrolled.empty()) ur = p.second->name(); else ur = unrolled + ':' + p.second->name();
+        std::string ur = itsInstanceName + ':' + p.second->name();
+        if (unrolled.empty() == false) ur = unrolled + ':' + ur;
         doit(p.second, ur);
       }
   }

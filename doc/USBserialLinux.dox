@@ -1,0 +1,125 @@
+/*! \page USBserialLinux Connecting to JeVois using serial-over-USB: Linux host
+
+
+\section serusblinuxgen Finding the serial-over-USB device on Linux host
+
+On Linux, first look for the port that was created when you plugged in your JeVois smart camera. Most likely it will be
+\b /dev/ttyACM0 unless you already have some other modem device connected to your host computer. To find out, inspect
+messages displayed when you type `dmesg` in a Linux terminal after you have connected your JeVois smart camera. Allow at
+least 10 seconds for the smart camera to boot up and to be detected by your host computer. The output of the `dmesg`
+command should contain some messages about detection of your JeVois smart camera, both its video component and its
+serial port component:
+
+\verbatim
+[...]
+[4768736.704777] usb 1-1.3: new high-speed USB device number 13 using xhci_hcd
+[4768736.809464] usb 1-1.3: New USB device found, idVendor=1d6b, idProduct=0102
+[4768736.809470] usb 1-1.3: New USB device strings: Mfr=1, Product=2, SerialNumber=0
+[4768736.809473] usb 1-1.3: Product: JeVois-A33 Smart Camera
+[4768736.809476] usb 1-1.3: Manufacturer: JeVois Inc
+[4768736.847915] uvcvideo: Found UVC 1.00 device JeVois-A33 Smart Camera (1d6b:0102)
+[4768736.849892] input: JeVois-A33 Smart Camera as /devices/pci0000:00/0000:00:1c.6/0000:09:00.0/usb1/1-1/1-1.3/1-1.3:1.0/input/input29
+[4768736.851499] cdc_acm 1-1.3:1.2: ttyACM0: USB ACM device
+\endverbatim
+
+In the above example, the JeVois smart camera was detected as a UVC (USB Video Class) device and a corresponding video
+device entry was created in \b /devices/pci... which typically would then also be aliased to \b /dev/video0 for easier
+access.  In addition, the serial-over-USB port of the JeVois camera was detected as a CDC-ACM serial port, and was
+assigned device name \b ttyACM0 in this example.
+
+To connect to your JeVois smart camera using the serial-over-USB link, start a terminal program. Default configuration
+is 115200 8N1.
+
+\section serusblinuxperm Permission issues
+
+On Linux, by default, you may not have permission to access the JeVois serial-over-USB port. You can fix this in
+two ways (<b>in our testing, we are still getting a permission denied error for some unknown reason except when we use
+the chmod command below - this doc will need to be fixed when someone figures this out</b>):
+- add your user to the \b dialout group, by issuing
+  \verbatim
+  sudo usermod -a -G dialout $USER
+  groups $USER # check that you are now in the dialout group
+  \endverbatim
+- or just change the access permissions of the port (but note that you will have to do this each time you plugin your
+  JeVois camera):
+  \verbatim
+  sudo chmod 777 /dev/ttyACM0
+  \endverbatim
+
+\note Even after you are added to the \b dialout group, you may still get some permission denied error. In such case,
+try kill or un-install ModemManager, which likely is the culprit:
+\verbatim
+sudo killall ModemManager # to kill it this time, will come back on next reboot
+sudo apt-get remove modemmanager # to get rid of it entirely, you can always re-install it later if ever needed
+\endverbatim
+(but note that in our testing this did not help).
+
+\section serusblinuxtest A trivial test
+
+Try to send a \c ping command to JeVois. This command is just to test that JeVois is alive and well:
+
+\verbatim
+sudo echo ping > /dev/ttyACM0
+\endverbatim
+
+and then get the reply by reading from the JeVois serial device:
+\verbatim
+sudo cat /dev/ttyACM0
+\endverbatim
+
+and you should see
+\verbatim
+ALIVE
+OK
+\endverbatim
+
+Hit \c CTRL-C to stop listening to the serial port.
+
+\section serusblinuxscreen Using the screen command
+
+\verbatim
+sudo apt-get install screen       # if not already installed
+sudo screen /dev/ttyACM0 115200
+\endverbatim
+
+\note The `screen` program does not (as far as we know) provide an option for command echo (to see what you are
+typing). Hence, as you type, you will not see what you type. This is normal.
+
+\note To scroll up while using `screen`, type \c CTRL-A \c ESC and you can then use the arrow keys or mouse wheel to
+scroll up. Type \c RETURN twice when you are ready to go back to interactive mode.
+
+\section serusblinuxminicom Using the minicom software
+
+You can also use \c minicom or other serial communication software. Minicom is nice because it allows you to enable
+local echo (so you can see what you type):
+
+\verbatim
+sudo apt-get install minicom       # if not already installed
+sudo minicom -D /dev/ttyACM0
+\endverbatim
+
+To enable local echo, type the following keystrokes: \c CTRL-A \c Z (for configuration menu), then \c E (local echo
+on/off). Note that even though minicom makes it look like you can corect typos, you still cannot; for example, typing
+`helx` then \c BACKSPACE and then `p` (to correct from helx to help) will transmit the message `helx` followed by a
+\c BACKSPACE character followed by `p` and this will still be an incorrect command for JeVois.
+
+\section serusblinuxbeware Beware of ModemManager or similar on Linux
+
+Many Linux distributions, including Ubuntu, monitor the connection of modems, so that they can be detected in a
+plug-and-play manner. Because the JeVois serial-over-USB port looks to a host computer like a new modem (this is so that
+no driver is required), your host computer may try to send modem configuration commands to JeVois as you connect
+it.
+
+JeVois will safely ignore these commands, but it may take a few minutes for your host computer to give up on trying to
+initialize JeVois as a modem that can dial out over telephone lines. While your host computer is trying to configure
+JeVois as a modem, the commands it sends will interfere with any commands you may type. To avoid this and to allow you
+to use the serial-over-USB port as soon as it is detected by your host, turn off the modem manager feature of your Linux
+host. For example, on Ubuntu:
+
+\verbatim
+sudo killall ModemManager
+\endverbatim
+
+
+*/
+

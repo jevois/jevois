@@ -73,7 +73,7 @@ to a new card, you need to do a full physical sector-by-sector copy. Instruction
 
 \image html microsd-mac.png
 
-\section microsd3 Contents
+\section microsd3 MicroSD card contents
 
 Here is an abbreviated tree of the files present on a typical JeVois microSD card:
 

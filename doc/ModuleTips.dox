@@ -1,0 +1,72 @@
+/*! \page ModuleTips Tips for writing machine vision modules
+
+// ####################################################################################################
+\section moduletipsexceptions Handling exceptions
+
+The JeVois framework fully embraces the use of exceptions. We believe that this provides for much more readable code,
+where the main flow is the one that is expected to work. This is in contrast to, for example, the Linux kernel, which is
+just a big pile of \c if statements to check whether some action succeeded or not.
+
+In a Module process() function, the right thing to do if anything goes wrong is hence to throw and exception. The Engine
+will catch the exception and will cleanup and proceed to the next video frame, hopefully with better luck.
+
+We recommend throwing \c std::runtime_error, as this will give more verbose messages to users (the error message will
+show the exception's \c what() string).
+
+To be exception-safe and to avoid memory leaks, the easiest (and possibly best) is to always use exception-safe wrappers
+around dynamically-allocated memory. The most common is \c std::shared_ptr, which will automatically free the allocated
+memory when nobody is referencing it anymore.
+
+Thus, instead of:
+
+\code
+void process(jevois:InputFrame && inframe)
+{
+  char * tmpdata = new char[100];
+
+  do_something_that_could_throw();
+
+  delete [] tmpdata;
+}
+\endcode
+
+which would leak the \c tmpdata memory in case of an exception, just use:
+
+\code
+void process(jevois:InputFrame && inframe)
+{
+  std::shared_ptr<char> tmpdata(new char[100]);
+
+  do_something_that_could_throw();
+}
+\endcode
+
+The \c shared_ptr will automatically free the memory when it runs out of scope (either because the \c process() function
+ends normally, or because of an exception). You can also just use an \c std::string or \c std::vector for \c tmpdata as
+those will free their memory when they run out of scope (including because an exception was thrown). \c std::unique_ptr
+would work here too.
+
+
+// ####################################################################################################
+\section moduletipscoords Coordinates
+
+JeVois may process images as various video resolutions. If it detects something in a frame and wants to communicate its
+coordinates to an Arduino, the problem arises of which resolution was being used and how to let the Arduino
+know.
+
+For example, if an algorithm was processing video at 640x480, then an object detected at coordinates 320,240 is at the
+center of the field of view. But if the camera was grabbing at 320x240, now coordinates 320,240 are just past the
+bottom-right corner of the field of view. Just letting an Arduino know that something was detected at 320,240 could
+possibly be confusing.
+
+Instead of having the Arduino do the work of supporting multiple camera resolutions, we provide in JeVois a
+standardized coordinate system:
+
+See \ref coordhelpers
+
+Use imgToStd() to convert from image coordinates to the standardized coordinates.
+
+Use stdToImg() for the converse.
+
+*/
+

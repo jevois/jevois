@@ -1,32 +1,58 @@
-body, table, div, p, dl {
-    font-family: Helvetica, Lucida Grande, Verdana, Geneva, Arial, sans-serif;
+body, table, div, p, dl, ul, li, tr, td {
+    font-family: "Open Sans", Helvetica, "Lucida Grande", Verdana, Geneva, Arial, sans-serif;
+    line-height: 1.6em;
+    font-weight: 400;
 }
+
+th, td { padding: 10px; }
 
 table.modinfo {
     border-collapse: collapse;
-    background-color: #f0f0f0;
+    background-color: #5050a0;
+    color: white;
+    border-spacing: 10px;
+    width: 100%;
+}
+
+td.modinfo {
+    padding: 10px;
 }
 
 table.modinfotop {
     border-collapse: collapse;
-    background-color: #f0f0f0;
+    background-color: #fafafa;
+    border-spacing: 2px;
+    width: 100%;
 }
 
-td.modinfoname { color: navy; font-size: 110%; font-weight: 500; padding: 0px; }
+td.modinfoname { vertical-align: middle; font-size: 200%; font-weight: 700; padding: 0px; }
 
-td.modinfosynopsis { color: navy; font-weight: 200; padding: 0px; }
+td.modinfosynopsis { vertical-align: middle; font-size: 130%; font-weight: 200; padding: 0px; }
 
 table.modinfoauth {
     border-collapse: collapse;
-    background-color: #f0f0ff;
+    background-color: #f8f8ff;
+    padding: 10px;
+    width: 100%;
 }
 
-td.modinfodesc { color: navy; padding: 10px; }
+td.modinfodesc { color: black; background-color: #fafafa; line-height: 175%; padding: 10px; }
+
+table.modinfocfg {
+    background-color: #f0f0ff;
+    width: 100%;
+}
+
+td.modinfocfg { color: black; background-color: #f0f0ff; line-height: 125%; padding: 10px; }
 
 table.modinfoshots {
-    background-color: #e0e0ff;
+    background-color: #f0f0ff;
     padding: 30px;
     width: 100%;
+}
+
+td.modinfoshots {
+    padding: 30px;
 }
 
 table.modinfopar {
@@ -36,7 +62,7 @@ table.modinfopar {
 }
 
 th.modinfopar {
-    background-color: #e0e0ff;
+    background-color: #e8e8ff;
     border-bottom: 1px solid #ddd;
     text-align: left;
     padding: 10px;
@@ -59,16 +85,60 @@ table.modinfomisc {
 
 th.modinfomisc {
     text-align: left;
+    padding: 5px;
 }
+
 td.modinfomisc {
     text-align: left;
+    padding: 5px;
+}
+
+table.videomapping {
+    border-collapse: collapse;
+    background-color: #f0f0ff;
+    color: black;
+    border-spacing: 2px;
+    width: 100%;
+    line-height: 1em;
 }
 
 td.videomapping {
-    background-color: #e0e0ff;
     text-align: left;
+    padding: 0px;
 }
 
 em {
     color: blue;
+}
+
+
+code, kbd, pre, samp {
+    font-family: Menlo,Monaco,Consolas,"Courier New",monospace
+}
+
+code {
+    padding: 2px 4px;
+    font-size: 90%;
+    color: #c7254e;
+    background-color: #e9e2e4;
+    border-radius: 4px
+}
+
+table.modulecommand {
+    border-collapse: collapse;
+    background-color: #f0f0ff;
+    color: black;
+    border-spacing: 5px;
+    width: 100%;
+    line-height: 1em;
+}
+
+td.modulecommand {
+    text-align: left;
+    padding: 5px;
+}
+
+th.modulecommand {
+    text-align: left;
+    padding: 5px;
 }

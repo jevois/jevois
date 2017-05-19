@@ -197,7 +197,7 @@ namespace jevois
 
       \note Every module implementation file should contain a call to #JEVOIS_REGISTER_MODULE(MODULENAME) for the
       module's class. This creates some plain-C entry points that will be used when the module is loaded from a dynamic
-      library (.so) file to instantiate the module. See \ref ModuleTutorial.html for examples.
+      library (.so) file to instantiate the module. See \ref ModuleTutorial for examples.
 
       \ingroup core */
   class Module : public Component

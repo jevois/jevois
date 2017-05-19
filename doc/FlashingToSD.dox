@@ -1,0 +1,64 @@
+/*! \page FlashingToSD Flashing to microSD card
+
+When you run `./rebuild-platform.sh` in \b jevois and `./rebuild-platform.sh -DJEVOIS_MODULES_TO_BUILDROOT=ON` in
+\b jevoisbase, compiled files get installed into ~/jevois-sdk
+
+The last step to run them on the JeVois smart camera is to flash the whole Linux OS, kernel, JeVois framework (including
+\c jevois-daemon), and jevoisbase modules to microSD.
+
+To do this, go to \b ~/jevois-sdk and run
+
+\verbatim
+./jevois-build.sh
+\endverbatim
+
+and answer the questions interactively.
+
+Once you have done this a few times and you are confident that you know what you are doing, you can instruct
+\c jevois-build.sh to not ask any questions. Just be absolutely certain that you are using the right device for your SD
+card, so that you do not destroy your main hard drive because of a small typo:
+
+\verbatim
+./jevois-build.sh -y /dev/sdX
+\endverbatim
+
+where you replace \b /dev/sdX by the device that gets assigned to your microSD card.
+
+Re-flashing after some code update - full recompilation
+=======================================================
+
+\verbatim
+cd ~/jevois && ./rebuild-platform.sh
+cd ~/jevoisbase && ./rebuild-platform.sh -DJEVOIS_MODULES_TO_BUILDROOT=ON
+cd ~/jevois-sdk && ./jevois-build.sh -y /dev/sdX
+\endverbatim
+
+Re-flashing after some code update - partial recompilation
+==========================================================
+
+\verbatim
+cd ~/jevois/pbuild && make -j 4
+cd ~/jevoisbase/pbuild && maje -j 4
+cd ~/jevois-sdk && ./jevois-build.sh -y /dev/sdX
+\endverbatim
+
+Pulling the latest from github and re-flashing - full recompilation
+======================================================================
+
+\verbatim
+cd ~/jevois && git pull && ./rebuild-platform.sh
+cd ~/jevoisbase && git pull && ./rebuild-platform.sh -DJEVOIS_MODULES_TO_BUILDROOT=ON
+cd ~/jevois-sdk && git pull && ./jevois-build.sh -y /dev/sdX
+\endverbatim
+
+Pulling the latest from github and re-flashing - partial recompilation
+======================================================================
+
+\verbatim
+cd ~/jevois && git pull && cd pbuild && make -j 4
+cd ~/jevoisbase && git pull && cd pbuild && maje -j 4
+cd ~/jevois-sdk && ./jevois-build.sh -y /dev/sdX
+\endverbatim
+
+
+*/

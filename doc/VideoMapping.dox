@@ -4,21 +4,52 @@ Your JeVois camera is capable of running a wide range of machine vision algorith
 runs is defined by a configuration file which establishes a mapping between camera resolution, framerate, and pixel
 format, a USB output resolution, and pixel format, and the corresponding machine vision processing module.
 
-The definitions are stored in a file called videomappings.cfg which is in directory config/1.0/ on the JEVOIS partition
-of your microSD card. You can inspect and edit this file.
+The definitions are stored in a file called \b videomappings.cfg which is at <b>JEVOIS:/config/videomappings.cfg</b> on
+your microSD card (source at <b>~/jevois/Config/videomappings.cfg</b>). You can inspect and edit this file.
 
-Here is an example videomappings.cfg file. Lines that start with a # sign are commented out and ignored by the smart
-camera.
+Some mappings stream USB video to a host computer, which is intended either for viewing by humans (demo modes), or for
+further processing by the host computer. These mappings define what the video format, resolution and frame rate is, what
+the corresponding camera sensor format, resolution and frame rate is, and which machine vision module is used to compute
+the output video frames from the camera sensor frames. These mappings must be known at the time the Linux kernel boots
+on the small computer inside the JeVois camera, and hence they cannot be changed at runtime. This so that the list of
+supported video formats, resolutions, and frame rates over USB can be announced to the host computer when it first
+detects and configures the JeVois smart camera.
 
-\note In the (hopefully near) future, the videomapping.cfg file will be automatically updated as you install new
-modules, and/or a simple user interface to it will be provided. In the meantime, adding or removing vision processing
-modes to your JeVois camera is achieved by adding or deleting (or commenting out) some lines in the videomapping.cfg
-file.
+Some mappings do not provide any video output to USB, and are intended for use by Arduino or similar. The machine vision
+modules using such mappings usually do output strings to serial port, to indicate what they see in a very compact
+format. These mappings specify camera sensor format, resolution and frame rate is, and which machine vision module is
+used to process the camera frames. These mappings can both be specified in the \b videomappings.cfg file, or can be
+defined at runtime (see the \b setmapping2 command in \ref UserCli).
+
+Below is an example \b videomappings.cfg file. Lines that start with a \a # sign are commented out and ignored by the
+smart camera.
+
+\note The \b videomapping.cfg file may be automatically updated as you install new modules. In addition, in the
+(hopefully near) future, a simple user interface to it will be provided. In the meantime, adding or removing vision
+processing modes to your JeVois camera is achieved by adding or deleting (or commenting out) some lines in the
+videomapping.cfg file.
 
 \warning There is a limit on how many active mappings (not commented out) your videomapping.cfg file may have, which is
 about 50. This is limited by a statically-allocated buffer in the Linux kernel that is used to communicate the
 information about supported USB resolutions to the host computer. If your JeVois camera is not detected by your host
 computer anymore, maybe you have too many active mappings.
+
+\note Some video mappings which work are commented out in \b videomappings.cfg on the pre-installed microSD image. This
+is because Mac OSX will stop detecting the JeVois camera as soon as it exposes any BAYER or RGB565 video formats. So,
+for maximum compatibility of the pre-installed microSD image, those are disabled by default. If you are using Linux or
+Windows, try un-commenting (remove the \a # sign) some of these to activate them.
+
+To avoid having your JeVois smart camera just hang because of parsing errors, for example in case of malformed or
+duplicate video mappings in the \b videomappings.cfg file, the following policy has been adopted:
+
+- if a mapping is malformed (missing fields, wrong fields, etc), it will be skipped.
+- if there is no mapping with USB output in the file, one will be added, YUYV 640x480 \@ 30fps PassThrough.
+- if there is no default mapping (marked with a \a * at the end), the first mapping with USB output will
+  be selected as default.
+- if two mappings have identical USB output pixel format, resoltion, and frame rate, the second one will be slowed down
+  by 1 fps (and so on if more than two conflicts).
+
+See jevois::videoMappingsFromStream() for more info.
 
 \verbatim
 ######################################################################################################################
@@ -37,17 +68,17 @@ computer anymore, maybe you have too many active mappings.
 # Tel: +1 213 740 3527 - itti@pollux.usc.edu - http://iLab.usc.edu - http://jevois.org
 ######################################################################################################################
 #
-# JeVois smart camera operation modes
+# JeVois smart camera operation modes and video mappings
 #
 # Format is: <USBmode> <USBwidth> <USBheight> <USBfps> <CAMmode> <CAMwidth> <CAMheight> <CAMfps> <Vendor> <Module> [*]
 #
 # CamMode can be only one of: YUYV, BAYER, RGB565
 # USBmode can be only one of: YUYV, GREY, MJPG, BAYER, RGB565, BGR24, NONE
 
-# USB to camera mode mappings (when USBmode is not NONE) are organized according to output format, which must be unique
-# (no two entries in this file may have same USBmode/USBwidth/USBheight/USBfps). Indeed, these modes can only be
-# selected by the host computer's video grabbing software, and they are selected by picking an output format in that
-# software.  These modes cannot be chosen by the JeVois system itself. For these modes, the Module's process(inframe,
+# USB to camera mode mappings (when USBmode is not NONE) are organized according to output format, which should be
+# unique (no two entries in this file should have same USBmode/USBwidth/USBheight/USBfps). Indeed, these modes can only
+# be selected by the host computer's video grabbing software, and they are selected by picking an output format in that
+# software. These modes cannot be chosen by the JeVois system itself. For these modes, the Module's process(inframe,
 # outframe) function will be called on every frame.
 
 # Camera-only modes (when USBmode is NONE) mode mappings have no video output over USB, and are selected by interacting
@@ -101,14 +132,25 @@ computer anymore, maybe you have too many active mappings.
 # The pixel_format values are: 'yuyv422' for YUYV, 'gray' for GRAY, 'rgb565' for RGB565, 'mjpeg' for MJPG, 'bgr24' for
 # BGR24, and 'bayer_rggb8' for BAYER. You can run 'ffplay -pix_fmts' to see the list of pixel formats that ffplay
 # supports.
+#
+# Here is another example where we record the output of JeVois to a file:
+#
+#   ffmpeg -f v4l2 -pixel_format rgb565 -video_size 320x240 -framerate 22 -i /dev/video0 output.mp4
 
-# On Mac OSX, we have not found many apps that allow a user to select a particular video resolution and framerate. For
-# example, the buit-in PhotoBooth app does not provide any control over the camera. An exception is to use ffplay for
+# On Mac OSX, we recommend using the CamTwist app, as described in the JeVois documentation. You can also use ffplay for
 # OSX: Download the pre-compiled ffplay binary from the ffmpeg web site, and then run:
 #
 #   ~/bin/ffplay -f avfoundation -i "JeVois" -video_size 640x300 -framerate 60 -pixel_format yuyv422
 #
 # (assuming you saved ffplay into your ~/bin/ directory).
+
+# Mac compatibility notes: The JeVois smart camera is correctly detected on Macs and works with PhotoBooth as long as:
+# 1) you have a mapping that outputs YUYV 640x480 (this is the one that PhotoBooth will select (at least on recent OSX
+# like El Capitan, etc); beware that it will also flip the image horizontally); 2) you have no active (not
+# commented-out) mapping with BAYER, RGB565, or BGR24 output. If you have any un-commented mapping with BAYER, RGB565,
+# or BGR24 in your videomappings.cfg, your JeVois smart camera will still be detected by your Mac, PhotoBooth will start
+# and try to use the camera, but it will only display a black screen. Our guess is that this is a bug in the Mac camera
+# driver. It is ok to have additional mappings with YUYV output, as well as mappings with MJPG or GREY output.
 
 ####################################################################################################
 ### Pass-through and simple pixel format conversion modes:
@@ -116,23 +158,23 @@ computer anymore, maybe you have too many active mappings.
 
 #BAYER 640 480 26.8 YUYV 640 480 26.8 JeVois Convert
 #BGR24 640 480 26.8 YUYV 640 480 26.8 JeVois Convert
-#GREY 640 480 26.8 YUYV 640 480 26.8 JeVois Convert
+GREY 640 480 26.8 YUYV 640 480 26.8 JeVois Convert
 #RGB565 640 480 26.8 YUYV 640 480 26.8 JeVois Convert
 
 #MJPG 640 480 20.0 YUYV 640 480 20.0 JeVois Convert
 MJPG 352 288 60.0 BAYER 352 288 60.0 JeVois Convert
-##MJPG 320 240 30.0 RGB565 320 240 30.0 JeVois Convert
-#MJPG 320 240 15.0 YUYV 320 240 15.0 JeVois Convert
+MJPG 320 240 30.0 RGB565 320 240 30.0 JeVois Convert
+MJPG 320 240 15.0 YUYV 320 240 15.0 JeVois Convert
 MJPG 320 240 60.0 RGB565 320 240 60.0 JeVois Convert
 MJPG 176 144 120.0 BAYER 176 144 120.0 JeVois Convert
-#MJPG 160 120 60.0 YUYV 160 120 60.0 JeVois Convert
-#MJPG 88 72 120.0 RGB565 88 72 120.0 JeVois Convert
+MJPG 160 120 60.0 YUYV 160 120 60.0 JeVois Convert
+MJPG 88 72 120.0 RGB565 88 72 120.0 JeVois Convert
 
 #BAYER 1280 1024 15.0 BAYER 1280 1024 15.0 JeVois PassThrough
-BAYER 640 480 30.0 BAYER 640 480 30.0 JeVois PassThrough
-BAYER 352 288 60.0 BAYER 352 288 60.0 JeVois PassThrough
+#BAYER 640 480 30.0 BAYER 640 480 30.0 JeVois PassThrough
+#BAYER 352 288 60.0 BAYER 352 288 60.0 JeVois PassThrough
 #BAYER 320 240 60.0 BAYER 320 240 60.0 JeVois PassThrough
-BAYER 176 144 120.0 BAYER 176 144 120.0 JeVois PassThrough
+#BAYER 176 144 120.0 BAYER 176 144 120.0 JeVois PassThrough
 #BAYER 160 120 60.0 BAYER 160 120 60.0 JeVois PassThrough
 #BAYER 88 72 120.0 BAYER 88 72 120.0 JeVois PassThrough
 
@@ -152,7 +194,7 @@ BAYER 176 144 120.0 BAYER 176 144 120.0 JeVois PassThrough
 #YUYV 640 480 5.5 YUYV 640 480 5.5 JeVois PassThrough
 
 YUYV 320 240 60.0 YUYV 320 240 60.0 JeVois SaveVideo
-YUYV 320 240 30.0 YUYV 320 240 30.0 JeVois SaveVideo
+#YUYV 320 240 30.0 YUYV 320 240 30.0 JeVois SaveVideo
 #YUYV 320 240 15.0 YUYV 320 240 15.0 JeVois SaveVideo
 
 YUYV 160 120 60.0 YUYV 160 120 60.0 JeVois SaveVideo
@@ -187,7 +229,8 @@ YUYV 640 312 50.0 YUYV 320 240 50.0 JeVois DemoSalGistFaceObj
 ### Demo: JeVois intro movie, then Saliency + gist + face detection + object recognition
 ####################################################################################################
 
-YUYV 640 360 30.0 YUYV 320 240 30.0 JeVois DemoSalGistFaceObj
+YUYV 640 360 30.0 YUYV 320 240 30.0 JeVois JeVoisIntro
+YUYV 640 480 30.0 YUYV 320 240 30.0 JeVois JeVoisIntro
 
 ####################################################################################################
 ### Demo: Saliency and gist
@@ -206,7 +249,7 @@ YUYV 640 300 60.0 YUYV 320 240 60.0 JeVois DemoSaliency *
 ####################################################################################################
 
 # saliency + feature maps + gist
-GREY 120 25 60.0 YUYV 320 240 60.0 JeVois SaliencyGist
+#GREY 120 25 60.0 YUYV 320 240 60.0 JeVois SaliencyGist
 
 # saliency + feature maps
 #GREY 120 15 60.0 YUYV 320 240 60.0 JeVois SaliencyGist
@@ -289,15 +332,17 @@ GREY 176 144 120.0 YUYV 176 144 120.0 JeVois DemoEyeTracker
 ### Demo: ArUco augmented-reality markers detection and decoding
 ####################################################################################################
 
+NONE 0 0 0.0 YUYV 320 240 30.0 JeVois DemoArUco
 YUYV 320 260 30.0 YUYV 320 240 30.0 JeVois DemoArUco
+YUYV 640 500 20.0 YUYV 640 480 20.0 JeVois DemoArUco
 
 ####################################################################################################
 ### Edge detection using Canny
 ####################################################################################################
 
-#GREY 640 480 29.0 YUYV 640 480 29.0 JeVois EdgeDetection
+GREY 640 480 29.0 YUYV 640 480 29.0 JeVois EdgeDetection
 GREY 320 240 59.0 YUYV 320 240 59.0 JeVois EdgeDetection
-GREY 176 144 119.0 YUYV 176 144 119.0 JeVois EdgeDetection
+#GREY 176 144 119.0 YUYV 176 144 119.0 JeVois EdgeDetection
 
 ####################################################################################################
 ### Edge detection using 4 Canny filters in parallel, with different settings
@@ -309,13 +354,14 @@ GREY 320 960 45.0 YUYV 320 240 45.0 JeVois EdgeDetectionX4
 ### Color-based object tracker
 ####################################################################################################
 
+NONE 0 0 0.0 YUYV 320 240 60.0 JeVois ObjectTracker
 YUYV 320 254 60.0 YUYV 320 240 60.0 JeVois ObjectTracker
 
 ####################################################################################################
 ### GPU color image processing demo
 ####################################################################################################
 
-RGB565 320 240 22.0 YUYV 320 240 22.0 JeVois DemoGPU
+#RGB565 320 240 22.0 YUYV 320 240 22.0 JeVois DemoGPU
 
 ####################################################################################################
 ### Combo CPU multithreaded saliency/gist + 4x GPU grayscale image processing demo

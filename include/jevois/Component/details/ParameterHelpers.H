@@ -37,9 +37,9 @@ namespace jevois
 // will be documented as related functions. Just remember to comment each parameter declaration with a relates doxygen
 // tag that relates it to the host component.
 
-#ifndef JEVOIS_DOXYGEN
-
 // BEGIN_JEVOIS_CODE_SNIPPET parametermacros.C
+
+#ifndef JEVOIS_DOXYGEN
 
 // Convenience macro to define a Parameter type. All the ... args are passed to ParameterDef
 #define JEVOIS_DECLARE_PARAMETER(ParamName, ParamType, ...)             \
@@ -76,6 +76,6 @@ namespace jevois
     { return dynamic_cast<jevois::Component const *>(static_cast<jevois::ParameterRegistry const *>(this)); } \
   };
 
-// END_JEVOIS_CODE_SNIPPET
-
 #endif
+
+// END_JEVOIS_CODE_SNIPPET

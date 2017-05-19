@@ -1,0 +1,109 @@
+/*! \page CompilingJeVois Compiling JeVois core software from source
+
+JeVois core software is in a repository called \c jevois and located at https://github.com/jevois
+
+Compiling JeVois core software from source is only supported on Ubuntu Linux (version 16.10 amd64 recommended).
+
+Before you attempt to compile JeVois, you should go through the [INSTALL
+instructions](https://github.com/jevois/jevois/blob/master/INSTALL) at least once. As part of this, you will download
+all JeVois core software and all necessary Ubuntu packages.
+
+Theory
+------
+
+The JeVois core software is written in C++-17. It provides code for video capture from a camera sensor, video output to
+a USB link, serial communications, basic low-level image processing functions, support for creating more advanced
+machine vision algorithms from collectons of components with runtime-tunable parameters, and support for
+loading/unloading machine vision modules at runtime.
+
+The JeVois core software is configured and compiled using [CMake](https://cmake.org).
+
+It can be compiled natively on your Linux computer (\b host mode), in which case video will be captured from any
+connected camera, and video output will be to your computer's display. It can also be cross-compiled for the CPU inside
+the JeVois smart camera (\b platform mode), in which case video will be captured from the video sensor inside the
+JeVois camera, and video output will be streamed over the USB link.
+
+Full reconfiguration and compilation
+------------------------------------
+
+Scripts are provided to recompile everything:
+
+- \c rebuild-host.sh will
+  + Compile natively for your computer's CPU
+  + Object files will be in \c hbuild/ which the script creates
+  + Executables will be installed to \c /usr/local/bin
+  + Include files to be used by module developers will be installed in \c /usr/local/include/jevois
+  + JeVois config files will be installed in \c /jevois (to match their location on the platform hardware). This
+    is also where you should install machine vision modules for JeVois.
+  + Thus, all files and executables are ready to use immediately on your computer.
+
+- \c rebuild-platform.sh will
+  + Cross-compile for the CPU inside the JeVois smart camera (arm-gnueabi-hf)
+  + Object files will be in \c pbuild/ which the script creates
+  + Executables will be installed to platform \c usr/bin within jevois-sdk (this will later be flahed to microSD)
+  + Include files to be used by module developers will be installed in \c usr/include/jevois within jevois-sdk
+  + JeVois config files will be installed in \c /jevois within jevois-sdk. This
+    is also where you should install machine vision modules for JeVois.
+  + Thus, because all target files are stored into the jevois-sdk, they will be ready to be flashed to
+    microSD that can then be inserted into your JeVois smart camera.
+
+The main executable that is created is \c jevois-daemon, which basically implements a JeVois Engine that will
+orchestrate the flow of data from camera sensor to machine vision processing to video streaming over USB. See
+JeVoisDaemon for more info.
+
+Partial re-compilation
+----------------------
+
+The scripts \c rebuild-host.sh and \c rebuild-platform.sh clear and recompile everything.
+
+You should run them at least once.
+
+Then, if you are just changing a few files, you can only recompile what is needed, as follows:
+
+- for host:
+\verbatim
+cd hbuild
+make -j 4    # replace 4 by the number of cores on your desktop computer
+sudo make install
+make doc     # if desired
+\endverbatim
+
+- for platform
+\verbatim
+cd pbuild
+make -j 4    # replace 4 by the number of cores on your desktop computer
+make install
+\endverbatim
+
+Advanced configuration flags
+----------------------------
+
+The scripts \c rebuild-host.sh and \c rebuild-platform.sh pass down any command-line arguments to cmake. Available flags
+include (see CMakeLists.txt in jevois/ for the latest):
+
+- \c -DJEVOIS_LDEBUG_ENABLE=ON Enable debug-level messages. Those are turned off by default so that they do not use any
+  CPU and do not slow down operations. Turning them on is useful for low-level debugging. Beware that some sections of
+  the USB streaming code are time-critical and may fail (i.e., give USB errors) when LDEBUG is enabled. Note that This
+  just enables LDEBUG statements to be compiled. To see them at runtime, you also need to set the \c loglevel parameter
+  to debug level, see UserCli for info about the \c loglevel parameter.
+
+- \c -DJEVOIS_TRACE_ENABLE=ON Enable function tracing, which will issue a message (at the LDEBUG level) each time a
+  particular function is entered, and another when it is exited. Functions that you want to trace need to have a
+  JEVOIS_TRACE(level) statement in them. Because trace messages are at the LDEBUG level, if LDEBUG is not enabled (see
+  above), trace messages will not be seen.
+
+- \c -DJEVOIS_USE_SYNC_LOG=ON Uses synchronous logging, i.e., we wait until each log message is printed out before
+  continuing execution. This interferes with time-critical code sections, such as anything related to USB
+  streaming. Hence, by default, logging in JeVois is asynchronous, messages are just pushed into a queue without waiting
+  for them to be printed out, and a separate thread then prints them out. This asynchronous logging eliminatges most
+  slowdown due to logging, but it may be confusing when debugging things that interact with the Linux system or kernel,
+  as the order in which JeVois messages versus syslog messages will appear may not reflect the true ordering of what
+  happened.
+
+- \c -DJEVOIS_LOG_TO_FILE=ON Enable sending all log messages to file jevois.log instead of console. Only works with
+  async logging.
+
+- \c -DHOST_IS_RPI3=ON When compiling for host, assume a Raspberry Pi 3 instead of default Intel.
+
+*/
+

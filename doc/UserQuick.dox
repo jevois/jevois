@@ -2,6 +2,15 @@
 
 For more details and step-by-step instructions, see the different sections under \ref User
 
+New users, be sure to check out [JeVois Start](/start/start.html).
+
 \image html quickstart.png
+
+For more specific information, see:
+
+- \ref UserStartLinux
+- \ref UserStartWindows
+- \ref UserStartMac
+- \ref UserStartCaveats
 
 */

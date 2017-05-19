@@ -1,0 +1,28 @@
+/*! \page ProgrammerSource JeVois source code repositories
+\tableofcontents
+
+All JeVois software is open-source.
+
+It is licensed under the GNU General Public License. Please be aware of the viral nature of this license, namely, if you
+integrate any of the JeVois source code into your own project, then you must release the derived source code as well.
+
+Please see the [GNU GPL page](https://www.gnu.org/licenses/gpl-3.0.en.html) for more information.
+
+All JeVois source code is hosted on Github, at https://github.com/jevois
+
+There are 4 repositories:
+
+- jevois: The core C++17 JeVois software.
+- jevoisbase: The base collection of 25+ machine vision modules for JeVois.
+- smaplemodule: A sample standalone module for JeVois, use as a template for new modules.
+- jevois-sdk: The framework that provides a Linux kernel and operating system for a JeVois camera, to be flashed
+  to a microSD card.
+
+Quick download and install
+--------------------------
+
+Download and installation instructions are in the [INSTALL file of the jevois
+repository](https://github.com/jevois/jevois/blob/master/INSTALL).
+
+*/
+

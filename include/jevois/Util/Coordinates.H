@@ -23,7 +23,7 @@ namespace jevois
 {
   namespace coords
   {
-    /*! \defgroup coordhelpers Helper functions to convert coordiantes from camera resolution to standardized
+    /*! \defgroup coordhelpers Helper functions to convert coordinates from camera resolution to standardized
         
         Different machine vision algorithms in JeVois may be able to operate with different camera resolutions, such as
         1280x1024, 320x240, or 176x144. When some item of interest is detected in the camera frame, one may often want

@@ -1,4 +1,4 @@
-/*! \page Programmer Programmer guidelines
+/*! \page Programmer Programmer guide
 \tableofcontents
 
 
@@ -6,6 +6,14 @@ The following pages will help you program with JeVois.
 
 - \subpage ProgrammingGuidelines
 - \subpage DocumentationRules
+- \subpage ProgrammerSource
+- \subpage CompilingJeVois
+- \subpage CompilingJeVoisBase
+- \subpage JeVoisDaemon
+- \subpage FlashingToSD
+- \subpage ProgrammerSDK
 - \subpage ModuleTutorial
+- \subpage ModuleTips
+- \subpage Debugging
 
 */

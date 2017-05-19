@@ -10,12 +10,18 @@ FONT.stringliteral { color: #002080 }
 FONT.charliteral   { color: #008080 }
 */
 
+body, table, div, p, dl, ul, li, tr, td {
+    font-family: "Open Sans", Helvetica, "Lucida Grande", Verdana, Geneva, Arial, sans-serif;
+    line-height: 1.6em;
+    font-weight: 400;
+}
 
 /* The iLab CSS for doxygen */
 
-body, table, div, p, dl {
-	font-family: Helvetica, Lucida Grande, Verdana, Geneva, Arial, sans-serif;
-/*	font-size: 100%;*/
+div.title {
+    color: navy;
+    font-weight: 500;
+    font-size: 200%;
 }
 
 /* @group Heading Levels */
@@ -58,8 +64,25 @@ h5 {    color: black;
 /*
 h1,h2,h3,h4,h5,h6 {
         font-family: Helvetica, Arial, Verdana, sans-serif;
-        font-weight: 500;
+        font-weight: 300;
         margin-left: 0%;
         margin-right: 0%;
 }
 */
+
+
+
+
+
+code, kbd, pre, samp {
+    font-family: Menlo,Monaco,Consolas,"Courier New",monospace
+}
+
+code {
+    padding: 2px 4px;
+    font-size: 90%;
+    color: #c7254e;
+    background-color: #e9e2e4;
+    border-radius: 4px
+}
+

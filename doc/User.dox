@@ -3,6 +3,8 @@
 JeVois combines video capture and machine vision processing directly in the smart camera. Here is how to get started
 with using it.
 
+New users, be sure to check out [JeVois Start](/start/start.html).
+
 - \subpage UserQuick
 - \subpage UserStartLinux
 - \subpage UserStartWindows

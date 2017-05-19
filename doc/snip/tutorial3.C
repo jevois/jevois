@@ -12,7 +12,7 @@ JEVOIS_DECLARE_PARAMETER(aperture, int, "Aperture size for the Sobel operator", 
 JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(l2grad, bool, "Use more accurate L2 gradient norm if true, L1 if false", false, ParamCateg);
 
 // Simple module to detect edges using the Canny algorithm from OpenCV
-class EdgeDetection : public jevois::Module,
+class TutorialEdgeDetection : public jevois::Module,
                       public jevois::Parameter<thresh1, thresh2, aperture, l2grad>
 {
   public:
@@ -20,7 +20,7 @@ class EdgeDetection : public jevois::Module,
     using jevois::Module::Module;
 
     // Virtual destructor for safe inheritance
-    virtual ~EdgeDetection() { }
+    virtual ~TutorialEdgeDetection() { }
 
     // Processing function
     virtual void process(jevois::InputFrame && inframe, jevois::OutputFrame && outframe) override
@@ -55,4 +55,4 @@ class EdgeDetection : public jevois::Module,
 };
 
 // Allow the module to be loaded as a shared object (.so) file:
-JEVOIS_REGISTER_MODULE(EdgeDetection);
+JEVOIS_REGISTER_MODULE(TutorialEdgeDetection);

@@ -10,71 +10,48 @@ available serial ports:
 - Serial-over-USB port that appears to your host computer at the same time as the video camera appears on the serial
   bus.
 
-To use the serial-over-usb port:
+You, or another machine (e.g., an Arduino) can connect to JeVois and issue simple commands to the smart camera. These
+commands allow one to tune camera parameters, vision processing parameters, and general operation of the JeVois smart
+camera.
 
-- Linux: look for the port, for example, inspect messages displayed when you type \c dmesg in a Linux terminal after you
-  have connected your JeVois smart camera. Allow at least 10 seconds for the smart camera to boot up and to be detected
-  by your host computer. The output of the \c dmesg command should contain some messages about detection of your JeVois
-  smart camera, both its video component and its serial port component:
+Things you can do with the JeVois command-line interface include:
+- adjust contrast, exposure, gain, white balance, etc of the camera sensor.
+- show basic informatin about JeVois, such as free RAM memory, CPU frequency, CPU temperature.
+- adjust machine vision parameters, depending on which vision module is currently loaded and running. Many machine
+  vision modules expose parameters for thresholds, operating modes, etc which you can tune using the JeVois command-line
+  interface.
+- run a script that contains any number of valid commands.
+- decide where to send output and log serial messages (to the hardware serial port, to serial-ver-USB, to both, or to
+  none).
+- examine available video modes and machine vision algorithms, and select a particular one.
+- possibly execute custom commands that may be provided by a particular machine vision module.
 
-\verbatim
-[...]
-[4768736.704777] usb 1-1.3: new high-speed USB device number 13 using xhci_hcd
-[4768736.809464] usb 1-1.3: New USB device found, idVendor=1d6b, idProduct=0102
-[4768736.809470] usb 1-1.3: New USB device strings: Mfr=1, Product=2, SerialNumber=0
-[4768736.809473] usb 1-1.3: Product: JeVois-A33 Smart Camera
-[4768736.809476] usb 1-1.3: Manufacturer: JeVois Inc
-[4768736.847915] uvcvideo: Found UVC 1.00 device JeVois-A33 Smart Camera (1d6b:0102)
-[4768736.849892] input: JeVois-A33 Smart Camera as /devices/pci0000:00/0000:00:1c.6/0000:09:00.0/usb1/1-1/1-1.3/1-1.3:1.0/input/input29
-[4768736.851499] cdc_acm 1-1.3:1.2: ttyACM0: USB ACM device
-\endverbatim
-
-The JeVois smart camera was detected as a UVC (USB Video Class) device and a corresponding video device entry was
-created in \c /devices/pci... which typically would then also be aliased to \c /dev/video0 for easier access.
-
-In addition, the serial-over-USB port of the JeVois camera was detected as a CDC-ACM serial port, and was assigned
-device name \c ttyACM0 in this example.
-
-Usually the serial-over-USB port is initalized at \c /dev/ttyACM0 on your host computer. Start a terminal
-program. Default configuration is 115200 8N1. For example:
-
-\verbatim
-sudo screen /dev/ttyACM0 115200
-\endverbatim
-You can also use \c minicom or other serial communication software.
-
-\note Many Linux distributions, including Ubuntu, monitor the connection of modems, so that they can be detected in a
-plug-and-play manner. Because the JeVois serial-over-USB port looks to a host computer like a new modem (this is so that
-no driver is required), your host computer may try to send modem configuration commands to JeVois as you connect
-it. JeVois will safely ignore these commands, but it may take a few minutes for your host computer to give up on trying
-to initialize JeVois as a modem that can dial out over telephone lines. While your host computer is trying to configure
-JeVois as a modem, the commands it sends will interfere with any commands you may type. To avoid this and to allow you
-to use the serial-over-USB port as soon as it is detected by your host, turn off the modem manager feature of your Linux
-host. For example, on Ubuntu:
-
-\verbatim
-sudo killall ModemManager
-\endverbatim
-
-- Windows: start Hyperterminal or similar (e.g., Tera Term, serial monitor feature of the Arduino software), select the
-  serial device, and open it with 115200 8N1.
-
-- Mac: Either use \c screen as for Linux, but with device name /dev/tty.usbmodemXXXX (where XXXX will vary depending on
-  your computer), or other serial software like ZTerm.
-
-\note Note that by default, command echo is turned off, which means that you will not see what you type. This is to
-avoid sending back to an Arduino all the commands it might want to send to the JeVois camera. Most serial communication
-software have an option to "turn on local echo" which will allow you to see what you type but will be handled by your
-serial terminal program as opposed to having JeVois send back all the characters you type.
+\note Note that by default, command echo is turned off, which means that, when you connect to JeVois over a serial link,
+you will not see what you type. This is to avoid sending back to an Arduino all the commands it might want to send to
+the JeVois camera. Most serial communication software have an option to "turn on local echo" which will allow you to see
+what you type but will be handled by your serial terminal program as opposed to having JeVois send back all the
+characters you type.
 
 \note Because the command-line interface is mainly intended for machine-to-machine communication, no editing capability
 is provided at this point. That means that if you type an incorrect character and try to delete it, both the incorrect
-character and the delete character will be sent to JeVois, and your command will just fail. If you have a tendency to
-make many typos as you type, just type your commands in any editor of your choice, and then simply copy and paste them
-into the JeVois command-line interface.
+character and then the delete character will be sent to JeVois, and your command will just fail. If you have a tendency
+to make many typos as you type, just type your commands in any editor of your choice, and then simply copy and paste
+them into the JeVois command-line interface.
 
-Once connected, you can use the command-line interface. Supported commands are as follows (further detailed in the
-following sections):
+Follow these instructions to connect to JeVois using serial-over-USB:
+
+- \subpage USBserialLinux
+- \subpage USBserialWindows
+- \subpage USBserialMac
+
+\note When running JeVois software in \b host mode, you can simply interact with JeVois by typing commands directly in
+the terminal window from which you started jevois-daemon. See \ref JeVoisDaemon for more details.
+
+// ##############################################################################################################
+\section cmdlinestart Command-line interface getting started
+
+Once connected, you can use the command-line interface. Supported commands, general operation parameters, and camera
+sensor controls are as follows (further detailed in the following sections):
 
 \verbatim
 help - print help message
@@ -85,7 +62,8 @@ runscript <filename> - run script commands in specified file
 setcam <ctrl> <val> - set camera control <ctrl> to value <val>
 getcam <ctrl> - get value of camera control <ctrl>
 listmappings - list all available video mappings
-setmapping <num> - select video mapping <num>, only possible while not streaming to USB
+setmapping <num> - select video mapping <num>, only possible while not streaming
+setmapping2 <CAMmode> <CAMwidth> <CAMheight> <CAMfps> <Vendor> <Module> - set no-USB-out video mapping defined on the fly, while not streaming
 ping - returns 'ALIVE'
 serlog <string> - forward string to the serial port(s) specified by the serlog parameter
 serout <string> - forward string to the serial port(s) specified by the serout parameter
@@ -142,9 +120,9 @@ AVAILABLE CAMERA CONTROLS:
 \endverbatim
 
 Additional parameters and additional commands may be available depending on which machine vision module is currently
-loaded. For example, the \c SaveVideo module allows two new commands, \c start (to start recording video to disk) and
-\c stop (to stop recording to disk). It also brings in a few new options which are specific to video encoding. When this
-module is loaded (by selecting the corresponding video resolution in your camera viewer software), typing \c help will
+loaded. For example, the \b SaveVideo module allows two new commands, `start` (to start recording video to disk) and
+`stop` (to stop recording to disk). It also brings in a few new options which are specific to video encoding. When this
+module is loaded (by selecting the corresponding video resolution in your camera viewer software), typing `help` will
 show these new sections:
 
 \verbatim
@@ -184,17 +162,17 @@ other deviations from the required command format are tolerated.
 
 JeVois distinguishes between two types of serial communications:
 
-1) \c \b serlog: For log messages (error messages, notices to users, etc). Log messages are categorized into severity
-tiers, and always start with \c DBG (for debug level), \c INF (info level), \c ERR (error level), or \c FTL (fatal error
+1) <b>serlog:</b> For log messages (error messages, notices to users, etc). Log messages are categorized into severity
+tiers, and always start with `DBG` (for debug level), `INF` (info level), `ERR` (error level), or `FTL` (fatal error
 level).
 
-2) \c \b serout: For text-based outputs intended to be consumed by a machine (e.g., coordinates of an object detected by
-JeVois, to send to an Arduino).
+2) <b>serout:</b> For text-based outputs intended to be consumed by a machine (e.g., coordinates of an object detected
+by JeVois, to send to an Arduino).
 
-The assignment of actual ports, such as hardware 4-pin connector vs serial-over-USB port, to \c serlog and \c serout is
-controlled by parameters, detailed below. The assignment is very flexible, for example, you can decide to send \c serlog
+The assignment of actual ports, such as hardware 4-pin connector vs serial-over-USB port, to \p serlog and \p serout is
+controlled by parameters, detailed below. The assignment is very flexible, for example, you can decide to send \p serlog
 messages to both the 4-pin hardware serial port and to the serial-over-USB port, or or to no port, or to just one port,
-etc while sending \c serout messages to the hardware 4-pin serial port only, or all ports, no ports, etc.
+etc while sending \p serout messages to the hardware 4-pin serial port only, or all ports, no ports, etc.
 
 \subsection cmdbehavior Command-line general behavior
 
@@ -206,17 +184,17 @@ All successful commands end with a final line that says
 OK
 \endverbatim
 
-Failed commands issue some error message instead, which always starts with \c ERR, such as:
+Failed commands issue some error message instead, which always starts with `ERR`, such as:
 \verbatim
 ERR Unsupported command
 \endverbatim
 
-Many commands do not produce any additional outputs, and hence only return either a line that says \c OK or one that
-starts with \c ERR
+Many commands do not produce any additional outputs, and hence only return either a line that says `OK` or one that
+starts with `ERR`.
 
 \subsection cmdeol Command-line end-of-line markers
 
-The default end-of-line behavior for JeVois is "sloppy" which consists of:
+The default end-of-line behavior for JeVois is \a sloppy which consists of:
 
 - on input (strings sent to JeVois), any of CR (0x0d or [\\r]), LF (0x0a or [\\n]), CRLF, 0xd0 (issued by some keyboards
   instead of Return), or 0x00 [\\0] are accepted as valid end-of-line markers. Characters received up to the end-of-line
@@ -227,7 +205,7 @@ The default end-of-line behavior for JeVois is "sloppy" which consists of:
 This is configurable upon startup of the JeVois smart camera. Please see the jevois::serial::linestyle parameter of
 jevois::Serial for details. Note, however, that this paremeter becomes hidden after JeVois has started. Hence, you can
 only change serial end-of-line behavior through the initscript.cfg script that is executed upon boot up of the JeVois
-smart camera. See \ref initscript.cfg for details.
+smart camera. See \ref JeVoisDaemon for details.
 
 \subsection cmdgeneral Command-line general commands and parameters
 
@@ -244,7 +222,7 @@ Shows some vital information about the JeVois smart camera:
 INFO: JeVois 1.0
 INFO: Linux version 3.4.39
 INFO: CPU: 1344MHz, 32C, load: 1.02 1.01 0.86 1/50 83
-INFO: MemTotal:         238452 kB, MemFree:          194292 kB
+INFO: MemTotal: 238452 kB, MemFree: 194292 kB
 OK
 \endverbatim
 
@@ -267,7 +245,7 @@ would show the updated CPU frequency of 1200 MHz:
 INFO: JeVois 1.0
 INFO: Linux version 3.4.39
 INFO: CPU: 1200MHz, 31C, load: 1.00 1.01 0.89 1/50 83
-INFO: MemTotal:         238452 kB, MemFree:          194292 kB
+INFO: MemTotal: 238452 kB, MemFree: 194292 kB
 OK
 \endverbatim
 
@@ -295,8 +273,8 @@ the filename is assumed to be relative to the location of the currently-loaded v
 \subsubsection cmdsetcam setcam <ctrl> <val> - set camera control <ctrl> to value <val>
 
 Set a camera control. The help message gives a list of available camera controls and their permitted values. Beware that
-some controls are not effective in some modes, for example, you should turn \c autoexp (auto exposure control) off
-before you try setting a value to \c absexp (manual exposure value).
+some controls are not effective in some modes, for example, you should turn \p autoexp (auto exposure control) off
+before you try setting a value to \p absexp (manual exposure value).
 
 For example
 \verbatim
@@ -325,8 +303,8 @@ clip them, etc and \c getcam allows you to get back the value that was actually 
 
 Lists all the video mappings, which define the associations between a camera image size, frame rate, and pixel format, a
 USB output image size, frame rate, and pixel format, and which machine vision module to run. The definitions of mappings
-are in the videomappings.cfg file. The \c listmappings command allow you to obtain the numerical index of a given mapping in the
-list, shich you can later use with the \c setmapping command. For example:
+are in the videomappings.cfg file. The `listmappings` command allow you to obtain the numerical index of a given
+mapping in the list, shich you can later use with the `setmapping` command. For example:
 
 \verbatim
 listmappings
@@ -379,14 +357,14 @@ AVAILABLE VIDEO MAPPINGS:
 OK
 \endverbatim
 
-See the section on \ref videomappings.cfg for more information about video mappings.
+See \ref UserModes for more information about video mappings.
 
-\subsubsection cmdsetmapping setmapping <num> - select video mapping <num>, only possible while not streaming to USB
+\subsubsection cmdsetmapping setmapping <num> - select video mapping <num>, only possible while not streaming
 
 Usually, video mappings are selected by the host computer, by selecting a given output resolution, frame rate, and pixel
 format. In some instances, however, \c setmapping is useful:
 
-1. If the current mapping has a USB output pixel format of \c NONE, i.e., there currently is no video being streamed
+1. If the current mapping has a USB output pixel format of `NONE`, i.e., there currently is no video being streamed
 over USB.
 
 2. If the host is currently not streaming from the JeVois camera and one (or an Arduino) wants to select a particular
@@ -404,13 +382,20 @@ will return
 OK
 \endverbatim
 
-if the host computer is not currently streaming video from JeVois over USB, and the mapping will then be changed to 0. But if video is streaming to the host computer, the answer will be:
+if the host computer is not currently streaming video from JeVois over USB, and the mapping will then be changed to
+0. But if video is streaming to the host computer, the answer will be:
 
 \verbatim
 ERR Command error [setmapping 0]: Cannot set mapping while streaming: Stop your webcam program on the host computer first.
 \endverbatim
 
-Simply close your camera capture software on th ehost computer and try again.
+Simply close your camera capture software on the host computer and try again.
+
+\note If you issue a \b setmapping command and then open a video viewing software on your host computer, most likely
+that software will override what you just did with \b setmapping, and will select a mapping of its own choice
+anyway. Hence, indeed, \b setmapping is usually only useful to select modes with NONE USB output. Also see \b
+setmapping2 which may be better in terms of avoiding confusion that may arise when setting a mapping by index, where
+that index may change as the \b videomapping.cfg file is edited.
 
 \note For mappings that stream output video over USB, the host computer also determines when to start streaming (when
 you start your camera capture software on the host) and when to stop streaming (when you quit that program). However,
@@ -422,18 +407,57 @@ do addtional configurations before streaming. For example, one may select a mode
 save camera frames to disk, then set parameters of that module to select a given file name and video encoding format,
 and only then start streaming.
 
-When a mode with USB output of type NONE is selected, two additional commands become available:
+When a mode with USB output of type NONE is selected, two additional commands become available: \b streamon and \b
+streamoff, detailed below.
+
+\subsubsection cmdsetmapping2 setmapping2 <CAMmode> <CAMwidth> <CAMheight> <CAMfps> <Vendor> <Module> - set no-USB-out video mapping defined on the fly, while not streaming
+
+This allows one to define and set on the fly a new video mapping that has no USB output.
+
+This command is very useful to configure the JeVois smart camera from an embedded system like an Arduino, which may not
+have knowledge of the mapping number in \b videomappings.cfg for a particular mapping it wishes to use.
+
+See \ref UserModes for details. Here, because there is no USB output, we only need to specify camera format, resolution,
+and framerate, and which machine vision module to use.
+
+For example:
+
+\verbatim
+setmapping2 YUYV 640 480 20.0 JeVois DemoArUco
+\endverbatim
+will load up the \b DemoArUco module and run it with the camera configured for 640x480 \@ 20fps YUYV video caoture.
+
+\note A similar command for mappings with USB output is not possible because the JeVois smart camera must announce to
+the host computer the complete list of all supported video resolutions that it can stream over USB, at the time it is
+first connected to the host computer.
+
+\note For mappings with no video streaming over USB (as set using \c setmmapping2), there is no camera capture software
+running on the host that would instruct JeVois to start streaming video. Hence one needs to instruct the JeVois camera
+to start or stop streaming (see \c streamon and \c streamoff commands below). This is done manually so that users can
+decide when to start and stop streaming.
+
+\note \c setmapping2 should be used only with machine vision modules that support processing with no USB output. Those
+will have a <b>process(InputFrame && inframe)</b> function in their source code. If your JeVois smart camera seems to
+not work after a given \c setmapping2 command, try a <code>setpar serlog USB</code> and connect to JeVois using a
+terminal and the serial-over-USB connection. If you see no messages, probably you forgot the \c streamon command. If you
+see error messages, probably your module does not supportprocessing with no USB output.
 
 \subsubsection cmdstreamon streamon - start camera video streaming
 
-This command will only exist if the current video mapping has a USB output of type NONE. 
+This command will only exist if the current video mapping has a USB output of type NONE (including modes selected using
+\c setmapping2).
+
+It will instruct the JeVois smart camera to start streaming video frames from the camera sensor. It is necessary to
+issue a \c streamon command after a video mode with no USB output has been selected. Otherwise, the smart camera will
+just wait for this command indefinitely.
 
 \subsubsection cmdstreamoff streamoff - stop camera video streaming
 
-This command will only exist if the current video mapping has a USB output of type NONE. 
+This command will only exist if the current video mapping has a USB output of type NONE (including modes selected using
+\c setmapping2). It will instruct the JeVois smart camera to stop streaming video frames from the camera sensor.
 
 When using a mapping with USB output of type NONE, you must manually issue a \c streamoff command before you can issue
-your next \c setmapping command.
+your next \c setmapping or \c setmapping2 command.
 
 \subsubsection cmdping ping - returns 'ALIVE'
 
@@ -576,7 +600,7 @@ When parameter \c camreg is set to true, two new commands become available:
 <li>getcamreg <reg> - get value of raw camera register <reg>
 </ul>
 
-In both cases, \c reg and \c val are unsigned 8-bit values. For convenience, both decimal values and hexadeciman values
+In both cases, \c reg and \c val are unsigned 8-bit values. For convenience, both decimal values and hexadecimal values
 (using a prefix \c 0x to indicate hexadecimal) are supported.
 
 // ##############################################################################################################
@@ -584,8 +608,8 @@ In both cases, \c reg and \c val are unsigned 8-bit values. For convenience, bot
 
 Sometimes, it is useful to set some parameters or execute some commands when a module is loaded.
 
-JeVois allows you to store parameter settings and commands in a file named \c script.cfg stored in the directory of a
-module. The file \c script.cfg may contain any sequence of commands as you would type them interactively in the JeVois
+JeVois allows you to store parameter settings and commands in a file named \b script.cfg stored in the directory of a
+module. The file \b script.cfg may contain any sequence of commands as you would type them interactively in the JeVois
 command-line interface.
 
 Here is an example for the ObjectTracker module, which tracks objects based on their color. For this module, it is a
@@ -599,9 +623,9 @@ camera mode gives more reliable tracking.
 
 # Set camera to fixed color balance, gain, and exposure, so that we get more reliable colors than we would obtain under
 # automatic mode:
-setcam autowb false
-setcam autogain false
-setcam autoexp false
+setcam autowb 0
+setcam autogain 0
+setcam autoexp 0
 setcam redbal 110
 setcam bluebal 170
 setcam gain 16
@@ -614,6 +638,8 @@ setpar srange 100...255
 setpar vrange 60...253
 \endcode
 
-The \c script.cfg file for ObjectTracker is stored on your microSD at JEVOIS:/modules/JeVois/ObjectTracker/script.cfg
+The \b script.cfg file for ObjectTracker is stored on your microSD at
+<b>JEVOIS:/modules/JeVois/ObjectTracker/script.cfg</b> source in
+<b>~/jevoisbase/src/Modules/ObjectTracker/script.cfg</b>.
 
 */

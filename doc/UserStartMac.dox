@@ -1,6 +1,10 @@
 /*! \page UserStartMac Getting started with Mac host computer
 \tableofcontents
 
+
+// ####################################################################################################
+\section userstartmac Getting started with Mac - basic PhotoBooth
+
 The JeVois smart camera is used like a regular USB camera. To get started with a Mac host computer:
 
 <ul>
@@ -43,6 +47,65 @@ if the camera exposes BAYER or RGB565 video modes, too many modes, etc. It also 
 resolution. To use the JeVois camera on a mac it is recommended that you configure it with only one available video
 resolution (one entry in your \c videomappings.cfg file). See UserModes for more info.
 
+// ####################################################################################################
+\section userstartmaccamtwist Getting started with Mac - CamTwist Studio
+
+Selection of different machine vision algorithms is achieved by selecting different video resolutions in your video
+capture software. On Macs, most webcam apps do not allow you to select video resolution. But a few do. One example is
+CamTwist Studio.
+
+To make it work:
+
+<ul>
+
+<li>Download [CamTwist Studio](http://http://camtwiststudio.com/download/). We used the latest (development) version and
+it worked great on our El Capitan Mac.
+
+<li>Install it on your Mac.
+
+<li>Plug in your JeVois camera, wait for orange LED flash and then solid orange LED.
+
+<li>Launch CamTwist Studio.
+
+<li>In the CamTwist window, double-click on \c Webcam under 'Step 1: Select a video source'.
+
+<li>Then under \c Settings at the right of the CamTwist window, select the 'JeVois A33 Smart Camera'.
+
+\image html camtwist-setcam.png
+
+<li>On the menu bar at the top of the screen, select \c View \c -> \c Preview. This should show live video from your
+JeVois smart camera. The frame rate is not great, but that will be fixed below.By default, the resolution is 320x240 in
+MJPEG with no processing on the JeVois smart camera (i.e., it behaves like a regular camera).
+
+\image html camtwist-prefs.png
+
+<li>On the menu bar at the top of the screen, go to \c CamTwist \c -> \c Preferences. Click on 'Video Devices' towards
+the top of the preferences window. Then select the JeVois-A33 Smart Camera. Finally, use the \c Format pull-down menu to
+select various resolutions. Each time you select a new resolution, it will also select a different machine vision
+algorithm on your smart camera. See [JeVois Start, under 'Demos'](http://jevois.org/start/start.html#demos-section) for
+a list of the default video mappings (which algorithm runs on JeVois depending on which resolution you select in
+CamTwist).
+
+<li>Under \c General in the \c Preferences window, you can change frame rate and resolution of the preview box. You need
+to restart CamTwist after the change. You will also need to manually drag the corner of the preview window to its full
+new size.
+
+\image html camtwist-saliency.png Saliency Demo (640x300 YUYV) using CamTwist on Mac
+
+\image html camtwist-qrcode.png QR-code Demo (320x286 YUYV) using CamTwist on Mac
+
+<li>Make sure you quit your camera viewing software before you unplug your JeVois smart camera. Otherwise your host
+computer may become awfully confused trying to use a camera that does not exist anymore.
+
+<li>No shutdown procedure is needed before powering off your JeVois camera. Just close your video capture software and
+unplug the camera.
+
+</ul>
+
+
+// ####################################################################################################
+\section userstartmacother Getting started with Mac - other video software
+
 Selection of different machine vision algorithms is achieved by selecting different video resolutions in your video
 capture software. However, on Mac OSX, we have not yet found many apps that would allow a user to select a particular
 video resolution and framerate. For example, the buit-in PhotoBooth app does not provide any control over the camera. An
@@ -58,13 +121,7 @@ run:
 Note that on Mac, the latency (delay or lag between capture and display) is horrible with many video capture apps,
 including ffplay. This is not a limitation of JeVois. When used with a Linux host, there is no lag.
 
-<li>Make sure you quit your camera viewing software before you unplug your JeVois smart camera. Otherwise your host
-computer may become awfully confused trying to use a camera that does not exist anymore.
-
-<li>No shutdown procedure is needed before powering off your JeVois camera. Just close your video capture software and
-unplug the camera.
-
-</ul>
+// ####################################################################################################
 
 // ##############################################################################################################
 \section troubleshootmac Troubleshooting

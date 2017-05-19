@@ -169,9 +169,9 @@ JeVois, but will also set the pan and tilt gains of the Arduino-controlled pan/t
 
 # Set camera to fixed color balance, gain, and exposure, so that we get more reliable colors than we would obtain under
 # automatic mode:
-setcam autowb false
-setcam autogain false
-setcam autoexp false
+setcam autowb 0
+setcam autogain 0
+setcam autoexp 0
 setcam redbal 110
 setcam bluebal 170
 setcam gain 16

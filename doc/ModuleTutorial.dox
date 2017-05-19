@@ -6,12 +6,14 @@ Machine vision modules are programmed as a single class that derives from jevois
 interface.
 
 As an initial (slightly over-simplified) idea, the overall workflow for JeVois vision modules is that they implement a
-processing function that will receive an image captured by camera sensor, and a pre-allocated output image that will be
-sent to the host computer over USB. The task of the processing function is to fill in the output image with results that
-arise from processing the input image.
+processing function that will receive an image captured by the camera sensor, and a pre-allocated output image that will
+be sent to the host computer over USB. The task of the processing function is to fill in the output image with results
+that arise from processing the input image.
 
 In this tutorial, we first show you how to program a few very simple modules, to bring in the necessary
 concepts. Towards the end of this tutorial, we will point you to further detailed reading.
+
+Before you start, you should understand \ref Concepts.
 
 \subsection mappings Pixel formats and video mappings
 
@@ -29,8 +31,8 @@ of video mappings associate a given output resolution and pixel type to the corr
 type that should be used and to the machine vision module that should be invoked. Again see \ref UserModes for details.
 
 Because an output video format is selected by the host computer, it is not negotiable. If a video mapping has been
-specified in \c videomappings.cfg that invokes a particular machine vision module, that module just must perform (or throw an
-exception), and process the images that it receives from the camera to generate the desired output images.
+specified in \b videomappings.cfg that invokes a particular machine vision module, that module just must perform (or
+throw an exception), and process the images that it receives from the camera to generate the desired output images.
 
 
 
@@ -69,17 +71,17 @@ Explanations:
   access to the input and output images, when they are needed. To optimize throughput and your use of the CPU in JeVois,
   we here adopt a design similar to that of std::future for InputFrame and OutputFrame: you can think of these as
   handles to images which may or may not yet be available, but will be available for sure at some time in the future. By
-  the time process is called, only those handles to those future images are given to you. If you do not need the images
-  quite yet and first want to do some preliminary setup in your process() function, you just keep those handles ready
-  for future use. When you are ready to use one of the images, you just call get() onto its handle, which will return
-  the actual image. If the image is not ready yet, for example, it is still being captured by the camera sensor, then
-  get() will block until the image is ready for you. For more information, please read and understand the concept of
-  futures and promises in C++11. You may want to check out this nice tutorial:
+  the time process() is called, only those handles to those future images are given to you. If you do not need the
+  images quite yet and first want to do some preliminary setup in your process() function, you just keep those handles
+  ready for future use. When you are ready to use one of the images, you just call get() onto its handle, which will
+  return the actual image. If the image is not ready yet, for example, it is still being captured by the camera sensor,
+  then get() will block until the image is ready for you. For more information, please read and understand the concept
+  of futures and promises in C++11. You may want to check out this nice tutorial:
   http://thispointer.com/c11-multithreading-part-8-stdfuture-stdpromise-and-returning-values-from-thread/ or others on
   the web.
 
 - Line 14, arguments use move semantics: You probably noticed the && signs after InputFrame and OutputFrame. These mean
-  that the arguments to process are passed using move semantics. This is not very important here, and just stems from
+  that the arguments to process() are passed using move semantics. This is not very important here, and just stems from
   the following fact: Because InputFrame and OutputFrame connect to the camera sensor and to the USB interface directly,
   we forbid anyone other than Engine from creating them. So you cannot construct an InputFrame, only Engine can. Engine
   constructs the InputFrame and OutputFrame for you using its private access to the camera and USB interface. Then it
@@ -92,7 +94,8 @@ Explanations:
   just call get() on inimg to first get the image from the camera. The image may be available immediately, or get() may
   block until it is available. The returned RawImage is a minimalistic data structure which basically tells you the
   image width, height, pixel type, and gives you access to the array of pixels. It is a lightweight structure, copying a
-  RawImage will just share the pixel array rather than copying it. This is the same behavior as in cv::Mat in OpenCV.
+  RawImage object will just share the underlying pixel array rather than copying it. This is the same behavior as in
+  cv::Mat of OpenCV.
 
 - Line 20: Likewise, we cannot do anything in pass-through until we also have the output image, so here we just get it,
   which may block until it is available. In more complex modules, one could start processing the input image in a thread
@@ -101,7 +104,9 @@ Explanations:
 - Line 23: A vision module can enforce some requirements on the input and output image sizes and pixel formats. This is
   achieved by using the require() function of RawImage. For pass-through, we are going to support any input image
   dimensions and pixels, but, since we will not do any processing of the pixel data and will just copy it over to the
-  output, we must enforce that the output image dimensions and pixel type exactly match those of the input.
+  output, we must enforce that the output image dimensions and pixel type exactly match those of the input. The
+  require() function just throws an exception if the requirements are not met. The Engine will catch that exception,
+  issue some error message, safely de-allocate any memory buffers, and move on to the next video frame.
 
 - Line 26: Now we are ready to fill-in the output image's pixel array, using pixel data from the input image. Note how
   the output image's pixel array has already been allocated by Engine (and by the USB driver). It is not negotiable, as
@@ -109,14 +114,14 @@ Explanations:
   resolution and mode that they wish to receive. Do not attempt to change image size or format, or to re-allocate the
   pixel array held by outimg. Just accept the dimensions, pixel type, and pixel array address of outimg and write pixel
   data into the pixel array. Note some details about RawImage here:
-  - pixels<type>() returns a read-only pointer to the pixel array, cast'd to the desired type
-  - pixelsw<type>() returns a read-write pointer to the pixel array, cast'd to the desired type
-  - buf is simply a smart pointer to the pixel array, also with array size (in bytes) information
+  - pixels<type>() returns a read-only pointer to the pixel array, cast to the desired type
+  - pixelsw<type>() returns a read-write pointer to the pixel array, cast to the desired type
+  - bytesize() returns the poxel array's size in bytes.
 
 - Line 29: Now that we are done with the input image, we can let the Camera know. The camera is using a fixed set of
-  pre-allocated (in the linux kernel), memory-mapped buffers into which the hardware in the CPU chip that connects to
+  pre-allocated (in the linux kernel), memory-mapped buffers, into which the hardware in the CPU chip that connects to
   the camera sensor can directly write using direct memory access (DMA). So it is important to release a buffer as soon
-  as you do not neede it anymore, so that the camera can use it to capture future video frames.
+  as you do not need it anymore, so that the camera can use it to capture future video frames.
 
 - Line 32: The same buffer logic applies to the USB driver.
 
@@ -162,7 +167,7 @@ Let us focus on the new things:
     from that of the source RawImage. JeVois then provides functions that can convert from any camera pixel format to
     several different OpenCV pixel formats. Here we use one of these, convertToCvBGR().
 
-- Line 26: Once the input image has been converted to OpenCV into a newly allocated pixel array that is separate from
+- Line 26: Once the input image has been converted to OpenCV in a newly allocated pixel array that is separate from
   that of the raw input image, we do not need the raw input image anymore, we will keep working with the OpenCV image
   only. So we can give the memory buffer associated with our raw input image back to the camera so that it can use it to
   capture a future video frame.
@@ -173,7 +178,7 @@ Let us focus on the new things:
 
 - Line 32: In this simple tutorial, we will not allow any rescaling of the image size. So we require that the output
   resolution should be the same as the input resolution. We have no requirement on the output pixel type, hence we here
-  just specify \c outimg.fmt as the required output pixel type (that is, we just say that whichever pixel format has
+  just specify \b outimg.fmt as the required output pixel type (that is, we just say that whichever pixel format has
   been selected by the USB host and is already in the output image is ok with us).
 
 - Line 35: Now we convert from our OpenCV BGR image into the format requested by the USB host, using some helper
@@ -231,7 +236,7 @@ and hardwired values instead, just to avoid that burden. The burden comes from t
   the callback might not be needed).
 
 Possible implementation using class data members for parameters (similar to what we used in iNVT), here shown for a
-sample \c int parameter to specify the size of a queue held in a class MyModule that derives from Module:
+sample \b int parameter to specify the size of a queue held in a class MyModule that derives from Module:
 
 \code
 ParamDef<int> sizeparamdef("size", "Queue size", 5, Range<int>(1, 100));
@@ -307,7 +312,7 @@ so that users can play with them over the serial command-line interface:
   - default value for the parameter.
   - optional: specification of valid values, from a list of accepted values, or a range, a range with a step, or a
     regex. Here we only specify this for the \c aperture parameter, which is constrained to taking values from 3 to 53.
-  - optional: a parameter category used to group related parameters together in the help message.
+  - a parameter category used to group related parameters together in the help message.
 
 - Line 16: Our module inherits from <A
   HREF="http://jevois.org/doc/classjevois_1_1Parameter_3_01Param_00_01Tail_8_8_8_4.html">jevois::Parameter</A> with all
@@ -400,5 +405,13 @@ Let us look at what is new compared to the previous example:
   exception forwarding, i.e., it could throw if the function running in the thread threw. Here we just catch, warn, and
   ignore any exception.
 
+
+// ####################################################################################################
+\section moremoduletutorial For more Module tutorials and examples
+
+For more, see:
+
+- \ref ProgrammerSDK for how to create and compile a new module
+- [the documentation of the JeVoisBase collection of modules](/basedoc/)
 
 */

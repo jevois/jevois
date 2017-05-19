@@ -110,6 +110,27 @@ std::string jevois::VideoMapping::str() const
 }
 
 // ####################################################################################################
+std::ostream & jevois::operator<<(std::ostream & out, jevois::VideoMapping const & m)
+{
+  out << jevois::fccstr(m.ofmt) << ' ' << m.ow << ' ' << m.oh << ' ' << m.ofps << ' '
+      << jevois::fccstr(m.cfmt) << ' ' << m.cw << ' ' << m.ch << ' ' << m.cfps << ' '
+      << m.vendor << ' ' << m.modulename;
+  return out;
+}
+
+// ####################################################################################################
+std::istream & jevois::operator>>(std::istream & in, jevois::VideoMapping & m)
+{
+  std::string of, cf;
+  in >> of >> m.ow >> m.oh >> m.ofps >> cf >> m.cw >> m.ch >> m.cfps >> m.vendor >> m.modulename;
+
+  m.ofmt = parseFormat(of);
+  m.cfmt = parseFormat(cf);
+
+  return in;
+}
+
+// ####################################################################################################
 std::vector<jevois::VideoMapping> jevois::loadVideoMappings(size_t & defidx)
 {
   std::ifstream ifs(JEVOIS_ENGINE_CONFIG_FILE);

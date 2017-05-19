@@ -14,7 +14,7 @@ JEVOIS_DECLARE_PARAMETER(thresh1delta, double, "First threshold delta over threa
 JEVOIS_DECLARE_PARAMETER(thresh2delta, double, "Second threshold delta over threads", 50.0, ParamCateg);
 
 // Simple module to detect edges, running 4 filters in parallel with 4 different settings
-class EdgeDetectionX4 : public jevois::Module,
+class TutorialEdgeDetectionX4 : public jevois::Module,
                         public jevois::Parameter<thresh1, thresh2, aperture, l2grad, thresh1delta, thresh2delta>
 {
   public:
@@ -22,7 +22,7 @@ class EdgeDetectionX4 : public jevois::Module,
     using jevois::Module::Module;
 
     // Virtual destructor for safe inheritance
-    virtual ~EdgeDetectionX4() { }
+    virtual ~TutorialEdgeDetectionX4() { }
 
     // Processing function
     virtual void process(jevois::InputFrame && inframe, jevois::OutputFrame && outframe) override
@@ -71,4 +71,4 @@ class EdgeDetectionX4 : public jevois::Module,
 };
 
 // Allow the module to be loaded as a shared object (.so) file:
-JEVOIS_REGISTER_MODULE(EdgeDetectionX4);
+JEVOIS_REGISTER_MODULE(TutorialEdgeDetectionX4);
