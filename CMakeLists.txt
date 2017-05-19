@@ -37,7 +37,7 @@ ${JEVOIS_SRC_ROOT}")
 endif (DEFINED ENV{JEVOIS_SRC_ROOT})
 
 # Locate buildroot base so we can use the compilers provided there to cross-compile for the platform:
-set(JEVOIS_BUILDROOT_BASE "${JEVOIS_SRC_ROOT}/../jevois-sdk/out/sun8iw5p1/linux/common/buildroot")
+set(JEVOIS_BUILDROOT_BASE "${JEVOIS_SRC_ROOT}/jevois-sdk/out/sun8iw5p1/linux/common/buildroot")
 
 # Compilation options related to debugging:
 option(JEVOIS_LDEBUG_ENABLE "Enable LDEBUG() messages. If turned off, LDEBUG() will not be not compiled in, and no \
@@ -118,9 +118,9 @@ file(TO_NATIVE_PATH "${JEVOIS_ROOT}" JEVOIS_HOST_MODULES_ROOT)
 file(TO_NATIVE_PATH "${JEVOIS_BUILDROOT_BASE}/target/${JEVOIS_ROOT}" JEVOIS_PLATFORM_MODULES_ROOT)
 
 # Set compiler flags: FIXME: libtbb uses some deprecated declarations:
-set(JEVOIS_HOST_CFLAGS "${JEVOIS_HOST_ARCH_FLAGS} -W -Wall -Wextra -g -O4 -I${JEVOIS_SRC_ROOT}/include \
+set(JEVOIS_HOST_CFLAGS "${JEVOIS_HOST_ARCH_FLAGS} -W -Wall -Wextra -g -O4 -I${JEVOIS_SRC_ROOT}/jevois/include \
 ${JEVOIS_HOST_INCLUDE} -fPIC -Wno-deprecated-declarations")
-set(JEVOIS_PLATFORM_CFLAGS "${JEVOIS_PLATFORM_ARCH_FLAGS} -W -Wall -Wextra -g -O4 -I${JEVOIS_SRC_ROOT}/include \
+set(JEVOIS_PLATFORM_CFLAGS "${JEVOIS_PLATFORM_ARCH_FLAGS} -W -Wall -Wextra -g -O4 -I${JEVOIS_SRC_ROOT}/jevois/include \
 ${JEVOIS_PLATFORM_INCLUDE} -fPIC -Wno-deprecated-declarations")
 
 # Include our helper functions, this will allow selection of host or platform and set variables accordingly:

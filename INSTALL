@@ -63,7 +63,6 @@ JeVois provides a pre-compiled, pre-configured package for easy installation if 
 
 To use the easy install, proceed as follows (make sure you have at least 30GB of free space in your home directory):
 
-cd
 /bin/rm -rf jevois jevoisbase jevois-sdk samplemodule jevois-easy-*.*.tbz
 wget http://jevois.org/data/jevois-easy-1.0b.tbz
 tar jxvf jevois-easy-1.0b.tbz
@@ -113,7 +112,8 @@ sudo ln -s /usr/bin/arm-linux-gnueabi-gcc-4.7 /usr/bin/arm-linux-gnueabi-gcc
 gsettings set org.gnome.desktop.media-handling automount-open false
 
 # Set the following environment variables in your ~/.bashrc
-export JEVOIS_SRC_ROOT=${HOME}/jevois
+# JEVOIS_SRC_ROOT is the path containing jevois/jevoisbase/jevois-sdk etc
+export JEVOIS_SRC_ROOT=${HOME}
 export JEVOIS_ROOT=/jevois
 
 ####################################################################################################
@@ -143,8 +143,8 @@ release and latest github versions.
 
 sudo apt-get install libgtk2.0-dev pkg-config python-dev python-numpy libdc1394-22 libdc1394-22-dev libjpeg-dev libpng-dev libtiff5-dev libjasper-dev libavcodec-dev libavformat-dev libswscale-dev libxine2-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libv4l-dev libtbb-dev libqt4-dev libfaac-dev libmp3lame-dev libopencore-amrnb-dev libopencore-amrwb-dev libtheora-dev libvorbis-dev libxvidcore-dev x264 v4l-utils unzip qt5-default python3-numpy
 
-mkdir ~/opencv32
-cd ~/opencv32
+mkdir $JEVOIS_SRC_ROOT/opencv32
+cd $JEVOIS_SRC_ROOT/opencv32
 
 wget https://github.com/opencv/opencv/archive/3.2.0.tar.gz
 tar zxvf 3.2.0.tar.gz
@@ -361,7 +361,7 @@ Compiling JeVois library and base apps for hardware platform
 This requires that the jevois-sdk, buildroot (for the filesystem on the SD card), and the linux kernel 3.4 for the
 platform be built already (see above).
 
-cd ~/jevois
+cd $JEVOIS_SRC_ROOT/jevois
 ./rebuild-platform.sh
 
 cd ../jevoisbase
@@ -387,12 +387,12 @@ Flashing it all to microSD
 
 # to install directly to buildroot, run:
 
-cd ~/jevoisbase
+cd $JEVOIS_SRC_ROOT/jevoisbase
 ./rebuild-platform.sh -DJEVOIS_MODULES_TO_BUILDROOT=ON
 
 # Now you are ready to burn everything to microSD:
 
-cd ~/jevois-sdk
+cd ../jevois-sdk
 ./jevois-build.sh
 
 # FIXME: at of May 17, 2017 this only works when using the easy install package if your username is 'ilab' (which was
@@ -416,7 +416,7 @@ rm -rf out
 Re-flashing after some code update:
 ####################################################################################################
 
-cd ~/jevois ; ./rebuild-platform.sh
-cd ~/jevoisbase ; ./rebuild-platform.sh -DJEVOIS_MODULES_TO_BUILDROOT=ON
-cd ~/jevois-sdk ; ./jevois-build.sh -y /dev/sdX
+cd $JEVOIS_SRC_ROOT/jevois ; ./rebuild-platform.sh
+cd ../jevoisbase ; ./rebuild-platform.sh -DJEVOIS_MODULES_TO_BUILDROOT=ON
+cd ../jevois-sdk ; ./jevois-build.sh -y /dev/sdX
 

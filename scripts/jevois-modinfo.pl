@@ -74,9 +74,9 @@ print DOXYFILE "REPEAT_BRIEF           = NO\n";
 print DOXYFILE "INHERIT_DOCS           = YES\n";
 print DOXYFILE "AUTOLINK_SUPPORT       = YES\n"; # for cross-ref to jevois doc
 print DOXYFILE "BUILTIN_STL_SUPPORT    = YES\n"; # for cross-ref to jevois doc
-#print DOXYFILE "TAGFILES               = $ENV{'JEVOIS_SRC_ROOT'}/../jevoisbase/doc/jevoisbase.tag=/basedoc\n";
-#print DOXYFILE "TAGFILES               = $ENV{'JEVOIS_SRC_ROOT'}/doc/jevois.tag=/doc $ENV{'JEVOIS_SRC_ROOT'}/../jevoisbase/doc/jevoisbase.tag=/basedoc\n";
-print DOXYFILE "TAGFILES               = $ENV{'JEVOIS_SRC_ROOT'}/doc/jevois.tag=/doc\n";
+#print DOXYFILE "TAGFILES               = $ENV{'JEVOIS_SRC_ROOT'}/jevoisbase/doc/jevoisbase.tag=/basedoc\n";
+#print DOXYFILE "TAGFILES               = $ENV{'JEVOIS_SRC_ROOT'}/jevois/doc/jevois.tag=/doc $ENV{'JEVOIS_SRC_ROOT'}/jevoisbase/doc/jevoisbase.tag=/basedoc\n";
+print DOXYFILE "TAGFILES               = $ENV{'JEVOIS_SRC_ROOT'}/jevois/doc/jevois.tag=/doc\n";
 
 # We here create some custom doxygen tags to allow code writers to input more manifest data in their doc:
 my @dtags = qw/ email mainurl supporturl otherurl address copyright license distribution 
