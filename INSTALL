@@ -112,7 +112,7 @@ sudo ln -s /usr/bin/arm-linux-gnueabi-gcc-4.7 /usr/bin/arm-linux-gnueabi-gcc
 gsettings set org.gnome.desktop.media-handling automount-open false
 
 # Set the following environment variables in your ~/.bashrc
-# JEVOIS_SRC_ROOT is the path containing jevois/jevoisbase/jevois-sdk etc
+# JEVOIS_SRC_ROOT is the path containing jevois, jevoisbase, jevois-sdk, etc
 export JEVOIS_SRC_ROOT=${HOME}
 export JEVOIS_ROOT=/jevois
 
@@ -132,6 +132,7 @@ git clone https://github.com/jevois/jevois.git
 git clone https://github.com/jevois/jevoisbase.git
 git clone https://github.com/jevois/jevois-sdk.git
 git clone https://github.com/jevois/samplemodule.git
+git clone https://github.com/jevois/jevois-tutorials.git
 
 ####################################################################################################
 ADVANCED: Installing OpenCV 3.2.0 on a Linux host system:

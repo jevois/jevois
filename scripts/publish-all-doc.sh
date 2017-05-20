@@ -25,11 +25,9 @@ cd hbuild
 make docweb
 
 # Make and publish the tutorials:
-cd $JEVOIS_SRC_ROOT 
-cd ../jevois-tutorials
+cd $JEVOIS_SRC_ROOT/jevois-tutorials
 make docweb
 
 # Make and publish the blog:
-cd $JEVOIS_SRC_ROOT 
-cd ../jevois-blog
+cd $JEVOIS_SRC_ROOT/jevois-blog
 make docweb
