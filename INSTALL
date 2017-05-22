@@ -86,8 +86,6 @@ info
 
 help
 
-listmappings
-
 To start jevois-daemon in a specific mode, find its number in the listmapping list, then CTRL-C to quit
 jevois-daemon, and finally
 
@@ -116,6 +114,8 @@ gsettings set org.gnome.desktop.media-handling automount-open false
 export JEVOIS_SRC_ROOT=${HOME}
 export JEVOIS_ROOT=/jevois
 
+# and close all terminals and open a new terminal to make sure the environment is refreshed.
+
 ####################################################################################################
 ADVANCED: Download JeVois source code
 ####################################################################################################
@@ -127,7 +127,7 @@ sudo mkdir /jevois
 sudo chmod 777 /jevois
 
 # Get the sources from github
-cd
+cd $JEVOIS_SRC_ROOT
 git clone https://github.com/jevois/jevois.git
 git clone https://github.com/jevois/jevoisbase.git
 git clone https://github.com/jevois/jevois-sdk.git
@@ -224,13 +224,13 @@ pbuild directory for the files compiled for the PLATFORM
 Compiling JeVois library and base apps for host computer
 ####################################################################################################
 
-cd jevois
+cd $JEVOIS_SRC_ROOT/jevois
 ./rebuild-host.sh
 cd hbuild
 make doc
 cd ..
 
-cd ../jevoisbase
+cd $JEVOIS_SRC_ROOT/jevoisbase
 
 cd Contrib
 ./reinstall.sh  # do this only once, will download some contributed packages and patch them
@@ -275,7 +275,7 @@ ADVANCED: Compiling the jevois-sdk from scratch
 
 # NOTE: This will take several hours.
 
-cd
+cd $JEVOIS_SRC_ROOT
 git clone https://github.com/jevois/jevois-sdk.git    # if not already done above
 cd jevois-sdk
 rm -rf out
@@ -315,7 +315,7 @@ platform be built already (see above).
 cd $JEVOIS_SRC_ROOT/jevois
 ./rebuild-platform.sh
 
-cd ../jevoisbase
+cd $JEVOIS_SRC_ROOT/jevoisbase
 ./rebuild-platform.sh -DJEVOIS_MODULES_TO_BUILDROOT=ON
 
 # FOR INFORMATION: rebuild-platform is roughly equivalent to:
@@ -343,7 +343,7 @@ cd $JEVOIS_SRC_ROOT/jevoisbase
 
 # Now you are ready to burn everything to microSD:
 
-cd ../jevois-sdk
+cd $JEVOIS_SRC_ROOT/jevois-sdk
 ./jevois-build.sh
 
 # FIXME: at of May 17, 2017 this only works when using the easy install package if your username is 'ilab' (which was
@@ -368,6 +368,6 @@ Re-flashing after some code update:
 ####################################################################################################
 
 cd $JEVOIS_SRC_ROOT/jevois ; ./rebuild-platform.sh
-cd ../jevoisbase ; ./rebuild-platform.sh -DJEVOIS_MODULES_TO_BUILDROOT=ON
-cd ../jevois-sdk ; ./jevois-build.sh -y /dev/sdX
+cd $JEVOIS_SRC_ROOT/jevoisbase ; ./rebuild-platform.sh -DJEVOIS_MODULES_TO_BUILDROOT=ON
+cd $JEVOIS_SRC_ROOT/jevois-sdk ; ./jevois-build.sh -y /dev/sdX
 
