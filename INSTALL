@@ -19,7 +19,7 @@
 JeVois embedded machine vision framework INSTALL
 ####################################################################################################
 
-This guide assumes a fresh Ubuntu 16.10 install.
+This guide assumes a fresh Ubuntu 17.04 install.
 
 Getting JeVois to install requires several steps, outlined below:
 
@@ -29,7 +29,7 @@ Getting JeVois to install requires several steps, outlined below:
 
    - jevois: The core C++17 JeVois software.
    - jevoisbase: The base collection of 25+ machine vision modules for JeVois.
-   - smaplemodule: A sample standalone module for JeVois, use as a template for new modules.
+   - samplemodule: A sample standalone module for JeVois, use as a template for new modules.
    - jevois-sdk: The framework that provides a Linux kernel and operating system for a JeVois camera, to be flashed
      to a microSD card.
 
@@ -59,7 +59,7 @@ EASY INSTALL OPTION
 
 Downloading, compiling and configuring everything in this guide can easily take more than 10 hours.
 
-JeVois provides a pre-compiled, pre-configured package for easy installation if you are using Ubuntu 16.10
+JeVois provides a pre-compiled, pre-configured package for easy installation if you are using Ubuntu 17.04
 
 To use the easy install, proceed as follows (make sure you have at least 30GB of free space in your home directory):
 
@@ -72,7 +72,7 @@ Just press RETURN to answer yes by default to all the questions.
 
 The easy install script installs OpenCV 3.2, jevois, jevoisbase, samplemodule, and jevois-sdk
 
-It is tailored for Ubuntu 16.10 64-bit only.
+It is tailored for Ubuntu 17.04 64-bit only.
 
 After you run the easy install script, just plug in a USB camera and try
 
@@ -142,7 +142,7 @@ Note: for compatibility with the JeVois hardware platform build, which downloads
 sure you install that same release code on your host as well, as some modules, APIs, etc may differ between the
 release and latest github versions.
 
-sudo apt-get install libgtk2.0-dev pkg-config python-dev python-numpy libdc1394-22 libdc1394-22-dev libjpeg-dev libpng-dev libtiff5-dev libjasper-dev libavcodec-dev libavformat-dev libswscale-dev libxine2-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libv4l-dev libtbb-dev libqt4-dev libfaac-dev libmp3lame-dev libopencore-amrnb-dev libopencore-amrwb-dev libtheora-dev libvorbis-dev libxvidcore-dev x264 v4l-utils unzip qt5-default python3-numpy
+sudo apt-get install libgtk2.0-dev pkg-config python-dev python-numpy python-pip libdc1394-22 libdc1394-22-dev libjpeg-dev libpng-dev libtiff5-dev libjasper-dev libavcodec-dev libavformat-dev libswscale-dev libxine2-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libv4l-dev libtbb-dev libqt4-dev libfaac-dev libmp3lame-dev libopencore-amrnb-dev libopencore-amrwb-dev libtheora-dev libvorbis-dev libxvidcore-dev libx264-dev v4l-utils unzip qt5-default python3-dev python3-numpy python3-pip libgtk-3-dev libatlas-base-dev gfortran
 
 mkdir $JEVOIS_SRC_ROOT/opencv32
 cd $JEVOIS_SRC_ROOT/opencv32
@@ -166,7 +166,7 @@ cd build
 # Note: we need to disable OpenGL support in OpenCV as otherwise it will conflict with OpenGL-ES which we use for GPU
 # image processing in JeVois:
 
-cmake -DCMAKE_BUILD_TYPE=RELEASE -DCMAKE_INSTALL_PREFIX=/usr/local -DWITH_TBB=ON -DWITH_V4L=ON -DWITH_QT=ON -DWITH_OPENGL=OFF -DWITH_VTK=OFF -DWITH_CUDA=OFF -DBUILD_opencv_python2=OFF -DBUILD_opencv_python3=OFF -DWITH_PYTHON=OFF -DBUILD_EXAMPLES=ON -DINSTALL_C_EXAMPLES=OFF -DOPENCV_EXTRA_MODULES_PATH=~/opencv32/opencv_contrib-3.2.0/modules -DBUILD_opencv_hdf=OFF -DENABLE_PRECOMPILED_HEADERS=Off ..
+cmake -DCMAKE_BUILD_TYPE=RELEASE -DCMAKE_INSTALL_PREFIX=/usr/local -DWITH_TBB=ON -DWITH_V4L=ON -DWITH_QT=OFF -DWITH_OPENGL=OFF -DWITH_VTK=OFF -DWITH_CUDA=OFF -DINSTALL_PYTHON_EXAMPLES=ON -DBUILD_EXAMPLES=ON -DINSTALL_C_EXAMPLES=OFF -DOPENCV_EXTRA_MODULES_PATH=$JEVOIS_SRC_ROOT/opencv32/opencv_contrib-3.2.0/modules -DBUILD_opencv_hdf=OFF -DENABLE_PRECOMPILED_HEADERS=OFF ..
 
 # Compile (replace 50 below by your number of cores):
 make -j 50
@@ -273,8 +273,7 @@ jevois-daemon --videomapping=19
 ADVANCED: Compiling the jevois-sdk from scratch
 ####################################################################################################
 
-# NOTE: This can easily take a full day of downloading and compiling. The process is also not fully automatic yet as
-# there are a few errors in some external libraries that need to be manually fixed.
+# NOTE: This will take several hours.
 
 cd
 git clone https://github.com/jevois/jevois-sdk.git    # if not already done above
@@ -283,7 +282,7 @@ rm -rf out
 
 # Configure buildroot:
 cd buildroot
-make mrproper
+make distclean
 cp configs/sun8i_defconfig .config
 make xconfig  # OPTIONAL -- do not mess with these settings unless you know what you are doing
 cp .config configs/sun8i_defconfig  # OPTIONAL: if you modified some configs
@@ -291,7 +290,7 @@ cd ..
 
 # Configure kernel
 cd linux-3.4
-make mrproper
+make distclean
 cp config-jevois .config
 make xconfig # OPTIONAL -- do not mess with these settings unless you know what you are doing
 cp .config config-jevois # OPTIONAL: if you modified some configs
@@ -301,55 +300,6 @@ cd ..
 ./build.sh config
 
 # build it
-./build.sh
-
-# after some hours, fails on downloading tbb, protobuf, vgg files, etc for OpenCV. This appears to be a problem with
-# cmake as compiled by buildroot, maybe missing ssl support in buildroot's curl or such. Let us use Ubuntu's host cmake
-# instead:
-
-mv out/sun8iw5p1/linux/common/buildroot/host/usr/bin/cmake out/sun8iw5p1/linux/common/buildroot/host/usr/bin/cmake.orig
-cp /usr/bin/cmake out/sun8iw5p1/linux/common/buildroot/host/usr/bin/
-rm -rf out/sun8iw5p1/linux/common/buildroot/build/opencv*
-
-./build.sh
-
-# tbb fails to compile:
-
-emacs out/sun8iw5p1/linux/common/buildroot/build/opencv3-3.2.0/3rdparty/tbb/arm_linux_stub.cpp
-
-# add bool param 'x' to:
-#    void affinity_helper::protect_affinity_mask() {}
-# so that it becomes:
-#    void affinity_helper::protect_affinity_mask(bool x) {}
-#
-# and save the file.
-
-./build.sh
-
-# fails on tbb compilation in waldboost:
-# there is a problem in tbb destroy_process_mask, just put an empty inline definition in tbb_misc.h
-
-emacs out/sun8iw5p1/linux/common/buildroot/build/opencv3-3.2.0/3rdparty/tbb/tbb44_20160128oss/src/tbb/tbb_misc.h
-
-# find:
-#    void destroy_process_mask();
-# end replace by
-#    inline void destroy_process_mask() { }
-#
-# and save the file.
-
-./build.sh
-
-# fails on oprofile,
-emacs out/sun8iw5p1/linux/common/buildroot/build/oprofile-1.1.0/libutil++/op_bfd.cpp
-
-# replace line 546:
-#    if (!verbose)
-# with:
-#    if (!(cverb << (vbfd & vlevel1)))
-# and comment out line 538: bool const verbose = cverb << (vbfd & vlevel1);
-# then save the file.
-
 ./build.sh
 
 # make an sd card (note: the SD card at this point will not yet have JeVois software, see next step below):
@@ -397,10 +347,10 @@ cd ../jevois-sdk
 ./jevois-build.sh
 
 # FIXME: at of May 17, 2017 this only works when using the easy install package if your username is 'ilab' (which was
-# used during creation of the package). Indeed, the user name and path gets hardcoded into some files, paryially
+# used during creation of the package). Indeed, the user name and path gets hardcoded into some files, partially
 # defeating our attempts to make this easy by precompiling a lot of things for you. If you get some error related to
-# fakeroot, you need to delete some of the precompiled files and recompile them again. This takes several hours and some
-# manual interaction. You would basically do (from inside the jevois-sdk/ directory):
+# fakeroot, you need to delete some of the precompiled files and recompile them again. This takes several hours. You
+# would basically do (from inside the jevois-sdk/ directory):
 
 rm -rf out
 
