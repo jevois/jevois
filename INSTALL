@@ -59,20 +59,32 @@ EASY INSTALL OPTION
 
 Downloading, compiling and configuring everything in this guide can easily take more than 10 hours.
 
-JeVois provides a pre-compiled, pre-configured package for easy installation if you are using Ubuntu 17.04
+If you are interested in creating your own JeVois machine vision modules and then copying them to microSD, consider the
+following options:
 
-To use the easy install, proceed as follows (make sure you have at least 30GB of free space in your home directory):
+1. JeVois provides pre-compiled, pre-configured microSD disk images at http://jevois.org/start which are a very good
+starting point. You would then follow the method of building a .jvpkg package for your new module and then just dumping
+that to JEVOIS:/packages/ on your microSD. Next time you reboot your camera it will unpack and install your module. This
+is the preferred way to install new modules for users who do not want to deal with completely rebuilding and reflashing
+an entire microSD card. For a tutorial, see http://jevois.org/tutorials/ProgrammerHello.html
 
-/bin/rm -rf jevois jevoisbase jevois-sdk samplemodule jevois-easy-*.*.tbz
-wget http://jevois.org/data/jevois-easy-1.0b.tbz
-tar jxvf jevois-easy-1.0b.tbz
+2. You can also download a pre-installed Ubuntu 17.04 VirtualBox virtual machine with everything pre-installed from
+http://jevois.org/data/JeVois-Ubuntu-17.04.tbz  (7 GB)
+
+3. Finally, the steps outlined below have been all put together into a script that basically goes through the entire
+installation process with minimal user interaction:
+
+wget http://jevois.org/data/jevois-easy-install.sh
+chmod a+x jevois-easy-install.sh
 ./jevois-easy-install.sh
 
-Just press RETURN to answer yes by default to all the questions.
+You can run the script with option -y to say Yes to all the questions. You may want to increase your sudo time as
+explained, for example, here: http://lifehacker.com/make-sudo-sessions-last-longer-in-linux-1221545774 so that you only
+need to enter your password once (otherwise you will have to enter it several times throughout the process). Set it at
+10 hours or such.
 
-The easy install script installs OpenCV 3.2, jevois, jevoisbase, samplemodule, and jevois-sdk
-
-It is tailored for Ubuntu 17.04 64-bit only.
+The easy install script installs OpenCV 3.2, jevois, jevoisbase, samplemodule, jevois-sdk, and jevois-tutorials.  It is
+tailored for Ubuntu 17.04 64-bit only.
 
 After you run the easy install script, just plug in a USB camera and try
 
@@ -83,8 +95,8 @@ You can interact with the JeVois system by typing commands in the terminal in wh
 For example, try:
 
 info
-
 help
+listmappings
 
 To start jevois-daemon in a specific mode, find its number in the listmapping list, then CTRL-C to quit
 jevois-daemon, and finally
@@ -345,16 +357,6 @@ cd $JEVOIS_SRC_ROOT/jevoisbase
 
 cd $JEVOIS_SRC_ROOT/jevois-sdk
 ./jevois-build.sh
-
-# FIXME: at of May 17, 2017 this only works when using the easy install package if your username is 'ilab' (which was
-# used during creation of the package). Indeed, the user name and path gets hardcoded into some files, partially
-# defeating our attempts to make this easy by precompiling a lot of things for you. If you get some error related to
-# fakeroot, you need to delete some of the precompiled files and recompile them again. This takes several hours. You
-# would basically do (from inside the jevois-sdk/ directory):
-
-rm -rf out
-
-# and then follow the instructions for compiling buildroot from scratch starting with line 302 of this INSTALL file.
 
 # once you know what you are doing, you can instruct jevois-build.sh to not ask any questions. Just be absolutely
 # certain that you are using the right device for your SD card, so that you do not destroy your main hard drive because
