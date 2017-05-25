@@ -5,6 +5,12 @@ CAMERA=ov9650
 
 if [ -f /boot/nousbserial ]; then use_usbserial=0; echo "JeVois serial-over-USB disabled";
 else use_usbserial=1; fi
+if [ -f /boot/nousbstorage ]; then use_usbstorage=0; echo "JeVois microSD access over USB disabled";
+else use_usbstorage=1; fi
+
+##############################################################################################################
+# Load all required kernel modules:
+##############################################################################################################
 
 cd /lib/modules/3.4.39
 
@@ -14,7 +20,10 @@ for m in videobuf-core videobuf-dma-contig videodev vfe_os vfe_subdev v4l2-commo
     insmod ${m}.ko
 done
 
+##############################################################################################################
 # Install any new packages:
+##############################################################################################################
+
 cd /jevois
 for f in packages/*.jvpkg; do
     if [ -f "${f}" ]; then
@@ -26,7 +35,10 @@ for f in packages/*.jvpkg; do
     fi
 done
 
+##############################################################################################################
 # Find any newly unpacked postinstall scripts, run them, and delete them:
+##############################################################################################################
+
 for f in modules/*/*/postinstall; do
     if [ -f "${f}" ]; then
 	echo "### Running ${f} ###"
@@ -40,20 +52,42 @@ for f in modules/*/*/postinstall; do
     fi
 done
 
+##############################################################################################################
 # Build videomappings.cfg, if missing, from any info in the modules:
+##############################################################################################################
+
 if [ ! -f /jevois/config/videomappings.cfg ]; then
     cat /jevois/modules/*/*/videomappings.cfg > /jevois/config/videomappings.cfg
 fi
 
+##############################################################################################################
 # Get a list of all our needed library paths:
+##############################################################################################################
+
 LIBPATH="/lib:/usr/lib"
 for d in /jevois/lib/*; do if [ -d "${d}" ]; then LIBPATH="${LIBPATH}:${d}"; fi; done
 export LD_LIBRARY_PATH=${LIBPATH}
 
+##############################################################################################################
+# Insert the gadget driver:
+##############################################################################################################
+
 echo "### Insert gadget driver ###"
 MODES=`/usr/bin/jevois-module-param`
-if [ -f /boot/nousbserial ]; then use_usbserial=0; else use_usbserial=1; fi
-insmod /lib/modules/3.4.39/g_jevoisa33.ko modes=${MODES} use_serial=${use_usbserial}
+
+# Block device we present to the host as a USB drive, or empty to not present it at start:
+#storagefile="/dev/mmcblk0p3"
+storagefile=""
+
+insmodopts=""
+if [ "X${use_usbstorage}" = "X1" -a "X${storagefile}" != "X" ]; then insmodopts="${insmodopts} file=${storagefile}"; fi
+
+insmod /lib/modules/3.4.39/g_jevoisa33.ko modes=${MODES} use_serial=${use_usbserial} \
+       use_storage=${use_usbstorage} ${insmodopts}
+
+##############################################################################################################
+# Launch jevois-daemon:
+##############################################################################################################
 
 echo "### Start jevois daemon ###"
 opts=""
