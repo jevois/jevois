@@ -8,6 +8,10 @@ else use_usbserial=1; fi
 if [ -f /boot/nousbstorage ]; then use_usbstorage=0; echo "JeVois microSD access over USB disabled";
 else use_usbstorage=1; fi
 
+# Block device we present to the host as a USB drive, or empty to not present it at start:
+storagefile="/dev/mmcblk0p3"
+#storagefile=""
+
 ##############################################################################################################
 # Load all required kernel modules:
 ##############################################################################################################
@@ -75,12 +79,10 @@ export LD_LIBRARY_PATH=${LIBPATH}
 echo "### Insert gadget driver ###"
 MODES=`/usr/bin/jevois-module-param`
 
-# Block device we present to the host as a USB drive, or empty to not present it at start:
-#storagefile="/dev/mmcblk0p3"
-storagefile=""
-
 insmodopts=""
-if [ "X${use_usbstorage}" = "X1" -a "X${storagefile}" != "X" ]; then insmodopts="${insmodopts} file=${storagefile}"; fi
+if [ "X${use_usbstorage}" = "X1" -a "X${storagefile}" != "X" ]; then
+    insmodopts="${insmodopts} file=${storagefile} stall=0";
+fi
 
 insmod /lib/modules/3.4.39/g_jevoisa33.ko modes=${MODES} use_serial=${use_usbserial} \
        use_storage=${use_usbstorage} ${insmodopts}
