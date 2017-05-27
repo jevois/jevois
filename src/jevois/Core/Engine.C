@@ -38,6 +38,8 @@
 #include <cmath> // for fabs
 #include <fstream>
 #include <algorithm>
+#include <cstdlib> // for std::system()
+#include <cstdio> // for std::remove()
 
 // On the older platform kernel, detect class is not defined:
 #ifndef V4L2_CTRL_CLASS_DETECT
@@ -274,7 +276,13 @@ void jevois::Engine::onParamChange(jevois::engine::cpumode const & JEVOIS_UNUSED
                                    jevois::engine::CPUmode const & newval)
 {
   std::ofstream ofs("/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor");
-  if (ofs.is_open() == false) { LERROR("Cannot set cpu frequency governor mode -- IGNORED"); return; }
+  if (ofs.is_open() == false)
+  {
+#ifdef JEVOIS_PLATFORM
+    LERROR("Cannot set cpu frequency governor mode -- IGNORED");
+#endif
+    return;
+  }
 
   switch (newval)
   {
@@ -291,7 +299,13 @@ void jevois::Engine::onParamChange(jevois::engine::cpumax const & JEVOIS_UNUSED_
                                    unsigned int const & newval)
 {
   std::ofstream ofs("/sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq");
-  if (ofs.is_open() == false) { LERROR("Cannot set cpu max frequency -- IGNORED"); return; }
+  if (ofs.is_open() == false)
+  {
+#ifdef JEVOIS_PLATFORM
+    LERROR("Cannot set cpu max frequency -- IGNORED");
+#endif
+    return;
+  }
 
   ofs << newval * 1000U << std::endl;
 }
@@ -340,7 +354,9 @@ void jevois::Engine::postInit()
       if (itsTurbo) ofs << "1" << std::endl; else ofs << "0" << std::endl;
       ofs.close();
     }
+#ifdef JEVOIS_PLATFORM
     else LERROR("Could not access VFE turbo parameter -- IGNORED");
+#endif
     
     // Now instantiate the camera:
     itsCamera.reset(new jevois::Camera(camdev, cameranbuf::get()));
@@ -941,7 +957,11 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
       s->writeString("serlog <string> - forward string to the serial port(s) specified by the serlog parameter");
       s->writeString("serout <string> - forward string to the serial port(s) specified by the serout parameter");
 
-#ifndef JEVOIS_PLATFORM
+      s->writeString("usbsd <enable|disable|auto|noauto|start> - control exporting microSD card as USB drive");
+      
+#ifdef JEVOIS_PLATFORM
+      s->writeString("restart - restart the JeVois smart camera");
+#else
       s->writeString("quit - quit this program");
 #endif
       s->writeString("");
@@ -1167,6 +1187,44 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
     }
 
     // ----------------------------------------------------------------------------------------------------
+    if (cmd == "usbsd")
+    {
+      if (rem == "enable")
+      {
+        std::remove("/boot/nousbsd");
+        if ( ! std::ifstream("/boot/nousbsd")) { errmsg = "Cannot delete /boot/nousbsd"; break; }
+        s->writeString("INF Export of microSD as USB drive enabled, will take effect on next restart.");
+      }
+      else if (rem == "disable")
+      {
+        if ( ! std::ofstream("/boot/nousbsd").put('1')) { errmsg = "Cannot write /boot/nousbsd"; break; }
+        s->writeString("INF Export of microSD as USB drive disabled, will take effect on next restart.");
+      }
+      else if (rem == "auto")
+      {
+        std::remove("/boot/nousbsdauto");
+        if ( ! std::ifstream("/boot/nousbsdauto")) { errmsg = "Cannot delete /boot/nousbsdauto"; break; }
+        s->writeString("INF Export of microSD as USB drive auto on, will take effect on next restart.");
+      }
+      else if (rem == "noauto")
+      {
+        if ( ! std::ofstream("/boot/nousbsdauto").put('n')) { errmsg = "Cannot write /boot/nousbsdauto"; break; }
+        s->writeString("INF Export of microSD as USB drive auto off, will take effect on next restart.");
+      }
+      else if (rem == "start")
+      {
+        std::ofstream ofs(JEVOIS_USBSD_SYS);
+        if (ofs.is_open() == false) { errmsg = "Cannot write " JEVOIS_USBSD_SYS; break; }
+        ofs << JEVOIS_USBSD_FILE << std::endl;
+      }
+      else { errmsg = "Bad usbsd parameter, should be enable, disable, auto, noauto, or start"; }
+      
+      if (std::system("sync")) LERROR("Disk sync failed -- IGNORED");
+        
+      return true;
+    }
+
+    // ----------------------------------------------------------------------------------------------------
     if (cmd == "runscript")
     {
       std::string fname;
@@ -1176,7 +1234,29 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
       catch (...) { errmsg = "Script execution failed."; }
     }
  
-#ifndef JEVOIS_PLATFORM
+#ifdef JEVOIS_PLATFORM
+    // ----------------------------------------------------------------------------------------------------
+    if (cmd == "restart")
+    {
+      s->writeString("Restart command received - bye-bye!");
+      itsRunning.store(false);
+      if (std::system("sync")) LERROR("Disk sync failed -- IGNORED");
+
+      // Turn off the SD storage if it is there:
+      std::ofstream(JEVOIS_USBSD_SYS).put('\n'); // ignore errors
+      if (std::system("sync")) LERROR("Disk sync failed -- IGNORED");
+      if (std::system("sync")) LERROR("Disk sync failed -- IGNORED");
+
+      // Hard reset to avoid possible hanging during module unload, etc
+      if ( ! std::ofstream("/proc/sys/kernel/sysrq").put('1'))
+        LFATAL("Cannot trigger hard reset -- please unplug me!");
+      if ( ! std::ofstream("/proc/sysrq-trigger").put('b'))
+        LFATAL("Cannot trigger hard reset -- please unplug me!");
+      
+      return true;
+    }
+    // ----------------------------------------------------------------------------------------------------
+#else
     // ----------------------------------------------------------------------------------------------------
     if (cmd == "quit")
     {

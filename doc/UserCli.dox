@@ -67,6 +67,8 @@ setmapping2 <CAMmode> <CAMwidth> <CAMheight> <CAMfps> <Vendor> <Module> - set no
 ping - returns 'ALIVE'
 serlog <string> - forward string to the serial port(s) specified by the serlog parameter
 serout <string> - forward string to the serial port(s) specified by the serout parameter
+usbsd <enable|disable|auto|noauto|start> - control exporting microSD card as USB drive
+restart - restart the JeVois smart camera
 
 General Options:
   --tracelevel (unsigned int) default=[0]
@@ -514,6 +516,40 @@ the last (ill-formatted) T2D command, the Arduino should correctly reject it and
 
 Remember that module data output messages (e.g., coordinates of a detected target object) issued by the JeVois camera
 itself are also sent to the port selected by the \c serout parameter.
+
+\subsubsection cmdusbsd usbsd <enable|disable|auto|noauto|start>
+
+Control the behavior of the feature that allows one to access over USB the JEVOIS partition of the microSD card that is
+inside JeVois, as if it was a USB thumbdrive connected to the host computer. Supported arguments for the \c usbsd
+command are:
+
+- enable - enable exporting the microSD as a USB drive. Will take effect on next restart.
+
+- disable - disable exporting the microSD as a USB drive. Will take effect on next restart.
+
+- auto - automatically export the JEVOIS microSD partition when the JeVois smart camera starts. The feature must have
+  been previously enabled for this to take effect. This command will take effect on next restart. The upside of auto
+  mode is that you will immediately see the USB drive show up on your host when JeVois is plugged in. The downside is
+  that your host will complain about the improperly ejected drive if you just unplug JeVois without properly ejecting
+  the USB drive first.
+
+- noauto - do not automatically export the JEVOIS microSD partition when the JeVois smart camera starts. The feature
+  must have been previously enabled for this to take effect. This command will take effect on next restart. When usbsd
+  is enabled but not auto, one must issue a <code>usbsd start</code> command to make the microSD card appear as a USB
+  drive on the host computer.
+
+- start - make the JEVOIS microSD partition appear as a USB drive on the host computer. Use this if you have previosuly
+  ejected the drive and it has disappeared.
+
+Note that there is no \c stop argument here, as this does not work, ejecting the USB drive has to be done on the host
+computer (click the eject icon for it, drag it to the trash, etc).
+
+\subsubsection cmdrestart restart - restart the JeVois smart camera (platform only)
+
+\subsubsection cmdquit quit - quit this program (host only)
+
+When runnign in host mode, one can quit \c jevois-daemon by simply typing 'quit' in the terminal in which it was
+started.
 
 \subsection cmdpar General parameters available on the command line
 

@@ -54,6 +54,11 @@ Then, you can:
 
 - create an empty file \b BOOT:nousbserial if you wish to not start the serial-over-USB feature for some reason.
 
+- create an empty file \b BOOT:nousbsd if you wish to not enable the microSD-over-USB feature for some reason.
+
+- create an empty file \b BOOT:nousbsdauto if you wish to not automatically export microSD JEVOIS partition over USB for
+  some reason.
+
 - edit the file <b>~/jevois/bin/jevois.sh</b>, which gets installed to microSD as <b>LINUX:/usr/bin/jevois.sh</b>, for
   example to start \b jevois-daemon in \b gdb (see \ref JeVoisDaemon).
 

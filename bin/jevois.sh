@@ -1,16 +1,20 @@
 #!/bin/sh
 
-CAMERA=ov9650
-#shopt -s nullglob
+##############################################################################################################
+# Default settings:
+##############################################################################################################
 
-if [ -f /boot/nousbserial ]; then use_usbserial=0; echo "JeVois serial-over-USB disabled";
-else use_usbserial=1; fi
-if [ -f /boot/nousbstorage ]; then use_usbstorage=0; echo "JeVois microSD access over USB disabled";
-else use_usbstorage=1; fi
+CAMERA=ov9650
+use_usbserial=1 # Use a serial-over-USB to communicate with JeVois command-line interface
+use_usbsd=1     # Expose the JEVOIS partition of the microSD as a USB drive
+
+if [ -f /boot/nousbserial ]; then use_usbserial=0; echo "JeVois serial-over-USB disabled"; fi
+if [ -f /boot/nousbsd ]; then use_usbsd=0; echo "JeVois microSD access over USB disabled"; fi
 
 # Block device we present to the host as a USB drive, or empty to not present it at start:
-storagefile="/dev/mmcblk0p3"
-#storagefile=""
+usbsdfile="/dev/mmcblk0p3"
+
+if [ -f /boot/nousbsdauto ]; then usbsdfile=""; echo "JeVois microSD access over USB not AUTO"; fi
 
 ##############################################################################################################
 # Load all required kernel modules:
@@ -80,12 +84,10 @@ echo "### Insert gadget driver ###"
 MODES=`/usr/bin/jevois-module-param`
 
 insmodopts=""
-if [ "X${use_usbstorage}" = "X1" -a "X${storagefile}" != "X" ]; then
-    insmodopts="${insmodopts} file=${storagefile} stall=0";
-fi
+if [ "X${use_usbsd}" = "X1" -a "X${usbsdfile}" != "X" ]; then insmodopts="${insmodopts} file=${usbsdfile}"; fi
 
 insmod /lib/modules/3.4.39/g_jevoisa33.ko modes=${MODES} use_serial=${use_usbserial} \
-       use_storage=${use_usbstorage} ${insmodopts}
+       use_storage=${use_usbsd} ${insmodopts}
 
 ##############################################################################################################
 # Launch jevois-daemon:
