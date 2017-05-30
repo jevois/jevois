@@ -69,7 +69,7 @@ is the preferred way to install new modules for users who do not want to deal wi
 an entire microSD card. For a tutorial, see http://jevois.org/tutorials/ProgrammerHello.html
 
 2. You can also download a pre-installed Ubuntu 17.04 VirtualBox virtual machine with everything pre-installed from
-http://jevois.org/data/JeVois-Ubuntu-17.04.tbz  (7 GB)
+http://jevois.org/data/JeVois-Ubuntu-17.04.tbz  (7 GB)      Username: jv     Password: jevois
 
 3. Finally, the steps outlined below have been all put together into a script that basically goes through the entire
 installation process with minimal user interaction:
@@ -113,10 +113,18 @@ ADVANCED: Install necessary packages on your host computer
 # Open a terminal, then type:
 
 sudo apt-get update
-sudo apt-get install build-essential gcc-6 g++-6 guvcview subversion cmake emacs git mercurial doxygen-gui graphviz
-sudo apt-get install libboost-all-dev libjpeg-turbo8-dev autoconf libeigen3-dev screen lsb lib32stdc++6
-sudo apt-get install gcc-4.7-arm-linux-gnueabi gcc-6-arm-linux-gnueabihf g++-6-arm-linux-gnueabihf gawk u-boot-tools
+sudo apt install build-essential gcc-6 g++-6 guvcview subversion cmake emacs git mercurial doxygen-gui graphviz
+sudo apt install libboost-all-dev libjpeg-turbo8-dev autoconf libeigen3-dev screen lsb lib32stdc++6
+sudo apt install gcc-4.7-arm-linux-gnueabi gcc-6-arm-linux-gnueabihf g++-6-arm-linux-gnueabihf gawk u-boot-tools
+sudo apt install libgtk2.0-dev pkg-config python-dev python-numpy python-pip libdc1394-22 libdc1394-22-dev libjpeg-dev
+sudo apt install libpng-dev libtiff5-dev libavcodec-dev libavformat-dev libswscale-dev libxine2-dev
+sudo apt install libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libv4l-dev libtbb-dev libqt4-dev libfaac-dev
+sudo apt install libmp3lame-dev libopencore-amrnb-dev libopencore-amrwb-dev libtheora-dev libvorbis-dev
+sudo apt install libxvidcore-dev x264 v4l-utils unzip qt5-default python3-dev python3-numpy python3-pip libgtk-3-dev
+sudo apt install libatlas-base-dev gfortran libturbojpeg
+
 sudo ln -s /usr/bin/arm-linux-gnueabi-gcc-4.7 /usr/bin/arm-linux-gnueabi-gcc
+sudo ln -s /usr/lib/x86_64-linux-gnu/libturbojpeg.so.0.0.0 /usr/lib/x86_64-linux-gnu/libturbojpeg.so ###FIXME
 
 # to prevent nautilus from opening 3 windows each time you insert a JeVois microSD card:
 gsettings set org.gnome.desktop.media-handling automount-open false

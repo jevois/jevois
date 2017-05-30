@@ -14,17 +14,22 @@
 # Tel: +1 213 740 3527 - itti@pollux.usc.edu - http://iLab.usc.edu - http://jevois.org
 ######################################################################################################################
 
-# CMake build rules for JeVois core library and executables
+# CMAKE BUILD RULES FOR JEVOIS CORE LIBRARY AND EXECUTABLES
 
-cmake_minimum_required(VERSION 3.1)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.1)
 
 # Set vendor names, our modules will be placed in a directory by that name under /jevois/modules:
 set(JEVOIS_VENDOR "JeVois")
 
 # Project version:
 set(JEVOIS_VERSION_MAJOR  1)
-set(JEVOIS_VERSION_MINOR  0)
+set(JEVOIS_VERSION_MINOR  1)
 set(JEVOIS_SOVERSION "${JEVOIS_VERSION_MAJOR}.${JEVOIS_VERSION_MINOR}" )
+
+# Python version to use for python modules:
+set(JEVOIS_PYTHON_MAJOR 3)
+set(JEVOIS_PYTHON_MINOR 5)
+set(JEVOIS_PYTHON_M "m")
 
 # Check for JEVOIS_SRC_ROOT environment variable:
 if (DEFINED ENV{JEVOIS_SRC_ROOT})
@@ -110,8 +115,16 @@ set(JEVOIS_HOST_OPENCV_LIBS "-L${JEVOIS_HOST_INSTALL_PREFIX}/lib ${JEVOIS_PLATFO
 # eg, latest opencv compiled from source:
 set(JEVOIS_KERNEL_INCLUDE "-I${JEVOIS_BUILDROOT_BASE}/build/linux-headers-3.4.110/usr/include")
 set(JEVOIS_TBB_INCLUDE "-I${JEVOIS_BUILDROOT_BASE}/build/opencv3-3.2.0/3rdparty/tbb/tbb44_20160128oss/include")
-set(JEVOIS_PLATFORM_INCLUDE "${JEVOIS_KERNEL_INCLUDE} ${JEVOIS_TBB_INCLUDE}")
-set(JEVOIS_HOST_INCLUDE "-I${JEVOIS_HOST_INSTALL_PREFIX}/include")
+
+# Find python 3.x on host and platform:
+# NOTE: it is too early here to try to use standard find_package() of CMake. In any case, that will not find the
+# platform version which has to be done by hand here.
+set(PYTHON_LIBRARIES "-lpython${JEVOIS_PYTHON_MAJOR}.${JEVOIS_PYTHON_MINOR}${JEVOIS_PYTHON_M}")
+set(PYTHON_INCLUDE_DIRS "-I/usr/include/python${JEVOIS_PYTHON_MAJOR}.${JEVOIS_PYTHON_MINOR}${JEVOIS_PYTHON_M}")
+
+set(JEVOIS_PLATFORM_INCLUDE "${JEVOIS_KERNEL_INCLUDE} ${JEVOIS_TBB_INCLUDE} ${PYTHON_INCLUDE_DIRS}")
+set(JEVOIS_HOST_INCLUDE "-I${JEVOIS_HOST_INSTALL_PREFIX}/include ${PYTHON_INCLUDE_DIRS}")
+
 
 # On host, set JEVOIS_ROOT path as is for modules; on platform, add the buildroot path to JEVOIS_ROOT:
 file(TO_NATIVE_PATH "${JEVOIS_ROOT}" JEVOIS_HOST_MODULES_ROOT)
@@ -138,7 +151,7 @@ configure_file(include/jevois/Config/Config.H.in Config.H @ONLY)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/Config.H DESTINATION include/jevois/Config COMPONENT bin)
 
-# Pass the compiler flags to cmake (doing this before project() gives problems); same with th einstall prefix:
+# Pass the compiler flags to cmake (doing this before project() gives problems); same with the install prefix:
 set(CMAKE_C_FLAGS "-std=gnu99 ${JEVOIS_CFLAGS} -include Config.H")
 set(CMAKE_CXX_FLAGS "-std=c++17 ${JEVOIS_CFLAGS} -include Config.H")
 set(CMAKE_INSTALL_PREFIX ${JEVOIS_INSTALL_PREFIX})
@@ -159,7 +172,9 @@ add_library(jevois SHARED ${JEVOIS_LIB_SRC_FILES})
 set_target_properties(jevois PROPERTIES VERSION "${JEVOIS_SOVERSION}" SOVERSION ${JEVOIS_SOVERSION})
 link_libraries(jevois)
 install(TARGETS jevois LIBRARY DESTINATION lib COMPONENT libs)
-
+target_link_libraries(jevois ${JEVOIS_OPENCV_LIBS} -lpthread -ltbb -ldl -lutil -lboost_system
+  -lboost_thread -lboost_regex -lboost_python-py${JEVOIS_PYTHON_MAJOR}${JEVOIS_PYTHON_MINOR}
+  -lturbojpeg -lm ${PYTHON_LIBRARIES})
 
 #---------------------------------------------------------------------
 # OpenCV 2.2
@@ -180,21 +195,16 @@ install(TARGETS jevois LIBRARY DESTINATION lib COMPONENT libs)
 #enable_testing()
 
 # Setup our executables:
-
-#set(CMAKE_EXE_LINKER_FLAGS -Wl,-E)
-set(JEVOIS_APP_LIBS
-  "${JEVOIS_OPENCV_LIBS} -lpthread -ltbb -ldl -lboost_system -lboost_thread -lboost_regex -lturbojpeg")
-
 add_executable(jevois-daemon src/Apps/jevois-daemon.C)
-target_link_libraries(jevois-daemon jevois ${JEVOIS_APP_LIBS})
+target_link_libraries(jevois-daemon jevois)
 install(TARGETS jevois-daemon RUNTIME DESTINATION bin COMPONENT bin)
 
 add_executable(jevois-module-param src/Apps/jevois-module-param.C)
-target_link_libraries(jevois-module-param jevois ${JEVOIS_APP_LIBS})
+target_link_libraries(jevois-module-param jevois)
 install(TARGETS jevois-module-param RUNTIME DESTINATION bin COMPONENT bin)
 
 add_executable(jevois-camtest src/Apps/jevois-camtest.C)
-target_link_libraries(jevois-camtest jevois ${JEVOIS_APP_LIBS})
+target_link_libraries(jevois-camtest jevois)
 install(TARGETS jevois-camtest RUNTIME DESTINATION bin COMPONENT bin)
 
 if (JEVOIS_PLATFORM)
