@@ -30,6 +30,7 @@
 
 #include <jevois/Core/Module.H>
 #include <jevois/Core/DynamicLoader.H>
+#include <jevois/Core/PythonModule.H>
 
 #include <jevois/Debug/Log.H>
 #include <jevois/Util/Utils.H>
@@ -534,43 +535,52 @@ void jevois::Engine::setFormatInternal(jevois::VideoMapping const & m)
   // image resolution, etc:
   if (itsModule) { removeComponent(itsModule); itsModule.reset(); }
 
-  // We can however re-use the same loader and avoid closing the .so if we will use the same module:
+  // For python modules, we do not need a loader, we just instantiate our special python wrapper module instead:
   std::string const sopath = m.sopath();
-  if (itsLoader.get() == nullptr || itsLoader->sopath() != sopath)
+  if (m.ispython)
   {
-    // Nuke our previous loader and free its resources if needed, then start a new loader:
-    LINFO("Instantiating dynamic loader for " << sopath);
-    itsLoader.reset(new jevois::DynamicLoader(sopath, true));
+    // Instantiate the python wrapper:
+    itsModule.reset(new jevois::PythonModule(m));
   }
-
-  // Check version match:
-  auto version_major = itsLoader->load<int()>(m.modulename + "_version_major");
-  auto version_minor = itsLoader->load<int()>(m.modulename + "_version_minor");
-  if (version_major() != JEVOIS_VERSION_MAJOR || version_minor() != JEVOIS_VERSION_MINOR)
-    LERROR("Module " << m.modulename << " in file " << sopath << " was build for JeVois v" << version_major() << '.'
-           << version_minor() << ", but running framework is v" << JEVOIS_VERSION_STRING << " -- TRYING ANYWAY");
+  else
+  {
+    // C++ compiled module. We can re-use the same loader and avoid closing the .so if we will use the same module:
+    if (itsLoader.get() == nullptr || itsLoader->sopath() != sopath)
+    {
+      // Nuke our previous loader and free its resources if needed, then start a new loader:
+      LINFO("Instantiating dynamic loader for " << sopath);
+      itsLoader.reset(new jevois::DynamicLoader(sopath, true));
+    }
+    
+    // Check version match:
+    auto version_major = itsLoader->load<int()>(m.modulename + "_version_major");
+    auto version_minor = itsLoader->load<int()>(m.modulename + "_version_minor");
+    if (version_major() != JEVOIS_VERSION_MAJOR || version_minor() != JEVOIS_VERSION_MINOR)
+      LERROR("Module " << m.modulename << " in file " << sopath << " was build for JeVois v" << version_major() << '.'
+             << version_minor() << ", but running framework is v" << JEVOIS_VERSION_STRING << " -- TRYING ANYWAY");
   
-  // Instantiate the new module:
-  auto create = itsLoader->load<std::shared_ptr<jevois::Module>(std::string const &)>(m.modulename + "_create");
-  itsModule = create(m.modulename); // Here we just use the class name as instance name
-
-  // Add it as a component to us. Keep this code in sync with Manager::addComponent():
+    // Instantiate the new module:
+    auto create = itsLoader->load<std::shared_ptr<jevois::Module>(std::string const &)>(m.modulename + "_create");
+    itsModule = create(m.modulename); // Here we just use the class name as instance name
+  }
+  
+  // Add the module as a component to us. Keep this code in sync with Manager::addComponent():
   {
     // Lock up so we guarantee the instance name does not get robbed as we add the sub:
     boost::unique_lock<boost::shared_mutex> ulck(itsSubMtx);
-
-    // Then add it as a sub-component to us, if there is not instance name clash with our other sub-components:
+    
+    // Then add it as a sub-component to us:
     itsSubComponents.push_back(itsModule);
     itsModule->itsParent = this;
     itsModule->setPath(sopath.substr(0, sopath.rfind('/')));
   }
-
+  
   // Bring it to our runstate and load any extra params. NOTE: Keep this in sync with Component::init():
   if (itsInitialized) itsModule->runPreInit();
   
   std::string const paramcfg = itsModule->absolutePath(JEVOIS_MODULE_PARAMS_FILENAME);
   std::ifstream ifs(paramcfg); if (ifs.is_open()) itsModule->setParamsFromStream(ifs, paramcfg);
-
+  
   if (itsInitialized) { itsModule->setInitialized(); itsModule->runPostInit(); }
 
   // And finally run any config script:

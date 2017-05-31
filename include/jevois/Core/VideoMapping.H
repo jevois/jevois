@@ -57,7 +57,9 @@ namespace jevois
 
       std::string modulename; //!< Name of the Module that will process this mapping
 
-      //! Return the full absolute path and file name of the module's .so file
+      bool ispython;      //!< True if the module is written in Python; affects behavior of sopath() only
+      
+      //! Return the full absolute path and file name of the module's .so or .py file
       std::string sopath() const;
 
       //! Return the size in bytes of an output image

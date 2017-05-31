@@ -114,28 +114,42 @@ endmacro()
 macro(jevois_setup_modules basedir deps)
   subdirlist(JV_MODULEDIRS "${CMAKE_CURRENT_SOURCE_DIR}/${basedir}")
   foreach (JV_MODULE ${JV_MODULEDIRS})
-    # Find all source files for this module:
+    # Find all C++ source files for this module:
     file(GLOB_RECURSE MODFILES ${basedir}/${JV_MODULE}/*.[Cc] ${basedir}/${JV_MODULE}/*.cpp)
 
-    # Get this module compiled:
-    message(STATUS "Adding compilation directives for module ${JV_MODULE} base ${basedir}")
-    add_library(${JV_MODULE} SHARED ${MODFILES})
-    set_target_properties(${JV_MODULE} PROPERTIES PREFIX "") # no lib prefix in the .so name
-    target_link_libraries(${JV_MODULE} jevois)
-    if (${deps})
-      add_dependencies(${JV_MODULE} ${deps})
-    endif (${deps})
+    # Find all python source files for this module:
+    file(GLOB_RECURSE PYFILES ${basedir}/${JV_MODULE}/*.[Pp][Yy])
+    
+    if (MODFILES)
+      # Get this C++ module compiled:
+      message(STATUS "Adding compilation directives for C++ module ${JV_MODULE} base ${basedir}")
+      add_library(${JV_MODULE} SHARED ${MODFILES})
+      set_target_properties(${JV_MODULE} PROPERTIES PREFIX "") # no lib prefix in the .so name
+      target_link_libraries(${JV_MODULE} jevois)
+      if (${deps})
+	add_dependencies(${JV_MODULE} ${deps})
+      endif (${deps})
 
-    # add a dependency and command to build modinfo.yaml:
-    add_custom_command(OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/${basedir}/${JV_MODULE}/modinfo.yaml" "${CMAKE_CURRENT_SOURCE_DIR}/${basedir}/${JV_MODULE}/modinfo.html"
-      COMMAND ${JEVOIS_SRC_ROOT}/jevois/scripts/jevois-modinfo.pl ${JV_MODULE}.C
-      DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${basedir}/${JV_MODULE}/${JV_MODULE}.C
-      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${basedir}/${JV_MODULE})
+      # add a dependency and command to build modinfo.yaml:
+      add_custom_command(OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/${basedir}/${JV_MODULE}/modinfo.yaml" "${CMAKE_CURRENT_SOURCE_DIR}/${basedir}/${JV_MODULE}/modinfo.html"
+	COMMAND ${JEVOIS_SRC_ROOT}/jevois/scripts/jevois-modinfo.pl ${JV_MODULE}.C
+	DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${basedir}/${JV_MODULE}/${JV_MODULE}.C
+	WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${basedir}/${JV_MODULE})
 
-    add_custom_target(modinfo_${JV_MODULE}
-      DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/${basedir}/${JV_MODULE}/modinfo.yaml" ${CMAKE_CURRENT_SOURCE_DIR}/${basedir}/${JV_MODULE}/${JV_MODULE}.C)
-    add_dependencies(${JV_MODULE} modinfo_${JV_MODULE})
+      add_custom_target(modinfo_${JV_MODULE}
+	DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/${basedir}/${JV_MODULE}/modinfo.yaml" ${CMAKE_CURRENT_SOURCE_DIR}/${basedir}/${JV_MODULE}/${JV_MODULE}.C)
+      add_dependencies(${JV_MODULE} modinfo_${JV_MODULE})
+    endif (MODFILES)
 
+    if (PYFILES)
+      # Get this python module ready
+      message(STATUS "Adding setup directives for Python module ${JV_MODULE} base ${basedir}")
+
+
+      #FIXME process the doc
+      
+    endif (PYFILES)
+    
     # On platform, we install to either buildroot or jvpkg directory; on host we always install to JEVOIS_MODULES_ROOT
     # which usually is /jevois:
     if (JEVOIS_PLATFORM)
@@ -147,17 +161,20 @@ macro(jevois_setup_modules basedir deps)
     else (JEVOIS_PLATFORM)
       set(DESTDIR "${JEVOIS_MODULES_ROOT}/modules/${JEVOIS_VENDOR}")
     endif (JEVOIS_PLATFORM)
-
+    
     # Install everything that is in that directory except for the source file:
     install(DIRECTORY ${basedir}/${JV_MODULE} DESTINATION "${DESTDIR}"
       PATTERN "*.[hHcC]" EXCLUDE
       PATTERN "*.hpp" EXCLUDE
       PATTERN "*.cpp" EXCLUDE
-      PATTERN "*~" EXCLUDE)
+      PATTERN "*~" EXCLUDE
+      PATTERN "__pycache__" EXCLUDE)
 
     # Install the compiled module itself:
-    install(TARGETS ${JV_MODULE} LIBRARY DESTINATION "${DESTDIR}/${JV_MODULE}")
-
+    if (MODFILES)
+      install(TARGETS ${JV_MODULE} LIBRARY DESTINATION "${DESTDIR}/${JV_MODULE}")
+    endif (MODFILES)
+    
   endforeach()
 endmacro()
 

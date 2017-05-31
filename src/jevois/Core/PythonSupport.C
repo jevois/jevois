@@ -16,7 +16,8 @@
 /*! \file */
 
 #include <jevois/Core/PythonSupport.H>
-
+#include <jevois/Image/RawImage.H>
+#include <jevois/Core/PythonModule.H>
 
 #include <jevois/Util/Utils.H>
 
@@ -24,4 +25,28 @@ BOOST_PYTHON_MODULE(libjevois)
 {
     boost::python::def("fccstr", jevois::fccstr);
 
+    boost::python::class_<jevois::RawImage>("RawImage") // default constructor is included
+      .def("invalidate", &jevois::RawImage::invalidate)
+      .def("valid", &jevois::RawImage::valid)
+      .def("require", &jevois::RawImage::require)
+      .def("bytesperpix", &jevois::RawImage::bytesperpix)
+      .def("bytesize", &jevois::RawImage::bytesize)
+      .def("coordsOk", &jevois::RawImage::coordsOk)
+      //.def("pixels", &jevois::RawImage::pixelsw<unsigned char>,
+      //     boost::python::return_value_policy<boost::python::reference_existing_object>())
+      ;
+    
+    boost::python::class_<jevois::InputFramePython>("InputFrame")
+      .def("get", &jevois::InputFramePython::get,
+           boost::python::return_value_policy<boost::python::reference_existing_object>())
+      .def("done", &jevois::InputFramePython::done)
+      ;
+    
+    boost::python::class_<jevois::OutputFramePython>("OutputFrame")
+      .def("get", &jevois::OutputFramePython::get,
+           boost::python::return_value_policy<boost::python::reference_existing_object>())
+      .def("send", &jevois::OutputFramePython::send)
+      ;
+    
+  
 }
