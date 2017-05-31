@@ -19,6 +19,9 @@
 #include <jevois/Image/RawImage.H>
 #include <jevois/Image/RawImageOps.H>
 #include <jevois/Core/PythonModule.H>
+#include <jevois/Core/UserInterface.H>
+#include <jevois/Core/StdioInterface.H>
+#include <jevois/Core/Serial.H>
 
 #include <jevois/Util/Utils.H>
 
@@ -63,6 +66,9 @@ BOOST_PYTHON_MODULE(libjevois)
     .def("invalidate", &jevois::RawImage::invalidate)
     .def("valid", &jevois::RawImage::valid)
     .def("require", &jevois::RawImage::require)
+    .def_readwrite("width", &jevois::RawImage::width)
+    .def_readwrite("height", &jevois::RawImage::height)
+    .def_readwrite("fmt", &jevois::RawImage::fmt)
     .def("bytesperpix", &jevois::RawImage::bytesperpix)
     .def("bytesize", &jevois::RawImage::bytesize)
     .def("coordsOk", &jevois::RawImage::coordsOk)

@@ -16,6 +16,7 @@
 /*! \file */
 
 #include <jevois/Core/PythonModule.H>
+#include <jevois/Core/UserInterface.H>
 
 // ####################################################################################################
 // ####################################################################################################
@@ -63,7 +64,6 @@ void jevois::OutputFramePython::send() const
 // ####################################################################################################
 // ####################################################################################################
 // ####################################################################################################
-
 jevois::PythonModule::PythonModule(jevois::VideoMapping const & m) :
     jevois::Module(m.modulename)
 {
@@ -98,26 +98,31 @@ jevois::PythonModule::~PythonModule()
 // ####################################################################################################
 void jevois::PythonModule::process(InputFrame && inframe, OutputFrame && outframe)
 {
-  itsInstance.attr("hello")();
-
-
   jevois::InputFramePython inframepy(&inframe);
   jevois::OutputFramePython outframepy(&outframe);
-  itsInstance.attr("process2")(boost::ref(inframepy), boost::ref(outframepy));
+  itsInstance.attr("process")(boost::ref(inframepy), boost::ref(outframepy));
 }
 
 // ####################################################################################################
 void jevois::PythonModule::process(InputFrame && inframe)
 {
   jevois::InputFramePython inframepy(&inframe);
-  itsInstance.attr("process1")(boost::ref(inframepy));
+  itsInstance.attr("process")(boost::ref(inframepy));
 }
 
 // ####################################################################################################
 void jevois::PythonModule::parseSerial(std::string const & str, std::shared_ptr<UserInterface> s)
-{ }
+{
+  boost::python::object ret = itsInstance.attr("parseSerial")(str);
+  std::string retstr = boost::python::extract<std::string>(ret);
+  if (retstr.empty() == false) s->writeString(retstr);
+}
 
 // ####################################################################################################
 void jevois::PythonModule::supportedCommands(std::ostream & os)
-{}
+{
+  boost::python::object ret = itsInstance.attr("supportedCommands")();
+  std::string retstr = boost::python::extract<std::string>(ret);
+  if (retstr.empty() == false) os << retstr;
+}
 

@@ -77,8 +77,8 @@ namespace jevois
   };
   
   //! Wrapper module to allow users to develop new modules written in Python
-  /*! This wrapper module exposes a package \c jevois to python, and calls a process function written in Python on every
-      frame. */
+  /*! This wrapper module calls a process function written in Python on every frame. Note how sendSerial() is added
+      dynamically after the python class is defined, as a new member function of the class. */
   class PythonModule : public Module
   {
     public:
