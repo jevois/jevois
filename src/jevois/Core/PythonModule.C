@@ -24,10 +24,16 @@
 jevois::InputFramePython::InputFramePython(InputFrame * src) : itsInputFrame(src)
 { }
 
-jevois::RawImage const & jevois::InputFramePython::get(bool casync) const
+jevois::RawImage const & jevois::InputFramePython::get1(bool casync) const
 {
   if (itsInputFrame == nullptr) LFATAL("Internal error");
   return itsInputFrame->get(casync);
+}
+
+jevois::RawImage const & jevois::InputFramePython::get() const
+{
+  if (itsInputFrame == nullptr) LFATAL("Internal error");
+  return itsInputFrame->get(false);
 }
 
 void jevois::InputFramePython::done() const
@@ -74,14 +80,13 @@ jevois::PythonModule::PythonModule(jevois::VideoMapping const & m) :
     std::string const pypath = m.sopath();
     std::string const pydir = pypath.substr(0, pypath.rfind('/'));
     std::string const execstr =
-      "import libjevois as jevois\n"
       "import sys\n"  
       "sys.path.append(\"" + pydir + "\")\n" +
       "from " + m.modulename + " import " + m.modulename + "\n";
-    boost::python::exec(execstr.c_str(), itsMainNamespace);
+    boost::python::exec(execstr.c_str(), itsMainNamespace, itsMainNamespace);
 
     // Create an instance of the python class defined in the module:
-    itsInstance = boost::python::eval((m.modulename + "()").c_str(), itsMainNamespace);
+    itsInstance = boost::python::eval((m.modulename + "()").c_str(), itsMainNamespace, itsMainNamespace);
   }
   catch (...) { jevois::warnAndRethrowException(); }
 }

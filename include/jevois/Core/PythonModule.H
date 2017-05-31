@@ -38,8 +38,11 @@ namespace jevois
       //! Construct from a regular (move-only) InputFrame that shoube be coming from Engine
       InputFramePython(InputFrame * src);
       
-      //! Get the next captured camera image
-      RawImage const & get(bool casync = false) const;
+      //! Get the next captured camera image, thin wrapper for default arg value
+      RawImage const & get1(bool casync) const;
+
+      //! Get the next captured camera image, thin wrapper for default arg value
+      RawImage const & get() const;
 
       //! Indicate that user processing is done with the image previously obtained via get()
       void done() const;
