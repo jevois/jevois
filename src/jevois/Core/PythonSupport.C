@@ -15,7 +15,10 @@
 // ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /*! \file */
 
+#include <boost/python.hpp>
+
 #include <jevois/Core/PythonSupport.H>
+#include <jevois/Core/Engine.H>
 #include <jevois/Image/RawImage.H>
 #include <jevois/Image/RawImageOps.H>
 #include <jevois/Core/PythonModule.H>
@@ -38,6 +41,21 @@
 #define JEVOIS_PYTHON_RAWIMAGE_ENUM_VAL(val) value(#val, jevois::rawimage::val)
 
 // ####################################################################################################
+// Helper to provide jevois.sendSerial() function that emulates a C++ module's sendSerial()
+namespace jevois
+{
+  namespace python
+  {
+    Engine * engineForPythonModule = nullptr;
+  }
+}
+
+void jevois::pythonModuleSetEngine(jevois::Engine * e)
+{
+  jevois::python::engineForPythonModule = e;
+}
+
+// ####################################################################################################
 // Thin wrappers to handle default arguments or overloads in free functions
 
 namespace
@@ -53,11 +71,21 @@ namespace
                   unsigned int col, jevois::rawimage::Font font)
   { jevois::rawimage::writeText(img, txt, x, y, col, font); }
 
+  void pythonSendSerial(std::string const & str)
+  {
+    if (jevois::python::engineForPythonModule == nullptr) LFATAL("internal error");
+    jevois::python::engineForPythonModule->sendSerial(str);
+  }
+  
+
 } // anonymous namespace
 
 // ####################################################################################################
 BOOST_PYTHON_MODULE(libjevois)
 {
+  // #################### module sendSerial() emulation:
+  boost::python::def("sendSerial", pythonSendSerial);
+  
   // #################### Utils.H
   JEVOIS_PYTHON_FUNC(fccstr);
   

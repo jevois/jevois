@@ -23,12 +23,25 @@
 
 namespace jevois
 {
+  class Engine;
+  
+  /*! \defgroup python Support for JeVois modules written in Python
+  
+      In addition to writing modules in C++, JeVois supports writing modules in Python. JeVois provides two-way
+      mappings:
+
+      - C++ functions and classes of JeVois become accessible in Python by importing Python package \p libjevois
+      - The JeVois engine can directly invoke class member functions of a Python class implementing a machine vision
+        processing module
+
+      \ingroup core */
+
   //! Wrapper around InputFrame to be used by Python
   /*! This wrapper is to work around the lack of move semantics in our Python support. This class is not intended for
       general use, but only for use by PythonModule. Users of this class must ensure that the original InputFrame will
       outlive any and all InputFramePython instances, since InputFramePython just references to the source InputFrame by
       unprotected raw pointer. Although the C++ object is called InputFramePythjon, we will expose it to python under
-      the name InputFrame (see PythonSupport.C). */
+      the name InputFrame (see PythonSupport.C). \ingroup python */
   class InputFramePython
   {
     public:
@@ -56,7 +69,7 @@ namespace jevois
       general use, but only for use by PythonModule. Users of this class must ensure that the original OutputFrame will
       outlive any and all OutputFramePython instances, since OutputFramePython just references to the source OutputFrame
       by unprotected raw pointer. Although the C++ object is called OutputFramePythjon, we will expose it to python
-      under the name OutputFrame (see PythonSupport.C). */
+      under the name OutputFrame (see PythonSupport.C). \ingroup python */
   class OutputFramePython
   {
     public:
@@ -78,7 +91,7 @@ namespace jevois
   
   //! Wrapper module to allow users to develop new modules written in Python
   /*! This wrapper module calls a process function written in Python on every frame. Note how sendSerial() is added
-      dynamically after the python class is defined, as a new member function of the class. */
+      dynamically after the python class is defined, as a new member function of the class. \ingroup python */
   class PythonModule : public Module
   {
     public:
@@ -104,5 +117,6 @@ namespace jevois
       boost::python::object itsMainModule, itsMainNamespace;
       boost::python::object itsInstance;
   };
+
 } // namespace jevois
 

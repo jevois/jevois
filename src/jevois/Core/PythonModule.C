@@ -125,4 +125,3 @@ void jevois::PythonModule::supportedCommands(std::ostream & os)
   std::string retstr = boost::python::extract<std::string>(ret);
   if (retstr.empty() == false) os << retstr;
 }
-

@@ -30,6 +30,7 @@
 
 #include <jevois/Core/Module.H>
 #include <jevois/Core/DynamicLoader.H>
+#include <jevois/Core/PythonSupport.H>
 #include <jevois/Core/PythonModule.H>
 
 #include <jevois/Debug/Log.H>
@@ -341,7 +342,8 @@ void jevois::Engine::postInit()
 
   // Grab the log messages, itsSerials is not going to change anymore now that the serial params are frozen:
   jevois::logSetEngine(this);
- 
+  jevois::pythonModuleSetEngine(this);
+
   // Instantiate a camera: If device names starts with "/dev/v", assume a hardware camera, otherwise a movie file:
   std::string const camdev = cameradev::get();
   if (jevois::stringStartsWith(camdev, "/dev/v"))
