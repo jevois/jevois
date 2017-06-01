@@ -687,6 +687,47 @@ namespace
 // ####################################################################################################
 namespace
 {
+  class grayToBayer : public cv::ParallelLoopBody
+  {
+    public:
+      grayToBayer(cv::Mat const & inputImage,  unsigned char * outImage, size_t outw) :
+          inImg(inputImage), outImg(outImage)
+      {
+        inlinesize = inputImage.cols * 1; // 1 bytes/pix for GRAY
+        outlinesize = outw * 1; // 1 byte/pix for Bayer
+      }
+
+      virtual void operator()(const cv::Range & range) const
+      {
+        for (int j = range.start; j < range.end; ++j)
+        {
+          int const inoff = j * inlinesize;
+          int const outoff = j * outlinesize;
+
+          memcpy(&outImg[outoff], &inImg.data[inoff], inlinesize);
+        }
+      }
+
+    private:
+      cv::Mat const & inImg;
+      unsigned char * outImg;
+      int inlinesize, outlinesize;
+  };
+
+  // ####################################################################################################
+  void convertCvGRAYtoBayer(cv::Mat const & src, jevois::RawImage & dst)
+  {
+    if (src.type() != CV_8UC1) LFATAL("src must have type CV_8UC1 and GRAY pixels");
+    if (dst.fmt != V4L2_PIX_FMT_SRGGB8) LFATAL("dst format must be V4L2_PIX_FMT_SRGGB8");
+    if (int(dst.width) != src.cols || int(dst.height) != src.rows) LFATAL("src and dst dims must match");
+    
+    cv::parallel_for_(cv::Range(0, src.rows), grayToBayer(src, dst.pixelsw<unsigned char>(), dst.width));
+  }
+} // anonymous namespace
+
+// ####################################################################################################
+namespace
+{
   class rgbaToBayer : public cv::ParallelLoopBody
   {
     public:
@@ -792,6 +833,55 @@ namespace
     if (int(dst.width) != src.cols || int(dst.height) < src.rows) LFATAL("src and dst dims must match");
 
     cv::parallel_for_(cv::Range(0, src.rows), bgrToYUYV(src, dst.pixelsw<unsigned char>(), dst.width));
+  }
+} // anonymous namespace
+
+// ####################################################################################################
+namespace
+{
+  class grayToYUYV : public cv::ParallelLoopBody
+  {
+    public:
+      grayToYUYV(cv::Mat const & inputImage,  unsigned char * outImage, size_t outw) :
+          inImg(inputImage), outImg(outImage)
+      {
+        inlinesize = inputImage.cols * 1; // 1 bytes/pix for GRAY
+        outlinesize = outw * 2; // 2 bytes/pix for YUYV
+      }
+
+      virtual void operator()(const cv::Range & range) const
+      {
+        for (int j = range.start; j < range.end; ++j)
+        {
+          int const inoff = j * inlinesize;
+          int const outoff = j * outlinesize;
+
+          for (int i = 0; i < inImg.cols; ++i)
+          {
+            int mc = inoff + i;
+            unsigned char const G = inImg.data[mc + 0];
+
+            mc = outoff + i * 2;
+            outImg[mc + 0] = G;
+            outImg[mc + 1] = 0x80;
+          }
+        }
+      }
+
+    private:
+      cv::Mat const & inImg;
+      unsigned char * outImg;
+      int inlinesize, outlinesize;
+  };
+
+  // ####################################################################################################
+  void convertCvGRAYtoYUYV(cv::Mat const & src, jevois::RawImage & dst)
+  {
+    if (src.type() != CV_8UC3) LFATAL("src must have type CV_8UC3 and GRAY pixels");
+    if (dst.fmt != V4L2_PIX_FMT_YUYV) LFATAL("dst format must be V4L2_PIX_FMT_YUYV");
+    if (int(dst.width) != src.cols || int(dst.height) < src.rows) LFATAL("src and dst dims must match");
+
+    cv::parallel_for_(cv::Range(0, src.rows), grayToYUYV(src, dst.pixelsw<unsigned char>(), dst.width));
   }
 } // anonymous namespace
 
@@ -919,7 +1009,26 @@ void jevois::rawimage::convertCvRGBAtoRawImage(cv::Mat const & src, RawImage & d
   case V4L2_PIX_FMT_BGR24: cv::cvtColor(src, dstcv, CV_RGBA2BGR); break;
   default: LFATAL("Unsupported output pixel format " << jevois::fccstr(dst.fmt) << std::hex <<' '<< dst.fmt);
   }
-   
+}
+
+// ####################################################################################################
+void jevois::rawimage::convertCvGRAYtoRawImage(cv::Mat const & src, RawImage & dst, int quality)
+{
+  if (src.type() != CV_8UC1) LFATAL("src must have type CV_8UC1 and Gray pixels");
+  if (int(dst.width) != src.cols || int(dst.height) != src.rows) LFATAL("src and dst dims must match");
+
+  cv::Mat dstcv = jevois::rawimage::cvImage(dst);
+
+  switch (dst.fmt)
+  {
+  case V4L2_PIX_FMT_SRGGB8: convertCvGRAYtoBayer(src, dst); break;
+  case V4L2_PIX_FMT_YUYV: convertCvGRAYtoYUYV(src, dst); break;
+  case V4L2_PIX_FMT_GREY: memcpy(dst.pixelsw<void>(), src.data, dst.width * dst.height * dst.bytesperpix()); break;
+  case V4L2_PIX_FMT_RGB565: cv::cvtColor(src, dstcv, CV_GRAY2BGR565); break;
+  case V4L2_PIX_FMT_MJPEG: jevois::compressGRAYtoJpeg(src, dst, quality); break;
+  case V4L2_PIX_FMT_BGR24: cv::cvtColor(src, dstcv, CV_GRAY2BGR); break;
+  default: LFATAL("Unsupported output pixel format " << jevois::fccstr(dst.fmt) << std::hex <<' '<< dst.fmt);
+  }
 }
 
 // ####################################################################################################

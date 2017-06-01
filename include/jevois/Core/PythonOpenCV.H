@@ -56,7 +56,8 @@
 namespace pbcvt
 {
   using namespace cv;
-  static PyObject* opencv_error = 0;
+
+  extern PyObject * opencv_error;
 
 
   //===================    MACROS    =================================================================
@@ -71,10 +72,6 @@ namespace pbcvt
     PyErr_SetString(opencv_error, e.what());    \
     return 0;                                   \
   }
-  
-  //===================   ERROR HANDLING     =========================================================
-  static int failmsg(const char *fmt, ...);
-  static PyObject* failmsgp(const char *fmt, ...);
   
   //===================   THREADING     ==============================================================
   class PyAllowThreads;

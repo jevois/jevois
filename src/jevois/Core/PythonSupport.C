@@ -170,6 +170,7 @@ BOOST_PYTHON_MODULE(libjevois)
   boost::python::def("writeText", writeText1);
   JEVOIS_PYTHON_RAWIMAGE_FUNC(convertCvBGRtoRawImage);
   JEVOIS_PYTHON_RAWIMAGE_FUNC(convertCvRGBAtoRawImage);
+  JEVOIS_PYTHON_RAWIMAGE_FUNC(convertCvGRAYtoRawImage);
   JEVOIS_PYTHON_RAWIMAGE_FUNC(unpackCvRGBAtoGrayRawImage);
   JEVOIS_PYTHON_RAWIMAGE_FUNC(hFlipYUYV);
 }

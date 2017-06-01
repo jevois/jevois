@@ -77,6 +77,20 @@ unsigned long jevois::compressRGBAtoJpeg(unsigned char const * src, int width, i
 }
 
 // ####################################################################################################
+unsigned long jevois::compressGRAYtoJpeg(unsigned char const * src, int width, int height, unsigned char * dst,
+                                         int quality)
+{
+  unsigned long jpegsize = width * height * 2; // allocated output buffer size
+
+  tjhandle compressor = jevois::JpegCompressor::instance().compressor();
+  
+  tjCompress2(compressor, const_cast<unsigned char *>(src), width, 0, height, TJPF_GRAY,
+              &dst, &jpegsize, TJSAMP_422, quality, TJFLAG_FASTDCT);
+
+  return jpegsize;
+}
+
+// ####################################################################################################
 void jevois::compressBGRtoJpeg(cv::Mat const & src, RawImage & dst, int quality)
 {
   dst.buf->setBytesUsed(jevois::compressBGRtoJpeg(src.data, src.cols, src.rows, dst.pixelsw<unsigned char>(), quality));
@@ -86,4 +100,10 @@ void jevois::compressBGRtoJpeg(cv::Mat const & src, RawImage & dst, int quality)
 void jevois::compressRGBAtoJpeg(cv::Mat const & src, RawImage & dst, int quality)
 {
   dst.buf->setBytesUsed(jevois::compressRGBAtoJpeg(src.data, src.cols,src.rows, dst.pixelsw<unsigned char>(), quality));
+}
+
+// ####################################################################################################
+void jevois::compressGRAYtoJpeg(cv::Mat const & src, RawImage & dst, int quality)
+{
+  dst.buf->setBytesUsed(jevois::compressGRAYtoJpeg(src.data, src.cols,src.rows, dst.pixelsw<unsigned char>(), quality));
 }

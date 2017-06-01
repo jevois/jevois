@@ -47,9 +47,10 @@
 
 #include <jevois/Core/PythonOpenCV.H>
 
-#if CV_VERSION_MAJOR == 3
 namespace pbcvt
 {
+  PyObject * opencv_error = nullptr;
+
   using namespace cv;
   //===================   ERROR HANDLING     =========================================================
   int failmsg(const char *fmt, ...) {
@@ -424,6 +425,5 @@ namespace pbcvt
 	m->addref();
 	data->convertible = storage;
   }
-  
+
 }			//end namespace pbcvt
-#endif
