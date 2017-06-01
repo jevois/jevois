@@ -28,7 +28,7 @@ set(JEVOIS_SOVERSION "${JEVOIS_VERSION_MAJOR}.${JEVOIS_VERSION_MINOR}" )
 
 # Python version to use for python modules:
 set(JEVOIS_PYTHON_MAJOR 3)
-set(JEVOIS_PYTHON_MINOR 5)
+set(JEVOIS_PYTHON_MINOR 4)
 set(JEVOIS_PYTHON_M "m")
 
 # Check for JEVOIS_SRC_ROOT environment variable:

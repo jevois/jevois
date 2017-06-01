@@ -25,8 +25,9 @@
 #include <jevois/Core/UserInterface.H>
 #include <jevois/Core/StdioInterface.H>
 #include <jevois/Core/Serial.H>
-
 #include <jevois/Util/Utils.H>
+
+#include <opencv2/core/core.hpp>
 
 // ####################################################################################################
 //! Convenience macro to define a Python binding for a free function in the jevois namespace
@@ -37,7 +38,7 @@
 #define JEVOIS_PYTHON_RAWIMAGE_FUNC(funcname)                   \
   boost::python::def(#funcname, jevois::rawimage::funcname)
 
-//! Convenience macro to define a python enum value
+//! Convenience macro to define a python enum value where the value is in jevois::rawimage
 #define JEVOIS_PYTHON_RAWIMAGE_ENUM_VAL(val) value(#val, jevois::rawimage::val)
 
 // ####################################################################################################
@@ -118,6 +119,8 @@ BOOST_PYTHON_MODULE(libjevois)
          boost::python::return_value_policy<boost::python::reference_existing_object>())
     .def("send", &jevois::OutputFramePython::send)
     ;
+
+  boost::python::class_<cv::Mat>("Mat");
 
   // #################### RawImageOps.H
   JEVOIS_PYTHON_RAWIMAGE_FUNC(cvImage);

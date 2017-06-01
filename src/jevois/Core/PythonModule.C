@@ -80,7 +80,9 @@ jevois::PythonModule::PythonModule(jevois::VideoMapping const & m) :
     std::string const pypath = m.sopath();
     std::string const pydir = pypath.substr(0, pypath.rfind('/'));
     std::string const execstr =
-      "import sys\n"  
+      "import sys\n"
+      "import cv2\n"
+      "sys.path.append(\"/usr/local/lib\")\n" // FIXME when we are done with relocation of all JeVois stuff
       "sys.path.append(\"" + pydir + "\")\n" +
       "from " + m.modulename + " import " + m.modulename + "\n";
     boost::python::exec(execstr.c_str(), itsMainNamespace, itsMainNamespace);
