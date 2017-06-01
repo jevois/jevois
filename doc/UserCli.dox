@@ -519,6 +519,8 @@ itself are also sent to the port selected by the \c serout parameter.
 
 \subsubsection cmdusbsd usbsd <enable|disable|auto|noauto|start>
 
+\jvversion{1.1}
+
 Control the behavior of the feature that allows one to access over USB the JEVOIS partition of the microSD card that is
 inside JeVois, as if it was a USB thumbdrive connected to the host computer. Supported arguments for the \c usbsd
 command are:
@@ -544,11 +546,17 @@ command are:
 Note that there is no \c stop argument here, as this does not work, ejecting the USB drive has to be done on the host
 computer (click the eject icon for it, drag it to the trash, etc).
 
-\subsubsection cmdrestart restart - restart the JeVois smart camera (platform only)
+\subsubsection cmdrestart restart - restart the JeVois smart camera
 
-\subsubsection cmdquit quit - quit this program (host only)
+\jvplatform \jvversion{1.1}
 
-When runnign in host mode, one can quit \c jevois-daemon by simply typing 'quit' in the terminal in which it was
+This command simply restarts the JeVois smart camera.
+
+\subsubsection cmdquit quit - quit this program
+
+\jvhost
+
+When running in host mode, one can quit \c jevois-daemon by simply typing 'quit' in the terminal in which it was
 started.
 
 \subsection cmdpar General parameters available on the command line

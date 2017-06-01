@@ -86,3 +86,16 @@ code {
     border-radius: 4px
 }
 
+strong.jvversion {
+    padding: 2px 4px;
+    color: OrangeRed;
+    background-color: #f0f0f0;
+    border-radius: 4px
+}
+
+strong.jvhostplatform {
+    padding: 2px 4px;
+    color: MediumBlue;
+    background-color: #f0f0f0;
+    border-radius: 4px
+}
