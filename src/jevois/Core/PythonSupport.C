@@ -26,6 +26,11 @@
 #include <jevois/Core/StdioInterface.H>
 #include <jevois/Core/Serial.H>
 #include <jevois/Util/Utils.H>
+#include <jevois/Util/Coordinates.H>
+#include <jevois/Debug/Log.H>
+#include <jevois/Debug/Timer.H>
+#include <jevois/Debug/Profiler.H>
+#include <jevois/Debug/SysInfo.H>
 
 #define PY_ARRAY_UNIQUE_SYMBOL pbcvt_ARRAY_API
 #include <jevois/Core/PythonOpenCV.H>
@@ -41,6 +46,13 @@
 
 //! Convenience macro to define a python enum value where the value is in jevois::rawimage
 #define JEVOIS_PYTHON_RAWIMAGE_ENUM_VAL(val) value(#val, jevois::rawimage::val)
+
+//! Convenience macro to define a python enum value where the value is in jevois::python
+#define JEVOIS_PYTHON_ENUM_VAL(val) value(#val, jevois::python::val)
+
+//! Convenience macro to define a constant that exists in the global C++ namespace
+#define JEVOIS_PYTHON_CONSTANT(cst) boost::python::scope().attr(#cst) = cst;
+
 
 // ####################################################################################################
 // Helper to provide jevois.sendSerial() function that emulates a C++ module's sendSerial()
@@ -62,34 +74,38 @@ void jevois::pythonModuleSetEngine(jevois::Engine * e)
 
 namespace
 {
-    // signal handler hack https://stackoverflow.com/questions/28750774/python-import-array-makes-it-impossible-to-kill-embedded-python-with-ctrl-c
-    //PyOS_sighandler_t sighandler = PyOS_getsig(SIGINT);
-    //import_array();
-//PyOS_setsig(SIGINT,sighandler);
+  // signal handler hack https://stackoverflow.com/questions/28750774/python-import-array-makes-it-impossible-to-kill-embedded-python-with-ctrl-c
+  //PyOS_sighandler_t sighandler = PyOS_getsig(SIGINT);
+  //import_array();
+  //PyOS_setsig(SIGINT,sighandler);
 
   void * init_numpy() { Py_Initialize(); import_array(); return NUMPY_IMPORT_ARRAY_RETVAL; }
 
-
-  void drawRect1(jevois::RawImage & img, int x, int y, unsigned int w,
-                 unsigned int h, unsigned int thick, unsigned int col)
-  { jevois::rawimage::drawRect(img, x, y, w, h, thick, col); }
-  
-  void drawRect2(jevois::RawImage & img, int x, int y, unsigned int w, unsigned int h, unsigned int col)
-  { jevois::rawimage::drawRect(img, x, y, w, h, col); }
-  
-  void writeText1(jevois::RawImage & img, std::string const & txt, int x, int y,
-                  unsigned int col, jevois::rawimage::Font font)
-  { jevois::rawimage::writeText(img, txt, x, y, col, font); }
 
   void pythonSendSerial(std::string const & str)
   {
     if (jevois::python::engineForPythonModule == nullptr) LFATAL("internal error");
     jevois::python::engineForPythonModule->sendSerial(str);
   }
-        
 
+  void pythonLDEBUG(std::string const & JEVOIS_UNUSED_PARAM(str)) { LDEBUG(str); }
+  void pythonLINFO(std::string const & str) { LINFO(str); }
+  void pythonLERROR(std::string const & str) { LERROR(str); }
+  void pythonLFATAL(std::string const & JEVOIS_UNUSED_PARAM(str)) { LFATAL(str); }
 
 } // anonymous namespace
+
+namespace jevois
+{
+  namespace python
+  {
+    // Aux enum for YUYV colors - keep this in sync with RawImage.H:
+    enum YUYV { Black = 0x8000, DarkGrey = 0x8050, MedGrey = 0x8080, LightGrey = 0x80a0, White = 0x80ff,
+                DarkGreen = 0x0000, MedGreen = 0x0040, LightGreen = 0x00ff, DarkTeal = 0x7070, MedTeal = 0x7090,
+                LightTeal = 0x70b0, DarkPurple = 0xa030, MedPurple = 0xa050, LightPurple = 0xa080,
+                DarkPink = 0xff00, MedPink = 0xff80, LightPink = 0xffff };
+  }
+}
 
 // ####################################################################################################
 BOOST_PYTHON_MODULE(libjevois)
@@ -103,10 +119,37 @@ BOOST_PYTHON_MODULE(libjevois)
   
   // #################### module sendSerial() emulation:
   boost::python::def("sendSerial", pythonSendSerial);
+
+  // #################### Log.H
+  JEVOIS_PYTHON_CONSTANT(LOG_DEBUG);
+  JEVOIS_PYTHON_CONSTANT(LOG_INFO);
+  JEVOIS_PYTHON_CONSTANT(LOG_ERR);
+  JEVOIS_PYTHON_CONSTANT(LOG_CRIT);
+
+  boost::python::def("LDEBUG", pythonLDEBUG);
+  boost::python::def("LINFO", pythonLINFO);
+  boost::python::def("LERROR", pythonLERROR);
+  boost::python::def("LFATAL", pythonLFATAL);
   
   // #################### Utils.H
   JEVOIS_PYTHON_FUNC(fccstr);
-  
+  JEVOIS_PYTHON_FUNC(v4l2BytesPerPix);
+  JEVOIS_PYTHON_FUNC(v4l2ImageSize);
+  JEVOIS_PYTHON_FUNC(flushcache);
+
+  // #################### Coordinates.H
+  void (*imgToStd1)(float & x, float & y, jevois::RawImage const & camimg, float const eps) = jevois::coords::imgToStd;
+  void (*imgToStd2)(float & x, float & y, unsigned int const width, unsigned int const height, float const eps) =
+    jevois::coords::imgToStd;
+  boost::python::def("imgToStd", imgToStd1);
+  boost::python::def("imgToStd", imgToStd2);
+
+  void (*stdToImg1)(float & x, float & y, jevois::RawImage const & camimg, float const eps) = jevois::coords::stdToImg;
+  void (*stdToImg2)(float & x, float & y, unsigned int const width, unsigned int const height, float const eps) =
+    jevois::coords::stdToImg;
+  boost::python::def("imgToStd", stdToImg1);
+  boost::python::def("imgToStd", stdToImg2);
+
   // #################### RawImage.H
   boost::python::class_<jevois::RawImage>("RawImage") // default constructor is included
     .def("invalidate", &jevois::RawImage::invalidate)
@@ -122,6 +165,33 @@ BOOST_PYTHON_MODULE(libjevois)
     //     boost::python::return_value_policy<boost::python::reference_existing_object>())
     ;
 
+  boost::python::enum_<jevois::python::YUYV>("YUYV")
+    .JEVOIS_PYTHON_ENUM_VAL(Black)
+    .JEVOIS_PYTHON_ENUM_VAL(DarkGrey)
+    .JEVOIS_PYTHON_ENUM_VAL(MedGrey)
+    .JEVOIS_PYTHON_ENUM_VAL(LightGrey)
+    .JEVOIS_PYTHON_ENUM_VAL(White)
+    .JEVOIS_PYTHON_ENUM_VAL(DarkGreen)
+    .JEVOIS_PYTHON_ENUM_VAL(MedGreen)
+    .JEVOIS_PYTHON_ENUM_VAL(LightGreen)
+    .JEVOIS_PYTHON_ENUM_VAL(DarkTeal)
+    .JEVOIS_PYTHON_ENUM_VAL(MedTeal)
+    .JEVOIS_PYTHON_ENUM_VAL(LightTeal)
+    .JEVOIS_PYTHON_ENUM_VAL(DarkPurple)
+    .JEVOIS_PYTHON_ENUM_VAL(MedPurple)
+    .JEVOIS_PYTHON_ENUM_VAL(LightPurple)
+    .JEVOIS_PYTHON_ENUM_VAL(DarkPink)
+    .JEVOIS_PYTHON_ENUM_VAL(MedPink)
+    .JEVOIS_PYTHON_ENUM_VAL(LightPink)
+    ;
+
+  JEVOIS_PYTHON_CONSTANT(V4L2_PIX_FMT_SRGGB8);
+  JEVOIS_PYTHON_CONSTANT(V4L2_PIX_FMT_YUYV);
+  JEVOIS_PYTHON_CONSTANT(V4L2_PIX_FMT_GREY);
+  JEVOIS_PYTHON_CONSTANT(V4L2_PIX_FMT_RGB565);
+  JEVOIS_PYTHON_CONSTANT(V4L2_PIX_FMT_MJPEG);
+  JEVOIS_PYTHON_CONSTANT(V4L2_PIX_FMT_BGR24);
+  
   // #################### PythonModule.H
   boost::python::class_<jevois::InputFramePython>("InputFrame")
     .def("get", &jevois::InputFramePython::get1,
@@ -150,6 +220,11 @@ BOOST_PYTHON_MODULE(libjevois)
   JEVOIS_PYTHON_RAWIMAGE_FUNC(drawDisk);
   JEVOIS_PYTHON_RAWIMAGE_FUNC(drawCircle);
   JEVOIS_PYTHON_RAWIMAGE_FUNC(drawLine);
+
+  void (*drawRect1)(jevois::RawImage & img, int x, int y, unsigned int w,
+                    unsigned int h, unsigned int thick, unsigned int col) = jevois::rawimage::drawRect;
+  void (*drawRect2)(jevois::RawImage & img, int x, int y, unsigned int w, unsigned int h, unsigned int col) =
+    jevois::rawimage::drawRect;
   boost::python::def("drawRect", drawRect1);
   boost::python::def("drawRect", drawRect2);
   JEVOIS_PYTHON_RAWIMAGE_FUNC(drawFilledRect);
@@ -167,10 +242,33 @@ BOOST_PYTHON_MODULE(libjevois)
     .JEVOIS_PYTHON_RAWIMAGE_ENUM_VAL(Font15x28)
     .JEVOIS_PYTHON_RAWIMAGE_ENUM_VAL(Font16x29)
     .JEVOIS_PYTHON_RAWIMAGE_ENUM_VAL(Font20x38);
+
+  void (*writeText1)(jevois::RawImage & img, std::string const & txt, int x, int y,
+                     unsigned int col, jevois::rawimage::Font font) = jevois::rawimage::writeText;
   boost::python::def("writeText", writeText1);
+
   JEVOIS_PYTHON_RAWIMAGE_FUNC(convertCvBGRtoRawImage);
   JEVOIS_PYTHON_RAWIMAGE_FUNC(convertCvRGBAtoRawImage);
   JEVOIS_PYTHON_RAWIMAGE_FUNC(convertCvGRAYtoRawImage);
   JEVOIS_PYTHON_RAWIMAGE_FUNC(unpackCvRGBAtoGrayRawImage);
   JEVOIS_PYTHON_RAWIMAGE_FUNC(hFlipYUYV);
+
+  // #################### Timer.H
+  boost::python::class_<jevois::Timer>("Timer", boost::python::init<char const *, size_t, int>())
+    .def("start", &jevois::Timer::start)
+    .def("stop", &jevois::Timer::stop, boost::python::return_value_policy<boost::python::copy_const_reference>())
+    ;
+
+  // #################### Profiler.H
+  boost::python::class_<jevois::Profiler>("Profiler", boost::python::init<char const *, size_t, int>())
+    .def("start", &jevois::Profiler::start)
+    .def("checkpoint", &jevois::Profiler::checkpoint)
+    .def("stop", &jevois::Profiler::stop, boost::python::return_value_policy<boost::python::copy_const_reference>())
+    ;
+
+  // #################### SysInfo.H
+  JEVOIS_PYTHON_FUNC(getSysInfoCPU);
+  JEVOIS_PYTHON_FUNC(getSysInfoMem);
+  JEVOIS_PYTHON_FUNC(getSysInfoVersion);
+
 }
