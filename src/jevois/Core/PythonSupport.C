@@ -27,7 +27,8 @@
 #include <jevois/Core/Serial.H>
 #include <jevois/Util/Utils.H>
 
-#include <opencv2/core/core.hpp>
+#define PY_ARRAY_UNIQUE_SYMBOL pbcvt_ARRAY_API
+#include <jevois/Core/PythonOpenCV.H>
 
 // ####################################################################################################
 //! Convenience macro to define a Python binding for a free function in the jevois namespace
@@ -61,6 +62,14 @@ void jevois::pythonModuleSetEngine(jevois::Engine * e)
 
 namespace
 {
+    // signal handler hack https://stackoverflow.com/questions/28750774/python-import-array-makes-it-impossible-to-kill-embedded-python-with-ctrl-c
+    //PyOS_sighandler_t sighandler = PyOS_getsig(SIGINT);
+    //import_array();
+//PyOS_setsig(SIGINT,sighandler);
+
+  void * init_numpy() { Py_Initialize(); import_array(); return NUMPY_IMPORT_ARRAY_RETVAL; }
+
+
   void drawRect1(jevois::RawImage & img, int x, int y, unsigned int w,
                  unsigned int h, unsigned int thick, unsigned int col)
   { jevois::rawimage::drawRect(img, x, y, w, h, thick, col); }
@@ -77,13 +86,21 @@ namespace
     if (jevois::python::engineForPythonModule == nullptr) LFATAL("internal error");
     jevois::python::engineForPythonModule->sendSerial(str);
   }
-  
+        
+
 
 } // anonymous namespace
 
 // ####################################################################################################
 BOOST_PYTHON_MODULE(libjevois)
 {
+  // #################### Initialize python and numpy array support:
+  init_numpy();
+
+  // #################### Initialize converters for cv::Mat support:
+  boost::python::to_python_converter<cv::Mat, pbcvt::matToNDArrayBoostConverter>();
+  pbcvt::matFromNDArrayBoostConverter();
+  
   // #################### module sendSerial() emulation:
   boost::python::def("sendSerial", pythonSendSerial);
   
@@ -119,8 +136,6 @@ BOOST_PYTHON_MODULE(libjevois)
          boost::python::return_value_policy<boost::python::reference_existing_object>())
     .def("send", &jevois::OutputFramePython::send)
     ;
-
-  boost::python::class_<cv::Mat>("Mat");
 
   // #################### RawImageOps.H
   JEVOIS_PYTHON_RAWIMAGE_FUNC(cvImage);
