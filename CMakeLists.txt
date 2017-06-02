@@ -28,7 +28,12 @@ set(JEVOIS_SOVERSION "${JEVOIS_VERSION_MAJOR}.${JEVOIS_VERSION_MINOR}" )
 
 # Python version to use for python modules:
 set(JEVOIS_PYTHON_MAJOR 3)
-set(JEVOIS_PYTHON_MINOR 4)
+if (JEVOIS_PLATFORM)
+  set(JEVOIS_PYTHON_MINOR 5)
+  set(JEVOIS_PYTHON_PATCH 2)
+else (JEVOIS_PLATFORM)
+  set(JEVOIS_PYTHON_MINOR 4)
+endif (JEVOIS_PLATFORM)
 set(JEVOIS_PYTHON_M "m")
 
 # Check for JEVOIS_SRC_ROOT environment variable:
@@ -119,12 +124,15 @@ set(JEVOIS_TBB_INCLUDE "-I${JEVOIS_BUILDROOT_BASE}/build/opencv3-3.2.0/3rdparty/
 # Find python 3.x on host and platform:
 # NOTE: it is too early here to try to use standard find_package() of CMake. In any case, that will not find the
 # platform version which has to be done by hand here.
-set(PYTHON_LIBRARIES "-lpython${JEVOIS_PYTHON_MAJOR}.${JEVOIS_PYTHON_MINOR}${JEVOIS_PYTHON_M}")
-set(PYTHON_INCLUDE_DIRS "-I/usr/include/python${JEVOIS_PYTHON_MAJOR}.${JEVOIS_PYTHON_MINOR}${JEVOIS_PYTHON_M}")
-
-set(JEVOIS_PLATFORM_INCLUDE "${JEVOIS_KERNEL_INCLUDE} ${JEVOIS_TBB_INCLUDE} ${PYTHON_INCLUDE_DIRS}")
-set(JEVOIS_HOST_INCLUDE "-I${JEVOIS_HOST_INSTALL_PREFIX}/include ${PYTHON_INCLUDE_DIRS}")
-
+set(JEVOIS_PLATFORM_PYTHON_INCLUDE
+  "-I${JEVOIS_BUILDROOT_BASE}/host/usr/arm-buildroot-linux-gnueabihf/sysroot/usr/include/python${JEVOIS_PYTHON_MAJOR}.${JEVOIS_PYTHON_MINOR}${JEVOIS_PYTHON_M} -I${JEVOIS_BUILDROOT_BASE}/target/usr/lib/python${JEVOIS_PYTHON_MAJOR}.${JEVOIS_PYTHON_MINOR}/site-packages/numpy/core/include/")
+set(JEVOIS_PLATFORM_PYTHON_LIBS "-lpython${JEVOIS_PYTHON_MAJOR}.${JEVOIS_PYTHON_MINOR}${JEVOIS_PYTHON_M} -lboost_python${JEVOIS_PYTHON_MAJOR}")
+set(JEVOIS_HOST_PYTHON_INCLUDE
+  "-I/usr/include/python${JEVOIS_PYTHON_MAJOR}.${JEVOIS_PYTHON_MINOR}${JEVOIS_PYTHON_M}")
+set(JEVOIS_HOST_PYTHON_LIBS "-lpython${JEVOIS_PYTHON_MAJOR}.${JEVOIS_PYTHON_MINOR}${JEVOIS_PYTHON_M} -lboost_python-py${JEVOIS_PYTHON_MAJOR}${JEVOIS_PYTHON_MINOR}")
+  
+set(JEVOIS_PLATFORM_INCLUDE "${JEVOIS_KERNEL_INCLUDE} ${JEVOIS_TBB_INCLUDE} ${JEVOIS_PLATFORM_PYTHON_INCLUDE}")
+set(JEVOIS_HOST_INCLUDE "-I${JEVOIS_HOST_INSTALL_PREFIX}/include ${JEVOIS_HOST_PYTHON_INCLUDE}")
 
 # On host, set JEVOIS_ROOT path as is for modules; on platform, add the buildroot path to JEVOIS_ROOT:
 file(TO_NATIVE_PATH "${JEVOIS_ROOT}" JEVOIS_HOST_MODULES_ROOT)
@@ -173,8 +181,7 @@ set_target_properties(jevois PROPERTIES VERSION "${JEVOIS_SOVERSION}" SOVERSION 
 link_libraries(jevois)
 install(TARGETS jevois LIBRARY DESTINATION lib COMPONENT libs)
 target_link_libraries(jevois ${JEVOIS_OPENCV_LIBS} -lpthread -ltbb -ldl -lutil -lboost_system
-  -lboost_thread -lboost_regex -lboost_python-py${JEVOIS_PYTHON_MAJOR}${JEVOIS_PYTHON_MINOR}
-  -lturbojpeg -lm ${PYTHON_LIBRARIES})
+  -lboost_thread -lboost_regex -lturbojpeg -lm ${JEVOIS_PYTHON_LIBS})
 
 #---------------------------------------------------------------------
 # OpenCV 2.2
@@ -254,14 +261,7 @@ install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/Config/initscript.cfg"
 #  USE_SOURCE_PERMISSIONS
 #  DESTINATION "${JEVOIS_MODULES_ROOT}" COMPONENT bin)
 
-# Figure out subversion version, to use during packaging:
-#find_package(Subversion QUIET)
-#if (Subversion_FOUND)
-#  Subversion_WC_INFO(${CMAKE_CURRENT_SOURCE_DIR} JEVOIS)
-#  set(SUBVERSION_REVISION ${JEVOIS_WC_REVISION})
-#else (Subversion_FOUND)
-set(SUBVERSION_REVISION "unknown")
-#endif (Subversion_FOUND)
+set(SUBVERSION_REVISION "0")
 
 # Create packages (Debian, RPM): in build/, just type 'cpack' to create the package.
 # To list the files created in a package, run: dpkg --contents <package.deb>
