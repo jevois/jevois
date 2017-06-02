@@ -342,8 +342,29 @@ void jevois::Engine::postInit()
 
   // Grab the log messages, itsSerials is not going to change anymore now that the serial params are frozen:
   jevois::logSetEngine(this);
+
+  // Get python going, we need to do this here to avoid segfaults on platform when instantiating our first python
+  // module. This likely has to do with the fact that the python core is not very thread-safe, and setFormatInternal()
+  // in Engine, which instantiates python modules, will indeed be invoked from a different thread (the one that receives
+  // USB UVC events). Have a look at Python Thread State, Python Gobal Interpreter Lock, etc if interested:
   jevois::pythonModuleSetEngine(this);
 
+  {
+    auto mainModule = boost::python::import("__main__");
+    auto mainNamespace = mainModule.attr("__dict__");
+    std::string const execstr =
+      "import sys\n"
+#ifdef JEVOIS_PLATFORM
+      "sys.path.append(\"/usr/lib\")\n" // FIXME when we are done with relocation of all JeVois stuff
+#else
+      "sys.path.append(\"/usr/local/lib\")\n" // FIXME when we are done with relocation of all JeVois stuff
+#endif
+      "import libjevois as jevois\n"
+      "import cv2\n"
+      "import numpy as np\n";
+    boost::python::exec(execstr.c_str(), mainNamespace, mainNamespace);
+  }
+  
   // Instantiate a camera: If device names starts with "/dev/v", assume a hardware camera, otherwise a movie file:
   std::string const camdev = cameradev::get();
   if (jevois::stringStartsWith(camdev, "/dev/v"))

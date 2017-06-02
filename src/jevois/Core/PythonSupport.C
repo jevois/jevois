@@ -63,10 +63,28 @@ namespace jevois
     Engine * engineForPythonModule = nullptr;
   }
 }
+namespace
+{
+  void * init_numpy()
+  {
+    // Initialize Python:
+    Py_Initialize();
+
+    // Initialize numpy array. Use the signal handler hack from
+    // https://stackoverflow.com/questions/28750774/
+    //         python-import-array-makes-it-impossible-to-kill-embedded-python-with-ctrl-c
+
+    //PyOS_sighandler_t sighandler = PyOS_getsig(SIGINT);
+    import_array();
+    //PyOS_setsig(SIGINT,sighandler);
+    return NUMPY_IMPORT_ARRAY_RETVAL;
+  }
+}
 
 void jevois::pythonModuleSetEngine(jevois::Engine * e)
 {
   jevois::python::engineForPythonModule = e;
+  init_numpy();
 }
 
 // ####################################################################################################
@@ -74,14 +92,6 @@ void jevois::pythonModuleSetEngine(jevois::Engine * e)
 
 namespace
 {
-  // signal handler hack https://stackoverflow.com/questions/28750774/python-import-array-makes-it-impossible-to-kill-embedded-python-with-ctrl-c
-  //PyOS_sighandler_t sighandler = PyOS_getsig(SIGINT);
-  //import_array();
-  //PyOS_setsig(SIGINT,sighandler);
-
-  void * init_numpy() { Py_Initialize(); import_array(); return NUMPY_IMPORT_ARRAY_RETVAL; }
-
-
   void pythonSendSerial(std::string const & str)
   {
     if (jevois::python::engineForPythonModule == nullptr) LFATAL("internal error");
@@ -110,9 +120,6 @@ namespace jevois
 // ####################################################################################################
 BOOST_PYTHON_MODULE(libjevois)
 {
-  // #################### Initialize python and numpy array support:
-  init_numpy();
-
   // #################### Initialize converters for cv::Mat support:
   boost::python::to_python_converter<cv::Mat, pbcvt::matToNDArrayBoostConverter>();
   pbcvt::matFromNDArrayBoostConverter();

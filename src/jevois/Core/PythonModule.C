@@ -72,7 +72,6 @@ jevois::PythonModule::PythonModule(jevois::VideoMapping const & m) :
   try
   {
     // Get the python interpreter going:
-    Py_Initialize();
     itsMainModule = boost::python::import("__main__");
     itsMainNamespace = itsMainModule.attr("__dict__");
 

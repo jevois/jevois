@@ -21,7 +21,7 @@ namespace jevois
 {
   class Engine;
   
-  //! Allow python modules to send serial outputs through the JeVois Engine
+  //! Initialize Python, numpy, and allow python modules to send serial outputs through the JeVois Engine
   /*! This command is not for common use, only Engine should use it. \relates PythonModule */
   void pythonModuleSetEngine(jevois::Engine * e);
 }

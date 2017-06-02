@@ -17,6 +17,27 @@ usbsdfile="/dev/mmcblk0p3"
 if [ -f /boot/nousbsdauto ]; then usbsdfile=""; echo "JeVois microSD access over USB not AUTO"; fi
 
 ##############################################################################################################
+# Fix Python-OpenCV library location if needed and pre-load Python and OpenCV so it is cached for faster startup
+##############################################################################################################
+
+if [ ! -f /usr/lib/python3.5/site-packages/cv2.so ]; then
+    echo "Fixing OpenCV library location"
+    # There is a flaw in the buildroot building of opencv, where the library file name still shows up as compiled for
+    # whatever the host architecture was, even though it has been correctly cross-compiled for the JeVois ARM
+    # processor. Here we fix that and also move the library to the python site-packages:
+    mv /usr/python/3.5/cv2.cpython-35m-x86_64-linux-gnu.so /usr/lib/python3.5/site-packages/cv2.so
+fi
+
+# Run a stub python program whose purpose is to get the python3 and its cv2 module cached from microSD to memory:
+#cat <<EOF > /tmp/pyopencvpreload.py
+#import cv2
+#import numpy as np
+#EOF
+
+#echo "Launching Python and Python-OpenCV pre-load..."
+#python3 /tmp/pyopencvpreload.py & # run in the background while we complete our boot-up
+
+##############################################################################################################
 # Load all required kernel modules:
 ##############################################################################################################
 

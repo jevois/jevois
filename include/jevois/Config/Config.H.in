@@ -65,9 +65,6 @@
 //! Sysfs location to change the exported partition or file over USB using Engine command 'usbsd"
 #define JEVOIS_USBSD_SYS "/sys/devices/platform/sunxi_usb_udc/gadget/lun0/file"
 
-//! Instance name used in Python for the currently loaded jevois Python module
-#define JEVOIS_PYINST "jevois_python_module"
-
 // Doxygen does not like the macros below, so replace them by no-ops when compiling the documentation:
 #ifdef JEVOIS_DOXYGEN
 #define JEVOIS_UNUSED_PARAM(x) x
