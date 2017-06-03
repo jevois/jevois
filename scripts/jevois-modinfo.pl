@@ -377,11 +377,11 @@ close OF;
 # we will assume that "author" is the first field that comes after the detailed info:
 my $htmldescription;
 my $htmlfilename;
-if ($ispython) { $htmlfilename = "$tmpdirname/html/class${className}_1_1${className}.html"; }
-else { $htmlfilename = "$tmpdirname/html/class${className}.html"; }
+if ($ispython) { $htmlfilename = "class${className}_1_1${className}.html"; }
+else { $htmlfilename = "class${className}.html"; }
 
 my $grabbing = 0;
-open HTML, $htmlfilename || die "oops";
+open HTML, "$tmpdirname/html/$htmlfilename" || die "oops";
 while (my $line = <HTML>)
 {
     if ($line =~ m/section author/) { $grabbing = 0; }
@@ -529,7 +529,7 @@ print OF "<tr><td><table class=modinfomisc>\n";
 
 # dump links to module and component docs:
 print OF "<tr class=modinfomisc><th class=modinfomisc>Detailed docs:</th><td class=modinfomisc>";
-print OF "<A HREF=\"/basedoc/class${className}.html\">$className</A>";
+print OF "<A HREF=\"/basedoc/${htmlfilename}\">$className</A>";
 foreach my $c (@subcomps) { print OF ", <A HREF=\"/basedoc/class${c}.html\">$c</A>"; }
 print OF "</td></tr>\n";
 
