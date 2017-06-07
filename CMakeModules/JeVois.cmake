@@ -37,8 +37,8 @@ message(STATUS "JEVOIS_VENDOR: ${JEVOIS_VENDOR}")
 if (JEVOIS_PLATFORM)
 
   # On platform, install to jvpkg or to buildroot?
-  option(JEVOIS_MODULES_TO_BUILDROOT "Install modules directly into buildroot as opposed to jvpkg" OFF)
-  message(STATUS "JEVOIS_MODULES_TO_BUILDROOT: ${JEVOIS_MODULES_TO_BUILDROOT}")
+  option(JEVOIS_MODULES_TO_STAGING "Install modules to ${JEVOIS_PLATFORM_INSTALL_PREFIX} as opposed to jvpkg" OFF)
+  message(STATUS "JEVOIS_MODULES_TO_STAGING: ${JEVOIS_MODULES_TO_STAGING}")
 
   set(CMAKE_C_COMPILER ${JEVOIS_PLATFORM_C_COMPILER})
   set(CMAKE_CXX_COMPILER ${JEVOIS_PLATFORM_CXX_COMPILER})
@@ -162,11 +162,11 @@ macro(jevois_setup_modules basedir deps)
     # On platform, we install to either buildroot or jvpkg directory; on host we always install to JEVOIS_MODULES_ROOT
     # which usually is /jevois:
     if (JEVOIS_PLATFORM)
-      if (JEVOIS_MODULES_TO_BUILDROOT)
-	set(DESTDIR "${JEVOIS_MODULES_ROOT}/modules/${JEVOIS_VENDOR}")
-      else (JEVOIS_MODULES_TO_BUILDROOT)
+      if (JEVOIS_MODULES_TO_STAGING)
+	set(DESTDIR "${JEVOIS_PLATFORM_INSTALL_PREFIX}/modules/${JEVOIS_VENDOR}")
+      else (JEVOIS_MODULES_TO_STAGING)
 	set(DESTDIR "${CMAKE_CURRENT_SOURCE_DIR}/jvpkg/modules/${JEVOIS_VENDOR}")
-      endif (JEVOIS_MODULES_TO_BUILDROOT)
+      endif (JEVOIS_MODULES_TO_STAGING)
     else (JEVOIS_PLATFORM)
       set(DESTDIR "${JEVOIS_MODULES_ROOT}/modules/${JEVOIS_VENDOR}")
     endif (JEVOIS_PLATFORM)
@@ -176,8 +176,11 @@ macro(jevois_setup_modules basedir deps)
       PATTERN "*.[hHcC]" EXCLUDE
       PATTERN "*.hpp" EXCLUDE
       PATTERN "*.cpp" EXCLUDE
+      PATTERN "modinfo.*" EXCLUDE
       PATTERN "*~" EXCLUDE
-      PATTERN "__pycache__" EXCLUDE)
+      PATTERN "*ubyte" EXCLUDE # tiny-dnn training data
+      PATTERN "*.bin" EXCLUDE # tiny-dnn training data
+      PATTERN "__pycache__" EXCLUDE) # compiled python
 
     # Install the compiled module .so itself:
     if (MODFILES)
@@ -207,14 +210,41 @@ macro(jevois_setup_library basedir libname libversion)
 
   # Now also install everything into the jvpkg directory, if compiling for platform:
   if (JEVOIS_PLATFORM)
-    if (JEVOIS_MODULES_TO_BUILDROOT)
-      install(TARGETS ${libname} LIBRARY DESTINATION "${JEVOIS_MODULES_ROOT}/lib/${JEVOIS_VENDOR}" COMPONENT libs)
-    else (JEVOIS_MODULES_TO_BUILDROOT)
+    if (JEVOIS_MODULES_TO_STAGING)
+      install(TARGETS ${libname} LIBRARY DESTINATION "${JEVOIS_PLATFORM_INSTALL_PREFIX}/lib/${JEVOIS_VENDOR}" COMPONENT libs)
+    else (JEVOIS_MODULES_TO_STAGING)
       install(TARGETS ${libname} LIBRARY DESTINATION "${CMAKE_CURRENT_SOURCE_DIR}/jvpkg/lib/${JEVOIS_VENDOR}"
 	COMPONENT libs)
-    endif (JEVOIS_MODULES_TO_BUILDROOT)
+    endif (JEVOIS_MODULES_TO_STAGING)
   else (JEVOIS_PLATFORM)
     install(TARGETS ${libname} LIBRARY DESTINATION lib COMPONENT libs)
 endif (JEVOIS_PLATFORM)
+
+endmacro()
+
+####################################################################################################
+# Setup packaging for debian using cpack
+macro(jevois_setup_cpack packagename)
+  # Create packages (Debian, RPM): in hbuild/ or pbuild/, just type 'sudo cpack' to create the package.
+  # To list the files created in a package, run: dpkg -c <package.deb>
+  if (JEVOIS_PLATFORM)
+    set(CPACK_PACKAGE_NAME "${packagename}-platform")
+    set(JEVOIS_CPACK_ARCH "any")
+    set(CPACK_SET_DESTDIR ON) # needed to avoid having cpack use default install dir
+  else (JEVOIS_PLATFORM)
+    set(CPACK_PACKAGE_NAME "${packagename}-host")
+    set(JEVOIS_CPACK_ARCH ${CMAKE_SYSTEM_PROCESSOR})
+  endif (JEVOIS_PLATFORM)
+
+  set(VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
+  set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_SOURCE_DIR}/scripts/postinst;${CMAKE_SOURCE_DIR}/scripts/prerm;")
+
+  set(CPACK_GENERATOR "DEB;")  # could be DEB;RPM;
+  set(CPACK_PACKAGE_FILE_NAME
+    "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}-${JEVOIS_CPACK_ARCH}")
+
+  SET(CPACK_SOURCE_IGNORE_FILES "${CMAKE_BINARY_DIR}/*")
+
+  include(CPack)
 
 endmacro()

@@ -18,24 +18,30 @@
 
 CMAKE_MINIMUM_REQUIRED(VERSION 3.1)
 
+########################################################################################################################
 # Set vendor names, our modules will be placed in a directory by that name under /jevois/modules:
 set(JEVOIS_VENDOR "JeVois")
 
+########################################################################################################################
 # Project version:
 set(JEVOIS_VERSION_MAJOR  1)
 set(JEVOIS_VERSION_MINOR  1)
 set(JEVOIS_SOVERSION "${JEVOIS_VERSION_MAJOR}.${JEVOIS_VERSION_MINOR}" )
 
+########################################################################################################################
 # Python version to use for python modules:
 set(JEVOIS_PYTHON_MAJOR 3)
-if (JEVOIS_PLATFORM)
-  set(JEVOIS_PYTHON_MINOR 5)
-  set(JEVOIS_PYTHON_PATCH 2)
-else (JEVOIS_PLATFORM)
-  set(JEVOIS_PYTHON_MINOR 4)
-endif (JEVOIS_PLATFORM)
+set(JEVOIS_PYTHON_MINOR 5)
 set(JEVOIS_PYTHON_M "m")
 
+########################################################################################################################
+# OpenCV version to use with JeVois:
+set(JEVOIS_OPENCV_MAJOR 3)
+set(JEVOIS_OPENCV_MINOR 2)
+set(JEVOIS_OPENCV_PATCH 0)
+set(JEVOIS_OPENCV_VERSION "${JEVOIS_OPENCV_MAJOR}.${JEVOIS_OPENCV_MINOR}.${JEVOIS_OPENCV_PATCH}")
+
+########################################################################################################################
 # Check for JEVOIS_SRC_ROOT environment variable:
 if (DEFINED ENV{JEVOIS_SRC_ROOT})
   set(JEVOIS_SRC_ROOT $ENV{JEVOIS_SRC_ROOT})
@@ -46,10 +52,12 @@ to find the linux kernel, buildroot, cross-compilers, etc to install on the plat
 ${JEVOIS_SRC_ROOT}")
 endif (DEFINED ENV{JEVOIS_SRC_ROOT})
 
+########################################################################################################################
 # Locate buildroot base so we can use the compilers provided there to cross-compile for the platform:
 set(JEVOIS_BUILDROOT_BASE "${JEVOIS_SRC_ROOT}/jevois-sdk/out/sun8iw5p1/linux/common/buildroot")
 
-# Compilation options related to debugging:
+########################################################################################################################
+# Compilation options that can be set by users:
 option(JEVOIS_LDEBUG_ENABLE "Enable LDEBUG() messages. If turned off, LDEBUG() will not be not compiled in, and no \
 message will be issued even if the log level is set to LOG_DEBUG at runtime. This is to avoid doing a lot of \
 runtime tests on the log level to decide whether it is LOG_DEBUG or not." OFF)
@@ -76,6 +84,7 @@ message(STATUS "JEVOIS_LOG_TO_FILE: ${JEVOIS_LOG_TO_FILE}")
 option(HOST_IS_RPI3 "When compiling for host, assume a Raspberry Pi 3 instead of default Intel" OFF)
 message(STATUS "HOST_IS_RPI3: ${HOST_IS_RPI3}")
 
+########################################################################################################################
 # Check for JEVOIS_ROOT environment variable:
 if (DEFINED ENV{JEVOIS_ROOT})
   set(JEVOIS_ROOT $ENV{JEVOIS_ROOT})
@@ -85,13 +94,15 @@ else (DEFINED ENV{JEVOIS_ROOT})
     "config files will be installed. Using default: ${JEVOIS_ROOT}")
 endif (DEFINED ENV{JEVOIS_ROOT})
 
+########################################################################################################################
 # First define all vars for both host and platform here so we can patch jevois_config.cmake.in with both sets. Then,
 # below, we will set the variables we need now to compile depending on whether JEVOIS_PLATFORM is set or not:
 
-# On the host, install to /usr/local; on platform, install into buildroot's target directory:
-set(JEVOIS_HOST_INSTALL_PREFIX "/usr/local")
-set(JEVOIS_PLATFORM_INSTALL_PREFIX "${JEVOIS_BUILDROOT_BASE}/target/usr")
+# On the host, install to /usr/; on platform, install into /var/lib/jevois-microsd
+set(JEVOIS_HOST_INSTALL_PREFIX "/usr")
+set(JEVOIS_PLATFORM_INSTALL_PREFIX "/var/lib/jevois-microsd")
 
+########################################################################################################################
 # Architecture flags to optimize compilation:
 if (HOST_IS_RPI3)
   # Should optimize for A53 on RPI3, but fails to compile TBB. /proc/cpuinfo on RPI3 reports ARMv7 and vfpv4 anyway
@@ -104,17 +115,27 @@ endif (HOST_IS_RPI3)
 set(JEVOIS_PLATFORM_ARCH_FLAGS "-mcpu=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard -ftree-vectorize -Ofast")
 # NOTE: could add -funsafe-math-optimizations to use NEON for general maths but NEON is not 100% IEEE-754 compatible
 
+########################################################################################################################
 # Setup the cross-compilers for the platform:
 set(CROSS_COMPILE "${JEVOIS_BUILDROOT_BASE}/host/usr/bin/arm-buildroot-linux-gnueabihf-")
 set(JEVOIS_PLATFORM_C_COMPILER "${CROSS_COMPILE}gcc")
 set(JEVOIS_PLATFORM_CXX_COMPILER "${CROSS_COMPILE}g++")
 
+########################################################################################################################
+# Libraries and helpers needed to compile and run:
+
 # Config for opencv libs.  note: videoio is for video capture, movies, etc and we may want to not use it on platform if
 # we define it out in VideoInput.  In opencv3.1, imread() is in libopencv_imgcodecs.  On the host, we also link against
-# opencv highgui to enable display windows, and prefer libs in /usr/local/lib:
-set(JEVOIS_PLATFORM_OPENCV_LIBS "-lopencv_core -lopencv_imgproc -lopencv_features2d -lopencv_flann -lopencv_ml \
+# opencv highgui to enable display windows.
+# Note: On host, get opencv from jevois-opencv package, in /usr/share/jevois-opencv-3.2.0, on platform it is in /usr
+set(OPENCV_LIBS_FOR_JEVOIS "-lopencv_core -lopencv_imgproc -lopencv_features2d -lopencv_flann -lopencv_ml \
 -lopencv_objdetect -lopencv_imgcodecs -lopencv_tracking -lopencv_video -lopencv_videoio")
-set(JEVOIS_HOST_OPENCV_LIBS "-L${JEVOIS_HOST_INSTALL_PREFIX}/lib ${JEVOIS_PLATFORM_OPENCV_LIBS} -lopencv_highgui")
+
+set(JEVOIS_PLATFORM_OPENCV_PREFIX "/usr")
+set(JEVOIS_PLATFORM_OPENCV_LIBS "${OPENCV_LIBS_FOR_JEVOIS}") # note: do not use the prefix here since cross-compiling
+
+set(JEVOIS_HOST_OPENCV_PREFIX "/usr/share/jevois-opencv-${JEVOIS_OPENCV_VERSION}")
+set(JEVOIS_HOST_OPENCV_LIBS "-L${JEVOIS_HOST_OPENCV_PREFIX}/lib ${OPENCV_LIBS_FOR_JEVOIS} -lopencv_highgui")
 
 # Use TBB and kernel includes for platform from the buildroot installation.  On the host, we may have local packages,
 # eg, latest opencv compiled from source:
@@ -131,25 +152,37 @@ set(JEVOIS_HOST_PYTHON_INCLUDE
   "-I/usr/include/python${JEVOIS_PYTHON_MAJOR}.${JEVOIS_PYTHON_MINOR}${JEVOIS_PYTHON_M}")
 set(JEVOIS_HOST_PYTHON_LIBS "-lpython${JEVOIS_PYTHON_MAJOR}.${JEVOIS_PYTHON_MINOR}${JEVOIS_PYTHON_M} -lboost_python-py${JEVOIS_PYTHON_MAJOR}${JEVOIS_PYTHON_MINOR}")
   
+########################################################################################################################
+# Include path:
 set(JEVOIS_PLATFORM_INCLUDE "${JEVOIS_KERNEL_INCLUDE} ${JEVOIS_TBB_INCLUDE} ${JEVOIS_PLATFORM_PYTHON_INCLUDE}")
-set(JEVOIS_HOST_INCLUDE "-I${JEVOIS_HOST_INSTALL_PREFIX}/include ${JEVOIS_HOST_PYTHON_INCLUDE}")
+set(JEVOIS_HOST_INCLUDE "-I${JEVOIS_HOST_OPENCV_PREFIX}/include ${JEVOIS_HOST_PYTHON_INCLUDE}")
 
-# On host, set JEVOIS_ROOT path as is for modules; on platform, add the buildroot path to JEVOIS_ROOT:
+########################################################################################################################
+# Root path to install modules:
+# For host, set JEVOIS_ROOT path as is for modules; for platform, put it into /var/lib/jevois-microsd:
 file(TO_NATIVE_PATH "${JEVOIS_ROOT}" JEVOIS_HOST_MODULES_ROOT)
-file(TO_NATIVE_PATH "${JEVOIS_BUILDROOT_BASE}/target/${JEVOIS_ROOT}" JEVOIS_PLATFORM_MODULES_ROOT)
+file(TO_NATIVE_PATH "${JEVOIS_PLATFORM_INSTALL_PREFIX}" JEVOIS_PLATFORM_MODULES_ROOT)
 
+########################################################################################################################
 # Set compiler flags: FIXME: libtbb uses some deprecated declarations:
 set(JEVOIS_HOST_CFLAGS "${JEVOIS_HOST_ARCH_FLAGS} -W -Wall -Wextra -g -O4 -I${JEVOIS_SRC_ROOT}/jevois/include \
 ${JEVOIS_HOST_INCLUDE} -fPIC -Wno-deprecated-declarations")
 set(JEVOIS_PLATFORM_CFLAGS "${JEVOIS_PLATFORM_ARCH_FLAGS} -W -Wall -Wextra -g -O4 -I${JEVOIS_SRC_ROOT}/jevois/include \
 ${JEVOIS_PLATFORM_INCLUDE} -fPIC -Wno-deprecated-declarations")
 
+########################################################################################################################
 # Include our helper functions, this will allow selection of host or platform and set variables accordingly:
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules")
 include(JeVois)
 
-# Project name, detects compiler (which has been set by our helper module):
+########################################################################################################################
+# Project name, detects compiler (which has been set by our helper module) and general setup
 project(jevois)
+
+# Set the cmake install prefix:
+if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+  set (CMAKE_INSTALL_PREFIX ${JEVOIS_INSTALL_PREFIX} CACHE PATH "Installation prefix" FORCE)
+endif (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 
 # Register dependencies on header files:
 include_directories(include)
@@ -157,49 +190,31 @@ include_directories(include)
 # Create our C++ config file:
 configure_file(include/jevois/Config/Config.H.in Config.H @ONLY)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/Config.H DESTINATION include/jevois/Config COMPONENT bin)
+if (NOT JEVOIS_PLATFORM)
+  install(FILES ${CMAKE_CURRENT_BINARY_DIR}/Config.H DESTINATION include/jevois/Config COMPONENT bin)
+endif (NOT JEVOIS_PLATFORM)
 
-# Pass the compiler flags to cmake (doing this before project() gives problems); same with the install prefix:
+# Pass the compiler flags to cmake (doing this before project() gives problems with wrong compiler detection):
 set(CMAKE_C_FLAGS "-std=gnu99 ${JEVOIS_CFLAGS} -include Config.H")
 set(CMAKE_CXX_FLAGS "-std=c++17 ${JEVOIS_CFLAGS} -include Config.H")
-set(CMAKE_INSTALL_PREFIX ${JEVOIS_INSTALL_PREFIX})
 
 # Create our cmake config file for later compilation of modules and extra libs:
 configure_file(src/jevois_config.cmake.in jevois_config.cmake @ONLY)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/jevois_config.cmake
   DESTINATION "${JEVOIS_MODULES_ROOT}/config" COMPONENT bin)
 
-# Setup packaging:
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "build-essential, cmake")
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "${CPACK_DEBIAN_PACKAGE_DEPENDS}, g++-5.2 (>=5.2)")
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "${CPACK_DEBIAN_PACKAGE_DEPENDS}, libtbb2")
-
-# Setup our library:
+# Setup our library: Note: Now that we install libjevois.so onto the VFAT JEVOIS partition of the microSD which does not
+# support symlinks, we cannot support the version number in the .so file, because python will look for the plain.so (no
+# version number) module. So, on platform, we will just create libjevois.so with no version number:
 file(GLOB_RECURSE JEVOIS_LIB_SRC_FILES src/jevois/*.C src/jevois/*.c)
 add_library(jevois SHARED ${JEVOIS_LIB_SRC_FILES})
-set_target_properties(jevois PROPERTIES VERSION "${JEVOIS_SOVERSION}" SOVERSION ${JEVOIS_SOVERSION})
+if (NOT JEVOIS_PLATFORM)
+  set_target_properties(jevois PROPERTIES VERSION "${JEVOIS_SOVERSION}" SOVERSION ${JEVOIS_SOVERSION})
+endif (NOT JEVOIS_PLATFORM)
 link_libraries(jevois)
 install(TARGETS jevois LIBRARY DESTINATION lib COMPONENT libs)
 target_link_libraries(jevois ${JEVOIS_OPENCV_LIBS} -lpthread -ltbb -ldl -lutil -lboost_system
   -lboost_thread -lboost_regex -lturbojpeg -lm ${JEVOIS_PYTHON_LIBS})
-
-#---------------------------------------------------------------------
-# OpenCV 2.2
-#---------------------------------------------------------------------
-#find_package(OpenCV2 QUIET)
-#if(OpenCV2_FOUND)
-#  set(CPACK_DEBIAN_PACKAGE_DEPENDS "${CPACK_DEBIAN_PACKAGE_DEPENDS}, libopencv-dev, python-opencv")
-#endif(OpenCV2_FOUND)
-#NRT_LIBSTATUS(OpenCV2_FOUND "OpenCV2" INCLUDES ${OpenCV2_INCLUDE_DIRS} LIBRARIES ${OpenCV2_LIBRARIES}
-#  EXTRAMESSAGE "try this: apt-get install libopencv-dev, python-opencv")
-#set(NRT_HAVE_OPENCV2 ${OpenCV2_FOUND})
-
-# Add the include/ directory to the compiler's search path
-#include_directories(include)
-
-# Add the tests directory, and tell the build system that we haveregression tests in there
-#add_subdirectory(tests)
-#enable_testing()
 
 # Setup our executables:
 add_executable(jevois-daemon src/Apps/jevois-daemon.C)
@@ -223,7 +238,10 @@ endif (JEVOIS_PLATFORM)
 file(GLOB JEVOIS_CMAKE_MODULES ${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/*.cmake)
 install(FILES ${JEVOIS_CMAKE_MODULES} DESTINATION "${JEVOIS_MODULES_ROOT}/config" COMPONENT bin)
 
-# Custom targets to create the documentation:
+########################################################################################################################
+# Documentation:
+
+# Extract code snippets: FIXME could revisit using \snip tags instead
 add_custom_target(docsnip
   COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/scripts/extract-code-snippets.pl"
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
@@ -244,10 +262,17 @@ CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/pkgconfig/jevois.pc.in ${CMAKE_CURREN
 
 # Documentation files for our install / distribution package
 set(DOC_FILES README INSTALL COPYING)
-set(DOC_PATH "share/doc/jevois")
+if (JEVOIS_PLATFORM)
+  set(DOC_PATH "share/doc/jevois-platform")
+else (JEVOIS_PLATFORM)
+  set(DOC_PATH "share/doc/jevois-host")
+endif (JEVOIS_PLATFORM)
 install(FILES ${DOC_FILES} DESTINATION ${DOC_PATH} COMPONENT bin)
 
-# add includes to our install / distribution package (see the CMakeLists.txt in these directories)
+########################################################################################################################
+# Extra files to be installed:
+
+# Add includes to our install / distribution package (see the CMakeLists.txt in these directories)
 add_subdirectory(include)
 
 # Add installation rules for files that go into /jevois:
@@ -257,33 +282,28 @@ install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/Config/params.cfg"
   DESTINATION "${JEVOIS_MODULES_ROOT}/config" COMPONENT bin)
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/Config/initscript.cfg"
   DESTINATION "${JEVOIS_MODULES_ROOT}/config" COMPONENT bin)
-#install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/scripts"
-#  USE_SOURCE_PERMISSIONS
-#  DESTINATION "${JEVOIS_MODULES_ROOT}" COMPONENT bin)
 
-set(SUBVERSION_REVISION "0")
+########################################################################################################################
+# Debian packaging:
 
-# Create packages (Debian, RPM): in build/, just type 'cpack' to create the package.
+# Create packages (Debian, RPM): in hbuild/ or pbuild/, just type 'sudo cpack' to create the package.
 # To list the files created in a package, run: dpkg --contents <package.deb>
-set(CPACK_PACKAGE_DESCRIPTION "JeVois Embedded Machine Vision")
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY
-  "JeVois Embedded Machine Vision from iLab at the University of Southern California")
-set(CPACK_PACKAGE_NAME "jevois")
-
-set(CPACK_PACKAGE_CONTACT "Laurent Itti")
+set(CPACK_PACKAGE_DESCRIPTION "JeVois Smart Machine Vision Core")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "JeVois Smart Embedded Machine Vision Toolkit, Core")
+set(CPACK_PACKAGE_CONTACT "Laurent Itti <jevois.org@gmail.com>")
+set(CPACK_DEBIAN_PACKAGE_MAINTAINER ${CPACK_PACKAGE_CONTACT})
+set(CPACK_DEBIAN_PACKAGE_SECTION "Video")
 set(CPACK_PACKAGE_VENDOR "iLab at the University of Southern California")
 set(CPACK_PACKAGE_VERSION_MAJOR "${JEVOIS_VERSION_MAJOR}")
 set(CPACK_PACKAGE_VERSION_MINOR "${JEVOIS_VERSION_MINOR}")
-set(CPACK_PACKAGE_VERSION_PATCH "${SUBVERSION_REVISION}")
-set(VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
-set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_SOURCE_DIR}/scripts/postinst;${CMAKE_SOURCE_DIR}/scripts/prerm;")
+set(CPACK_PACKAGE_VERSION_PATCH "0")
 
-set(CPACK_GENERATOR "DEB;")  # could be DEB;RPM;
-set(CPACK_PACKAGE_FILE_NAME
-  "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}-${CMAKE_SYSTEM_PROCESSOR}")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "build-essential, \
+cmake (>= 3.1), \
+g++ (>=5.2), \
+libtbb, \
+python${JEVOIS_PYTHON_MAJOR}.${JEVOIS_PYTHON_MINOR}-dev, python${JEVOIS_PYTHON_MAJOR}-numpy, \
+jevois-opencv (=${JEVOIS_OPENCV_VERSION})")
 
-SET(CPACK_SOURCE_IGNORE_FILES "${CMAKE_BINARY_DIR}/*")
-
-#set(CPACK_DEB_COMPONENT_INSTALL ON)
-#set(CPACK_COMPONENTS_ALL libs bin)
-include(CPack)
+# Use helper from JeVois.cmake for all other settings:
+jevois_setup_cpack("jevois")

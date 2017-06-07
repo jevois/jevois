@@ -26,16 +26,8 @@ if [ ! -f /usr/lib/python3.5/site-packages/cv2.so ]; then
     # whatever the host architecture was, even though it has been correctly cross-compiled for the JeVois ARM
     # processor. Here we fix that and also move the library to the python site-packages:
     mv /usr/python/3.5/cv2.cpython-35m-x86_64-linux-gnu.so /usr/lib/python3.5/site-packages/cv2.so
+    sync
 fi
-
-# Run a stub python program whose purpose is to get the python3 and its cv2 module cached from microSD to memory:
-#cat <<EOF > /tmp/pyopencvpreload.py
-#import cv2
-#import numpy as np
-#EOF
-
-#echo "Launching Python and Python-OpenCV pre-load..."
-#python3 /tmp/pyopencvpreload.py & # run in the background while we complete our boot-up
 
 ##############################################################################################################
 # Load all required kernel modules:
@@ -93,7 +85,7 @@ fi
 # Get a list of all our needed library paths:
 ##############################################################################################################
 
-LIBPATH="/lib:/usr/lib"
+LIBPATH="/lib:/usr/lib:/jevois/lib"
 for d in /jevois/lib/*; do if [ -d "${d}" ]; then LIBPATH="${LIBPATH}:${d}"; fi; done
 export LD_LIBRARY_PATH=${LIBPATH}
 
@@ -102,7 +94,7 @@ export LD_LIBRARY_PATH=${LIBPATH}
 ##############################################################################################################
 
 echo "### Insert gadget driver ###"
-MODES=`/usr/bin/jevois-module-param`
+MODES=`/jevois/bin/jevois-module-param`
 
 insmodopts=""
 if [ "X${use_usbsd}" = "X1" -a "X${usbsdfile}" != "X" ]; then insmodopts="${insmodopts} file=${usbsdfile}"; fi
@@ -119,5 +111,5 @@ opts=""
 if [ "X${use_usbserial}" != "X1" ]; then opts="${opts} --usbserialdev="; fi
 
 # Finally start the jevois daemon:
-/usr/bin/jevois-daemon ${opts}
+/jevois/bin/jevois-daemon ${opts}
 
