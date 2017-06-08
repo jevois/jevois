@@ -229,7 +229,7 @@ macro(jevois_setup_cpack packagename)
   # To list the files created in a package, run: dpkg -c <package.deb>
   if (JEVOIS_PLATFORM)
     set(CPACK_PACKAGE_NAME "${packagename}-platform")
-    set(JEVOIS_CPACK_ARCH "any")
+    set(JEVOIS_CPACK_ARCH "all")
     set(CPACK_SET_DESTDIR ON) # needed to avoid having cpack use default install dir
   else (JEVOIS_PLATFORM)
     set(CPACK_PACKAGE_NAME "${packagename}-host")
@@ -240,8 +240,13 @@ macro(jevois_setup_cpack packagename)
   set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_SOURCE_DIR}/scripts/postinst;${CMAKE_SOURCE_DIR}/scripts/prerm;")
 
   set(CPACK_GENERATOR "DEB;")  # could be DEB;RPM;
+
+  # Use a file name that includes debian version so we can publish the same package for different ubunt versions:
+  # Format is: <PackageName>_<VersionNumber>-<DebianRevisionNumber>_<DebianArchitecture>.deb
+  # We cannot just do: set(CPACK_DEBIAN_FILE_NAME "DEB-DEFAULT")  because some packages here have arch 'all'
+  execute_process(COMMAND "lsb_release -rs" OUTPUT_VARIABLE UBU_RELEASE)
   set(CPACK_PACKAGE_FILE_NAME
-    "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}-${JEVOIS_CPACK_ARCH}")
+    "${CPACK_PACKAGE_NAME}_${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}-${UBU_RELEASE}_${JEVOIS_CPACK_ARCH}")
 
   SET(CPACK_SOURCE_IGNORE_FILES "${CMAKE_BINARY_DIR}/*")
 
