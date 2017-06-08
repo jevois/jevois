@@ -233,8 +233,10 @@ macro(jevois_setup_cpack packagename)
     set(CPACK_SET_DESTDIR ON) # needed to avoid having cpack use default install dir
   else (JEVOIS_PLATFORM)
     set(CPACK_PACKAGE_NAME "${packagename}-host")
-    set(JEVOIS_CPACK_ARCH ${CMAKE_SYSTEM_PROCESSOR})
-  endif (JEVOIS_PLATFORM)
+  execute_process(COMMAND dpkg --print-architecture
+    OUTPUT_VARIABLE JEVOIS_CPACK_ARCH
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
+   endif (JEVOIS_PLATFORM)
 
   set(VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
   set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_SOURCE_DIR}/scripts/postinst;${CMAKE_SOURCE_DIR}/scripts/prerm;")
@@ -244,7 +246,9 @@ macro(jevois_setup_cpack packagename)
   # Use a file name that includes debian version so we can publish the same package for different ubunt versions:
   # Format is: <PackageName>_<VersionNumber>-<DebianRevisionNumber>_<DebianArchitecture>.deb
   # We cannot just do: set(CPACK_DEBIAN_FILE_NAME "DEB-DEFAULT")  because some packages here have arch 'all'
-  execute_process(COMMAND "lsb_release -rs" OUTPUT_VARIABLE UBU_RELEASE)
+  execute_process(COMMAND lsb_release -rs
+    OUTPUT_VARIABLE UBU_RELEASE
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
   set(CPACK_PACKAGE_FILE_NAME
     "${CPACK_PACKAGE_NAME}_${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}-${UBU_RELEASE}_${JEVOIS_CPACK_ARCH}")
 
