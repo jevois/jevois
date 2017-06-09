@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-# USAGE jevois-modinfo.pl <module.C>
+# USAGE jevois-modinfo <module.C|.py>
 # writes out modinfo.yaml
 
 use Text::Wrap;

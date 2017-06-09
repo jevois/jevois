@@ -17,7 +17,6 @@
 # CMake helper functions for JeVois and additional libraries and modules:
 
 message(STATUS "JeVois version ${JEVOIS_VERSION_MAJOR}.${JEVOIS_VERSION_MINOR}")
-message(STATUS "JEVOIS_SRC_ROOT: ${JEVOIS_SRC_ROOT}")
 
 # Platform choice:
 option(JEVOIS_PLATFORM "Cross-compile for hardware platform" OFF)
@@ -36,7 +35,7 @@ message(STATUS "JEVOIS_VENDOR: ${JEVOIS_VENDOR}")
 # Settings for native host compilation or hardware platform compilation:
 if (JEVOIS_PLATFORM)
 
-  # On platform, install to jvpkg or to buildroot?
+  # On platform, install to jvpkg or to staging area?
   option(JEVOIS_MODULES_TO_STAGING "Install modules to ${JEVOIS_PLATFORM_INSTALL_PREFIX} as opposed to jvpkg" OFF)
   message(STATUS "JEVOIS_MODULES_TO_STAGING: ${JEVOIS_MODULES_TO_STAGING}")
 
@@ -85,19 +84,9 @@ macro(jevois_project_set_flags)
   set(CMAKE_INSTALL_PREFIX ${JEVOIS_INSTALL_PREFIX})
   link_directories(${JEVOIS_INSTALL_PREFIX}/lib) # to find libjevois
 
-  # Check for JEVOIS_SRC_ROOT environment variable:
-  if (DEFINED ENV{JEVOIS_SRC_ROOT})
-    set(JEVOIS_SRC_ROOT $ENV{JEVOIS_SRC_ROOT})
-  else (DEFINED ENV{JEVOIS_SRC_ROOT})
-    set(JEVOIS_SRC_ROOT "$ENV{HOME}/jevois")
-    message(WARNING "You should set JEVOIS_SRC_ROOT environment variable to the root of your jevois source tree, \
-needed to find the linux kernel, buildroot, cross-compilers, etc to install on the platform hardware. Using default: \
-${JEVOIS_SRC_ROOT}")
-  endif (DEFINED ENV{JEVOIS_SRC_ROOT})
-  
   # add a dependency and command to create the jvpkg package:
   add_custom_target(jvpkg
-    COMMAND ${JEVOIS_SRC_ROOT}/jevois/scripts/jevois-jvpkg.pl ../${JEVOIS_VENDOR}_${CMAKE_PROJECT_NAME}.jvpkg
+    COMMAND jevois-jvpkg ../${JEVOIS_VENDOR}_${CMAKE_PROJECT_NAME}.jvpkg
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/jvpkg )
   
   # Check for JEVOIS_ROOT environment variable:
@@ -134,7 +123,7 @@ macro(jevois_setup_modules basedir deps)
 
       # add a dependency and command to build modinfo.yaml:
       add_custom_command(OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/${basedir}/${JV_MODULE}/modinfo.yaml" "${CMAKE_CURRENT_SOURCE_DIR}/${basedir}/${JV_MODULE}/modinfo.html"
-	COMMAND ${JEVOIS_SRC_ROOT}/jevois/scripts/jevois-modinfo.pl ${JV_MODULE}.C
+	COMMAND jevois-modinfo ${JV_MODULE}.C
 	DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${basedir}/${JV_MODULE}/${JV_MODULE}.C
 	WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${basedir}/${JV_MODULE})
 
@@ -150,7 +139,7 @@ macro(jevois_setup_modules basedir deps)
 
       # add a dependency and command to build modinfo.yaml:
       add_custom_command(OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/${basedir}/${JV_MODULE}/modinfo.yaml" "${CMAKE_CURRENT_SOURCE_DIR}/${basedir}/${JV_MODULE}/modinfo.html"
-	COMMAND ${JEVOIS_SRC_ROOT}/jevois/scripts/jevois-modinfo.pl ${JV_MODULE}.py
+	COMMAND jevois-modinfo ${JV_MODULE}.py
 	DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${basedir}/${JV_MODULE}/${JV_MODULE}.py
 	WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${basedir}/${JV_MODULE})
 
@@ -248,7 +237,7 @@ macro(jevois_setup_cpack packagename)
     OUTPUT_VARIABLE UBU_RELEASE
     OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-  set(CPACK_DEBIAN_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}-${UBU_RELEASE}")
+  set(CPACK_DEBIAN_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}-ubuntu${UBU_RELEASE}")
   set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}_${CPACK_DEBIAN_PACKAGE_VERSION}_${JEVOIS_CPACK_ARCH}")
 
   SET(CPACK_SOURCE_IGNORE_FILES "${CMAKE_BINARY_DIR}/*")

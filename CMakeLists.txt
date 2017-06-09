@@ -42,19 +42,8 @@ set(JEVOIS_OPENCV_PATCH 0)
 set(JEVOIS_OPENCV_VERSION "${JEVOIS_OPENCV_MAJOR}.${JEVOIS_OPENCV_MINOR}.${JEVOIS_OPENCV_PATCH}")
 
 ########################################################################################################################
-# Check for JEVOIS_SRC_ROOT environment variable:
-if (DEFINED ENV{JEVOIS_SRC_ROOT})
-  set(JEVOIS_SRC_ROOT $ENV{JEVOIS_SRC_ROOT})
-else (DEFINED ENV{JEVOIS_SRC_ROOT})
-  set(JEVOIS_SRC_ROOT "$ENV{HOME}/jevois")
-  message(WARNING "You should set JEVOIS_SRC_ROOT environment variable to the root of your jevois source tree, needed \
-to find the linux kernel, buildroot, cross-compilers, etc to install on the platform hardware. Using default: \
-${JEVOIS_SRC_ROOT}")
-endif (DEFINED ENV{JEVOIS_SRC_ROOT})
-
-########################################################################################################################
 # Locate buildroot base so we can use the compilers provided there to cross-compile for the platform:
-set(JEVOIS_BUILDROOT_BASE "${JEVOIS_SRC_ROOT}/jevois-sdk/out/sun8iw5p1/linux/common/buildroot")
+set(JEVOIS_BUILDROOT_BASE "/usr/share/jevois-sdk/out/sun8iw5p1/linux/common/buildroot")
 
 ########################################################################################################################
 # Compilation options that can be set by users:
@@ -232,6 +221,11 @@ install(TARGETS jevois-camtest RUNTIME DESTINATION bin COMPONENT bin)
 if (JEVOIS_PLATFORM)
   # On platform only, install jevois.sh from bin/ in the source tree into /usr/bin:
   install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/bin/jevois.sh" DESTINATION bin COMPONENT bin)
+else (JEVOIS_PLATFORM)
+  # On host only, install helper scripts:
+  install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/scripts/jevois-jvpkg" DESTINATION bin COMPONENT bin)
+  install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/scripts/jevois-create-module" DESTINATION bin COMPONENT bin)
+  install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/scripts/jevois-modinfo" DESTINATION bin COMPONENT bin)
 endif (JEVOIS_PLATFORM)
 
 # Install all of our CMakeModules as well
@@ -252,10 +246,12 @@ add_custom_target(doc
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
 # This is to install the doc of jevois and jevoisbase to jevois.org, only works in ilab:
-add_custom_target(docweb
-  COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/scripts/docinstall.sh
-  DEPENDS doc
-  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+if (JEVOIS_ILAB)
+  add_custom_target(docweb
+    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/scripts/docinstall.sh
+    DEPENDS doc
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+endif (JEVOIS_ILAB)
 
 # Configure our pkgconfig file:
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/pkgconfig/jevois.pc.in ${CMAKE_CURRENT_SOURCE_DIR}/pkgconfig/jevois.pc @ONLY)
