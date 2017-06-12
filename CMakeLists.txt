@@ -179,9 +179,7 @@ include_directories(include)
 # Create our C++ config file:
 configure_file(include/jevois/Config/Config.H.in Config.H @ONLY)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
-if (NOT JEVOIS_PLATFORM)
-  install(FILES ${CMAKE_CURRENT_BINARY_DIR}/Config.H DESTINATION include/jevois/Config COMPONENT bin)
-endif (NOT JEVOIS_PLATFORM)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/Config.H DESTINATION include/jevois/Config COMPONENT bin)
 
 # Pass the compiler flags to cmake (doing this before project() gives problems with wrong compiler detection):
 set(CMAKE_C_FLAGS "-std=gnu99 ${JEVOIS_CFLAGS} -include Config.H")
@@ -294,10 +292,13 @@ set(CPACK_PACKAGE_VERSION_MAJOR "${JEVOIS_VERSION_MAJOR}")
 set(CPACK_PACKAGE_VERSION_MINOR "${JEVOIS_VERSION_MINOR}")
 set(CPACK_PACKAGE_VERSION_PATCH "0")
 
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "build-essential, \
-cmake (>= 3.1), \
-g++ (>=5.2), \
-libtbb, \
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "build-essential, cmake (>= 3.1), gcc (>= 5.2), g++ (>=5.2), gfortran (>= 5.2), \
+guvcview, subversion, cmake, git, mercurial, doxygen-gui, graphviz, libboost-all-dev, libjpeg-turbo8-dev, autoconf, \
+libeigen3-dev, screen, libgtk2.0-dev, libdc1394-22, libdc1394-22-dev, libjpeg-dev, libpng-dev, libtiff5-dev, \
+libavcodec-dev, libavformat-dev, libswscale-dev, libxine2-dev, libgstreamer1.0-dev, libgstreamer-plugins-base1.0-dev, \
+libv4l-dev, libtbb-dev, libqt4-dev, libfaac-dev, libmp3lame-dev, libopencore-amrnb-dev, libopencore-amrwb-dev, \
+libtheora-dev, libvorbis-dev, libxvidcore-dev, x264, v4l-utils, unzip, qt5-default, python3-dev, python3-numpy, \
+python3-pip, libgtk-3-dev, libatlas-base-dev, libturbojpeg, libtbb2, \
 python${JEVOIS_PYTHON_MAJOR}.${JEVOIS_PYTHON_MINOR}-dev, python${JEVOIS_PYTHON_MAJOR}-numpy, \
 jevois-opencv (=${JEVOIS_OPENCV_VERSION})")
 
