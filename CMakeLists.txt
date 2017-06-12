@@ -266,13 +266,8 @@ install(FILES ${DOC_FILES} DESTINATION ${DOC_PATH} COMPONENT bin)
 ########################################################################################################################
 # Extra files to be installed:
 
-# Add includes to our install / distribution package (see the CMakeLists.txt in these directories). On host, we install
-# to /usr/include, while on platform we install into buildroot (note: not to the microSD staging area):
-if (JEVOIS_PLATFORM)
-  add_subdirectory(include ${JEVOIS_BULDROOT_BASE}/target/usr)
-else (JEVOIS_PLATFORM)
-  add_subdirectory(include)
-endif (JEVOIS_PLATFORM)
+# Add includes to our install / distribution package:
+add_subdirectory(include)
 
 # Add installation rules for files that go into /jevois:
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/Config/videomappings.cfg"
