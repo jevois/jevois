@@ -300,7 +300,7 @@ libv4l-dev, libtbb-dev, libqt4-dev, libfaac-dev, libmp3lame-dev, libopencore-amr
 libtheora-dev, libvorbis-dev, libxvidcore-dev, x264, v4l-utils, unzip, qt5-default, python3-dev, python3-numpy, \
 python3-pip, libgtk-3-dev, libatlas-base-dev, libturbojpeg, libtbb2, \
 python${JEVOIS_PYTHON_MAJOR}.${JEVOIS_PYTHON_MINOR}-dev, python${JEVOIS_PYTHON_MAJOR}-numpy, \
-jevois-opencv (=${JEVOIS_OPENCV_VERSION})")
+jevois-opencv (>=${JEVOIS_OPENCV_VERSION})")
 
 # Use helper from JeVois.cmake for all other settings:
 jevois_setup_cpack("jevois")
