@@ -56,11 +56,11 @@ set(JEVOIS_BUILDROOT_BASE "${JEVOIS_SDK_ROOT}/out/sun8iw5p1/linux/common/buildro
 # Compilation options that can be set by users:
 option(JEVOIS_LDEBUG_ENABLE "Enable LDEBUG() messages. If turned off, LDEBUG() will not be not compiled in, and no \
 message will be issued even if the log level is set to LOG_DEBUG at runtime. This is to avoid doing a lot of \
-runtime tests on the log level to decide whether it is LOG_DEBUG or not." OFF)
+runtime tests on the log level to decide whether it is LOG_DEBUG or not." ON)
 message(STATUS "JEVOIS_LDEBUG_ENABLE: ${JEVOIS_LDEBUG_ENABLE}")
 
 option(JEVOIS_TRACE_ENABLE "Enable tracing of functions that use JEVOIS_TRACE(). They will not be compiled in if \
-OFF. Note that JEVOIS_TRACE uses LDEBUG() so JEVOIS_LDEBUG_ENABLE should be ON to see the trace messages" OFF)
+OFF. Note that JEVOIS_TRACE uses LDEBUG() so JEVOIS_LDEBUG_ENABLE should be ON to see the trace messages" ON)
 message(STATUS "JEVOIS_TRACE_ENABLE: ${JEVOIS_TRACE_ENABLE}")
 
 option(JEVOIS_USE_SYNC_LOG "Enable synchronous logging, i.e., log messages from LDEBUG(), LINFO(), etc are issued \

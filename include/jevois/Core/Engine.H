@@ -42,7 +42,8 @@
 #define JEVOIS_SERIAL_DEFAULT "/dev/ttyS0"
 
 //! On platform hardware, device for serial-over-USB port
-#define JEVOIS_USBSERIAL_DEFAULT "/dev/ttyGS0"
+//#define JEVOIS_USBSERIAL_DEFAULT "/dev/ttyGS0"
+#define JEVOIS_USBSERIAL_DEFAULT ""
 
 #else
 // On the host, we have no gadget (which will trigger displaying output frames to a window) and we use the terminal in
@@ -56,6 +57,7 @@
 
 //! On generic computer hardware, device for serial port should always be stdio to use an StdioInterface
 #define JEVOIS_SERIAL_DEFAULT "stdio"
+
 
 //! On generic computer hardware, device for the serial-over-USB port should always be empty
 #define JEVOIS_USBSERIAL_DEFAULT ""
@@ -72,6 +74,7 @@ namespace jevois
   
   namespace engine
   {
+
     static ParameterCategory const ParamCateg("Engine Options");
 
     //! Parameter \relates jevois::Engine
