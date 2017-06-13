@@ -199,7 +199,7 @@ namespace
 // ####################################################################################################
 jevois::Engine::Engine(std::string const & instance) :
     jevois::Manager(instance), itsMappings(jevois::loadVideoMappings(itsDefaultMappingIdx)),
-    itsUSBout(false), itsRunning(false), itsStreaming(false), itsStopMainLoop(false), itsTurbo(false),
+    itsRunning(false), itsStreaming(false), itsStopMainLoop(false), itsTurbo(false),
     itsManualStreamon(false)
 {
   JEVOIS_TRACE(1);
@@ -536,7 +536,10 @@ void jevois::Engine::setFormatInternal(jevois::VideoMapping const & m)
   // Now that the module is nuked, we won't have any get()/done()/send() requests on the camera or gadget, thus it is
   // safe to change the formats on both:
   itsCamera->setFormat(m);
-  if (m.ofmt == 0) itsUSBout = false; else { itsGadget->setFormat(m); itsUSBout = true;}
+  if (m.ofmt) itsGadget->setFormat(m);
+
+  // Keep track of our current mapping:
+  itsCurrentMapping = m;
   
   // Nuke the processing module, if any, so we can also safely nuke the loader. We always nuke the module instance so we
   // won't have any issues with latent state even if we re-use the same module but possibly with different input
@@ -620,8 +623,10 @@ void jevois::Engine::mainLoop()
       if (itsModule)
         try
         {
-          if (itsUSBout) itsModule->process(jevois::InputFrame(itsCamera, itsTurbo), jevois::OutputFrame(itsGadget));
-          else itsModule->process(jevois::InputFrame(itsCamera, itsTurbo));
+          if (itsCurrentMapping.ofmt) // Process with USB outputs:
+            itsModule->process(jevois::InputFrame(itsCamera, itsTurbo), jevois::OutputFrame(itsGadget));
+          else  // Process with no USB outputs:
+            itsModule->process(jevois::InputFrame(itsCamera, itsTurbo));
           dosleep = false;
         }
         catch (...) { jevois::warnAndIgnoreException(); }
@@ -707,6 +712,12 @@ void jevois::Engine::sendSerial(std::string const & str, bool islog)
         try { s->writeString(str); } catch (...) { jevois::warnAndIgnoreException(); }
     break;
   }
+}
+
+// ####################################################################################################
+jevois::VideoMapping const & jevois::Engine::getCurrentVideoMapping() const
+{
+  return itsCurrentMapping;
 }
 
 // ####################################################################################################
@@ -966,7 +977,7 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
       s->writeString("setmapping <num> - select video mapping <num>, only possible while not streaming");
       s->writeString("setmapping2 <CAMmode> <CAMwidth> <CAMheight> <CAMfps> <Vendor> <Module> - set no-USB-out "
                      "video mapping defined on the fly, while not streaming");
-      if (itsUSBout == false || itsManualStreamon)
+      if (itsCurrentMapping.ofmt == 0 || itsManualStreamon)
       {
         s->writeString("streamon - start camera video streaming");
         s->writeString("streamoff - stop camera video streaming");
@@ -1119,7 +1130,7 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
       if (was_streaming)
       {
         errmsg = "Cannot set mapping while streaming: ";
-        if (itsUSBout) errmsg += "Stop your webcam program on the host computer first.";
+        if (itsCurrentMapping.ofmt) errmsg += "Stop your webcam program on the host computer first.";
         else errmsg += "Issue a 'streamoff' command first.";
       }
       else if (idx >= itsMappings.size())
@@ -1140,7 +1151,7 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
       if (was_streaming)
       {
         errmsg = "Cannot set mapping while streaming: ";
-        if (itsUSBout) errmsg += "Stop your webcam program on the host computer first.";
+        if (itsCurrentMapping.ofmt) errmsg += "Stop your webcam program on the host computer first.";
         else errmsg += "Issue a 'streamoff' command first.";
       }
       else
@@ -1158,7 +1169,7 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
     }
 
     // ----------------------------------------------------------------------------------------------------
-    if (itsUSBout == false || itsManualStreamon)
+    if (itsCurrentMapping.ofmt == 0 || itsManualStreamon)
     {
       if (cmd == "streamon")
       {

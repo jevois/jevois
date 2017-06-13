@@ -133,6 +133,7 @@ namespace jevois
       VideoBuffers * itsBuffers;
       struct v4l2_format itsFormat;
       std::atomic<bool> itsStreaming;
+      float itsFps;
 
       mutable std::condition_variable itsOutputCondVar;
       mutable std::mutex itsOutputMtx;

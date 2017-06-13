@@ -42,8 +42,15 @@ set(JEVOIS_OPENCV_PATCH 0)
 set(JEVOIS_OPENCV_VERSION "${JEVOIS_OPENCV_MAJOR}.${JEVOIS_OPENCV_MINOR}.${JEVOIS_OPENCV_PATCH}")
 
 ########################################################################################################################
+# Check for optional JEVOIS_SDK_ROOT environment variable, or use /usr/share/jevois-sdk by default:
+if (DEFINED ENV{JEVOIS_SDK_ROOT})
+  set(JEVOIS_SDK_ROOT $ENV{JEVOIS_SDK_ROOT})
+else (DEFINED ENV{JEVOIS_SDK_ROOT})
+  set(JEVOIS_SDK_ROOT "/usr/share/jevois-sdk")
+endif (DEFINED ENV{JEVOIS_SDK_ROOT})
+
 # Locate buildroot base so we can use the compilers provided there to cross-compile for the platform:
-set(JEVOIS_BUILDROOT_BASE "/usr/share/jevois-sdk/out/sun8iw5p1/linux/common/buildroot")
+set(JEVOIS_BUILDROOT_BASE "${JEVOIS_SDK_ROOT}/out/sun8iw5p1/linux/common/buildroot")
 
 ########################################################################################################################
 # Compilation options that can be set by users:

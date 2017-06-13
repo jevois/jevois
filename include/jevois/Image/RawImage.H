@@ -123,7 +123,7 @@ namespace jevois
       RawImage & operator=(RawImage const & other) = default;
         
       //! Construct from an existing VideoBuf and associated params
-      RawImage(unsigned int w, unsigned int h, unsigned int f, std::shared_ptr<VideoBuf> b, size_t bindex);
+      RawImage(unsigned int w, unsigned int h, unsigned int f, float fs, std::shared_ptr<VideoBuf> b, size_t bindex);
 
       //! Invalidate the image by zero'ing out the pointer to pixel buffer and the dims and format
       void invalidate();
@@ -139,6 +139,7 @@ namespace jevois
       unsigned int width;      //!< Image width in pixels
       unsigned int height;     //!< Image height in pixels
       unsigned int fmt;        //!< Pixel format as a V4L2_PIX_FMT_XXX
+      float fps;               //!< Programmed frames/s as given by current video mapping, may not be actual
       std::shared_ptr<VideoBuf> buf; //!< The pixel data buffer
       size_t bufindex; //!< The index of the data buffer in the kernel driver
 

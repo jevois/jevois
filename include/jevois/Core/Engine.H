@@ -238,11 +238,16 @@ namespace jevois
       //! Find the VideoMapping that has the given output specs, or throw if not found
       VideoMapping const & findVideoMapping(unsigned int oformat, unsigned int owidth, unsigned int oheight,
                                             float oframespersec) const;
-      
+
+      //! Get the current video mapping
+      /*! Note that the current mapping may not have an entry in our list of mappings obtained from videomappings.cfg,
+          if the current one was set on the fly by the setmapping2 CLI command. */
+      VideoMapping const & getCurrentVideoMapping() const;
+
       //! Return the number of video mappings
       size_t numVideoMappings() const;
 
-      //! Allow access to our video mappings, which are parsed from file at construction
+      //! Allow access to our video mappings which are parsed from file at construction
       VideoMapping const & getVideoMapping(size_t idx) const;
 
       //! Get the video mapping index for a given UVC iformat, iframe and interval
@@ -301,7 +306,7 @@ namespace jevois
 
       size_t itsDefaultMappingIdx; //!< Index of default mapping
       std::vector<VideoMapping> const itsMappings; //!< All our mappings from videomappings.cfg
-      bool itsUSBout; //!< True when current mapping has some USB output
+      VideoMapping itsCurrentMapping; //!< Current video mapping, may not match any in itsMappings if setmapping2 used
 
       std::shared_ptr<VideoInput> itsCamera; //!< Our camera
       std::shared_ptr<VideoOutput> itsGadget; //!< Our gadget

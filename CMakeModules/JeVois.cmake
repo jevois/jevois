@@ -35,9 +35,11 @@ message(STATUS "JEVOIS_VENDOR: ${JEVOIS_VENDOR}")
 # Settings for native host compilation or hardware platform compilation:
 if (JEVOIS_PLATFORM)
 
-  # On platform, install to jvpkg or to staging area?
+  # On platform, install to jvpkg, staging area, or live microSD?
   option(JEVOIS_MODULES_TO_STAGING "Install modules to ${JEVOIS_PLATFORM_INSTALL_PREFIX} as opposed to jvpkg" OFF)
   message(STATUS "JEVOIS_MODULES_TO_STAGING: ${JEVOIS_MODULES_TO_STAGING}")
+  option(JEVOIS_MODULES_TO_MICROSD "Install modules to /media/$ENV{USER}/JEVOIS as opposed to jvpkg" OFF)
+  message(STATUS "JEVOIS_MODULES_TO_MICROSD: ${JEVOIS_MODULES_TO_MICROSD}")
 
   set(CMAKE_C_COMPILER ${JEVOIS_PLATFORM_C_COMPILER})
   set(CMAKE_CXX_COMPILER ${JEVOIS_PLATFORM_CXX_COMPILER})
@@ -83,6 +85,14 @@ macro(jevois_project_set_flags)
   set(CMAKE_CXX_FLAGS "-std=c++17 ${JEVOIS_CFLAGS} -I${JEVOIS_INSTALL_PREFIX}/include -include jevois/Config/Config.H")
   set(CMAKE_INSTALL_PREFIX ${JEVOIS_INSTALL_PREFIX})
   link_directories(${JEVOIS_INSTALL_PREFIX}/lib) # to find libjevois
+
+  # Check for optional JEVOIS_SDK_ROOT environment variable, or use /usr/share/jevois-sdk by default:
+  if (DEFINED ENV{JEVOIS_SDK_ROOT})
+    set(JEVOIS_SDK_ROOT $ENV{JEVOIS_SDK_ROOT})
+  else (DEFINED ENV{JEVOIS_SDK_ROOT})
+    set(JEVOIS_SDK_ROOT "/usr/share/jevois-sdk")
+  endif (DEFINED ENV{JEVOIS_SDK_ROOT})
+  message(STATUS "JeVois SDK root: ${JEVOIS_SDK_ROOT}")
 
   # add a dependency and command to create the jvpkg package:
   add_custom_target(jvpkg
@@ -148,18 +158,22 @@ macro(jevois_setup_modules basedir deps)
 
     endif (PYFILES)
     
-    # On platform, we install to either buildroot or jvpkg directory; on host we always install to JEVOIS_MODULES_ROOT
-    # which usually is /jevois:
+    # On platform, we install to jvpkg directory, staging, or live microsd; on host we always install to
+    # JEVOIS_MODULES_ROOT which usually is /jevois:
     if (JEVOIS_PLATFORM)
-      if (JEVOIS_MODULES_TO_STAGING)
-	set(DESTDIR "${JEVOIS_PLATFORM_INSTALL_PREFIX}/modules/${JEVOIS_VENDOR}")
-      else (JEVOIS_MODULES_TO_STAGING)
-	set(DESTDIR "${CMAKE_CURRENT_SOURCE_DIR}/jvpkg/modules/${JEVOIS_VENDOR}")
-      endif (JEVOIS_MODULES_TO_STAGING)
+      if (JEVOIS_MODULES_TO_MICROSD) # if both are specified, microsd takes preference over staging
+	set(DESTDIR "/media/$ENV{USER}/JEVOIS/modules/${JEVOIS_VENDOR}")
+      else (JEVOIS_MODULES_TO_MICROSD)
+	if (JEVOIS_MODULES_TO_STAGING)
+	  set(DESTDIR "${JEVOIS_PLATFORM_INSTALL_PREFIX}/modules/${JEVOIS_VENDOR}")
+	else (JEVOIS_MODULES_TO_STAGING)
+	  set(DESTDIR "${CMAKE_CURRENT_SOURCE_DIR}/jvpkg/modules/${JEVOIS_VENDOR}")
+	endif (JEVOIS_MODULES_TO_STAGING)
+      endif (JEVOIS_MODULES_TO_MICROSD)
     else (JEVOIS_PLATFORM)
       set(DESTDIR "${JEVOIS_MODULES_ROOT}/modules/${JEVOIS_VENDOR}")
     endif (JEVOIS_PLATFORM)
-    
+      
     # Install everything that is in that directory except for the source file:
     install(DIRECTORY ${basedir}/${JV_MODULE} DESTINATION "${DESTDIR}"
       PATTERN "*.[hHcC]" EXCLUDE
@@ -197,18 +211,28 @@ macro(jevois_setup_library basedir libname libversion)
 
   link_libraries(${libname})
 
-  # Now also install everything into the jvpkg directory, if compiling for platform:
+  # On platform, we install to jvpkg directory, staging, or live microsd; on host we always install to
+  # JEVOIS_MODULES_ROOT which usually is /jevois:
   if (JEVOIS_PLATFORM)
-    if (JEVOIS_MODULES_TO_STAGING)
-      install(TARGETS ${libname} LIBRARY DESTINATION "${JEVOIS_PLATFORM_INSTALL_PREFIX}/lib/${JEVOIS_VENDOR}" COMPONENT libs)
-    else (JEVOIS_MODULES_TO_STAGING)
-      install(TARGETS ${libname} LIBRARY DESTINATION "${CMAKE_CURRENT_SOURCE_DIR}/jvpkg/lib/${JEVOIS_VENDOR}"
-	COMPONENT libs)
-    endif (JEVOIS_MODULES_TO_STAGING)
+    if (JEVOIS_MODULES_TO_MICROSD) # if both are specified, microsd takes preference over staging
+	install(TARGETS ${libname} LIBRARY
+	  DESTINATION "/media/$ENV{USER}/JEVOIS/lib/${JEVOIS_VENDOR}"
+	  COMPONENT libs)
+    else (JEVOIS_MODULES_TO_MICROSD)
+      if (JEVOIS_MODULES_TO_STAGING)
+	install(TARGETS ${libname} LIBRARY
+	  DESTINATION "${JEVOIS_PLATFORM_INSTALL_PREFIX}/lib/${JEVOIS_VENDOR}"
+	  COMPONENT libs)
+      else (JEVOIS_MODULES_TO_STAGING)
+	install(TARGETS ${libname} LIBRARY
+	  DESTINATION "${CMAKE_CURRENT_SOURCE_DIR}/jvpkg/lib/${JEVOIS_VENDOR}"
+	  COMPONENT libs)
+      endif (JEVOIS_MODULES_TO_STAGING)
+    endif (JEVOIS_MODULES_TO_MICROSD)
   else (JEVOIS_PLATFORM)
     install(TARGETS ${libname} LIBRARY DESTINATION lib COMPONENT libs)
-endif (JEVOIS_PLATFORM)
-
+  endif (JEVOIS_PLATFORM)
+    
 endmacro()
 
 ####################################################################################################
