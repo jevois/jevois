@@ -172,6 +172,22 @@ namespace jevois
         
         quality is used only when dst is MJPG and should be between 1 and 100. \ingroup image */
     void convertCvBGRtoRawImage(cv::Mat const & src, RawImage & dst, int quality);
+
+    //! Convert a RGB cv::Mat to RawImage with already-allocated pixels and pixel type
+    /*! This is used to output video frames over USB from internally computed results in opencv BGR format.  dst should
+        already have an allocated pixel buffer (typically, it should be obtained from the USB gadget), and its size
+        must match that of the src image.
+        
+        Supported dst pixel formats:
+        - V4L2_PIX_FMT_YUYV
+        - V4L2_PIX_FMT_GREY
+        - V4L2_PIX_FMT_SRGGB8 (Bayer)
+        - V4L2_PIX_FMT_RGB565
+        - V4L2_PIX_FMT_MJPG
+        - V4L2_PIX_FMT_BGR24
+        
+        quality is used only when dst is MJPG and should be between 1 and 100. \ingroup image */
+    void convertCvRGBtoRawImage(cv::Mat const & src, RawImage & dst, int quality);
     
     //! Convert an RGBA cv::Mat to RawImage with already-allocated pixels and pixel type
     /*! This is used to output video frames over USB from internally computed results in opencv RGB-A format (which is

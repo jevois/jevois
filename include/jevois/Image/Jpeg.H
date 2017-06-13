@@ -69,6 +69,17 @@ namespace jevois
   //! Compress raw pixel buffer to jpeg
   /*! The compressed size is returned. The dst buffer should have been allocated by caller, with size at least width *
       height * 2 bytes. quality should be between 1 (worst) and 100 (best). */
+  unsigned long compressRGBtoJpeg(unsigned char const * src, int width, int height, unsigned char * dst,
+                                  int quality = 75);
+
+  //! Compress a RGB cv::Mat into an output JPEG jevois::RawImage
+  /*! The dst RawImage should have an allocated buffer, typically this is intended for use with a RawImage that was
+      obtained from the UVC gadget. */
+  void compressRGBtoJpeg(cv::Mat const & src, RawImage & dst, int quality = 75);
+
+  //! Compress raw pixel buffer to jpeg
+  /*! The compressed size is returned. The dst buffer should have been allocated by caller, with size at least width *
+      height * 2 bytes. quality should be between 1 (worst) and 100 (best). */
   unsigned long compressRGBAtoJpeg(unsigned char const * src, int width, int height, unsigned char * dst,
                                    int quality = 75);
 

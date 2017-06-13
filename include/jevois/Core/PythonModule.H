@@ -60,6 +60,30 @@ namespace jevois
       //! Indicate that user processing is done with the image previously obtained via get()
       void done() const;
 
+      //! Shorthand to get the input image as a GRAY cv::Mat and release the raw buffer
+      cv::Mat getCvGRAY1(bool casync) const;
+
+      //! Shorthand to get the input image as a GRAY cv::Mat and release the raw buffer
+      cv::Mat getCvGRAY() const;
+
+      //! Shorthand to get the input image as a BGR cv::Mat and release the raw buffer
+      cv::Mat getCvBGR1(bool casync) const;
+
+      //! Shorthand to get the input image as a BGR cv::Mat and release the raw buffer
+      cv::Mat getCvBGR() const;
+
+      //! Shorthand to get the input image as a RGB cv::Mat and release the raw buffer
+      cv::Mat getCvRGB1(bool casync) const;
+
+      //! Shorthand to get the input image as a RGB cv::Mat and release the raw buffer
+      cv::Mat getCvRGB() const;
+
+      //! Shorthand to get the input image as a RGBA cv::Mat and release the raw buffer
+      cv::Mat getCvRGBA1(bool casync) const;
+
+      //! Shorthand to get the input image as a RGBA cv::Mat and release the raw buffer
+      cv::Mat getCvRGBA() const;
+
     private:
       InputFrame * itsInputFrame;
   };
@@ -84,6 +108,30 @@ namespace jevois
 
       //! Indicate that user processing is done with the image previously obtained via get()
       void send() const;
+
+      //! Shorthand to send a GRAY cv::Mat after converting it to the current output format
+      void sendCvGRAY1(cv::Mat const & img, int quality) const;
+
+      //! Shorthand to send a GRAY cv::Mat after converting it to the current output format
+      void sendCvGRAY(cv::Mat const & img) const;
+
+      //! Shorthand to send a BGR cv::Mat after converting it to the current output format
+      void sendCvBGR1(cv::Mat const & img, int quality) const;
+
+      //! Shorthand to send a BGR cv::Mat after converting it to the current output format
+      void sendCvBGR(cv::Mat const & img) const;
+
+      //! Shorthand to send a RGB cv::Mat after converting it to the current output format
+      void sendCvRGB1(cv::Mat const & img, int quality) const;
+
+      //! Shorthand to send a RGB cv::Mat after converting it to the current output format
+      void sendCvRGB(cv::Mat const & img) const;
+
+      //! Shorthand to send a RGBA cv::Mat after converting it to the current output format
+      void sendCvRGBA1(cv::Mat const & img, int quality) const;
+
+      //! Shorthand to send a RGBA cv::Mat after converting it to the current output format
+      void sendCvRGBA(cv::Mat const & img) const;
 
     private:
       OutputFrame * itsOutputFrame;

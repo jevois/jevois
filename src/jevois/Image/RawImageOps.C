@@ -687,6 +687,54 @@ namespace
 // ####################################################################################################
 namespace
 {
+  class rgbToBayer : public cv::ParallelLoopBody
+  {
+    public:
+      rgbToBayer(cv::Mat const & inputImage,  unsigned char * outImage, size_t outw) :
+          inImg(inputImage), outImg(outImage)
+      {
+        inlinesize = inputImage.cols * 3; // 3 bytes/pix for RGB
+        outlinesize = outw * 1; // 1 byte/pix for Bayer
+      }
+
+      virtual void operator()(const cv::Range & range) const
+      {
+        for (int j = range.start; j < range.end; ++j)
+        {
+          int const inoff = j * inlinesize;
+          int const outoff = j * outlinesize;
+
+          for (int i = 0; i < inImg.cols; i += 2)
+          {
+            int const in = inoff + i * 3;
+            int const out = outoff + i;
+
+            if ( (j & 1) == 0) { outImg[out + 0] = inImg.data[in + 0]; outImg[out + 1] = inImg.data[in + 4]; }
+            else { outImg[out + 0] = inImg.data[in + 1]; outImg[out + 1] = inImg.data[in + 5]; }
+          }
+        }
+      }
+
+    private:
+      cv::Mat const & inImg;
+      unsigned char * outImg;
+      int inlinesize, outlinesize;
+  };
+
+  // ####################################################################################################
+  void convertCvRGBtoBayer(cv::Mat const & src, jevois::RawImage & dst)
+  {
+    if (src.type() != CV_8UC3) LFATAL("src must have type CV_8UC3 and RGB pixels");
+    if (dst.fmt != V4L2_PIX_FMT_SRGGB8) LFATAL("dst format must be V4L2_PIX_FMT_SRGGB8");
+    if (int(dst.width) != src.cols || int(dst.height) != src.rows) LFATAL("src and dst dims must match");
+    
+    cv::parallel_for_(cv::Range(0, src.rows), rgbToBayer(src, dst.pixelsw<unsigned char>(), dst.width));
+  }
+} // anonymous namespace
+
+// ####################################################################################################
+namespace
+{
   class grayToBayer : public cv::ParallelLoopBody
   {
     public:
@@ -839,6 +887,69 @@ namespace
 // ####################################################################################################
 namespace
 {
+  class rgbToYUYV : public cv::ParallelLoopBody
+  {
+    public:
+      rgbToYUYV(cv::Mat const & inputImage,  unsigned char * outImage, size_t outw) :
+          inImg(inputImage), outImg(outImage)
+      {
+        inlinesize = inputImage.cols * 3; // 3 bytes/pix for RGB
+        outlinesize = outw * 2; // 2 bytes/pix for YUYV
+      }
+
+      virtual void operator()(const cv::Range & range) const
+      {
+        for (int j = range.start; j < range.end; ++j)
+        {
+          int const inoff = j * inlinesize;
+          int const outoff = j * outlinesize;
+
+          for (int i = 0; i < inImg.cols; i += 2)
+          {
+            int mc = inoff + i * 3;
+            unsigned char const R1 = inImg.data[mc + 0];
+            unsigned char const G1 = inImg.data[mc + 1];
+            unsigned char const B1 = inImg.data[mc + 2];
+            unsigned char const R2 = inImg.data[mc + 3];
+            unsigned char const G2 = inImg.data[mc + 4];
+            unsigned char const B2 = inImg.data[mc + 5];
+
+            float const Y1 = (0.257F * R1) + (0.504F * G1) + (0.098F * B1) + 16.0F;
+            //float const V1 = (0.439F * R1) - (0.368F * G1) - (0.071F * B1) + 128.0F;
+            float const U1 = -(0.148F * R1) - (0.291F * G1) + (0.439F * B1) + 128.0F;
+            float const Y2 = (0.257F * R2) + (0.504F * G2) + (0.098F * B2) + 16.0F;
+            float const V2 = (0.439F * R2) - (0.368F * G2) - (0.071F * B2) + 128.0F;
+            //float const U2 = -(0.148F * R2) - (0.291F * G2) + (0.439F * B2) + 128.0F;
+           
+            mc = outoff + i * 2;
+            outImg[mc + 0] = Y1;
+            outImg[mc + 1] = U1;
+            outImg[mc + 2] = Y2;
+            outImg[mc + 3] = V2;
+          }
+        }
+      }
+
+    private:
+      cv::Mat const & inImg;
+      unsigned char * outImg;
+      int inlinesize, outlinesize;
+  };
+
+  // ####################################################################################################
+  void convertCvRGBtoYUYV(cv::Mat const & src, jevois::RawImage & dst)
+  {
+    if (src.type() != CV_8UC3) LFATAL("src must have type CV_8UC3 and RGB pixels");
+    if (dst.fmt != V4L2_PIX_FMT_YUYV) LFATAL("dst format must be V4L2_PIX_FMT_YUYV");
+    if (int(dst.width) != src.cols || int(dst.height) < src.rows) LFATAL("src and dst dims must match");
+
+    cv::parallel_for_(cv::Range(0, src.rows), rgbToYUYV(src, dst.pixelsw<unsigned char>(), dst.width));
+  }
+} // anonymous namespace
+
+// ####################################################################################################
+namespace
+{
   class grayToYUYV : public cv::ParallelLoopBody
   {
     public:
@@ -963,6 +1074,27 @@ void jevois::rawimage::convertCvBGRtoRawImage(cv::Mat const & src, RawImage & ds
   case V4L2_PIX_FMT_RGB565: cv::cvtColor(src, dstcv, CV_BGR2BGR565); break;
   case V4L2_PIX_FMT_MJPEG: jevois::compressBGRtoJpeg(src, dst, quality); break;
   case V4L2_PIX_FMT_BGR24: memcpy(dst.pixelsw<void>(), src.data, dst.width * dst.height * dst.bytesperpix()); break;
+  default: LFATAL("Unsupported output pixel format " << jevois::fccstr(dst.fmt) << std::hex <<' '<< dst.fmt);
+  }
+}
+
+// ####################################################################################################
+void jevois::rawimage::convertCvRGBtoRawImage(cv::Mat const & src, RawImage & dst, int quality)
+{
+  if (src.type() != CV_8UC3) LFATAL("src must have type CV_8UC3 and BGR pixels");
+  if (int(dst.width) != src.cols || int(dst.height) < src.rows) LFATAL("src and dst dims must match");
+
+  // Note how the destination opencv image dstcv here is just a shell, the actual pixel data is in dst:
+  cv::Mat dstcv = jevois::rawimage::cvImage(dst);
+
+  switch (dst.fmt)
+  {
+  case V4L2_PIX_FMT_SRGGB8: convertCvRGBtoBayer(src, dst); break;
+  case V4L2_PIX_FMT_YUYV: convertCvRGBtoYUYV(src, dst); break;
+  case V4L2_PIX_FMT_GREY: cv::cvtColor(src, dstcv, CV_RGB2GRAY); break;
+  case V4L2_PIX_FMT_RGB565: cv::cvtColor(src, dstcv, CV_RGB2BGR565); break;
+  case V4L2_PIX_FMT_MJPEG: jevois::compressRGBtoJpeg(src, dst, quality); break;
+  case V4L2_PIX_FMT_BGR24:  cv::cvtColor(src, dstcv, CV_RGB2BGR); break;
   default: LFATAL("Unsupported output pixel format " << jevois::fccstr(dst.fmt) << std::hex <<' '<< dst.fmt);
   }
 }

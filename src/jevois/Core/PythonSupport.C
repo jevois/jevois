@@ -206,12 +206,28 @@ BOOST_PYTHON_MODULE(libjevois)
     .def("get", &jevois::InputFramePython::get,
          boost::python::return_value_policy<boost::python::reference_existing_object>())
     .def("done", &jevois::InputFramePython::done)
+    .def("getCvGRAY",  &jevois::InputFramePython::getCvGRAY1)
+    .def("getCvGRAY",  &jevois::InputFramePython::getCvGRAY)
+    .def("getCvBGR",  &jevois::InputFramePython::getCvBGR1)
+    .def("getCvBGR",  &jevois::InputFramePython::getCvBGR)
+    .def("getCvRGB",  &jevois::InputFramePython::getCvRGB1)
+    .def("getCvRGB",  &jevois::InputFramePython::getCvRGB)
+    .def("getCvRGBA",  &jevois::InputFramePython::getCvRGBA1)
+    .def("getCvRGBA",  &jevois::InputFramePython::getCvRGBA)
     ;
   
   boost::python::class_<jevois::OutputFramePython>("OutputFrame")
     .def("get", &jevois::OutputFramePython::get,
          boost::python::return_value_policy<boost::python::reference_existing_object>())
     .def("send", &jevois::OutputFramePython::send)
+    .def("sendCvGRAY",  &jevois::OutputFramePython::sendCvGRAY1)
+    .def("sendCvGRAY",  &jevois::OutputFramePython::sendCvGRAY)
+    .def("sendCvBGR",  &jevois::OutputFramePython::sendCvBGR1)
+    .def("sendCvBGR",  &jevois::OutputFramePython::sendCvBGR)
+    .def("sendCvRGB",  &jevois::OutputFramePython::sendCvRGB1)
+    .def("sendCvRGB",  &jevois::OutputFramePython::sendCvRGB)
+    .def("sendCvRGBA",  &jevois::OutputFramePython::sendCvRGBA1)
+    .def("sendCvRGBA",  &jevois::OutputFramePython::sendCvRGBA)
     ;
 
   // #################### RawImageOps.H
