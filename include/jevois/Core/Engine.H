@@ -285,16 +285,16 @@ namespace jevois
           line. Filename should be relative to the current module's path. */
       void runScriptFromFile(std::string const & filename, std::shared_ptr<UserInterface> ser,
                              bool throw_no_file);
-
+      
       //! Parameter callback
       void onParamChange(engine::cameradev const & param, std::string const & newval);
-
+      
       //! Parameter callback
       void onParamChange(engine::gadgetdev const & param, std::string const & newval);
-
+      
       //! Parameter callback
       void onParamChange(engine::serialdev const & param, std::string const & newval);
-
+      
       //! Parameter callback
       void onParamChange(engine::usbserialdev const & param, std::string const & newval);
 
@@ -330,21 +330,33 @@ namespace jevois
       
     private:
       std::list<std::shared_ptr<UserInterface> > itsSerials;
-
+      
       void setFormatInternal(size_t idx); // itsMtx should be locked by caller
       void setFormatInternal(jevois::VideoMapping const & m); // itsMtx should be locked by caller
-
+      
       // Return help string for a camera control or throw
       std::string camCtrlHelp(struct v4l2_queryctrl & qc, std::set<int> & doneids);
-
+      
       // Get short name from V4L2 ID, long name is a backup in case we don't find the control in our list
       std::string camctrlname(int id, char const * longname) const;
-
+      
       // Get V4L2 ID from short name
       int camctrlid(std::string const & shortname);
-
+      
       bool itsTurbo;
       bool itsManualStreamon; // allow manual streamon when outputing video to None or file
+
+      // Things related to mass storage gadget to export our /jevois partition as a virtual USB flash drive:
+#ifdef JEVOIS_PLATFORM
+      void checkMassStorage(); // thread to check mass storage gadget status
+      std::future<void> itsCheckMassStorageFut;
+      std::atomic<bool> itsCheckingMassStorage;
+      std::atomic<bool> itsJevoisRO;
+
+      void remountRO(std::string const & mountpoint);
+      void remountRW(std::string const & mountpoint);
+      void reboot();
+#endif
   };
 
 } // namespace jevois

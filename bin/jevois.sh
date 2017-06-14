@@ -14,9 +14,10 @@ if [ -f /boot/nousbserial ]; then use_usbserial=0; echo "JeVois serial-over-USB 
 if [ -f /boot/nousbsd ]; then use_usbsd=0; echo "JeVois microSD access over USB disabled"; fi
 
 # Block device we present to the host as a USB drive, or empty to not present it at start:
-usbsdfile="/dev/mmcblk0p3"
+usbsdfile=""
+if [ -f /boot/usbsdauto ]; then usbsdfile="/dev/mmcblk0p3"; echo "JeVois microSD access over USB is AUTO"; fi
 
-if [ -f /boot/nousbsdauto ]; then usbsdfile=""; echo "JeVois microSD access over USB not AUTO"; fi
+# Login prompts over hardware serial or serial-over-USB:
 if [ -f /boot/serialtty ]; then use_serialtty=1; echo "Using tty on JeVois hardware serial"; fi
 if [ "X${use_usbserial}" != "X1" ]; then use_usbserialtty=0;
 elif [ -f /boot/usbserialtty ]; then use_usbserialtty=1; echo "Using tty on JeVois serial-over-USB"; fi
@@ -102,7 +103,8 @@ echo "### Insert gadget driver ###"
 MODES=`/jevois/bin/jevois-module-param`
 
 insmodopts=""
-if [ "X${use_usbsd}" = "X1" -a "X${usbsdfile}" != "X" ]; then insmodopts="${insmodopts} file=${usbsdfile}"; fi
+#if [ "X${use_usbsd}" = "X1" -a "X${usbsdfile}" != "X" ]; then insmodopts="${insmodopts} file=${usbsdfile}"; fi
+if [ "X${use_usbsd}" = "X1" ]; then insmodopts="${insmodopts} file=${usbsdfile}"; fi
 
 insmod /lib/modules/3.4.39/g_jevoisa33.ko modes=${MODES} use_serial=${use_usbserial} \
        use_storage=${use_usbsd} ${insmodopts}

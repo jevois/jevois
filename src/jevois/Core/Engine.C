@@ -205,6 +205,13 @@ jevois::Engine::Engine(std::string const & instance) :
   JEVOIS_TRACE(1);
 
   LINFO("Loaded " << itsMappings.size() << " vision processing modes.");
+
+#ifdef JEVOIS_PLATFORM
+  // Start mass storage thread:
+  itsCheckingMassStorage.store(false); itsJevoisRO.store(false);
+  itsCheckMassStorageFut = std::async(std::launch::async, &jevois::Engine::checkMassStorage, this);
+  while (itsCheckingMassStorage.load() == false) std::this_thread::sleep_for(std::chrono::milliseconds(5));
+#endif
 }
 
 // ####################################################################################################
@@ -215,6 +222,13 @@ jevois::Engine::Engine(int argc, char const* argv[], std::string const & instanc
   JEVOIS_TRACE(1);
 
   LINFO("Loaded " << itsMappings.size() << " vision processing modes.");
+
+#ifdef JEVOIS_PLATFORM
+  // Start mass storage thread:
+  itsCheckingMassStorage.store(false); itsJevoisRO.store(false);
+  itsCheckMassStorageFut = std::async(std::launch::async, &jevois::Engine::checkMassStorage, this);
+  while (itsCheckingMassStorage.load() == false) std::this_thread::sleep_for(std::chrono::milliseconds(5));
+#endif
 }
 
 // ####################################################################################################
@@ -356,6 +370,7 @@ void jevois::Engine::postInit()
   {
     LINFO("Starting camera device " << camdev);
     
+#ifdef JEVOIS_PLATFORM
     // Set turbo mode or not:
     std::ofstream ofs("/sys/module/vfe_v4l2/parameters/turbo");
     if (ofs.is_open())
@@ -363,7 +378,6 @@ void jevois::Engine::postInit()
       if (itsTurbo) ofs << "1" << std::endl; else ofs << "0" << std::endl;
       ofs.close();
     }
-#ifdef JEVOIS_PLATFORM
     else LERROR("Could not access VFE turbo parameter -- IGNORED");
 #endif
     
@@ -450,6 +464,11 @@ jevois::Engine::~Engine()
   // Tell our run() thread to finish up:
   itsRunning.store(false);
   
+#ifdef JEVOIS_PLATFORM
+  // Tell checkMassStorage() thread to finish up:
+  itsCheckingMassStorage.store(false);
+#endif
+  
   // Nuke our module as soon as we can, hopefully soon now that we turned off streaming and running:
   {
     JEVOIS_TIMED_LOCK(itsMtx);
@@ -464,9 +483,48 @@ jevois::Engine::~Engine()
   itsGadget.reset();
   itsCamera.reset();
 
+#ifdef JEVOIS_PLATFORM
+  // Will block until the checkMassStorage() thread completes:
+  if (itsCheckMassStorageFut.valid())
+    try { itsCheckMassStorageFut.get(); } catch (...) { jevois::warnAndIgnoreException(); }
+#endif
+  
   // Things should be quiet now, unhook from the logger (this call is not strictly thread safe):
   jevois::logSetEngine(nullptr);
 }
+
+// ####################################################################################################
+#ifdef JEVOIS_PLATFORM
+void jevois::Engine::checkMassStorage()
+{
+  itsCheckingMassStorage.store(true);
+
+  while (itsCheckingMassStorage.load())
+  {
+    // If currently mounted RO, check whether the host just ejected the virtual flash drive, and, if so, reboot:
+    std::ifstream ifs("/sys/devices/platform/sunxi_usb_udc/gadget/lun0/mass_storage_in_use");
+    if (ifs.is_open())
+    {
+        int inuse; ifs >> inuse;
+        if (itsJevoisRO.load())
+        {
+          if (inuse == 0)
+          {
+            LINFO("JeVois virtual USB drive ejected by host -- REBOOTING");
+            this->reboot();
+          }
+        }
+        else
+        {
+          // This may happen if /boot/usbsdauto was selected:
+          if (inuse) { remountRO("/jevois"); itsJevoisRO.store(true); }
+        }
+    }
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+  }
+}
+#endif
 
 // ####################################################################################################
 void jevois::Engine::streamOn()
@@ -907,6 +965,42 @@ std::string jevois::Engine::camCtrlHelp(struct v4l2_queryctrl & qc, std::set<int
   return ss.str();
 }
 
+#ifdef JEVOIS_PLATFORM
+// ####################################################################################################
+void jevois::Engine::remountRO(std::string const & mountpoint)
+{
+  if (std::system(("mount -o remount,ro " + mountpoint).c_str()))
+    LERROR("Remounting " << mountpoint <<" read-only failed -- IGNORED");
+  else
+    LINFO("Remounted " << mountpoint <<" read-only");
+}
+
+// ####################################################################################################
+void jevois::Engine::remountRW(std::string const & mountpoint)
+{
+  if (std::system(("mount -o remount,rw " + mountpoint).c_str()))
+    LERROR("Remounting " << mountpoint <<" read-write failed -- IGNORED");
+  else
+    LINFO("Remounted " << mountpoint <<" read-write");
+}
+
+// ####################################################################################################
+void jevois::Engine::reboot()
+{
+  if (std::system("sync")) LERROR("Disk sync failed -- IGNORED");
+
+  itsCheckingMassStorage.store(false);
+  remountRO("/jevois");
+  itsRunning.store(false);
+
+  // Hard reset to avoid possible hanging during module unload, etc:
+  if ( ! std::ofstream("/proc/sys/kernel/sysrq").put('1')) LERROR("Cannot trigger hard reset -- please unplug me!");
+  if ( ! std::ofstream("/proc/sysrq-trigger").put('s')) LERROR("Cannot trigger hard reset -- please unplug me!");
+  if ( ! std::ofstream("/proc/sysrq-trigger").put('b')) LERROR("Cannot trigger hard reset -- please unplug me!");
+  std::terminate();
+}
+#endif
+
 // ####################################################################################################
 bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserInterface> s)
 {
@@ -986,7 +1080,9 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
       s->writeString("serlog <string> - forward string to the serial port(s) specified by the serlog parameter");
       s->writeString("serout <string> - forward string to the serial port(s) specified by the serout parameter");
 
+#ifdef JEVOIS_PLATFORM
       s->writeString("usbsd <enable|disable|auto|noauto|start> - control exporting microSD card as USB drive");
+#endif
       s->writeString("sync - commit any pending data write to microSD");
       s->writeString("date [date and time] - get or set the system date and time");
 
@@ -1219,12 +1315,13 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
     }
 
     // ----------------------------------------------------------------------------------------------------
+#ifdef JEVOIS_PLATFORM
     if (cmd == "usbsd")
     {
       if (rem == "enable")
       {
         std::remove("/boot/nousbsd");
-        if ( ! std::ifstream("/boot/nousbsd")) { errmsg = "Cannot delete /boot/nousbsd"; break; }
+        if (std::ifstream("/boot/nousbsd")) { errmsg = "Cannot delete /boot/nousbsd"; break; }
         s->writeString("INF Export of microSD as USB drive enabled, will take effect on next restart.");
       }
       else if (rem == "disable")
@@ -1234,20 +1331,30 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
       }
       else if (rem == "auto")
       {
-        std::remove("/boot/nousbsdauto");
-        if ( ! std::ifstream("/boot/nousbsdauto")) { errmsg = "Cannot delete /boot/nousbsdauto"; break; }
+        if ( ! std::ofstream("/boot/usbsdauto").put('n')) { errmsg = "Cannot write /boot/usbsdauto"; break; }
         s->writeString("INF Export of microSD as USB drive auto on, will take effect on next restart.");
       }
       else if (rem == "noauto")
       {
-        if ( ! std::ofstream("/boot/nousbsdauto").put('n')) { errmsg = "Cannot write /boot/nousbsdauto"; break; }
+        std::remove("/boot/usbsdauto");
+        if (std::ifstream("/boot/usbsdauto")) { errmsg = "Cannot delete /boot/usbsdauto"; break; }
         s->writeString("INF Export of microSD as USB drive auto off, will take effect on next restart.");
       }
       else if (rem == "start")
       {
+        if (std::system("sync")) LERROR("Disk sync failed -- IGNORED");
+
+        // Remount /jevois read-only:
+        remountRO("/jevois");
+        itsJevoisRO.store(true);
+
+        // Now set the backing partition in mass-storage gadget:
         std::ofstream ofs(JEVOIS_USBSD_SYS);
         if (ofs.is_open() == false) { errmsg = "Cannot write " JEVOIS_USBSD_SYS; break; }
         ofs << JEVOIS_USBSD_FILE << std::endl;
+
+        // The virtual USB flash drive will now appear on the host computer.
+        LINFO("Exported JEVOIS partition of microSD to host computer as virtual flash drive.");
       }
       else { errmsg = "Bad usbsd parameter, should be enable, disable, auto, noauto, or start"; }
       
@@ -1255,6 +1362,7 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
         
       return true;
     }
+#endif    
 
     // ----------------------------------------------------------------------------------------------------
     if (cmd == "sync")
@@ -1286,20 +1394,15 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
     if (cmd == "restart")
     {
       s->writeString("Restart command received - bye-bye!");
-      itsRunning.store(false);
-      if (std::system("sync")) LERROR("Disk sync failed -- IGNORED");
 
+      if (itsStreaming.load()) LERROR("Video streaming is on - you should quit your video viewer before rebooting");
+      
       // Turn off the SD storage if it is there:
       std::ofstream(JEVOIS_USBSD_SYS).put('\n'); // ignore errors
       if (std::system("sync")) LERROR("Disk sync failed -- IGNORED");
-      if (std::system("sync")) LERROR("Disk sync failed -- IGNORED");
 
-      // Hard reset to avoid possible hanging during module unload, etc
-      if ( ! std::ofstream("/proc/sys/kernel/sysrq").put('1'))
-        LFATAL("Cannot trigger hard reset -- please unplug me!");
-      if ( ! std::ofstream("/proc/sysrq-trigger").put('b'))
-        LFATAL("Cannot trigger hard reset -- please unplug me!");
-      
+      // Hard reboot:
+      this->reboot();
       return true;
     }
     // ----------------------------------------------------------------------------------------------------
