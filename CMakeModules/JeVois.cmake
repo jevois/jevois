@@ -207,7 +207,9 @@ macro(jevois_setup_library basedir libname libversion)
   endif (JEVOIS_PLATFORM)
 
   # Add version information, this will create symlinks as needed:
-  set_target_properties(${libname} PROPERTIES VERSION "${libversion}" SOVERSION ${libversion})
+  if (NOT JEVOIS_PLATFORM)
+    set_target_properties(${libname} PROPERTIES VERSION "${libversion}" SOVERSION ${libversion})
+  endif (NOT JEVOIS_PLATFORM)
 
   link_libraries(${libname})
 
