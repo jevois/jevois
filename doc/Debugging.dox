@@ -54,6 +54,12 @@ Then, you can:
 
 - create an empty file \b BOOT:nousbserial if you wish to not start the serial-over-USB feature for some reason.
 
+- \jvversion{1.1} create an empty file \b BOOT:serialtty if you wish to get a login prompt on the 4-pin hardware serial
+  port instead of the JeVois console.
+
+- \jvversion{1.1} create an empty file \b BOOT:usbserialtty if you wish to get a login prompt on the serial-over-USB
+  port instead of the JeVois console. Has no effect if \b BOOT:nousbserial is also present.
+
 - \jvversion{1.1} create an empty file \b BOOT:nousbsd if you wish to not enable the microSD-over-USB feature for some
   reason.
 

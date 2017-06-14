@@ -987,7 +987,9 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
       s->writeString("serout <string> - forward string to the serial port(s) specified by the serout parameter");
 
       s->writeString("usbsd <enable|disable|auto|noauto|start> - control exporting microSD card as USB drive");
-      
+      s->writeString("sync - commit any pending data write to microSD");
+      s->writeString("date [date and time] - get or set the system date and time");
+
 #ifdef JEVOIS_PLATFORM
       s->writeString("restart - restart the JeVois smart camera");
 #else
@@ -1044,6 +1046,7 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
       s->writeString("INFO: " + jevois::getSysInfoVersion());
       s->writeString("INFO: " + jevois::getSysInfoCPU());
       s->writeString("INFO: " + jevois::getSysInfoMem());
+      s->writeString("INFO: " + itsCurrentMapping.str());
       return true;
     }
     
@@ -1250,6 +1253,21 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
       
       if (std::system("sync")) LERROR("Disk sync failed -- IGNORED");
         
+      return true;
+    }
+
+    // ----------------------------------------------------------------------------------------------------
+    if (cmd == "sync")
+    {
+      if (std::system("sync")) LERROR("Disk sync failed -- IGNORED");
+      return true;
+    }
+
+    // ----------------------------------------------------------------------------------------------------
+    if (cmd == "date")
+    {
+      std::string dat = jevois::system("/bin/date " + rem);
+      LINFO("date now " << dat.substr(0, dat.size()-1)); // skip trailing newline
       return true;
     }
 

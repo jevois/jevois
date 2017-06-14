@@ -5,8 +5,10 @@
 ##############################################################################################################
 
 CAMERA=ov9650
-use_usbserial=1 # Use a serial-over-USB to communicate with JeVois command-line interface
-use_usbsd=1     # Expose the JEVOIS partition of the microSD as a USB drive
+use_usbserial=1    # Use a serial-over-USB to communicate with JeVois command-line interface
+use_usbsd=1        # Expose the JEVOIS partition of the microSD as a USB drive
+use_serialtty=0    # Use a TTY on the hardware serial and do not use it in jevois-daemon
+use_usbserialtty=0 # Use a TTY on the serial-over-USB and do not use it in jevois-daemon
 
 if [ -f /boot/nousbserial ]; then use_usbserial=0; echo "JeVois serial-over-USB disabled"; fi
 if [ -f /boot/nousbsd ]; then use_usbsd=0; echo "JeVois microSD access over USB disabled"; fi
@@ -15,6 +17,9 @@ if [ -f /boot/nousbsd ]; then use_usbsd=0; echo "JeVois microSD access over USB 
 usbsdfile="/dev/mmcblk0p3"
 
 if [ -f /boot/nousbsdauto ]; then usbsdfile=""; echo "JeVois microSD access over USB not AUTO"; fi
+if [ -f /boot/serialtty ]; then use_serialtty=1; echo "Using tty on JeVois hardware serial"; fi
+if [ "X${use_usbserial}" != "X1" ]; then use_usbserialtty=0;
+elif [ -f /boot/usbserialtty ]; then use_usbserialtty=1; echo "Using tty on JeVois serial-over-USB"; fi
 
 ##############################################################################################################
 # Fix Python-OpenCV library location if needed and pre-load Python and OpenCV so it is cached for faster startup
@@ -108,8 +113,28 @@ insmod /lib/modules/3.4.39/g_jevoisa33.ko modes=${MODES} use_serial=${use_usbser
 
 echo "### Start jevois daemon ###"
 opts=""
-if [ "X${use_usbserial}" != "X1" ]; then opts="${opts} --usbserialdev="; fi
+if [ "X${use_usbserial}" != "X1" -o "X${use_usbserialtty}" = "X1" ]; then opts="${opts} --usbserialdev="; fi
+if [ "X${use_serialtty}" = "X1" ]; then opts="${opts} --serialdev="; fi
 
-# Finally start the jevois daemon:
-/jevois/bin/jevois-daemon ${opts}
+# Start the jevois daemon:
+if [ "X${use_serialtty}" = "X1" -o "X${use_usbserialtty}" = "X1" ]; then
+    /jevois/bin/jevois-daemon ${opts} &
+else
+    /jevois/bin/jevois-daemon ${opts}
+fi
 
+##############################################################################################################
+# Launch any ttys:
+##############################################################################################################
+if [ "X${use_usbserialtty}" = "X1" ]; then
+    while [ ! -c /dev/ttyGS0 ]; do sleep 1; done # wait until gadget is operational
+    if [ "X${use_serialtty}" = "X1" ]; then
+	/sbin/getty -L ttyGS0 115200 vt100 &
+    else
+	/sbin/getty -L ttyGS0 115200 vt100
+    fi
+fi
+
+if [ "X${use_serialtty}" = "X1" ]; then
+    /sbin/getty -L ttyS0 115200 vt100
+fi

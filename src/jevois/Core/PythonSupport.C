@@ -143,6 +143,7 @@ BOOST_PYTHON_MODULE(libjevois)
   JEVOIS_PYTHON_FUNC(v4l2BytesPerPix);
   JEVOIS_PYTHON_FUNC(v4l2ImageSize);
   JEVOIS_PYTHON_FUNC(flushcache);
+  JEVOIS_PYTHON_FUNC(system);
 
   // #################### Coordinates.H
   void (*imgToStd1)(float & x, float & y, jevois::RawImage const & camimg, float const eps) = jevois::coords::imgToStd;

@@ -16,7 +16,7 @@ camera.
 
 Things you can do with the JeVois command-line interface include:
 - adjust contrast, exposure, gain, white balance, etc of the camera sensor.
-- show basic informatin about JeVois, such as free RAM memory, CPU frequency, CPU temperature.
+- show basic information about JeVois, such as free RAM memory, CPU frequency, CPU temperature.
 - adjust machine vision parameters, depending on which vision module is currently loaded and running. Many machine
   vision modules expose parameters for thresholds, operating modes, etc which you can tune using the JeVois command-line
   interface.
@@ -68,6 +68,7 @@ ping - returns 'ALIVE'
 serlog <string> - forward string to the serial port(s) specified by the serlog parameter
 serout <string> - forward string to the serial port(s) specified by the serout parameter
 usbsd <enable|disable|auto|noauto|start> - control exporting microSD card as USB drive
+sync - commit any pending data write to microSD
 restart - restart the JeVois smart camera
 
 General Options:
@@ -221,10 +222,11 @@ Prints the help message. The help message is sent to the serial port that issued
 
 Shows some vital information about the JeVois smart camera:
 \verbatim
-INFO: JeVois 1.0
+INFO: JeVois 1.1
 INFO: Linux version 3.4.39
 INFO: CPU: 1344MHz, 32C, load: 1.02 1.01 0.86 1/50 83
 INFO: MemTotal: 238452 kB, MemFree: 194292 kB
+INFO: OUT: YUYV 640x300 @ 60fps CAM: YUYV 320x240 @ 60fps MOD: JeVois:DemoSaliency
 OK
 \endverbatim
 
@@ -244,10 +246,11 @@ info
 \endverbatim
 would show the updated CPU frequency of 1200 MHz:
 \verbatim
-INFO: JeVois 1.0
+INFO: JeVois 1.1
 INFO: Linux version 3.4.39
 INFO: CPU: 1200MHz, 31C, load: 1.00 1.01 0.89 1/50 83
 INFO: MemTotal: 238452 kB, MemFree: 194292 kB
+INFO: OUT: YUYV 640x300 @ 60fps CAM: YUYV 320x240 @ 60fps MOD: JeVois:DemoSaliency
 OK
 \endverbatim
 
@@ -545,6 +548,23 @@ command are:
 
 Note that there is no \c stop argument here, as this does not work, ejecting the USB drive has to be done on the host
 computer (click the eject icon for it, drag it to the trash, etc).
+
+\subsubsection cmdsync sync - commit any pending data write to microSD
+
+\jvversion{1.1}
+
+Issue this command to ensure that data being writtent to microSD has been committed to the card, for example before you
+restart or disconnect JeVois.
+
+\subsubsection cmddate date [date and time] - get or set the system date and time
+
+\jvversion{1.1}
+
+JeVois platform hardware does not have a battery for a real-time clock. Hence, its time gets reset to The Epoch (January
+1, 1970) on each reboot. Use this command to set the date and time or to get it. Syntax is the same as the Unix \c date
+command. This is useful, for example, to get accurate time stamps when recording videos. Since JeVois does not have a
+battery-powered clock, any date setting will be lost at the next power off.
+
 
 \subsubsection cmdrestart restart - restart the JeVois smart camera
 
