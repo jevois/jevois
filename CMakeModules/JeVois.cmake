@@ -108,6 +108,12 @@ macro(jevois_project_set_flags)
       "config files are installed. Using default: ${JEVOIS_ROOT}")
   endif (DEFINED ENV{JEVOIS_ROOT})
 
+  # If installing to microSD, add a check that it is here before make install:
+  if (JEVOIS_MODULES_TO_MICROSD)
+    install(CODE "EXECUTE_PROCESS(COMMAND /bin/ls \"/media/$ENV{USER}/JEVOIS/\" )")
+  endif (JEVOIS_MODULES_TO_MICROSD)
+
+    
 endmacro()
 
 ####################################################################################################
