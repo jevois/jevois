@@ -969,7 +969,7 @@ std::string jevois::Engine::camCtrlHelp(struct v4l2_queryctrl & qc, std::set<int
 // ####################################################################################################
 void jevois::Engine::remountRO(std::string const & mountpoint)
 {
-  if (std::system(("mount -o remount,ro " + mountpoint).c_str()))
+  if (std::system(("mount -o remount,ro,flush,noatime " + mountpoint).c_str()))
     LERROR("Remounting " << mountpoint <<" read-only failed -- IGNORED");
   else
     LINFO("Remounted " << mountpoint <<" read-only");
@@ -978,7 +978,7 @@ void jevois::Engine::remountRO(std::string const & mountpoint)
 // ####################################################################################################
 void jevois::Engine::remountRW(std::string const & mountpoint)
 {
-  if (std::system(("mount -o remount,rw " + mountpoint).c_str()))
+  if (std::system(("mount -o remount,rw,flush,noatime " + mountpoint).c_str()))
     LERROR("Remounting " << mountpoint <<" read-write failed -- IGNORED");
   else
     LINFO("Remounted " << mountpoint <<" read-write");
@@ -1081,7 +1081,7 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
       s->writeString("serout <string> - forward string to the serial port(s) specified by the serout parameter");
 
 #ifdef JEVOIS_PLATFORM
-      s->writeString("usbsd <enable|disable|auto|noauto|start> - control exporting microSD card as USB drive");
+      s->writeString("usbsd - export the JEVOIS partition of the microSD card as a virtual USB drive");
 #endif
       s->writeString("sync - commit any pending data write to microSD");
       s->writeString("date [date and time] - get or set the system date and time");
@@ -1318,49 +1318,34 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
 #ifdef JEVOIS_PLATFORM
     if (cmd == "usbsd")
     {
-      if (rem == "enable")
+      if (itsStreaming.load())
       {
-        std::remove("/boot/nousbsd");
-        if (std::ifstream("/boot/nousbsd")) { errmsg = "Cannot delete /boot/nousbsd"; break; }
-        s->writeString("INF Export of microSD as USB drive enabled, will take effect on next restart.");
+        errmsg = "Cannot export microSD over USB while streaming: ";
+        if (itsCurrentMapping.ofmt) errmsg += "Stop your webcam program on the host computer first.";
+        else errmsg += "Issue a 'streamoff' command first.";
       }
-      else if (rem == "disable")
-      {
-        if ( ! std::ofstream("/boot/nousbsd").put('1')) { errmsg = "Cannot write /boot/nousbsd"; break; }
-        s->writeString("INF Export of microSD as USB drive disabled, will take effect on next restart.");
-      }
-      else if (rem == "auto")
-      {
-        if ( ! std::ofstream("/boot/usbsdauto").put('n')) { errmsg = "Cannot write /boot/usbsdauto"; break; }
-        s->writeString("INF Export of microSD as USB drive auto on, will take effect on next restart.");
-      }
-      else if (rem == "noauto")
-      {
-        std::remove("/boot/usbsdauto");
-        if (std::ifstream("/boot/usbsdauto")) { errmsg = "Cannot delete /boot/usbsdauto"; break; }
-        s->writeString("INF Export of microSD as USB drive auto off, will take effect on next restart.");
-      }
-      else if (rem == "start")
+      else
       {
         if (std::system("sync")) LERROR("Disk sync failed -- IGNORED");
-
+      
         // Remount /jevois read-only:
         remountRO("/jevois");
         itsJevoisRO.store(true);
-
+        
         // Now set the backing partition in mass-storage gadget:
         std::ofstream ofs(JEVOIS_USBSD_SYS);
-        if (ofs.is_open() == false) { errmsg = "Cannot write " JEVOIS_USBSD_SYS; break; }
-        ofs << JEVOIS_USBSD_FILE << std::endl;
+        if (ofs.is_open())
+        {
+          ofs << JEVOIS_USBSD_FILE << std::endl;
 
-        // The virtual USB flash drive will now appear on the host computer.
-        LINFO("Exported JEVOIS partition of microSD to host computer as virtual flash drive.");
-      }
-      else { errmsg = "Bad usbsd parameter, should be enable, disable, auto, noauto, or start"; }
-      
-      if (std::system("sync")) LERROR("Disk sync failed -- IGNORED");
+          // The virtual USB flash drive will now appear on the host computer.
+          LINFO("Exported JEVOIS partition of microSD to host computer as virtual flash drive.");
         
-      return true;
+          return true;
+        }
+        else errmsg = "Cannot write " JEVOIS_USBSD_SYS;
+      }
+        
     }
 #endif    
 

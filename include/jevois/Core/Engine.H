@@ -346,8 +346,8 @@ namespace jevois
       bool itsTurbo;
       bool itsManualStreamon; // allow manual streamon when outputing video to None or file
 
-      // Things related to mass storage gadget to export our /jevois partition as a virtual USB flash drive:
 #ifdef JEVOIS_PLATFORM
+      // Things related to mass storage gadget to export our /jevois partition as a virtual USB flash drive:
       void checkMassStorage(); // thread to check mass storage gadget status
       std::future<void> itsCheckMassStorageFut;
       std::atomic<bool> itsCheckingMassStorage;

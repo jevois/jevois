@@ -23,19 +23,6 @@ if [ "X${use_usbserial}" != "X1" ]; then use_usbserialtty=0;
 elif [ -f /boot/usbserialtty ]; then use_usbserialtty=1; echo "Using tty on JeVois serial-over-USB"; fi
 
 ##############################################################################################################
-# Fix Python-OpenCV library location if needed and pre-load Python and OpenCV so it is cached for faster startup
-##############################################################################################################
-
-if [ ! -f /usr/lib/python3.5/site-packages/cv2.so ]; then
-    echo "Fixing OpenCV library location"
-    # There is a flaw in the buildroot building of opencv, where the library file name still shows up as compiled for
-    # whatever the host architecture was, even though it has been correctly cross-compiled for the JeVois ARM
-    # processor. Here we fix that and also move the library to the python site-packages:
-    mv /usr/python/3.5/cv2.cpython-35m-x86_64-linux-gnu.so /usr/lib/python3.5/site-packages/cv2.so
-    sync
-fi
-
-##############################################################################################################
 # Load all required kernel modules:
 ##############################################################################################################
 
@@ -103,7 +90,6 @@ echo "### Insert gadget driver ###"
 MODES=`/jevois/bin/jevois-module-param`
 
 insmodopts=""
-#if [ "X${use_usbsd}" = "X1" -a "X${usbsdfile}" != "X" ]; then insmodopts="${insmodopts} file=${usbsdfile}"; fi
 if [ "X${use_usbsd}" = "X1" ]; then insmodopts="${insmodopts} file=${usbsdfile}"; fi
 
 insmod /lib/modules/3.4.39/g_jevoisa33.ko modes=${MODES} use_serial=${use_usbserial} \

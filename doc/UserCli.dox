@@ -67,7 +67,7 @@ setmapping2 <CAMmode> <CAMwidth> <CAMheight> <CAMfps> <Vendor> <Module> - set no
 ping - returns 'ALIVE'
 serlog <string> - forward string to the serial port(s) specified by the serlog parameter
 serout <string> - forward string to the serial port(s) specified by the serout parameter
-usbsd <enable|disable|auto|noauto|start> - control exporting microSD card as USB drive
+usbsd - export the JEVOIS partition of the microSD card as a virtual USB drive
 sync - commit any pending data write to microSD
 restart - restart the JeVois smart camera
 
@@ -520,34 +520,28 @@ the last (ill-formatted) T2D command, the Arduino should correctly reject it and
 Remember that module data output messages (e.g., coordinates of a detected target object) issued by the JeVois camera
 itself are also sent to the port selected by the \c serout parameter.
 
-\subsubsection cmdusbsd usbsd <enable|disable|auto|noauto|start>
+\subsubsection cmdusbsd usbsd - export the JEVOIS partition of the microSD card as a virtual USB drive
 
 \jvversion{1.1}
 
-Control the behavior of the feature that allows one to access over USB the JEVOIS partition of the microSD card that is
-inside JeVois, as if it was a USB thumbdrive connected to the host computer. Supported arguments for the \c usbsd
-command are:
+This command allows one to access over USB the JEVOIS partition of the microSD card that is inside JeVois, as if it was
+a USB thumbdrive connected to the host computer. This command only works when not streaming video.
 
-- enable - enable exporting the microSD as a USB drive. Will take effect on next restart.
+Writing to the microSD inside JeVois as it is also being used by JeVois poses data caching and synchronization problems,
+which are currently resolved as follows:
 
-- disable - disable exporting the microSD as a USB drive. Will take effect on next restart.
+- When the \c usbsd command is issued on the command line interface, the JEVOIS partition of the microSD is first made
+  read-only to the JeVois processor. This means that JeVois will not be able to save data anymore (e.g., video files
+  saved by some modules), and it will not be able to do other things that need to write to the microSD, such as
+  automatically compiling Python modules as they are loaded up. The JEVOIS partition is then exported to the host
+  computer as a virtual USB flash drive, with read and write access.
 
-- auto - automatically export the JEVOIS microSD partition when the JeVois smart camera starts. The feature must have
-  been previously enabled for this to take effect. This command will take effect on next restart. The upside of auto
-  mode is that you will immediately see the USB drive show up on your host when JeVois is plugged in. The downside is
-  that your host will complain about the improperly ejected drive if you just unplug JeVois without properly ejecting
-  the USB drive first.
+- Users are then free to browse the contents of the microSD, add files, delete files, and modify files. JeVois will not
+  immediately be made aware of these changes, though.
 
-- noauto - do not automatically export the JEVOIS microSD partition when the JeVois smart camera starts. The feature
-  must have been previously enabled for this to take effect. This command will take effect on next restart. When usbsd
-  is enabled but not auto, one must issue a <code>usbsd start</code> command to make the microSD card appear as a USB
-  drive on the host computer.
+- Users should then properly eject the virtual USB drive. JeVois will detect this and will restart to be able to use the
+  modifications made by the users.
 
-- start - make the JEVOIS microSD partition appear as a USB drive on the host computer. Use this if you have previosuly
-  ejected the drive and it has disappeared.
-
-Note that there is no \c stop argument here, as this does not work, ejecting the USB drive has to be done on the host
-computer (click the eject icon for it, drag it to the trash, etc).
 
 \subsubsection cmdsync sync - commit any pending data write to microSD
 
