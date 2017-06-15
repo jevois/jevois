@@ -1,0 +1,94 @@
+/*! \page Changelog11 Changes and new features in JeVois 1.1
+
+JeVois 1.1 brings two main new features:
+
+Added support to export the microSD card inside JeVois as a virtual USB flash drive
+-----------------------------------------------------------------------------------
+
+It was tough and has required quite a bit of Linux kernel hacking and fooling around with our trusty LeCroy USB packet
+sniffer to get the bugs out, but it seems to be working flawlessly with Windows, Mac, and Linux hosts now. This means
+that you can now directly edit config files, install new machine vision modules, copy training data for your modules,
+etc to JeVois without ejecting the microSD card and while JeVois is running. There is no slowing down of the video even
+when you copy large files to microSD because the video stream is allocated a reserved bandwidth on the USB bus
+(isochronous).
+
+Here is an example where we browse the JeVois modules on the microSD inside JeVois, accessing it over the USB link,
+while streaming video at the same time:
+
+\image html usbsd.png
+
+Python 3.5 + Python OpenCV 3.2.0 support on host and platform
+-------------------------------------------------------------
+
+Great news for all Python enthusiasts: JeVois now supports full python 3.5 including the python bindings to opencv
+3.2.0. This means that you can now write machine vision modules for JeVois in Python, using both the API exported by
+JeVois for handling of camera and USB video frames, and the OpenCV python API. Check out this [demo edge detection
+module](https://github.com/jevois/jevoisbase/blob/dev1.1/src/Modules/PythonOpenCV/PythonOpenCV.py) written in Python and
+using the Python OpenCV Canny edge detection function, here working inside the JeVois camera:
+
+\image html python-canny.png
+
+86.5fps at 640x480 on the JeVois camera and written in Python? Yes indeed!
+
+Taken together both of these improvements should facilitate rapid development and prototyping on JeVois: Edit a python
+module directly on the JeVois microSD exported to your host computer as a virtual flash drive, then just select the
+corresponding video resolution in your video grabbing software to see the results.
+
+We expect this will allow many users to learn OpenCV with Python directly on JeVois.
+
+Install JeVois development kit on Ubuntu using a simple apt-get command
+-----------------------------------------------------------------------
+
+We created Ubuntu packages for the following:
+
+- jevois-opencv: OpenCV 3.2.0 compiled for host computer with settings that match those used by the JeVois platform
+  hardware. We indtall this package into /usr/share/jevois-opencv-3.2.0 so that it will not interfere with any other
+  OpenCV install you might have on your host system and that might be required by some other software.
+
+- jevois-host: JeVois core software compiled for execution on a host computer
+
+- jevois-platform: JeVois core software cross-compiled for execution on the JeVois platform hardware
+
+- jevoisbase-host: JeVois base modules compiled for execution on a host computer
+
+- jevoisbase-platform: JeVois base modules cross-compiled for execution on the JeVois platform hardware
+
+- jevois-sdk: Compiled bootloaders, root filesystem, and other config files.
+
+- jevois-sdk-dev: Compiled cross-compilers and cross-compiled libraries for the JeVois platform architecture.
+
+As jevois-sdk-dev brings all the others as dependencies, getting up and running with JeVois development now just means
+one apt-get install command.
+
+Miscellaneous improvements
+--------------------------
+
+- A few new commands were added to the JeVois command-line interface: `sync`, `date`, `restart`, `usbsd`
+
+- jevois::RawImage now contains an extra \b fps field that can be used by modules to know the frame rate expectation
+
+- `info` in the command-line interface now reports the current video mapping
+
+- Enabled slowing down of framerate to allow increased exposure time when running in low light. Activate it by selecting
+  the \b shade white balance preset in the JeVois command-line interface: `setcam presetwb 9`
+
+- Relocated all JeVois-related files (except boot) to the JEVOIS partition so they can be modified live by exporting the
+  microSD over USB.
+
+- rebuild-platform.sh now supports 3 install targets:
+  + with no extra argument - install to jvpkg/ directory in the module's source, as before
+  + with \c --staging - install to microSD staging area, for later flashing to microSD
+  + with \c --microsd - install to /media/username/JEVOIS/ which could either be a mounted JeVois microSD,
+    or a live JeVois camera exporting its microSD over USB.
+  
+  This should significantly facilitate the development cycle: no need to install/eject the microSD card anymore, just
+  compile and install directly to it while it is in JeVois.
+
+- Now mounting the root and boot partitions of the microSD read-only for improved resilience to hard power off
+
+- New boot options \b BOOT:serialtty and \b BOOT:usbserialtty to give a Linux login prompt on the hardware serial or
+  serial-over-USB ports instead of the JeVois console.
+
+- Reorganized jevoisbase with a separate include directory to facilitate creation of debian packages.
+
+*/

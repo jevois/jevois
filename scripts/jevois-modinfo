@@ -292,7 +292,7 @@ if (!$ispython)
     foreach my $comp (@sclist) { my @tmp = split(/\<|\>/, $comp); push(@subcomps, $tmp[1]); }
     
     foreach my $comp (@subcomps) {
-        my $filename = `find ../../Components/ -name ${comp}.H`;
+        my $filename = `find ../../../include/jevoisbase/Components/ -name ${comp}.H`;
         chomp $filename;
         print STEDRR  "INCLUDING $filename\n";
         getParams($filename, $comp);
@@ -552,7 +552,7 @@ if ($fullhtml) { print OF "</body></html>\n"; }
 close OF;
 
 # Delete our temporary directory
-#`/bin/rm -rf $tmpdirname`;
+`/bin/rm -rf $tmpdirname`;
 
 ##############################################################################################################
 # Levenshtein distance, copied from http://www.merriampark.com/ldperl.htm
