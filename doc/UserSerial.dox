@@ -69,17 +69,17 @@ serial:linestyle=LF
 otherwise, the serial port is left undefined (\b serialdev is empty by default) until after \b params.cfg is parsed, and
 will be assigned a default value of /dev/ttyS0 later when jevois-engine starts its operations.
 
-Wireless serial using bluetooth low ebergy (BLE)
+Wireless serial using bluetooth low energy (BLE)
 ------------------------------------------------
 
 We have successfully used an Adafruit Feather 32u4 Bluefruit LE to transmit JeVois serial data over bluetooth. Using
 this, you can control JeVois from a tablet running a bluetooth serial app (such as the BlueFruit app).
 
 We connected its serial pins to the serial port of JeVois, and wrote a trivial piece of code that would just forward
-serial data between the serial pins and the BLE module of the Feather. It worked well at 9600 bauds but choked at
-115200. Looks like serial transmission over BLE is limited to 9600 bauds. Have a look in
-<b>JEVOIS:/config/params.cfg</b> for config options we used when transmitting serial data over Bluetooth. Other
-serial-to-BLE modules are available and should work fine as well, but we have not yet tested. The main drawback with the
-Feather 32u4 Bluefruit LE is its price ($30).
+serial data between the serial pins and the BLE module of the Feather. It worked well at 9600 bauds but choked at 115200
+bauds. Looks like serial transmission over BLE is limited to 9600 bauds. Have a look in <b>JEVOIS:/config/params.cfg</b>
+for config options we used when transmitting serial data over Bluetooth. Other serial-to-BLE modules are available and
+should work fine as well, but we have not yet tested. The main drawback with the Feather 32u4 Bluefruit LE is its price
+($30).
 
 */

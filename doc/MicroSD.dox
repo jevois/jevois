@@ -79,6 +79,7 @@ Here is an abbreviated tree of the files present on a typical JeVois microSD car
 
 \verbatim
 ├── BOOT  ########## (16 MB FAT32 partition)
+│   ├── README.txt               # information file for Windows users who may not see the JEVOIS partition
 │   ├── script.bin               # low-level hardware configuration file
 │   ├── uEnv.txt                 # optional command-line arguments for the Linux Kernel
 │   └── uImage                   # Linux kernel
@@ -297,6 +298,49 @@ Here is an abbreviated tree of the files present on a typical JeVois microSD car
 ...
 
 \endverbatim
+
+\section microsd4 Accessing and modifying the MicroSD while JeVois is running
+
+\jvversion{1.1}
+
+You can access the contents of the \b JEVOIS partition on the microSD while the card is inside your JeVois smart
+camera. JeVois can (on demand) make the \b JEVOIS partition visible to a connected host computer over USB, as a virtual
+USB flash drive.
+
+To enable this feature, connect to the JeVois command-line interface (see \ref UserCli) and issue the command:
+
+\verbatim
+usbsd
+\endverbatim
+
+You will notice that a new USB flash drive is detected by your host computer.
+
+\image html usbsd.png
+
+\note Since being able to switch through various vision modules while changing the contents of the microSD poses some
+potential data consistency issues, for now, we have restricted file access over USB to only work while not streaming
+video. Likewise, a reboot of the JeVois camera is necessary to allow it to use any new or modified files from th ehost
+computer.
+
+Typical workflow is as follows:
+
+- Connect JeVois to a host computer and let it start up.
+
+- Connect to the JeVois command line interface (either using the hardware serial port, or serial over USB; see \ref
+  UserCli).
+
+- When you want to modify the contents of the microSD inside JeVois, issue the \c usbsd command.
+
+- Add/modify/remove files. This includes:
+  + modify configuration or parameter files in \b JEVOIS:/config
+  + edit a module written in Python, under \b JEVOIS:/modules
+  + add any data, e.g., training images for the ObjectDetect module
+  + retrieve any data, e.g., video files recorded by JeVois
+  + compile and install a new C++ module using `./rebuild-platform.sh --microsd`
+
+- When you are done, properly eject the virtual USB drive. JeVois will detect this and will automatically restart and
+  then be able to use the new or modified files.
+
 
 */
 

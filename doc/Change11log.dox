@@ -1,4 +1,4 @@
-/*! \page Changelog11 Changes and new features in JeVois 1.1
+/*! \page Change11log Changes and new features in JeVois 1.1
 
 JeVois 1.1 brings two main new features:
 
@@ -16,6 +16,10 @@ Here is an example where we browse the JeVois modules on the microSD inside JeVo
 while streaming video at the same time:
 
 \image html usbsd.png
+
+However, being able to switch through various vision modules while changing the contents of the microSD poses some
+potential data consistency issues, hence, for now, we have restricted this to only allowing file access while not
+streaming video.
 
 Python 3.5 + Python OpenCV 3.2.0 support on host and platform
 -------------------------------------------------------------
