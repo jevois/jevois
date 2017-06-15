@@ -351,10 +351,9 @@ namespace jevois
       void checkMassStorage(); // thread to check mass storage gadget status
       std::future<void> itsCheckMassStorageFut;
       std::atomic<bool> itsCheckingMassStorage;
-      std::atomic<bool> itsJevoisRO;
-
-      void remountRO(std::string const & mountpoint);
-      void remountRW(std::string const & mountpoint);
+      std::atomic<bool> itsMassStorageMode;
+      void startMassStorageMode();
+      void stopMassStorageMode();
       void reboot();
 #endif
   };

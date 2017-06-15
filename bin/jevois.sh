@@ -5,8 +5,8 @@
 ##############################################################################################################
 
 CAMERA=ov9650
-use_usbserial=1    # Use a serial-over-USB to communicate with JeVois command-line interface
-use_usbsd=1        # Expose the JEVOIS partition of the microSD as a USB drive
+use_usbserial=1    # Allow using a serial-over-USB to communicate with JeVois command-line interface
+use_usbsd=1        # Allow exposing the JEVOIS partition of the microSD as a USB drive
 use_serialtty=0    # Use a TTY on the hardware serial and do not use it in jevois-daemon
 use_usbserialtty=0 # Use a TTY on the serial-over-USB and do not use it in jevois-daemon
 
@@ -78,8 +78,8 @@ fi
 # Get a list of all our needed library paths:
 ##############################################################################################################
 
-LIBPATH="/lib:/usr/lib:/jevois/lib"
-for d in /jevois/lib/*; do if [ -d "${d}" ]; then LIBPATH="${LIBPATH}:${d}"; fi; done
+LIBPATH="/lib:/usr/lib"
+for d in `find /jevois/lib -type d -print`; do LIBPATH="${LIBPATH}:${d}"; done
 export LD_LIBRARY_PATH=${LIBPATH}
 
 ##############################################################################################################
@@ -87,7 +87,7 @@ export LD_LIBRARY_PATH=${LIBPATH}
 ##############################################################################################################
 
 echo "### Insert gadget driver ###"
-MODES=`/jevois/bin/jevois-module-param`
+MODES=`/usr/bin/jevois-module-param`
 
 insmodopts=""
 if [ "X${use_usbsd}" = "X1" ]; then insmodopts="${insmodopts} file=${usbsdfile}"; fi
@@ -106,9 +106,9 @@ if [ "X${use_serialtty}" = "X1" ]; then opts="${opts} --serialdev="; fi
 
 # Start the jevois daemon:
 if [ "X${use_serialtty}" = "X1" -o "X${use_usbserialtty}" = "X1" ]; then
-    /jevois/bin/jevois-daemon ${opts} &
+    /usr/bin/jevois-daemon ${opts} &
 else
-    /jevois/bin/jevois-daemon ${opts}
+    /usr/bin/jevois-daemon ${opts}
 fi
 
 ##############################################################################################################

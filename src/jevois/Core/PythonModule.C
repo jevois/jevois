@@ -176,11 +176,7 @@ jevois::PythonModule::PythonModule(jevois::VideoMapping const & m) :
     std::string const pydir = pypath.substr(0, pypath.rfind('/'));
     std::string const execstr =
       "import sys\n"
-#ifdef JEVOIS_PLATFORM
-      "sys.path.append(\"" JEVOIS_ROOT_PATH "/lib\")\n" // To find libjevois module in /jevois/lib
-#else
       "sys.path.append(\"/usr/lib\")\n" // To find libjevois module in /usr/lib
-#endif
       "sys.path.append(\"" JEVOIS_OPENCV_PYTHON_PATH "/lib\")\n" // To find cv2 module
       "sys.path.append(\"" + pydir + "\")\n" +
       "from " + m.modulename + " import " + m.modulename + "\n";

@@ -208,7 +208,7 @@ jevois::Engine::Engine(std::string const & instance) :
 
 #ifdef JEVOIS_PLATFORM
   // Start mass storage thread:
-  itsCheckingMassStorage.store(false); itsJevoisRO.store(false);
+  itsCheckingMassStorage.store(false); itsMassStorageMode.store(false);
   itsCheckMassStorageFut = std::async(std::launch::async, &jevois::Engine::checkMassStorage, this);
   while (itsCheckingMassStorage.load() == false) std::this_thread::sleep_for(std::chrono::milliseconds(5));
 #endif
@@ -225,7 +225,7 @@ jevois::Engine::Engine(int argc, char const* argv[], std::string const & instanc
 
 #ifdef JEVOIS_PLATFORM
   // Start mass storage thread:
-  itsCheckingMassStorage.store(false); itsJevoisRO.store(false);
+  itsCheckingMassStorage.store(false); itsMassStorageMode.store(false);
   itsCheckMassStorageFut = std::async(std::launch::async, &jevois::Engine::checkMassStorage, this);
   while (itsCheckingMassStorage.load() == false) std::this_thread::sleep_for(std::chrono::milliseconds(5));
 #endif
@@ -446,7 +446,7 @@ void jevois::Engine::postInit()
   itsRunning.store(true);
 
   // Set initial format:
-  setFormat(midx);
+  //setFormat(midx);
   
   // Run init script:
   JEVOIS_TIMED_LOCK(itsMtx);
@@ -501,26 +501,23 @@ void jevois::Engine::checkMassStorage()
 
   while (itsCheckingMassStorage.load())
   {
-    // If currently mounted RO, check whether the host just ejected the virtual flash drive, and, if so, reboot:
+    // Check from the mass storage gadget (with JeVois extension) whether the virtual USB drive is mounted by the
+    // host. If currently in mass storage mode and the host just ejected the virtual flash drive, resume normal
+    // operation. If not in mass-storage mode and the host mounted it, enter mass-storage mode (may happen if
+    // /boot/usbsdauto was selected):
     std::ifstream ifs("/sys/devices/platform/sunxi_usb_udc/gadget/lun0/mass_storage_in_use");
     if (ifs.is_open())
     {
         int inuse; ifs >> inuse;
-        if (itsJevoisRO.load())
+        if (itsMassStorageMode.load())
         {
-          if (inuse == 0)
-          {
-            LINFO("JeVois virtual USB drive ejected by host -- REBOOTING");
-            this->reboot();
-          }
+          if (inuse == 0) stopMassStorageMode();
         }
         else
         {
-          // This may happen if /boot/usbsdauto was selected:
-          if (inuse) { remountRO("/jevois"); itsJevoisRO.store(true); }
+          if (inuse) { JEVOIS_TIMED_LOCK(itsMtx); startMassStorageMode(); }
         }
     }
-
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
   }
 }
@@ -591,6 +588,11 @@ void jevois::Engine::setFormatInternal(jevois::VideoMapping const & m)
 
   LINFO(m.str());
 
+#ifdef JEVOIS_PLATFORM
+  if (itsMassStorageMode.load())
+    LFATAL("Cannot setup video streaming while in mass-storage mode. Eject the USB drive on your host computer first.");
+#endif
+  
   // Now that the module is nuked, we won't have any get()/done()/send() requests on the camera or gadget, thus it is
   // safe to change the formats on both:
   itsCamera->setFormat(m);
@@ -967,30 +969,40 @@ std::string jevois::Engine::camCtrlHelp(struct v4l2_queryctrl & qc, std::set<int
 
 #ifdef JEVOIS_PLATFORM
 // ####################################################################################################
-void jevois::Engine::remountRO(std::string const & mountpoint)
+void jevois::Engine::startMassStorageMode()
 {
-  if (std::system(("mount -o remount,ro,flush,noatime " + mountpoint).c_str()))
-    LERROR("Remounting " << mountpoint <<" read-only failed -- IGNORED");
-  else
-    LINFO("Remounted " << mountpoint <<" read-only");
+  // itsMtx must be locked by caller
+  
+  // Nuke any module and loader so we have nothing loaded that uses /jevois:
+  if (itsModule) { removeComponent(itsModule); itsModule.reset(); }
+  if (itsLoader) itsLoader.reset();
+
+  // Unmount /jevois:
+  if (std::system("sync")) LERROR("Disk sync failed -- IGNORED");
+  if (std::system("umount /jevois")) LFATAL("Failed to un-mount /jevois");
+
+  // Now set the backing partition in mass-storage gadget:
+  std::ofstream ofs(JEVOIS_USBSD_SYS);
+  if (ofs.is_open() == false) LFATAL("Cannot setup mass-storage backing file to " << JEVOIS_USBSD_SYS);
+  ofs << JEVOIS_USBSD_FILE << std::endl;
+
+  LINFO("Exported JEVOIS partition of microSD to host computer as virtual flash drive.");
+  itsMassStorageMode.store(true);
 }
 
 // ####################################################################################################
-void jevois::Engine::remountRW(std::string const & mountpoint)
+void jevois::Engine::stopMassStorageMode()
 {
-  if (std::system(("mount -o remount,rw,flush,noatime " + mountpoint).c_str()))
-    LERROR("Remounting " << mountpoint <<" read-write failed -- IGNORED");
-  else
-    LINFO("Remounted " << mountpoint <<" read-write");
+  if (std::system("mount /jevois")) LFATAL("Failed to mount /jevois");
+  itsMassStorageMode.store(false);
+  LINFO("JeVois virtual USB drive ejected by host -- RESUMING NORMAL OPERATION");
 }
 
 // ####################################################################################################
 void jevois::Engine::reboot()
 {
   if (std::system("sync")) LERROR("Disk sync failed -- IGNORED");
-
   itsCheckingMassStorage.store(false);
-  remountRO("/jevois");
   itsRunning.store(false);
 
   // Hard reset to avoid possible hanging during module unload, etc:
@@ -1142,7 +1154,8 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
       s->writeString("INFO: " + jevois::getSysInfoVersion());
       s->writeString("INFO: " + jevois::getSysInfoCPU());
       s->writeString("INFO: " + jevois::getSysInfoMem());
-      s->writeString("INFO: " + itsCurrentMapping.str());
+      if (itsModule) s->writeString("INFO: " + itsCurrentMapping.str());
+      else s->writeString("INFO: " + jevois::VideoMapping().str());
       return true;
     }
     
@@ -1326,26 +1339,9 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
       }
       else
       {
-        if (std::system("sync")) LERROR("Disk sync failed -- IGNORED");
-      
-        // Remount /jevois read-only:
-        remountRO("/jevois");
-        itsJevoisRO.store(true);
-        
-        // Now set the backing partition in mass-storage gadget:
-        std::ofstream ofs(JEVOIS_USBSD_SYS);
-        if (ofs.is_open())
-        {
-          ofs << JEVOIS_USBSD_FILE << std::endl;
-
-          // The virtual USB flash drive will now appear on the host computer.
-          LINFO("Exported JEVOIS partition of microSD to host computer as virtual flash drive.");
-        
-          return true;
-        }
-        else errmsg = "Cannot write " JEVOIS_USBSD_SYS;
+        startMassStorageMode();
+        return true;
       }
-        
     }
 #endif    
 

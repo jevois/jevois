@@ -94,9 +94,9 @@ endif (DEFINED ENV{JEVOIS_ROOT})
 # First define all vars for both host and platform here so we can patch jevois_config.cmake.in with both sets. Then,
 # below, we will set the variables we need now to compile depending on whether JEVOIS_PLATFORM is set or not:
 
-# On the host, install to /usr/; on platform, install into /var/lib/jevois-microsd
+# On the host, install to /usr ; on platform, install to /var/lib/jevois-build/usr
 set(JEVOIS_HOST_INSTALL_PREFIX "/usr")
-set(JEVOIS_PLATFORM_INSTALL_PREFIX "/var/lib/jevois-microsd")
+set(JEVOIS_PLATFORM_INSTALL_PREFIX "/var/lib/jevois-build/usr")
 
 ########################################################################################################################
 # Architecture flags to optimize compilation:
@@ -157,7 +157,7 @@ set(JEVOIS_HOST_INCLUDE "-I${JEVOIS_HOST_OPENCV_PREFIX}/include ${JEVOIS_HOST_PY
 # Root path to install modules:
 # For host, set JEVOIS_ROOT path as is for modules; for platform, put it into /var/lib/jevois-microsd:
 file(TO_NATIVE_PATH "${JEVOIS_ROOT}" JEVOIS_HOST_MODULES_ROOT)
-file(TO_NATIVE_PATH "${JEVOIS_PLATFORM_INSTALL_PREFIX}" JEVOIS_PLATFORM_MODULES_ROOT)
+file(TO_NATIVE_PATH "/var/lib/jevois-microsd" JEVOIS_PLATFORM_MODULES_ROOT)
 
 ########################################################################################################################
 # Set compiler flags: FIXME: libtbb uses some deprecated declarations:
@@ -197,14 +197,10 @@ configure_file(src/jevois_config.cmake.in jevois_config.cmake @ONLY)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/jevois_config.cmake
   DESTINATION "${JEVOIS_MODULES_ROOT}/config" COMPONENT bin)
 
-# Setup our library: Note: Now that we install libjevois.so onto the VFAT JEVOIS partition of the microSD which does not
-# support symlinks, we cannot support the version number in the .so file, because python will look for the plain.so (no
-# version number) module. So, on platform, we will just create libjevois.so with no version number:
+# Setup our library:
 file(GLOB_RECURSE JEVOIS_LIB_SRC_FILES src/jevois/*.C src/jevois/*.c)
 add_library(jevois SHARED ${JEVOIS_LIB_SRC_FILES})
-if (NOT JEVOIS_PLATFORM)
-  set_target_properties(jevois PROPERTIES VERSION "${JEVOIS_SOVERSION}" SOVERSION ${JEVOIS_SOVERSION})
-endif (NOT JEVOIS_PLATFORM)
+set_target_properties(jevois PROPERTIES VERSION "${JEVOIS_SOVERSION}" SOVERSION ${JEVOIS_SOVERSION})
 link_libraries(jevois)
 install(TARGETS jevois LIBRARY DESTINATION lib COMPONENT libs)
 target_link_libraries(jevois ${JEVOIS_OPENCV_LIBS} -lpthread -ltbb -ldl -lutil -lboost_system
@@ -251,12 +247,12 @@ add_custom_target(doc
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
 # This is to install the doc of jevois and jevoisbase to jevois.org, only works in ilab:
-if (JEVOIS_ILAB)
+if ($ENV{JEVOIS_ILAB})
   add_custom_target(docweb
     COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/scripts/docinstall.sh
     DEPENDS doc
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-endif (JEVOIS_ILAB)
+endif ($ENV{JEVOIS_ILAB})
 
 # Configure our pkgconfig file:
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/pkgconfig/jevois.pc.in ${CMAKE_CURRENT_SOURCE_DIR}/pkgconfig/jevois.pc @ONLY)

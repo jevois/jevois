@@ -61,7 +61,7 @@ else (JEVOIS_PLATFORM)
   
 endif (JEVOIS_PLATFORM)
 
-message(STATUS "Install prefix for executables: ${JEVOIS_INSTALL_PREFIX}")
+message(STATUS "Install prefix for executable programs: ${JEVOIS_INSTALL_PREFIX}")
 message(STATUS "Host path to jevois modules root: ${JEVOIS_MODULES_ROOT}")
 
 ####################################################################################################
@@ -171,7 +171,7 @@ macro(jevois_setup_modules basedir deps)
 	set(DESTDIR "/media/$ENV{USER}/JEVOIS/modules/${JEVOIS_VENDOR}")
       else (JEVOIS_MODULES_TO_MICROSD)
 	if (JEVOIS_MODULES_TO_STAGING)
-	  set(DESTDIR "${JEVOIS_PLATFORM_INSTALL_PREFIX}/modules/${JEVOIS_VENDOR}")
+	  set(DESTDIR "${JEVOIS_PLATFORM_MODULES_ROOT}/modules/${JEVOIS_VENDOR}")
 	else (JEVOIS_MODULES_TO_STAGING)
 	  set(DESTDIR "${CMAKE_CURRENT_SOURCE_DIR}/jvpkg/modules/${JEVOIS_VENDOR}")
 	endif (JEVOIS_MODULES_TO_STAGING)
@@ -229,7 +229,7 @@ macro(jevois_setup_library basedir libname libversion)
     else (JEVOIS_MODULES_TO_MICROSD)
       if (JEVOIS_MODULES_TO_STAGING)
 	install(TARGETS ${libname} LIBRARY
-	  DESTINATION "${JEVOIS_PLATFORM_INSTALL_PREFIX}/lib/${JEVOIS_VENDOR}"
+	  DESTINATION "${JEVOIS_PLATFORM_MODULES_ROOT}/lib/${JEVOIS_VENDOR}"
 	  COMPONENT libs)
       else (JEVOIS_MODULES_TO_STAGING)
 	install(TARGETS ${libname} LIBRARY
