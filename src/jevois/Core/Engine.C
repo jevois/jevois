@@ -446,7 +446,7 @@ void jevois::Engine::postInit()
   itsRunning.store(true);
 
   // Set initial format:
-  //setFormat(midx);
+  setFormat(midx);
   
   // Run init script:
   JEVOIS_TIMED_LOCK(itsMtx);
@@ -972,14 +972,16 @@ std::string jevois::Engine::camCtrlHelp(struct v4l2_queryctrl & qc, std::set<int
 void jevois::Engine::startMassStorageMode()
 {
   // itsMtx must be locked by caller
-  
+
+  if (itsMassStorageMode.load()) { LERROR("Already in mass-storage mode -- IGNORED"); return; }
+
   // Nuke any module and loader so we have nothing loaded that uses /jevois:
   if (itsModule) { removeComponent(itsModule); itsModule.reset(); }
   if (itsLoader) itsLoader.reset();
 
   // Unmount /jevois:
   if (std::system("sync")) LERROR("Disk sync failed -- IGNORED");
-  if (std::system("umount /jevois")) LFATAL("Failed to un-mount /jevois");
+  if (std::system("mount -o remount,ro /jevois")) LERROR("Failed to remount /jevois read-only -- IGNORED");
 
   // Now set the backing partition in mass-storage gadget:
   std::ofstream ofs(JEVOIS_USBSD_SYS);
@@ -993,9 +995,9 @@ void jevois::Engine::startMassStorageMode()
 // ####################################################################################################
 void jevois::Engine::stopMassStorageMode()
 {
-  if (std::system("mount /jevois")) LFATAL("Failed to mount /jevois");
-  itsMassStorageMode.store(false);
-  LINFO("JeVois virtual USB drive ejected by host -- RESUMING NORMAL OPERATION");
+  //itsMassStorageMode.store(false);
+  LINFO("JeVois virtual USB drive ejected by host -- REBOOTING");
+  reboot();
 }
 
 // ####################################################################################################
