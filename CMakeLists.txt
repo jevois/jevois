@@ -294,7 +294,7 @@ set(CPACK_PACKAGE_VENDOR "iLab at the University of Southern California")
 set(CPACK_PACKAGE_VERSION_MAJOR "${JEVOIS_VERSION_MAJOR}")
 set(CPACK_PACKAGE_VERSION_MINOR "${JEVOIS_VERSION_MINOR}")
 set(CPACK_PACKAGE_VERSION_PATCH "0")
-set(CPACK_PACKAGE_RELEASE "1") # packager revision number
+set(JEVOIS_PACKAGE_RELEASE "1") # packager revision number
 
 set(CPACK_DEBIAN_PACKAGE_DEPENDS "build-essential, cmake (>= 3.1), gcc (>= 5.2), g++ (>=5.2), gfortran (>= 5.2), \
 guvcview, subversion, cmake, git, mercurial, doxygen-gui, graphviz, libboost-all-dev, libjpeg-turbo8-dev, autoconf, \
