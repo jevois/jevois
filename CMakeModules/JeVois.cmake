@@ -104,8 +104,6 @@ macro(jevois_project_set_flags)
     set(JEVOIS_ROOT $ENV{JEVOIS_ROOT})
   else (DEFINED ENV{JEVOIS_ROOT})
     set(JEVOIS_ROOT "/jevois")
-    message(WARNING "You should set JEVOIS_ROOT environment variable to the root of where JeVois modules and "
-      "config files are installed. Using default: ${JEVOIS_ROOT}")
   endif (DEFINED ENV{JEVOIS_ROOT})
 
   # If installing to microSD, add a check that it is here before make install:

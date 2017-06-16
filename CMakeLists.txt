@@ -86,8 +86,6 @@ if (DEFINED ENV{JEVOIS_ROOT})
   set(JEVOIS_ROOT $ENV{JEVOIS_ROOT})
 else (DEFINED ENV{JEVOIS_ROOT})
   set(JEVOIS_ROOT "/jevois")
-  message(WARNING "You should set JEVOIS_ROOT environment variable to the root of where JeVois modules and "
-    "config files will be installed. Using default: ${JEVOIS_ROOT}")
 endif (DEFINED ENV{JEVOIS_ROOT})
 
 ########################################################################################################################

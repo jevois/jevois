@@ -96,7 +96,7 @@ sudo sh -c 'echo usbsd > /dev/ttyACM0'
 Adding your module to a microSD card: jvpkg
 -------------------------------------------
 
-This approach is useful if you also want to share your module with firends. You can just send them your jvpkg file.
+This approach is useful if you also want to share your module with friends. You can just send them your jvpkg file.
 
 Once you have all the compiled and auxiliary files (icon.png, etc) in myalgo/jvpkg, you are ready to pack it:
 
