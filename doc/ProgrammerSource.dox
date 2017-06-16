@@ -25,21 +25,21 @@ Installing Ubuntu packages
 
 The following packages have been made available at http://jevois.usc.edu
 
-- jevois-opencv: OpenCV 3.2.0 compiled for host computer with settings that match those used by the JeVois platform
+- \b jevois-opencv: OpenCV 3.2.0 compiled for host computer with settings that match those used by the JeVois platform
   hardware. We indtall this package into /usr/share/jevois-opencv-3.2.0 so that it will not interfere with any other
   OpenCV install you might have on your host system and that might be required by some other software.
 
-- jevois-host: JeVois core software compiled for execution on a host computer
+- \b jevois-host: JeVois core software compiled for execution on a host computer
 
-- jevois-platform: JeVois core software cross-compiled for execution on the JeVois platform hardware
+- \b jevois-platform: JeVois core software cross-compiled for execution on the JeVois platform hardware
 
-- jevoisbase-host: JeVois base modules compiled for execution on a host computer
+- \b jevoisbase-host: JeVois base modules compiled for execution on a host computer
 
-- jevoisbase-platform: JeVois base modules cross-compiled for execution on the JeVois platform hardware
+- \b jevoisbase-platform: JeVois base modules cross-compiled for execution on the JeVois platform hardware
 
-- jevois-sdk: Compiled bootloaders, root filesystem, and other config files.
+- \b jevois-sdk: Compiled bootloaders, root filesystem, and other config files.
 
-- jevois-sdk-dev: Compiled cross-compilers and cross-compiled libraries for the JeVois platform architecture.
+- \b jevois-sdk-dev: Compiled cross-compilers and cross-compiled libraries for the JeVois platform architecture.
 
 As jevois-sdk-dev brings all the others as dependencies, getting up and running with JeVois development now just means
 one apt-get install command.

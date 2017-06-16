@@ -46,14 +46,24 @@ Scripts are provided to recompile everything:
 - \c rebuild-platform.sh will
   + Cross-compile for the CPU inside the JeVois smart camera (arm-gnueabi-hf)
   + Object files will be in \c pbuild/ which the script creates
-  + if you specify \c ./rebuild-platform.sh \c -DJEVOIS_MODULES_TO_BUILDROOT=ON
-    - Modules will be installed in \c /jevois within jevois-sdk
-    - Thus, because all target files are stored into the jevois-sdk, they will be ready to be flashed to
-       microSD that can then be inserted into your JeVois smart camera.
+  + if you specify `./rebuild-platform.sh --staging`
+    - Modules, config files, etc will be installed to staging directory <b>/var/lib/jevois-microsd/</b> (see
+      \ref ProgrammerOrganization)
+    - Thus, because all target files are stored into the staging area, they will be ready to be flashed to
+      microSD that can then be inserted into your JeVois smart camera.
+  + if you specify `./rebuild-platform.sh --microsd`
+    - Modules, config files, etc will be installed to a live microSD card (either inserted into your host computer using
+      a microSD-to-USB adapter, or exported live by JeVois using the \c usbsd command in the JeVois command-line
+      interface) that must be be available under <b>/media/<u>username</u>/JEVOIS/</b> where <u>username</u> is your
+      Linux user name.
+    - Thus, all target files are directly copied to microSD for immediate use.
   + Otherwise, libraries and modules will be installed into the \c jvpkg directory in jevoisbase
     - To pack those files, cd to pbuild and type 'make jvpkg', which will create \c jevoisbase/JeVois_jevoisbase.jvpkg
     - You can then drop this into the \c packages/ directory of a JeVois microSD to install the package
       next time you start your JeVois smart camera. See \ref ProgrammerSDK for more info.
+
+\note Once you select a destination in `rebuild-platform.sh` (none, staging, or microsd), that will remain for
+subsequent `make install` commands, until you change it by re-running `rebuild-platform.sh` with another destination.
 
 Once jevoisbase is compiled and installed for host, you can try it out using \ref JeVoisDaemon.
 
@@ -74,15 +84,13 @@ sudo make install
 make doc     # if desired
 \endverbatim
 
-- for platform
+- for platform:
 \verbatim
 cd pbuild
 make -j 4    # replace 4 by the number of cores on your desktop computer
 make install # if desired
 make jvpkg   # if desired and if you did not specify -DJEVOIS_MODULES_TO_BUILDROOT=ON when running rebuild-platform.sh
 \endverbatim
-
-
 
 */
 

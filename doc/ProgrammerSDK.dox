@@ -66,8 +66,30 @@ Note that \c rebuild-platform.sh compiles your module and then installs everythi
 \note If you get an error <b>cc1plus: fatal error: jevois/Config/Config.H: No such file or directory</b>, just run
 \c rebuild-platform.sh in your \b jevois repository.
 
-Adding your module to a microSD card
-------------------------------------
+Adding your module to a microSD card: live microSD card
+-------------------------------------------------------
+
+Insert a properly installed JeVois MicroSD (follow the steps at [JeVois Start](http://jevois.org/start) to make one from
+a disk image) into your computer, either physically inserted into your host computer using a microSD-to-USB adapter, or
+exported live by JeVois using the \c usbsd command in the JeVois command-line interface). The microSD card must be be
+available under <b>/media/<u>username</u>/JEVOIS/</b> where <u>username</u> is your Linux user name.
+
+Run:
+\verbatim
+./rebuild-platform.sh --microsd
+\endverbatim
+
+Modules, config files, etc will be installed to the live microSD card at <b>/media/<u>username</u>/JEVOIS/</b> where
+<u>username</u> is your Linux user name.
+
+\note Once you select a destination in `rebuild-platform.sh` (none, staging, or microsd), that will remain for
+subsequent `make install` commands, until you change it by re-running `rebuild-platform.sh` with another destination.
+
+
+Adding your module to a microSD card: jvpkg
+-------------------------------------------
+
+This approach is useful if you also want to share your module with firends. You can just send them your jvpkg file.
 
 Once you have all the compiled and auxiliary files (icon.png, etc) in myalgo/jvpkg, you are ready to pack it:
 
@@ -95,9 +117,10 @@ use your module.
 
 For more information:
 
-- jvpkg packages are created by \c /usr/bin/jevois-jvpkg (source in \c ~/jevois/scripts/jevois-jvpkg), which is
+- jvpkg packages are created by `/usr/bin/jevois-jvpkg` (source in `~/jevois/scripts/jevois-jvpkg)`, which is
   invoked by `make jvpkg`
-- and they are unpacked by \c ~/jevois/bin/jevois.sh (running on the platform)
+- and they are unpacked by `/usr/bin/jevois.sh` (source `~/jevois/bin/jevois.sh`) running on the
+  platform when it boots up.
 
 Module documentation and metadata
 ---------------------------------
