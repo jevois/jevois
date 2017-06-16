@@ -108,6 +108,8 @@ to listmappings).
 
 ####################################################################################################
 ADVANCED: Install necessary packages on your host computer
+For some Ubuntu 16.04LTS (Xenial) based distros such as Mint18, you need to add deb http://cz.archive.ubuntu.com/ubuntu yakkety main universe
+and deb http://ppa.launchpad.net/ubuntu-toolchain-r/test to /etc/apt/sources.list to get the necessary packages. Remove them after.
 ####################################################################################################
 
 # Open a terminal, then type:
