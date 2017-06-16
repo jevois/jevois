@@ -21,6 +21,7 @@
 #include <jevois/Image/RawImage.H>
 #include <jevois/Core/VideoBuf.H>
 #include <jevois/Component/Component.H>
+#include <opencv2/core/core.hpp>
 #include <ostream>
 
 namespace jevois
@@ -65,6 +66,38 @@ namespace jevois
       /*! You should call this as soon after get() as possible, once you are finished with the RawImage data so that it
           can be recycled and sent back to the camera driver for video capture. */
       void done() const;
+
+      //! Shorthand to get the input image as a GRAY cv::Mat and release the raw buffer
+      /*! This is mostly intended for Python module writers, as they will likely use OpenCV for all their image
+          processing. C++ module writers should stick to the get()/done() pair as this provides better fine-grained
+          control. Note that the raw image from the camera will always be copied or converted to cv::Mat and will then
+          be released by calling done(), so users should not call done() after using this function. This function is
+          basically equivalent to calling get(), converting to cv::Mat, and calling done(). */
+      cv::Mat getCvGRAY(bool casync = false) const;
+
+      //! Shorthand to get the input image as a BGR cv::Mat and release the raw buffer
+      /*! This is mostly intended for Python module writers, as they will likely use OpenCV for all their image
+          processing. C++ module writers should stick to the get()/done() pair as this provides better fine-grained
+          control. Note that the raw image from the camera will always be copied or converted to cv::Mat and will then
+          be released by calling done(), so users should not call done() after using this function. This function is
+          basically equivalent to calling get(), converting to cv::Mat, and calling done(). */
+      cv::Mat getCvBGR(bool casync = false) const;
+
+      //! Shorthand to get the input image as a RGB cv::Mat and release the raw buffer
+      /*! This is mostly intended for Python module writers, as they will likely use OpenCV for all their image
+          processing. C++ module writers should stick to the get()/done() pair as this provides better fine-grained
+          control. Note that the raw image from the camera will always be copied or converted to cv::Mat and will then
+          be released by calling done(), so users should not call done() after using this function. This function is
+          basically equivalent to calling get(), converting to cv::Mat, and calling done(). */
+      cv::Mat getCvRGB(bool casync = false) const;
+
+      //! Shorthand to get the input image as a RGBA cv::Mat and release the raw buffer
+      /*! This is mostly intended for Python module writers, as they will likely use OpenCV for all their image
+          processing. C++ module writers should stick to the get()/done() pair as this provides better fine-grained
+          control. Note that the raw image from the camera will always be copied or converted to cv::Mat and will then
+          be released by calling done(), so users should not call done() after using this function. This function is
+          basically equivalent to calling get(), converting to cv::Mat, and calling done(). */
+      cv::Mat getCvRGBA(bool casync = false) const;
 
       //! Destructor, returns the buffers to the driver as needed
       ~InputFrame();
@@ -121,6 +154,46 @@ namespace jevois
       //! Send an image out over USB to the host computer
       /*! May throw if the format is incorrect or std::overflow_error if we have not yet consumed the previous image. */
       void send() const;
+
+      //! Shorthand to send a GRAY cv::Mat after converting it to the current output format
+      /*! This is mostly intended for Python module writers, as they will likely use OpenCV for all their image
+          processing. The cv::Mat must have same dims as the output frame. C++ module writers should stick to the
+          get()/send() pair as this provides better fine-grained control. Note that the cv::Mat image will always be
+          copied or converted to the destination RawImage and will then be sent out immediately by calling send(), so
+          users should not call send() after using this function. This function is basically equivalent to calling
+          get(), converting the given cv::Mat to the proper output format, and calling send(). quality is used only if
+          the output format is MJPEG and should be between 1 and 100. */
+      void sendCvGRAY(cv::Mat const & img, int quality = 75) const;
+
+      //! Shorthand to send a BGR cv::Mat after converting it to the current output format
+      /*! This is mostly intended for Python module writers, as they will likely use OpenCV for all their image
+          processing. The cv::Mat must have same dims as the output frame. C++ module writers should stick to the
+          get()/send() pair as this provides better fine-grained control. Note that the cv::Mat image will always be
+          copied or converted to the destination RawImage and will then be sent out immediately by calling send(), so
+          users should not call send() after using this function. This function is basically equivalent to calling
+          get(), converting the given cv::Mat to the proper output format, and calling send(). quality is used only if
+          the output format is MJPEG and should be between 1 and 100.*/
+      void sendCvBGR(cv::Mat const & img, int quality = 75) const;
+
+      //! Shorthand to send a RGB cv::Mat after converting it to the current output format
+      /*! This is mostly intended for Python module writers, as they will likely use OpenCV for all their image
+          processing. The cv::Mat must have same dims as the output frame. C++ module writers should stick to the
+          get()/send() pair as this provides better fine-grained control. Note that the cv::Mat image will always be
+          copied or converted to the destination RawImage and will then be sent out immediately by calling send(), so
+          users should not call send() after using this function. This function is basically equivalent to calling
+          get(), converting the given cv::Mat to the proper output format, and calling send(). quality is used only if
+          the output format is MJPEG and should be between 1 and 100.*/
+      void sendCvRGB(cv::Mat const & img, int quality = 75) const;
+
+      //! Shorthand to send a RGBA cv::Mat after converting it to the current output format
+      /*! This is mostly intended for Python module writers, as they will likely use OpenCV for all their image
+          processing. The cv::Mat must have same dims as the output frame. C++ module writers should stick to the
+          get()/send() pair as this provides better fine-grained control. Note that the cv::Mat image will always be
+          copied or converted to the destination RawImage and will then be sent out immediately by calling send(), so
+          users should not call send() after using this function. This function is basically equivalent to calling
+          get(), converting the given cv::Mat to the proper output format, and calling send(). quality is used only if
+          the output format is MJPEG and should be between 1 and 100.*/
+      void sendCvRGBA(cv::Mat const & img, int quality = 75) const;
 
       //! Destructor, returns the buffers to the driver as needed
       ~OutputFrame();

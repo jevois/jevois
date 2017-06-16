@@ -55,6 +55,7 @@ void jevois::VideoDisplay::setFormat(jevois::VideoMapping const & m)
     img.width = m.ow;
     img.height = m.oh;
     img.fmt = m.ofmt;
+    img.fps = m.ofps;
     img.buf = itsBuffers[i];
     img.bufindex = i;
 

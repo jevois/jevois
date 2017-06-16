@@ -35,13 +35,14 @@ cd ../..
 emacs CMakeLists.txt  # Change the value of JEVOIS_VENDOR from SampleVendor to your name (no spaces or special chars)
 \endverbatim
 
-A script has been created in \b jevois/scripts to automate this process:
+A script \c jevois-create-module has been created in \b /usr/bin (source in \b ~/jevois/scripts/) to automate
+this process:
 
 \verbatim
-# USAGE: jevois-create-module.sh <VendorName> <ModuleName>
+# USAGE: jevois-create-module <VendorName> <ModuleName>
 # Creates a project directory with name tolower(ModuleName) and populates it:
 
-~/jevois/scripts/jevois-create-module.sh MyVendor MyAlgo
+jevois-create-module MyVendor MyAlgo
 
 # Module is setup in myalgo/
 \endverbatim
@@ -65,8 +66,37 @@ Note that \c rebuild-platform.sh compiles your module and then installs everythi
 \note If you get an error <b>cc1plus: fatal error: jevois/Config/Config.H: No such file or directory</b>, just run
 \c rebuild-platform.sh in your \b jevois repository.
 
-Adding your module to a microSD card
-------------------------------------
+Adding your module to a microSD card: live microSD card
+-------------------------------------------------------
+
+Insert a properly installed JeVois MicroSD (follow the steps at [JeVois Start](http://jevois.org/start) to make one from
+a disk image) into your computer, either physically inserted into your host computer using a microSD-to-USB adapter, or
+exported live by JeVois using the \c usbsd command in the JeVois command-line interface). The microSD card must be be
+available under <b>/media/<em>username</em>/JEVOIS/</b> where <em>username</em> is your Linux user name.
+
+Run:
+
+\verbatim
+./rebuild-platform.sh --microsd
+\endverbatim
+
+Modules, config files, etc will be installed to the live microSD card at <b>/media/<em>username</em>/JEVOIS/</b> where
+<em>username</em> is your Linux user name.
+
+\note Once you select a destination in `rebuild-platform.sh` (none, staging, or microsd), that will remain for
+subsequent `make install` commands, until you change it by re-running `rebuild-platform.sh` with another destination.
+
+Here is a simple command to export the microSD of a live JeVois camera without having to start a terminal program, etc
+(make sure JeVois is not streaming video):
+
+\verbatim
+sudo sh -c 'echo usbsd > /dev/ttyACM0'
+\endverbatim
+
+Adding your module to a microSD card: jvpkg
+-------------------------------------------
+
+This approach is useful if you also want to share your module with friends. You can just send them your jvpkg file.
 
 Once you have all the compiled and auxiliary files (icon.png, etc) in myalgo/jvpkg, you are ready to pack it:
 
@@ -94,15 +124,17 @@ use your module.
 
 For more information:
 
-- jvpkg packages are created by \c ~/jevois/scripts/jevois-jvpkg.pl (invoked by `make jvpkg`)
-- and they are unpacked by \c ~/jevois/bin/jevois.sh (running on the platform)
+- jvpkg packages are created by `/usr/bin/jevois-jvpkg` (source in `~/jevois/scripts/jevois-jvpkg)`, which is
+  invoked by `make jvpkg`
+- and they are unpacked by `/usr/bin/jevois.sh` (source `~/jevois/bin/jevois.sh`) running on the
+  platform when it boots up.
 
 Module documentation and metadata
 ---------------------------------
 
-A really nasty perl script, \c ~/jevois/scripts/jevois-modinfo.pl, will parse your module to generate a single-page
-documentation for it. This script is a mess and its operation is quite brittle. It is invoked automatically when you
-compile your module (see rules in \b ~/jevois/CMakeModules/jevois.cmake).
+A really nasty perl script, \c /usr/bin/jevois-modinfo (source in \c ~/jevois/scripts/jevois-modinfo), will parse your
+module to generate a single-page documentation for it. This script is a mess and its operation is quite brittle. It is
+invoked automatically when you compile your module (see rules in \b ~/jevois/CMakeModules/jevois.cmake).
 
 The script creates modinfo.html (and modinfo.yaml, currently not used) by parsing your modules and other files in its
 directory.

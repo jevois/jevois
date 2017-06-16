@@ -30,6 +30,8 @@
 
 #include <jevois/Core/Module.H>
 #include <jevois/Core/DynamicLoader.H>
+#include <jevois/Core/PythonSupport.H>
+#include <jevois/Core/PythonModule.H>
 
 #include <jevois/Debug/Log.H>
 #include <jevois/Util/Utils.H>
@@ -38,6 +40,8 @@
 #include <cmath> // for fabs
 #include <fstream>
 #include <algorithm>
+#include <cstdlib> // for std::system()
+#include <cstdio> // for std::remove()
 
 // On the older platform kernel, detect class is not defined:
 #ifndef V4L2_CTRL_CLASS_DETECT
@@ -195,12 +199,19 @@ namespace
 // ####################################################################################################
 jevois::Engine::Engine(std::string const & instance) :
     jevois::Manager(instance), itsMappings(jevois::loadVideoMappings(itsDefaultMappingIdx)),
-    itsUSBout(false), itsRunning(false), itsStreaming(false), itsStopMainLoop(false), itsTurbo(false),
+    itsRunning(false), itsStreaming(false), itsStopMainLoop(false), itsTurbo(false),
     itsManualStreamon(false)
 {
   JEVOIS_TRACE(1);
 
   LINFO("Loaded " << itsMappings.size() << " vision processing modes.");
+
+#ifdef JEVOIS_PLATFORM
+  // Start mass storage thread:
+  itsCheckingMassStorage.store(false); itsMassStorageMode.store(false);
+  itsCheckMassStorageFut = std::async(std::launch::async, &jevois::Engine::checkMassStorage, this);
+  while (itsCheckingMassStorage.load() == false) std::this_thread::sleep_for(std::chrono::milliseconds(5));
+#endif
 }
 
 // ####################################################################################################
@@ -211,6 +222,13 @@ jevois::Engine::Engine(int argc, char const* argv[], std::string const & instanc
   JEVOIS_TRACE(1);
 
   LINFO("Loaded " << itsMappings.size() << " vision processing modes.");
+
+#ifdef JEVOIS_PLATFORM
+  // Start mass storage thread:
+  itsCheckingMassStorage.store(false); itsMassStorageMode.store(false);
+  itsCheckMassStorageFut = std::async(std::launch::async, &jevois::Engine::checkMassStorage, this);
+  while (itsCheckingMassStorage.load() == false) std::this_thread::sleep_for(std::chrono::milliseconds(5));
+#endif
 }
 
 // ####################################################################################################
@@ -274,7 +292,13 @@ void jevois::Engine::onParamChange(jevois::engine::cpumode const & JEVOIS_UNUSED
                                    jevois::engine::CPUmode const & newval)
 {
   std::ofstream ofs("/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor");
-  if (ofs.is_open() == false) { LERROR("Cannot set cpu frequency governor mode -- IGNORED"); return; }
+  if (ofs.is_open() == false)
+  {
+#ifdef JEVOIS_PLATFORM
+    LERROR("Cannot set cpu frequency governor mode -- IGNORED");
+#endif
+    return;
+  }
 
   switch (newval)
   {
@@ -291,7 +315,13 @@ void jevois::Engine::onParamChange(jevois::engine::cpumax const & JEVOIS_UNUSED_
                                    unsigned int const & newval)
 {
   std::ofstream ofs("/sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq");
-  if (ofs.is_open() == false) { LERROR("Cannot set cpu max frequency -- IGNORED"); return; }
+  if (ofs.is_open() == false)
+  {
+#ifdef JEVOIS_PLATFORM
+    LERROR("Cannot set cpu max frequency -- IGNORED");
+#endif
+    return;
+  }
 
   ofs << newval * 1000U << std::endl;
 }
@@ -326,13 +356,21 @@ void jevois::Engine::postInit()
 
   // Grab the log messages, itsSerials is not going to change anymore now that the serial params are frozen:
   jevois::logSetEngine(this);
- 
+
+  // Get python going, we need to do this here to avoid segfaults on platform when instantiating our first python
+  // module. This likely has to do with the fact that the python core is not very thread-safe, and setFormatInternal()
+  // in Engine, which instantiates python modules, will indeed be invoked from a different thread (the one that receives
+  // USB UVC events). Have a look at Python Thread State, Python Gobal Interpreter Lock, etc if interested:
+  LINFO("Initalizing Python...");
+  jevois::pythonModuleSetEngine(this);
+  
   // Instantiate a camera: If device names starts with "/dev/v", assume a hardware camera, otherwise a movie file:
   std::string const camdev = cameradev::get();
   if (jevois::stringStartsWith(camdev, "/dev/v"))
   {
     LINFO("Starting camera device " << camdev);
     
+#ifdef JEVOIS_PLATFORM
     // Set turbo mode or not:
     std::ofstream ofs("/sys/module/vfe_v4l2/parameters/turbo");
     if (ofs.is_open())
@@ -341,6 +379,7 @@ void jevois::Engine::postInit()
       ofs.close();
     }
     else LERROR("Could not access VFE turbo parameter -- IGNORED");
+#endif
     
     // Now instantiate the camera:
     itsCamera.reset(new jevois::Camera(camdev, cameranbuf::get()));
@@ -425,6 +464,11 @@ jevois::Engine::~Engine()
   // Tell our run() thread to finish up:
   itsRunning.store(false);
   
+#ifdef JEVOIS_PLATFORM
+  // Tell checkMassStorage() thread to finish up:
+  itsCheckingMassStorage.store(false);
+#endif
+  
   // Nuke our module as soon as we can, hopefully soon now that we turned off streaming and running:
   {
     JEVOIS_TIMED_LOCK(itsMtx);
@@ -439,9 +483,45 @@ jevois::Engine::~Engine()
   itsGadget.reset();
   itsCamera.reset();
 
+#ifdef JEVOIS_PLATFORM
+  // Will block until the checkMassStorage() thread completes:
+  if (itsCheckMassStorageFut.valid())
+    try { itsCheckMassStorageFut.get(); } catch (...) { jevois::warnAndIgnoreException(); }
+#endif
+  
   // Things should be quiet now, unhook from the logger (this call is not strictly thread safe):
   jevois::logSetEngine(nullptr);
 }
+
+// ####################################################################################################
+#ifdef JEVOIS_PLATFORM
+void jevois::Engine::checkMassStorage()
+{
+  itsCheckingMassStorage.store(true);
+
+  while (itsCheckingMassStorage.load())
+  {
+    // Check from the mass storage gadget (with JeVois extension) whether the virtual USB drive is mounted by the
+    // host. If currently in mass storage mode and the host just ejected the virtual flash drive, resume normal
+    // operation. If not in mass-storage mode and the host mounted it, enter mass-storage mode (may happen if
+    // /boot/usbsdauto was selected):
+    std::ifstream ifs("/sys/devices/platform/sunxi_usb_udc/gadget/lun0/mass_storage_in_use");
+    if (ifs.is_open())
+    {
+        int inuse; ifs >> inuse;
+        if (itsMassStorageMode.load())
+        {
+          if (inuse == 0) stopMassStorageMode();
+        }
+        else
+        {
+          if (inuse) { JEVOIS_TIMED_LOCK(itsMtx); startMassStorageMode(); }
+        }
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+  }
+}
+#endif
 
 // ####################################################################################################
 void jevois::Engine::streamOn()
@@ -508,53 +588,70 @@ void jevois::Engine::setFormatInternal(jevois::VideoMapping const & m)
 
   LINFO(m.str());
 
+#ifdef JEVOIS_PLATFORM
+  if (itsMassStorageMode.load())
+    LFATAL("Cannot setup video streaming while in mass-storage mode. Eject the USB drive on your host computer first.");
+#endif
+  
   // Now that the module is nuked, we won't have any get()/done()/send() requests on the camera or gadget, thus it is
   // safe to change the formats on both:
   itsCamera->setFormat(m);
-  if (m.ofmt == 0) itsUSBout = false; else { itsGadget->setFormat(m); itsUSBout = true;}
+  if (m.ofmt) itsGadget->setFormat(m);
+
+  // Keep track of our current mapping:
+  itsCurrentMapping = m;
   
   // Nuke the processing module, if any, so we can also safely nuke the loader. We always nuke the module instance so we
   // won't have any issues with latent state even if we re-use the same module but possibly with different input
   // image resolution, etc:
   if (itsModule) { removeComponent(itsModule); itsModule.reset(); }
 
-  // We can however re-use the same loader and avoid closing the .so if we will use the same module:
+  // For python modules, we do not need a loader, we just instantiate our special python wrapper module instead:
   std::string const sopath = m.sopath();
-  if (itsLoader.get() == nullptr || itsLoader->sopath() != sopath)
+  if (m.ispython)
   {
-    // Nuke our previous loader and free its resources if needed, then start a new loader:
-    LINFO("Instantiating dynamic loader for " << sopath);
-    itsLoader.reset(new jevois::DynamicLoader(sopath, true));
+    // Instantiate the python wrapper:
+    itsModule.reset(new jevois::PythonModule(m));
   }
-
-  // Check version match:
-  auto version_major = itsLoader->load<int()>(m.modulename + "_version_major");
-  auto version_minor = itsLoader->load<int()>(m.modulename + "_version_minor");
-  if (version_major() != JEVOIS_VERSION_MAJOR || version_minor() != JEVOIS_VERSION_MINOR)
-    LERROR("Module " << m.modulename << " in file " << sopath << " was build for JeVois v" << version_major() << '.'
-           << version_minor() << ", but running framework is v" << JEVOIS_VERSION_STRING << " -- TRYING ANYWAY");
+  else
+  {
+    // C++ compiled module. We can re-use the same loader and avoid closing the .so if we will use the same module:
+    if (itsLoader.get() == nullptr || itsLoader->sopath() != sopath)
+    {
+      // Nuke our previous loader and free its resources if needed, then start a new loader:
+      LINFO("Instantiating dynamic loader for " << sopath);
+      itsLoader.reset(new jevois::DynamicLoader(sopath, true));
+    }
+    
+    // Check version match:
+    auto version_major = itsLoader->load<int()>(m.modulename + "_version_major");
+    auto version_minor = itsLoader->load<int()>(m.modulename + "_version_minor");
+    if (version_major() != JEVOIS_VERSION_MAJOR || version_minor() != JEVOIS_VERSION_MINOR)
+      LERROR("Module " << m.modulename << " in file " << sopath << " was build for JeVois v" << version_major() << '.'
+             << version_minor() << ", but running framework is v" << JEVOIS_VERSION_STRING << " -- TRYING ANYWAY");
   
-  // Instantiate the new module:
-  auto create = itsLoader->load<std::shared_ptr<jevois::Module>(std::string const &)>(m.modulename + "_create");
-  itsModule = create(m.modulename); // Here we just use the class name as instance name
-
-  // Add it as a component to us. Keep this code in sync with Manager::addComponent():
+    // Instantiate the new module:
+    auto create = itsLoader->load<std::shared_ptr<jevois::Module>(std::string const &)>(m.modulename + "_create");
+    itsModule = create(m.modulename); // Here we just use the class name as instance name
+  }
+  
+  // Add the module as a component to us. Keep this code in sync with Manager::addComponent():
   {
     // Lock up so we guarantee the instance name does not get robbed as we add the sub:
     boost::unique_lock<boost::shared_mutex> ulck(itsSubMtx);
-
-    // Then add it as a sub-component to us, if there is not instance name clash with our other sub-components:
+    
+    // Then add it as a sub-component to us:
     itsSubComponents.push_back(itsModule);
     itsModule->itsParent = this;
     itsModule->setPath(sopath.substr(0, sopath.rfind('/')));
   }
-
+  
   // Bring it to our runstate and load any extra params. NOTE: Keep this in sync with Component::init():
   if (itsInitialized) itsModule->runPreInit();
   
   std::string const paramcfg = itsModule->absolutePath(JEVOIS_MODULE_PARAMS_FILENAME);
   std::ifstream ifs(paramcfg); if (ifs.is_open()) itsModule->setParamsFromStream(ifs, paramcfg);
-
+  
   if (itsInitialized) { itsModule->setInitialized(); itsModule->runPostInit(); }
 
   // And finally run any config script:
@@ -586,8 +683,10 @@ void jevois::Engine::mainLoop()
       if (itsModule)
         try
         {
-          if (itsUSBout) itsModule->process(jevois::InputFrame(itsCamera, itsTurbo), jevois::OutputFrame(itsGadget));
-          else itsModule->process(jevois::InputFrame(itsCamera, itsTurbo));
+          if (itsCurrentMapping.ofmt) // Process with USB outputs:
+            itsModule->process(jevois::InputFrame(itsCamera, itsTurbo), jevois::OutputFrame(itsGadget));
+          else  // Process with no USB outputs:
+            itsModule->process(jevois::InputFrame(itsCamera, itsTurbo));
           dosleep = false;
         }
         catch (...) { jevois::warnAndIgnoreException(); }
@@ -673,6 +772,12 @@ void jevois::Engine::sendSerial(std::string const & str, bool islog)
         try { s->writeString(str); } catch (...) { jevois::warnAndIgnoreException(); }
     break;
   }
+}
+
+// ####################################################################################################
+jevois::VideoMapping const & jevois::Engine::getCurrentVideoMapping() const
+{
+  return itsCurrentMapping;
 }
 
 // ####################################################################################################
@@ -862,6 +967,54 @@ std::string jevois::Engine::camCtrlHelp(struct v4l2_queryctrl & qc, std::set<int
   return ss.str();
 }
 
+#ifdef JEVOIS_PLATFORM
+// ####################################################################################################
+void jevois::Engine::startMassStorageMode()
+{
+  // itsMtx must be locked by caller
+
+  if (itsMassStorageMode.load()) { LERROR("Already in mass-storage mode -- IGNORED"); return; }
+
+  // Nuke any module and loader so we have nothing loaded that uses /jevois:
+  if (itsModule) { removeComponent(itsModule); itsModule.reset(); }
+  if (itsLoader) itsLoader.reset();
+
+  // Unmount /jevois:
+  if (std::system("sync")) LERROR("Disk sync failed -- IGNORED");
+  if (std::system("mount -o remount,ro /jevois")) LERROR("Failed to remount /jevois read-only -- IGNORED");
+
+  // Now set the backing partition in mass-storage gadget:
+  std::ofstream ofs(JEVOIS_USBSD_SYS);
+  if (ofs.is_open() == false) LFATAL("Cannot setup mass-storage backing file to " << JEVOIS_USBSD_SYS);
+  ofs << JEVOIS_USBSD_FILE << std::endl;
+
+  LINFO("Exported JEVOIS partition of microSD to host computer as virtual flash drive.");
+  itsMassStorageMode.store(true);
+}
+
+// ####################################################################################################
+void jevois::Engine::stopMassStorageMode()
+{
+  //itsMassStorageMode.store(false);
+  LINFO("JeVois virtual USB drive ejected by host -- REBOOTING");
+  reboot();
+}
+
+// ####################################################################################################
+void jevois::Engine::reboot()
+{
+  if (std::system("sync")) LERROR("Disk sync failed -- IGNORED");
+  itsCheckingMassStorage.store(false);
+  itsRunning.store(false);
+
+  // Hard reset to avoid possible hanging during module unload, etc:
+  if ( ! std::ofstream("/proc/sys/kernel/sysrq").put('1')) LERROR("Cannot trigger hard reset -- please unplug me!");
+  if ( ! std::ofstream("/proc/sysrq-trigger").put('s')) LERROR("Cannot trigger hard reset -- please unplug me!");
+  if ( ! std::ofstream("/proc/sysrq-trigger").put('b')) LERROR("Cannot trigger hard reset -- please unplug me!");
+  std::terminate();
+}
+#endif
+
 // ####################################################################################################
 bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserInterface> s)
 {
@@ -932,7 +1085,7 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
       s->writeString("setmapping <num> - select video mapping <num>, only possible while not streaming");
       s->writeString("setmapping2 <CAMmode> <CAMwidth> <CAMheight> <CAMfps> <Vendor> <Module> - set no-USB-out "
                      "video mapping defined on the fly, while not streaming");
-      if (itsUSBout == false || itsManualStreamon)
+      if (itsCurrentMapping.ofmt == 0 || itsManualStreamon)
       {
         s->writeString("streamon - start camera video streaming");
         s->writeString("streamoff - stop camera video streaming");
@@ -941,7 +1094,15 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
       s->writeString("serlog <string> - forward string to the serial port(s) specified by the serlog parameter");
       s->writeString("serout <string> - forward string to the serial port(s) specified by the serout parameter");
 
-#ifndef JEVOIS_PLATFORM
+#ifdef JEVOIS_PLATFORM
+      s->writeString("usbsd - export the JEVOIS partition of the microSD card as a virtual USB drive");
+#endif
+      s->writeString("sync - commit any pending data write to microSD");
+      s->writeString("date [date and time] - get or set the system date and time");
+
+#ifdef JEVOIS_PLATFORM
+      s->writeString("restart - restart the JeVois smart camera");
+#else
       s->writeString("quit - quit this program");
 #endif
       s->writeString("");
@@ -995,6 +1156,8 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
       s->writeString("INFO: " + jevois::getSysInfoVersion());
       s->writeString("INFO: " + jevois::getSysInfoCPU());
       s->writeString("INFO: " + jevois::getSysInfoMem());
+      if (itsModule) s->writeString("INFO: " + itsCurrentMapping.str());
+      else s->writeString("INFO: " + jevois::VideoMapping().str());
       return true;
     }
     
@@ -1081,7 +1244,7 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
       if (was_streaming)
       {
         errmsg = "Cannot set mapping while streaming: ";
-        if (itsUSBout) errmsg += "Stop your webcam program on the host computer first.";
+        if (itsCurrentMapping.ofmt) errmsg += "Stop your webcam program on the host computer first.";
         else errmsg += "Issue a 'streamoff' command first.";
       }
       else if (idx >= itsMappings.size())
@@ -1102,7 +1265,7 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
       if (was_streaming)
       {
         errmsg = "Cannot set mapping while streaming: ";
-        if (itsUSBout) errmsg += "Stop your webcam program on the host computer first.";
+        if (itsCurrentMapping.ofmt) errmsg += "Stop your webcam program on the host computer first.";
         else errmsg += "Issue a 'streamoff' command first.";
       }
       else
@@ -1120,7 +1283,7 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
     }
 
     // ----------------------------------------------------------------------------------------------------
-    if (itsUSBout == false || itsManualStreamon)
+    if (itsCurrentMapping.ofmt == 0 || itsManualStreamon)
     {
       if (cmd == "streamon")
       {
@@ -1167,6 +1330,39 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
     }
 
     // ----------------------------------------------------------------------------------------------------
+#ifdef JEVOIS_PLATFORM
+    if (cmd == "usbsd")
+    {
+      if (itsStreaming.load())
+      {
+        errmsg = "Cannot export microSD over USB while streaming: ";
+        if (itsCurrentMapping.ofmt) errmsg += "Stop your webcam program on the host computer first.";
+        else errmsg += "Issue a 'streamoff' command first.";
+      }
+      else
+      {
+        startMassStorageMode();
+        return true;
+      }
+    }
+#endif    
+
+    // ----------------------------------------------------------------------------------------------------
+    if (cmd == "sync")
+    {
+      if (std::system("sync")) LERROR("Disk sync failed -- IGNORED");
+      return true;
+    }
+
+    // ----------------------------------------------------------------------------------------------------
+    if (cmd == "date")
+    {
+      std::string dat = jevois::system("/bin/date " + rem);
+      LINFO("date now " << dat.substr(0, dat.size()-1)); // skip trailing newline
+      return true;
+    }
+
+    // ----------------------------------------------------------------------------------------------------
     if (cmd == "runscript")
     {
       std::string fname;
@@ -1176,7 +1372,24 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
       catch (...) { errmsg = "Script execution failed."; }
     }
  
-#ifndef JEVOIS_PLATFORM
+#ifdef JEVOIS_PLATFORM
+    // ----------------------------------------------------------------------------------------------------
+    if (cmd == "restart")
+    {
+      s->writeString("Restart command received - bye-bye!");
+
+      if (itsStreaming.load()) LERROR("Video streaming is on - you should quit your video viewer before rebooting");
+      
+      // Turn off the SD storage if it is there:
+      std::ofstream(JEVOIS_USBSD_SYS).put('\n'); // ignore errors
+      if (std::system("sync")) LERROR("Disk sync failed -- IGNORED");
+
+      // Hard reboot:
+      this->reboot();
+      return true;
+    }
+    // ----------------------------------------------------------------------------------------------------
+#else
     // ----------------------------------------------------------------------------------------------------
     if (cmd == "quit")
     {

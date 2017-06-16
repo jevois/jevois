@@ -69,6 +69,7 @@ void jevois::MovieOutput::get(RawImage & img)
     img.width = itsMapping.ow;
     img.height = itsMapping.oh;
     img.fmt = itsMapping.ofmt;
+    img.fps = itsMapping.ofps;
     img.buf = itsBuffer;
     img.bufindex = 0;
   }

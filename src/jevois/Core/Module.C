@@ -20,6 +20,7 @@
 #include <jevois/Core/VideoOutput.H>
 #include <jevois/Core/Engine.H>
 #include <jevois/Core/UserInterface.H>
+#include <jevois/Image/RawImageOps.H>
 
 // ####################################################################################################
 jevois::InputFrame::InputFrame(std::shared_ptr<jevois::VideoInput> const & cam, bool turbo) :
@@ -56,6 +57,42 @@ void jevois::InputFrame::done() const
 }
 
 // ####################################################################################################
+cv::Mat jevois::InputFrame::getCvGRAY(bool casync) const
+{
+  jevois::RawImage const & rawimg = get(casync);
+  cv::Mat cvimg = jevois::rawimage::convertToCvGray(rawimg);
+  done();
+  return cvimg;
+}
+
+// ####################################################################################################
+cv::Mat jevois::InputFrame::getCvBGR(bool casync) const
+{
+  jevois::RawImage const & rawimg = get(casync);
+  cv::Mat cvimg = jevois::rawimage::convertToCvBGR(rawimg);
+  done();
+  return cvimg;
+}
+
+// ####################################################################################################
+cv::Mat jevois::InputFrame::getCvRGB(bool casync) const
+{
+  jevois::RawImage const & rawimg = get(casync);
+  cv::Mat cvimg = jevois::rawimage::convertToCvRGB(rawimg);
+  done();
+  return cvimg;
+}
+
+// ####################################################################################################
+cv::Mat jevois::InputFrame::getCvRGBA(bool casync) const
+{
+  jevois::RawImage const & rawimg = get(casync);
+  cv::Mat cvimg = jevois::rawimage::convertToCvRGBA(rawimg);
+  done();
+  return cvimg;
+}
+
+// ####################################################################################################
 // ####################################################################################################
 jevois::OutputFrame::OutputFrame(std::shared_ptr<jevois::VideoOutput> const & gad) :
     itsGadget(gad), itsDidGet(false), itsDidSend(false)
@@ -87,6 +124,37 @@ void jevois::OutputFrame::send() const
 {
   itsGadget->send(itsImage);
   itsDidSend = true;
+}
+
+// ####################################################################################################
+void jevois::OutputFrame::sendCvGRAY(cv::Mat const & img, int quality) const
+{
+  jevois::RawImage rawimg = get();
+  jevois::rawimage::convertCvGRAYtoRawImage(img, rawimg, quality);
+  send();
+}
+
+// ####################################################################################################
+void jevois::OutputFrame::sendCvBGR(cv::Mat const & img, int quality) const
+{
+  jevois::RawImage rawimg = get();
+  jevois::rawimage::convertCvBGRtoRawImage(img, rawimg, quality);
+  send();
+}
+// ####################################################################################################
+void jevois::OutputFrame::sendCvRGB(cv::Mat const & img, int quality) const
+{
+  jevois::RawImage rawimg = get();
+  jevois::rawimage::convertCvRGBtoRawImage(img, rawimg, quality);
+  send();
+}
+
+// ####################################################################################################
+void jevois::OutputFrame::sendCvRGBA(cv::Mat const & img, int quality) const
+{
+  jevois::RawImage rawimg = get();
+  jevois::rawimage::convertCvRGBAtoRawImage(img, rawimg, quality);
+  send();
 }
 
 // ####################################################################################################

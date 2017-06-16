@@ -23,8 +23,9 @@ jevois::RawImage::RawImage()
 { }
 
 // ####################################################################################################
-jevois::RawImage::RawImage(unsigned int w, unsigned int h, unsigned int f, std::shared_ptr<VideoBuf> b, size_t bindex) :
-    width(w), height(h), fmt(f), buf(b), bufindex(bindex)
+jevois::RawImage::RawImage(unsigned int w, unsigned int h, unsigned int f, float fs,
+                           std::shared_ptr<VideoBuf> b, size_t bindex) :
+    width(w), height(h), fmt(f), fps(fs), buf(b), bufindex(bindex)
 { }
 
 // ####################################################################################################
@@ -37,7 +38,7 @@ unsigned int jevois::RawImage::bytesize() const
 
 // ####################################################################################################
 void jevois::RawImage::invalidate()
-{ buf.reset(); width = 0; height = 0; fmt = 0; }
+{ buf.reset(); width = 0; height = 0; fmt = 0; fps = 0.0F; }
 
 // ####################################################################################################
 bool jevois::RawImage::valid() const

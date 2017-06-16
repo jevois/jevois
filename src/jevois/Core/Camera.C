@@ -55,7 +55,7 @@ namespace
 // ##############################################################################################################
 jevois::Camera::Camera(std::string const & devname, unsigned int const nbufs) :
     jevois::VideoInput(devname, nbufs), itsFd(-1), itsBuffers(nullptr), itsFormat(), itsStreaming(false),
-    itsDoneIdx(itsInvalidIdx), itsRunning(false)
+    itsFps(0.0F), itsDoneIdx(itsInvalidIdx), itsRunning(false)
 {
   JEVOIS_TRACE(1);
 
@@ -124,6 +124,7 @@ void jevois::Camera::setFormat(jevois::VideoMapping const & m)
   itsFormat.fmt.pix.height = m.ch;
   itsFormat.fmt.pix.pixelformat = m.cfmt;
   itsFormat.fmt.pix.field = V4L2_FIELD_NONE;
+  itsFps = m.cfps;
   
   LDEBUG("Requesting video format " << itsFormat.fmt.pix.width << 'x' << itsFormat.fmt.pix.height << ' ' <<
          jevois::fccstr(itsFormat.fmt.pix.pixelformat));
@@ -265,6 +266,7 @@ void jevois::Camera::run()
           img.width = itsFormat.fmt.pix.width;
           img.height = itsFormat.fmt.pix.height;
           img.fmt = itsFormat.fmt.pix.pixelformat;
+          img.fps = itsFps;
           img.buf = itsBuffers->get(buf.index);
           img.bufindex = buf.index;
 

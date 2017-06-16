@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-# USAGE jevois-modinfo.pl <module.C>
+# USAGE jevois-modinfo <module.C|.py>
 # writes out modinfo.yaml
 
 use Text::Wrap;
@@ -16,16 +16,28 @@ my $tmpdirname = "/tmp/jevois-modinfotemp$$".time();
 # Parse out the module header filename from the command line
 my $num_args = $#ARGV + 1;
 if ($num_args != 1) {
-  print STDERR "Usage: jevois-modinfo.pl <file.C|filestem>\n";
+  print STDERR "Usage: jevois-modinfo.pl <file.C|file.py|filestem>\n";
   exit(-1);
 }
 my $inputFilename = $ARGV[0];
 
+my $ispython = 0; # will turn true if the module is python
+
 # If we were not given an extension (as is the case when using 'make moduledoc'), try to figure it out:
 my @ifn = split(/\./, $inputFilename); my $inputExt = pop(@ifn);
-my @extensions = qw/ H hh hpp C cc cpp /; my $exts = '^(' . join('|', @extensions) . ')$'; 
+my @extensions = qw/ H hh hpp C cc cpp py /; my $exts = '^(' . join('|', @extensions) . ')$'; 
 if ($inputExt !~ m/$exts/)
-{ foreach my $e (@extensions) { if (-f "$inputFilename.$e") { $inputFilename = "$inputFilename.$e"; last; } } }
+{
+    foreach my $e (@extensions)
+    {
+        if (-f "$inputFilename.$e")
+        {
+            $inputFilename = "$inputFilename.$e";
+            if ($e eq "py") { $ispython = 1; }
+            last;
+        }
+    }
+} elsif ($inputExt eq "py") { $ispython = 1; }
 
 # Make sure we have doxygen installed
 my $doxypath = `which doxygen`;
@@ -66,14 +78,17 @@ print DOXYFILE "WARN_IF_UNDOCUMENTED   = NO\n";
 print DOXYFILE "WARN_IF_DOC_ERROR      = NO\n";
 print DOXYFILE "PERLMOD_LATEX          = NO\n";
 print DOXYFILE "GENERATE_XML           = NO\n";
-print DOXYFILE "EXTENSION_MAPPING      = H=C++ C=C++\n";
 print DOXYFILE "EXTRACT_ALL            = YES\n";
 print DOXYFILE "TEMPLATE_RELATIONS     = NO\n";
 print DOXYFILE "ABBREVIATE_BRIEF       = NO\n";
 print DOXYFILE "REPEAT_BRIEF           = NO\n";
 print DOXYFILE "INHERIT_DOCS           = YES\n";
 print DOXYFILE "AUTOLINK_SUPPORT       = YES\n"; # for cross-ref to jevois doc
-print DOXYFILE "BUILTIN_STL_SUPPORT    = YES\n"; # for cross-ref to jevois doc
+if (!$ispython)
+{
+    print DOXYFILE "EXTENSION_MAPPING      = H=C++ C=C++\n";
+    print DOXYFILE "BUILTIN_STL_SUPPORT    = YES\n"; # for cross-ref to jevois doc
+}
 #print DOXYFILE "TAGFILES               = $ENV{'JEVOIS_SRC_ROOT'}/jevoisbase/doc/jevoisbase.tag=/basedoc\n";
 #print DOXYFILE "TAGFILES               = $ENV{'JEVOIS_SRC_ROOT'}/jevois/doc/jevois.tag=/doc $ENV{'JEVOIS_SRC_ROOT'}/jevoisbase/doc/jevoisbase.tag=/basedoc\n";
 print DOXYFILE "TAGFILES               = $ENV{'JEVOIS_SRC_ROOT'}/jevois/doc/jevois.tag=/doc\n";
@@ -82,8 +97,7 @@ print DOXYFILE "TAGFILES               = $ENV{'JEVOIS_SRC_ROOT'}/jevois/doc/jevo
 my @dtags = qw/ email mainurl supporturl otherurl address copyright license distribution 
  restrictions videomapping subcomponents depends displayname modulecommand /;
 #future use?: / recommends suggests conflicts replaces breaks provides /;
-foreach my $kw (@dtags)
-{ print DOXYFILE "ALIASES += \"$kw=\\xrefitem $kw \\\"$kw\\\" \\\"$kw\\\"\"\n"; }
+foreach my $kw (@dtags) { print DOXYFILE "ALIASES += \"$kw=\\xrefitem $kw \\\"$kw\\\" \\\"$kw\\\"\"\n"; }
 close DOXYFILE;
 
 ##############################################################################################################
@@ -93,30 +107,35 @@ close DOXYFILE;
 `doxygen $tmpdirname/doxy.dxy`;
 
 # Import our newly generated DoxyDocs.pl
-#my $doxydocs = { };
 require $tmpdirname . "/perlmod/DoxyDocs.pm";
 
 my %docs = %$doxydocs;
 my @classes = @{ $docs{classes} };
-my %class = {}; #  %{ $classes[0] };
 
-# Find the right class in the file by finding the one which inherits from jevois::Module. If there are multiple,
-# find the one with the lowest levenshtein distance to the filename.
-my $headerFileName = (split("/", $inputFilename))[-1];
-$headerFileName =~ s/\..*//;
-my $minDist = 100000000000000;
-foreach my $tmpclassref (@classes) 
+my %class = { }; 
+
+if ($ispython)
 {
-    my %tmpclass = %{$tmpclassref};
-    my @bases = @{$tmpclass{base}};
-    foreach my $baseref (@bases)
+    %class = %{ $classes[0] };
+}
+else
+{
+    # Find the right class in the file by finding the one which inherits from jevois::Module. If there are multiple,
+    # find the one with the lowest levenshtein distance to the filename.
+    my $headerFileName = (split("/", $inputFilename))[-1]; $headerFileName =~ s/\..*//; my $minDist = 100000000000000;
+    foreach my $tmpclassref (@classes) 
     {
-        my %base = %{$baseref};
-        
-        if ($base{name} eq "jevois::Module" or $base{name} eq "Module")
+        my %tmpclass = %{$tmpclassref};
+        my @bases = @{$tmpclass{base}};
+        foreach my $baseref (@bases)
         {
-            my $distance = levenshtein($tmpclass{name}, $headerFileName);
-            if ($distance < $minDist) { %class = %tmpclass; $minDist = $distance; }
+            my %base = %{$baseref};
+            
+            if ($base{name} eq "jevois::Module" or $base{name} eq "Module")
+            {
+                my $distance = levenshtein($tmpclass{name}, $headerFileName);
+                if ($distance < $minDist) { %class = %tmpclass; $minDist = $distance; }
+            }
         }
     }
 }
@@ -193,21 +212,39 @@ if ($synopsis eq "") { $synopsis = "This author is too lazy to write a synopsis!
 ##############################################################################################################
 my @methods = @{$class{public_methods}{members}};
 my $process1 = 0; my $process2 = 0;
-foreach my $m (@methods)
+if ($ispython)
 {
-    my %hash = %{$m};
-    if ($hash{'kind'} eq 'function' && $hash{'name'} eq 'process')
+    # For python let's just find member functions named 'process' and count the argsL
+    foreach my $m (@methods)
     {
-        my @methodparams = @{$hash{parameters}};
-        my $gotin = 0; my $gotout = 0;
-        foreach my $p (@methodparams) {
-            my %paramhash = %{$p};
-            if ($paramhash{'type'} eq 'jevois::InputFrame &&') { $gotin = 1; }
-            if ($paramhash{'type'} eq 'jevois::OutputFrame &&') { $gotout = 1; }
+        my %hash = %{$m};
+        if ($hash{'kind'} eq 'function' && $hash{'name'} eq 'process')
+        {
+            my @methodparams = @{$hash{parameters}};
+            if ($#methodparams == 1) { $process1 = 1; } # 2 args: self, inframe
+            elsif ($#methodparams == 2) { $process2 = 1; } # 3 args: self, inframe, outframe
         }
-
-        if ($gotin && $gotout) { $process2 = 1; }
-        if ($gotin && $gotout == 0) { $process1 = 1; }
+    }
+}
+else
+{
+    # For C++ we have a slightly stricter parser here that actually checks argument types:
+    foreach my $m (@methods)
+    {
+        my %hash = %{$m};
+        if ($hash{'kind'} eq 'function' && $hash{'name'} eq 'process')
+        {
+            my @methodparams = @{$hash{parameters}};
+            my $gotin = 0; my $gotout = 0;
+            foreach my $p (@methodparams) {
+                my %paramhash = %{$p};
+                if ($paramhash{'type'} eq 'jevois::InputFrame &&') { $gotin = 1; }
+                if ($paramhash{'type'} eq 'jevois::OutputFrame &&') { $gotout = 1; }
+            }
+            
+            if ($gotin && $gotout) { $process2 = 1; }
+            if ($gotin && $gotout == 0) { $process1 = 1; }
+        }
     }
 }
 
@@ -244,20 +281,24 @@ if ($description eq "") { $description = "This author is too lazy to write a des
 ##############################################################################################################
 # parsing of JEVOIS_DECLARE_PARAMETER(...) is garbled in the perldoc output, so we just run the C++ pre-processor
 my @modparams;
-getParams($inputFilename, $className);
-
-# now also include the parameters for all components, recursively:
 my @subcomps;
-my @sclist = `/bin/grep addSubComponent $inputFilename`;
-foreach my $comp (@sclist) { my @tmp = split(/\<|\>/, $comp); push(@subcomps, $tmp[1]); }
 
-foreach my $comp (@subcomps) {
-    my $filename = `find ../../Components/ -name ${comp}.H`;
-    chomp $filename;
-    print STEDRR  "INCLUDING $filename\n";
-    getParams($filename, $comp);
-
-    # FIXME this is not recursive yet
+if (!$ispython)
+{
+    getParams($inputFilename, $className);
+    
+    # now also include the parameters for all components, recursively:
+    my @sclist = `/bin/grep addSubComponent $inputFilename`;
+    foreach my $comp (@sclist) { my @tmp = split(/\<|\>/, $comp); push(@subcomps, $tmp[1]); }
+    
+    foreach my $comp (@subcomps) {
+        my $filename = `find ../../../include/jevoisbase/Components/ -name ${comp}.H`;
+        chomp $filename;
+        print STEDRR  "INCLUDING $filename\n";
+        getParams($filename, $comp);
+        
+        # FIXME this is not recursive yet
+    }
 }
 
 ##############################################################################################################
@@ -332,10 +373,15 @@ close OF;
 ##############################################################################################################
 
 # The detailed section in the perldoc is all broken down into elements which would be a pain to re-assemble. So we are
-# going to use th ehtml output to get the html version of the detailed info. Because there are no good markers in there,
+# going to use the html output to get the html version of the detailed info. Because there are no good markers in there,
 # we will assume that "author" is the first field that comes after the detailed info:
-my $htmldescription; my $grabbing = 0;
-open HTML, "$tmpdirname/html/class${className}.html" || die "oops";
+my $htmldescription;
+my $htmlfilename;
+if ($ispython) { $htmlfilename = "class${className}_1_1${className}.html"; }
+else { $htmlfilename = "class${className}.html"; }
+
+my $grabbing = 0;
+open HTML, "$tmpdirname/html/$htmlfilename" || die "oops";
 while (my $line = <HTML>)
 {
     if ($line =~ m/section author/) { $grabbing = 0; }
@@ -343,6 +389,7 @@ while (my $line = <HTML>)
     if ($line =~ m/Detailed Description/) { $grabbing = 1; }
 }
 close HTML;
+
  
 my $fullhtml = 1; # set to 0 to remove the preamble
 
@@ -382,10 +429,14 @@ print OF "<tr><td class=modinfosynopsis>$synopsis</td></tr></table></td></tr></t
 print OF "<tr><td><table class=modinfoauth width=100%><tr><td>By ". join(", ", @authors) . "</td><td>$tagdata{'email'}</td><td>$tagdata{'mainurl'}</td>";
 print OF "<td>$tagdata{'license'}</td></tr></table></td></tr>\n";
 
-# Video mappings: We need to clean them up first
+# Video mappings and language:
 print OF "<tr><td><table class=videomapping>\n";
 
-print OF "<tr><td class=videomapping><small><font color=navy><b>&nbsp;Supports mappings with USB output: &nbsp; </b>";
+print OF "<tr><td class=videomapping><small><font color=navy>\n";
+print OF "<b>&nbsp;Language: &nbsp; </b>";
+if ($ispython) { print OF "Python"; } else { print OF "C++"; }
+print OF "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+print OF "<b>Supports mappings with USB output: &nbsp; </b>";
 if ($process2) { print OF "Yes"; } else { print OF "No"; }
 print OF "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
 print OF "<b>Supports mappings with NO USB output: &nbsp; </b>";
@@ -478,7 +529,7 @@ print OF "<tr><td><table class=modinfomisc>\n";
 
 # dump links to module and component docs:
 print OF "<tr class=modinfomisc><th class=modinfomisc>Detailed docs:</th><td class=modinfomisc>";
-print OF "<A HREF=\"/basedoc/class${className}.html\">$className</A>";
+print OF "<A HREF=\"/basedoc/${htmlfilename}\">$className</A>";
 foreach my $c (@subcomps) { print OF ", <A HREF=\"/basedoc/class${c}.html\">$c</A>"; }
 print OF "</td></tr>\n";
 
@@ -507,29 +558,19 @@ close OF;
 # Levenshtein distance, copied from http://www.merriampark.com/ldperl.htm
 sub levenshtein
 {
-    # $s1 and $s2 are the two strings
-    # $len1 and $len2 are their respective lengths
-    #
+    # $s1 and $s2 are the two strings, $len1 and $len2 are their respective lengths
     my ($s1, $s2) = @_;
     my ($len1, $len2) = (length $s1, length $s2);
-
-    # If one of the strings is empty, the distance is the length
-    # of the other string
-    #
+    
+    # If one of the strings is empty, the distance is the length of the other string
     return $len2 if ($len1 == 0);
     return $len1 if ($len2 == 0);
-
+    
     my %mat;
-
+    
     # Init the distance matrix
-    #
-    # The first row to 0..$len1
-    # The first column to 0..$len2
-    # The rest to 0
-    #
-    # The first row and column are initialized so to denote distance
-    # from the empty string
-    #
+    # The first row to 0..$len1 The first column to 0..$len2 The rest to 0
+    # The first row and column are initialized so to denote distance from the empty string
     for (my $i = 0; $i <= $len1; ++$i)
     {
         for (my $j = 0; $j <= $len2; ++$j)
@@ -537,26 +578,20 @@ sub levenshtein
             $mat{$i}{$j} = 0;
             $mat{0}{$j} = $j;
         }
-
+        
         $mat{$i}{0} = $i;
     }
-
-    # Some char-by-char processing is ahead, so prepare
-    # array of chars from the strings
-    #
+    
+    # Some char-by-char processing is ahead, so prepare array of chars from the strings
     my @ar1 = split(//, $s1);
     my @ar2 = split(//, $s2);
-
+    
     for (my $i = 1; $i <= $len1; ++$i)
     {
         for (my $j = 1; $j <= $len2; ++$j)
         {
-            # Set the cost to 1 iff the ith char of $s1
-            # equals the jth of $s2
-            # 
-            # Denotes a substitution cost. When the char are equal
-            # there is no need to substitute, so the cost is 0
-            #
+            # Set the cost to 1 iff the ith char of $s1 equals the jth of $s2
+            # Denotes a substitution cost. When the char are equal there is no need to substitute, so the cost is 0
             my $cost = ($ar1[$i-1] eq $ar2[$j-1]) ? 0 : 1;
 
             # Cell $mat{$i}{$j} equals the minimum of:
@@ -565,21 +600,15 @@ sub levenshtein
             # - The cell immediately to the left plus 1
             # - The cell diagonally above and to the left plus the cost
             #
-            # We can either insert a new char, delete a char or
-            # substitute an existing char (with an associated cost)
-            #
+            # We can either insert a new char, delete a char or substitute an existing char (with an associated cost)
             $mat{$i}{$j} = min([$mat{$i-1}{$j} + 1,
                                 $mat{$i}{$j-1} + 1,
                                 $mat{$i-1}{$j-1} + $cost]);
         }
     }
 
-    # Finally, the Levenshtein distance equals the rightmost bottom cell
-    # of the matrix
-    #
-    # Note that $mat{$x}{$y} denotes the distance between the substrings
-    # 1..$x and 1..$y
-    #
+    # Finally, the Levenshtein distance equals the rightmost bottom cell of the matrix
+    # Note that $mat{$x}{$y} denotes the distance between the substrings 1..$x and 1..$y
     return $mat{$len1}{$len2};
 }
 
@@ -651,6 +680,4 @@ sub getParams
         push @modparams, $paraminfo;
     }
     close MODOUT;
-    
-    
 }

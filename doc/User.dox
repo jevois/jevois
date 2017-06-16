@@ -12,6 +12,7 @@ New users, be sure to check out [JeVois Start](/start/start.html).
 - \subpage UserStartCaveats
 - \subpage UserModes
 - \subpage UserDemos
+- \subpage UserLighting
 - \subpage MicroSD
 - \subpage NewMicroSD
 - \subpage UserSerial

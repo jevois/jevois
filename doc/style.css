@@ -78,6 +78,10 @@ code, kbd, pre, samp {
     font-family: Menlo,Monaco,Consolas,"Courier New",monospace
 }
 
+em {
+    color: #208020;
+}
+
 code {
     padding: 2px 4px;
     font-size: 90%;
@@ -86,3 +90,16 @@ code {
     border-radius: 4px
 }
 
+strong.jvversion {
+    padding: 2px 4px;
+    color: OrangeRed;
+    background-color: #f0f0f0;
+    border-radius: 4px
+}
+
+strong.jvhostplatform {
+    padding: 2px 4px;
+    color: MediumBlue;
+    background-color: #f0f0f0;
+    border-radius: 4px
+}

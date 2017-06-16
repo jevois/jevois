@@ -159,37 +159,68 @@ namespace jevois
 
     //! Convert a BGR cv::Mat to RawImage with already-allocated pixels and pixel type
     /*! This is used to output video frames over USB from internally computed results in opencv BGR format.  dst should
-         already have an allocated pixel buffer (typically, it should be obtained from the USB gadget), and its size
-         must match that of the src image.
-
-         Supported dst pixel formats:
-         - V4L2_PIX_FMT_YUYV
-         - V4L2_PIX_FMT_GREY
-         - V4L2_PIX_FMT_SRGGB8 (Bayer)
-         - V4L2_PIX_FMT_RGB565
-         - V4L2_PIX_FMT_MJPG
-         - V4L2_PIX_FMT_BGR24
-
-         quality is used only when dst is MJPG and should be between 1 and 100. \ingroup image */
+        already have an allocated pixel buffer (typically, it should be obtained from the USB gadget), and its size
+        must match that of the src image.
+        
+        Supported dst pixel formats:
+        - V4L2_PIX_FMT_YUYV
+        - V4L2_PIX_FMT_GREY
+        - V4L2_PIX_FMT_SRGGB8 (Bayer)
+        - V4L2_PIX_FMT_RGB565
+        - V4L2_PIX_FMT_MJPG
+        - V4L2_PIX_FMT_BGR24
+        
+        quality is used only when dst is MJPG and should be between 1 and 100. \ingroup image */
     void convertCvBGRtoRawImage(cv::Mat const & src, RawImage & dst, int quality);
 
+    //! Convert a RGB cv::Mat to RawImage with already-allocated pixels and pixel type
+    /*! This is used to output video frames over USB from internally computed results in opencv BGR format.  dst should
+        already have an allocated pixel buffer (typically, it should be obtained from the USB gadget), and its size
+        must match that of the src image.
+        
+        Supported dst pixel formats:
+        - V4L2_PIX_FMT_YUYV
+        - V4L2_PIX_FMT_GREY
+        - V4L2_PIX_FMT_SRGGB8 (Bayer)
+        - V4L2_PIX_FMT_RGB565
+        - V4L2_PIX_FMT_MJPG
+        - V4L2_PIX_FMT_BGR24
+        
+        quality is used only when dst is MJPG and should be between 1 and 100. \ingroup image */
+    void convertCvRGBtoRawImage(cv::Mat const & src, RawImage & dst, int quality);
+    
     //! Convert an RGBA cv::Mat to RawImage with already-allocated pixels and pixel type
     /*! This is used to output video frames over USB from internally computed results in opencv RGB-A format (which is
-         often the format of choice for NEON or OpenGL processing).  dst should already have an allocated pixel buffer
-         (typically, it should be obtained from the USB gadget), and its size must match that of the src
-         image.
-
-         Supported dst pixel formats:
-         - V4L2_PIX_FMT_YUYV
-         - V4L2_PIX_FMT_GREY
-         - V4L2_PIX_FMT_SRGGB8 (Bayer)
-         - V4L2_PIX_FMT_RGB565
-         - V4L2_PIX_FMT_MJPG
-         - V4L2_PIX_FMT_BGR24
-
-         quality is used only when dst is MJPG and should be between 1 and 100. \ingroup image */
+        often the format of choice for NEON or OpenGL processing).  dst should already have an allocated pixel buffer
+        (typically, it should be obtained from the USB gadget), and its size must match that of the src image.
+        
+        Supported dst pixel formats:
+        - V4L2_PIX_FMT_YUYV
+        - V4L2_PIX_FMT_GREY
+        - V4L2_PIX_FMT_SRGGB8 (Bayer)
+        - V4L2_PIX_FMT_RGB565
+        - V4L2_PIX_FMT_MJPG
+        - V4L2_PIX_FMT_BGR24
+        
+        quality is used only when dst is MJPG and should be between 1 and 100. \ingroup image */
     void convertCvRGBAtoRawImage(cv::Mat const & src, RawImage & dst, int quality);
-
+    
+    //! Convert a Gray cv::Mat to RawImage with already-allocated pixels and pixel type
+    /*! This is used to output video frames over USB from internally computed results in opencv Gray format.  dst should
+        already have an allocated pixel buffer (typically, it should be obtained from the USB gadget), and its size
+        must match that of the src image.
+        
+        Supported dst pixel formats:
+        - V4L2_PIX_FMT_YUYV
+        - V4L2_PIX_FMT_GREY
+        - V4L2_PIX_FMT_SRGGB8 (Bayer)
+        - V4L2_PIX_FMT_RGB565
+        - V4L2_PIX_FMT_MJPG
+        - V4L2_PIX_FMT_BGR24
+        
+        quality is used only when dst is MJPG and should be between 1 and 100. \ingroup image */
+    void convertCvGRAYtoRawImage(cv::Mat const & src, RawImage & dst, int quality);
+    
     //! Split an RGBA cv::Mat into a 4x taller grey RawImage with already-allocated pixels
     /*! This is used to run GPU shaders that apply different filters to an image and store their results separately into
         the R, G, B and A components of an RGBA output image. Here, we just unpack the 4 components and stuff them into
