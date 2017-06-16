@@ -1,0 +1,23 @@
+/*! \page UserLighting Optimizing performance under different lighting conditions
+
+The sensor in the JeVois smart camera is quite capable, though some adjustments are often necessary to operate well in
+low light conditions.
+
+The brightness of the captured video depends on (at least):
+
+- the exposure time. Longer exposure will collect more photons and yield brighter video. The exposure time is capped by
+  the farmerate, that is, faster frame rates limit the maximum possible exposure time because the frame needs to be sent
+  out for processing.
+
+- the sensor gain, which is the amplification applied to the raw signals from the photoreceptors. Higher gain yields
+  brighter but also noisier images.
+
+- the gamma curve, which is a correction curve applied in post-processing to adjust pixel values, possibly making them
+  brighter or darker.
+
+
+
+
+MORE COMING SOON
+
+*/
