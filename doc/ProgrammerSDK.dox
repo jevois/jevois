@@ -72,19 +72,26 @@ Adding your module to a microSD card: live microSD card
 Insert a properly installed JeVois MicroSD (follow the steps at [JeVois Start](http://jevois.org/start) to make one from
 a disk image) into your computer, either physically inserted into your host computer using a microSD-to-USB adapter, or
 exported live by JeVois using the \c usbsd command in the JeVois command-line interface). The microSD card must be be
-available under <b>/media/<u>username</u>/JEVOIS/</b> where <u>username</u> is your Linux user name.
+available under <b>/media/<em>username</em>/JEVOIS/</b> where <em>username</em> is your Linux user name.
 
 Run:
+
 \verbatim
 ./rebuild-platform.sh --microsd
 \endverbatim
 
-Modules, config files, etc will be installed to the live microSD card at <b>/media/<u>username</u>/JEVOIS/</b> where
-<u>username</u> is your Linux user name.
+Modules, config files, etc will be installed to the live microSD card at <b>/media/<em>username</em>/JEVOIS/</b> where
+<em>username</em> is your Linux user name.
 
 \note Once you select a destination in `rebuild-platform.sh` (none, staging, or microsd), that will remain for
 subsequent `make install` commands, until you change it by re-running `rebuild-platform.sh` with another destination.
 
+Here is a simple command to export the microSD of a live JeVois camera without having to start a terminal program, etc
+(make sure JeVois is not streaming video):
+
+\verbatim
+sudo sh -c 'echo usbsd > /dev/ttyACM0'
+\endverbatim
 
 Adding your module to a microSD card: jvpkg
 -------------------------------------------

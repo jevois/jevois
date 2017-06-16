@@ -54,7 +54,7 @@ Scripts are provided to recompile everything:
   + if you specify `./rebuild-platform.sh --microsd`
     - Modules, config files, etc will be installed to a live microSD card (either inserted into your host computer using
       a microSD-to-USB adapter, or exported live by JeVois using the \c usbsd command in the JeVois command-line
-      interface) that must be be available under <b>/media/<u>username</u>/JEVOIS/</b> where <u>username</u> is your
+      interface) that must be be available under <b>/media/<em>username</em>/JEVOIS/</b> where <em>username</em> is your
       Linux user name.
     - Thus, all target files are directly copied to microSD for immediate use.
   + Otherwise, libraries and modules will be installed into the \c jvpkg directory in jevoisbase

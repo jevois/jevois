@@ -78,6 +78,10 @@ code, kbd, pre, samp {
     font-family: Menlo,Monaco,Consolas,"Courier New",monospace
 }
 
+em {
+    color: #208020;
+}
+
 code {
     padding: 2px 4px;
     font-size: 90%;

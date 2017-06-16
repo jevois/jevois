@@ -75,7 +75,7 @@ Updating a module directly to live microSD - full recompilation
 
 The microSD should either inserted into your host, or exported by JeVois using the \c usbsd command in the JeVois
 command-line interface (see \ref CompilingJeVoisBase and \ref UserCli). It must be mounted and available under
-<b>/media/<u>username</u>/JEVOIS/</b> where <u>username</u> is your Linux user name.
+<b>/media/<em>username</em>/JEVOIS/</b> where <em>username</em> is your Linux user name.
 
 \verbatim
 cd ~/mymodule && ./rebuild-platform.sh --microsd
@@ -90,7 +90,7 @@ Updating a module directly to live microSD - partial recompilation
 
 The microSD should either inserted into your host, or exported by JeVois using the \c usbsd command in the JeVois
 command-line interface (see \ref CompilingJeVoisBase and \ref UserCli). It must be mounted and available under
-<b>/media/<u>username</u>/JEVOIS/</b> where <u>username</u> is your Linux user name.
+<b>/media/<em>username</em>/JEVOIS/</b> where <em>username</em> is your Linux user name.
 
 You must have done at least one `./rebuild-platform.sh --microsd` which sets the live microSD as install target.
 
