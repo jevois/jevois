@@ -27,7 +27,7 @@ Python 3.5 + Python OpenCV 3.2.0 support on host and platform
 Great news for all Python enthusiasts: JeVois now supports full python 3.5 including the python bindings to opencv
 3.2.0. This means that you can now write machine vision modules for JeVois in Python, using both the API exported by
 JeVois for handling of camera and USB video frames, and the OpenCV python API. Check out this [demo edge detection
-module](https://github.com/jevois/jevoisbase/blob/dev1.1/src/Modules/PythonOpenCV/PythonOpenCV.py) written in Python and
+module](https://github.com/jevois/jevoisbase/blob/master/src/Modules/PythonOpenCV/PythonOpenCV.py) written in Python and
 using the Python OpenCV Canny edge detection function, here working inside the JeVois camera:
 
 \image html python-canny.png
@@ -46,7 +46,7 @@ Install JeVois development kit on Ubuntu using a simple apt-get command
 We created Ubuntu packages for the following:
 
 - jevois-opencv: OpenCV 3.2.0 compiled for host computer with settings that match those used by the JeVois platform
-  hardware. We indtall this package into /usr/share/jevois-opencv-3.2.0 so that it will not interfere with any other
+  hardware. We install this package into /usr/share/jevois-opencv-3.2.0 so that it will not interfere with any other
   OpenCV install you might have on your host system and that might be required by some other software.
 
 - jevois-host: JeVois core software compiled for execution on a host computer
@@ -76,19 +76,17 @@ Miscellaneous improvements
 - Enabled slowing down of framerate to allow increased exposure time when running in low light. Activate it by selecting
   the \b shade white balance preset in the JeVois command-line interface: `setcam presetwb 9`
 
-- Relocated all JeVois-related files (except boot) to the JEVOIS partition so they can be modified live by exporting the
-  microSD over USB.
+- Relocated many JeVois-related files (except boot and core) to the JEVOIS partition so they can be modified live by
+  exporting the microSD over USB.
 
-- rebuild-platform.sh now supports 3 install targets:
+- `rebuild-platform.sh` now supports 3 install targets:
   + with no extra argument - install to jvpkg/ directory in the module's source, as before
-  + with \c --staging - install to microSD staging area, for later flashing to microSD
-  + with \c --microsd - install to /media/username/JEVOIS/ which could either be a mounted JeVois microSD,
+  + with `--staging` - install to microSD staging area, for later flashing to microSD
+  + with `--microsd` - install to /media/username/JEVOIS/ which could either be a mounted JeVois microSD,
     or a live JeVois camera exporting its microSD over USB.
   
   This should significantly facilitate the development cycle: no need to install/eject the microSD card anymore, just
   compile and install directly to it while it is in JeVois.
-
-- Now mounting the root and boot partitions of the microSD read-only for improved resilience to hard power off
 
 - New boot options \b BOOT:serialtty and \b BOOT:usbserialtty to give a Linux login prompt on the hardware serial or
   serial-over-USB ports instead of the JeVois console.
