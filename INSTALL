@@ -152,6 +152,13 @@ The jevois-opencv Ubuntu package (which is a dependency of jevois-sdk-dev) will 
 already installed jevois-sdk-dev as explained above, most likely you do not need to follow the instructions in this
 section and you can skip to the next section.
 
+For some Ubuntu 16.04LTS (Xenial) based distros such as Mint18, you need to add:
+
+deb http://cz.archive.ubuntu.com/ubuntu yakkety main universe
+deb http://ppa.launchpad.net/ubuntu-toolchain-r/test
+
+to /etc/apt/sources.list to get the necessary packages (including g++-6). You can remove them when done.
+
 # Open a terminal, then type:
 
 sudo apt-get update
