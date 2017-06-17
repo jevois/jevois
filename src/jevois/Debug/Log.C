@@ -16,6 +16,7 @@
 /*! \file */
 
 #include <jevois/Debug/Log.H>
+#include <boost/python/errors.hpp> // for boost::python::error_already_set exception
 #include <mutex>
 #include <iostream>
 #include <fstream>
@@ -189,6 +190,13 @@ void jevois::warnAndRethrowException()
     throw;
   }
 
+  catch (boost::python::error_already_set & e)
+  {
+    LERROR("Received exception from the Python interpreter");
+    PyErr_PrintEx(0);
+    throw;
+  }
+  
   catch (...)
   {
     LERROR("Passing through unknown exception");
@@ -209,6 +217,12 @@ std::string jevois::warnAndIgnoreException()
     ret = "Ignoring std::exception [" + std::string(e.what()) + ']';
   }
 
+  catch (boost::python::error_already_set & e)
+  {
+    LERROR("Ignoring exception from the Python interpreter");
+    PyErr_PrintEx(0);
+  }
+  
   catch (...)
   {
     ret = "Ignoring unknown exception";

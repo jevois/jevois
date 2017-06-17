@@ -118,6 +118,7 @@ namespace jevois
       void processVideo();
 
       struct v4l2_format itsFormat;
+      float itsFps;
       void fillStreamingControl(struct uvc_streaming_control * ctrl, VideoMapping const & m);
       std::atomic<bool> itsStreaming;
       int itsErrorCode;

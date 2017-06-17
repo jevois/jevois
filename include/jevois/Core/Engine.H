@@ -238,11 +238,16 @@ namespace jevois
       //! Find the VideoMapping that has the given output specs, or throw if not found
       VideoMapping const & findVideoMapping(unsigned int oformat, unsigned int owidth, unsigned int oheight,
                                             float oframespersec) const;
-      
+
+      //! Get the current video mapping
+      /*! Note that the current mapping may not have an entry in our list of mappings obtained from videomappings.cfg,
+          if the current one was set on the fly by the setmapping2 CLI command. */
+      VideoMapping const & getCurrentVideoMapping() const;
+
       //! Return the number of video mappings
       size_t numVideoMappings() const;
 
-      //! Allow access to our video mappings, which are parsed from file at construction
+      //! Allow access to our video mappings which are parsed from file at construction
       VideoMapping const & getVideoMapping(size_t idx) const;
 
       //! Get the video mapping index for a given UVC iformat, iframe and interval
@@ -280,16 +285,16 @@ namespace jevois
           line. Filename should be relative to the current module's path. */
       void runScriptFromFile(std::string const & filename, std::shared_ptr<UserInterface> ser,
                              bool throw_no_file);
-
+      
       //! Parameter callback
       void onParamChange(engine::cameradev const & param, std::string const & newval);
-
+      
       //! Parameter callback
       void onParamChange(engine::gadgetdev const & param, std::string const & newval);
-
+      
       //! Parameter callback
       void onParamChange(engine::serialdev const & param, std::string const & newval);
-
+      
       //! Parameter callback
       void onParamChange(engine::usbserialdev const & param, std::string const & newval);
 
@@ -301,7 +306,7 @@ namespace jevois
 
       size_t itsDefaultMappingIdx; //!< Index of default mapping
       std::vector<VideoMapping> const itsMappings; //!< All our mappings from videomappings.cfg
-      bool itsUSBout; //!< True when current mapping has some USB output
+      VideoMapping itsCurrentMapping; //!< Current video mapping, may not match any in itsMappings if setmapping2 used
 
       std::shared_ptr<VideoInput> itsCamera; //!< Our camera
       std::shared_ptr<VideoOutput> itsGadget; //!< Our gadget
@@ -325,21 +330,32 @@ namespace jevois
       
     private:
       std::list<std::shared_ptr<UserInterface> > itsSerials;
-
+      
       void setFormatInternal(size_t idx); // itsMtx should be locked by caller
       void setFormatInternal(jevois::VideoMapping const & m); // itsMtx should be locked by caller
-
+      
       // Return help string for a camera control or throw
       std::string camCtrlHelp(struct v4l2_queryctrl & qc, std::set<int> & doneids);
-
+      
       // Get short name from V4L2 ID, long name is a backup in case we don't find the control in our list
       std::string camctrlname(int id, char const * longname) const;
-
+      
       // Get V4L2 ID from short name
       int camctrlid(std::string const & shortname);
-
+      
       bool itsTurbo;
       bool itsManualStreamon; // allow manual streamon when outputing video to None or file
+
+#ifdef JEVOIS_PLATFORM
+      // Things related to mass storage gadget to export our /jevois partition as a virtual USB flash drive:
+      void checkMassStorage(); // thread to check mass storage gadget status
+      std::future<void> itsCheckMassStorageFut;
+      std::atomic<bool> itsCheckingMassStorage;
+      std::atomic<bool> itsMassStorageMode;
+      void startMassStorageMode();
+      void stopMassStorageMode();
+      void reboot();
+#endif
   };
 
 } // namespace jevois

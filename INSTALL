@@ -21,19 +21,110 @@ JeVois embedded machine vision framework INSTALL
 
 This guide assumes a fresh Ubuntu 17.04 install.
 
-Getting JeVois to install requires several steps, outlined below:
+jevois is a C++17 software framework for real-time machine vision running on smart cameras
 
-1. Install some needed utilities and other packages on your Linux computer
+See http://jevois.org for full documentation.
 
-2. Download the JeVois source code. It is organized into 4 packages:
+See https://github.com/jevois for full source code.
+
+On Github, the master branch is for stable releases, minor patch work, or addition of new features that do not break the
+current release version. More disruptive development is in devX.Y branches.
+
+JeVois software is organized into four top-level packages:
 
    - jevois: The core C++17 JeVois software.
    - jevoisbase: The base collection of 25+ machine vision modules for JeVois.
-   - samplemodule: A sample standalone module for JeVois, use as a template for new modules.
+   - samplemodule: A sample standalone module for JeVois, to use as a template for new modules.
    - jevois-sdk: The framework that provides a Linux kernel and operating system for a JeVois camera, to be flashed
-     to a microSD card.
+        to a microSD card.
 
-3. Download and compile OpenCV 3.2 for your host computer, from source.
+This guide is for developers. If you just want to use a JeVois smart camera, and possibly do some additional machine
+vision development in Python only, you should just download a pre-build microSD card image from http://jevois.org/start
+as you do not need any of what is described here.
+
+####################################################################################################
+Shortcut installation using Ubuntu packages
+####################################################################################################
+
+JeVois provides Ubuntu packages that will pull in all the dependencies required to run JeVois software and develop for
+JeVois.
+
+See http://jevois.usc.edu for the latest instructions. In summary:
+
+You need at least 15GB free space in your root partition.
+
+sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys DD24C027
+sudo add-apt-repository "deb http://jevois.usc.edu/apt zesty main"
+sudo apt update
+
+- If you want everything:
+
+          sudo apt install jevois-sdk-dev
+
+- Or, depending on what you want to do:
+
+    If you just want to run JeVois software (jevois-daemon) on your host computer with a standard webcam:
+
+    	  sudo apt install jevois-host jevoisbase-host
+    	
+
+    If you want jevois and jevoisbase cross-compiled for the platform hardware:
+
+    	  sudo apt install jevois-platform jevoisbase-platform
+    	
+
+    If you want to be able to flash a microSD card using jevois-flash-card:
+
+    	  sudo apt install jevois-sdk
+    	
+
+    If you want to be able to cross-compile new modules for JeVois platform hardware:
+
+    	  sudo apt install jevois-sdk-dev
+
+
+    If you want to be able to recompile the platform Linux kernel or change the platform O.S. or add
+       new buildroot packages to the platform:
+
+    	  You need to install jevois-sdk-dev and then rebuild jevois-sdk from source. Follow the instructions in this
+    	  INSTALL file.
+
+If you want to recompile jevois and/or jevoisbase, you will also need to get their source code from Github. See
+instructions below related to downloading and compiling jevois and jevoisbase.
+
+After you have installed at least jevois-host and jevoisbase-host, just plug in a USB camera and try
+
+          jevois-daemon
+
+which should launch JeVois software compiled for the host computer. You should see the saliency demo in a window.  You
+can interact with the JeVois system by typing commands in the terminal in which you started jevois-daemon.  For example,
+try:
+
+	  info
+          help
+          listmappings
+
+To start jevois-daemon in a specific mode, find its number in the listmapping list, then type 'quit' to quit
+jevois-daemon, and finally:
+
+          jevois-daemon --videomapping=19
+
+to start it again in using that new video mapping (here, mapping 19 was for Demo QR-code according
+to listmappings).
+
+From there, go to http://jevois.org/doc
+
+####################################################################################################
+Full installation from scratch
+####################################################################################################
+
+Getting JeVois to install from scratch for full developer capability requires several steps, outlined below:
+
+1. Install some needed utilities and other packages on your Linux computer
+
+2. Download the JeVois source code from Github.
+
+3. Download and install OpenCV 3.2 specially configured for JeVois.
 
 4. Setup jevois-sdk, cross-compile all the programs that will run on the camera, cross-compile its kernel.
 
@@ -45,151 +136,121 @@ Getting JeVois to install requires several steps, outlined below:
 
 Getting all these steps done will take some time. The most difficult step is to get the entire jevois-sdk, including
 Linux kernel, cross-compiled from scratch -- this can easily take 10 hours. For this reason, you may bypass this step by
-downloading a precompiled SDK (see below).
+using the Ubuntu packages described above.
 
 For all the commands below, we recommend that you copy and paste them one line at a time. If you have opened this
-INSTALL file in emacs, you would do:
+INSTALL file in emacs or firefox, you would do:
 
 - triple left click on one line, which entirely selects it
 - move mouse to a terminal window and middle-click to paste and run that one line
 
 ####################################################################################################
-EASY INSTALL OPTION
+Install necessary packages on your host computer
 ####################################################################################################
 
-Downloading, compiling and configuring everything in this guide can easily take more than 10 hours.
+The jevois-opencv Ubuntu package (which is a dependency of jevois-sdk-dev) will pull these. Since you should have
+already installed jevois-sdk-dev as explained above, most likely you do not need to follow the instructions in this
+section and you can skip to the next section.
 
-If you are interested in creating your own JeVois machine vision modules and then copying them to microSD, consider the
-following options:
+For some Ubuntu 16.04LTS (Xenial) based distros such as Mint18, you need to add:
 
-1. JeVois provides pre-compiled, pre-configured microSD disk images at http://jevois.org/start which are a very good
-starting point. You would then follow the method of building a .jvpkg package for your new module and then just dumping
-that to JEVOIS:/packages/ on your microSD. Next time you reboot your camera it will unpack and install your module. This
-is the preferred way to install new modules for users who do not want to deal with completely rebuilding and reflashing
-an entire microSD card. For a tutorial, see http://jevois.org/tutorials/ProgrammerHello.html
+deb http://cz.archive.ubuntu.com/ubuntu yakkety main universe
+deb http://ppa.launchpad.net/ubuntu-toolchain-r/test
 
-2. You can also download a pre-installed Ubuntu 17.04 VirtualBox virtual machine with everything pre-installed from
-http://jevois.org/data/JeVois-Ubuntu-17.04.tbz  (7 GB)
-
-3. Finally, the steps outlined below have been all put together into a script that basically goes through the entire
-installation process with minimal user interaction:
-
-wget http://jevois.org/data/jevois-easy-install.sh
-chmod a+x jevois-easy-install.sh
-./jevois-easy-install.sh
-
-You can run the script with option -y to say Yes to all the questions. You may want to increase your sudo time as
-explained, for example, here: http://lifehacker.com/make-sudo-sessions-last-longer-in-linux-1221545774 so that you only
-need to enter your password once (otherwise you will have to enter it several times throughout the process). Set it at
-10 hours or such.
-
-The easy install script installs OpenCV 3.2, jevois, jevoisbase, samplemodule, jevois-sdk, and jevois-tutorials.  It is
-tailored for Ubuntu 17.04 64-bit only.
-
-After you run the easy install script, just plug in a USB camera and try
-
-jevois-daemon
-
-which should launch jevois compiled for the host computer. You should see the saliency demo in a window.
-You can interact with the JeVois system by typing commands in the terminal in which you started jevois-daemon.
-For example, try:
-
-info
-help
-listmappings
-
-To start jevois-daemon in a specific mode, find its number in the listmapping list, then CTRL-C to quit
-jevois-daemon, and finally
-
-jevois-daemon --videomapping=19
-
-to start it again in using that new video mapping (here, mapping 19 was for Demo QR-code according
-to listmappings).
-
-####################################################################################################
-ADVANCED: Install necessary packages on your host computer
-For some Ubuntu 16.04LTS (Xenial) based distros such as Mint18, you need to add deb http://cz.archive.ubuntu.com/ubuntu yakkety main universe
-and deb http://ppa.launchpad.net/ubuntu-toolchain-r/test to /etc/apt/sources.list to get the necessary packages. Remove them after.
-####################################################################################################
+to /etc/apt/sources.list to get the necessary packages (including g++-6). You can remove them when done.
 
 # Open a terminal, then type:
 
 sudo apt-get update
-sudo apt-get install build-essential gcc-6 g++-6 guvcview subversion cmake emacs git mercurial doxygen-gui graphviz
-sudo apt-get install libboost-all-dev libjpeg-turbo8-dev autoconf libeigen3-dev screen lsb lib32stdc++6
-sudo apt-get install gcc-4.7-arm-linux-gnueabi gcc-6-arm-linux-gnueabihf g++-6-arm-linux-gnueabihf gawk u-boot-tools
+sudo apt install build-essential gcc-6 g++-6 guvcview subversion cmake emacs git mercurial doxygen-gui graphviz
+sudo apt install libboost-all-dev libjpeg-turbo8-dev autoconf libeigen3-dev screen lsb lib32stdc++6
+sudo apt install gcc-4.7-arm-linux-gnueabi gcc-6-arm-linux-gnueabihf g++-6-arm-linux-gnueabihf gawk u-boot-tools
+sudo apt install libgtk2.0-dev pkg-config python-dev python-numpy python-pip libdc1394-22 libdc1394-22-dev libjpeg-dev
+sudo apt install libpng-dev libtiff5-dev libavcodec-dev libavformat-dev libswscale-dev libxine2-dev
+sudo apt install libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libv4l-dev libtbb-dev libqt4-dev libfaac-dev
+sudo apt install libmp3lame-dev libopencore-amrnb-dev libopencore-amrwb-dev libtheora-dev libvorbis-dev
+sudo apt install libxvidcore-dev x264 v4l-utils unzip qt5-default python3-dev python3-numpy python3-pip libgtk-3-dev
+sudo apt install libatlas-base-dev gfortran libturbojpeg
+
 sudo ln -s /usr/bin/arm-linux-gnueabi-gcc-4.7 /usr/bin/arm-linux-gnueabi-gcc
+sudo ln -s /usr/lib/x86_64-linux-gnu/libturbojpeg.so.0.0.0 /usr/lib/x86_64-linux-gnu/libturbojpeg.so ###FIXME
 
 # to prevent nautilus from opening 3 windows each time you insert a JeVois microSD card:
 gsettings set org.gnome.desktop.media-handling automount-open false
 
-# Set the following environment variables in your ~/.bashrc
-# JEVOIS_SRC_ROOT is the path containing jevois, jevoisbase, jevois-sdk, etc
-export JEVOIS_SRC_ROOT=${HOME}
-export JEVOIS_ROOT=/jevois
-
-# and close all terminals and open a new terminal to make sure the environment is refreshed.
-
 ####################################################################################################
-ADVANCED: Download JeVois source code
+Download JeVois source code
 ####################################################################################################
 
-# Create a directory for jevois installed module files on host. We install in /jevois on host to mirror the setup on the
-# platform (which also installs all the machine vision modules in /jevois):
-
-sudo mkdir /jevois
-sudo chmod 777 /jevois
-
-# Get the sources from github
-cd $JEVOIS_SRC_ROOT
+cd
 git clone https://github.com/jevois/jevois.git
 git clone https://github.com/jevois/jevoisbase.git
 git clone https://github.com/jevois/jevois-sdk.git
 git clone https://github.com/jevois/samplemodule.git
 git clone https://github.com/jevois/jevois-tutorials.git
 
+# Set the following environment variables in your ~/.bashrc
+# JEVOIS_ROOT is where we install machine vision modules for JeVois
+# JEVOIS_SDK_ROOT is where you setup the jevois development kit that is used to build the linux kernel,
+#   libraries and packages cross-compiled for JeVois platform, etc
+
+export JEVOIS_SRC_ROOT=${HOME}/jevois-sdk
+export JEVOIS_ROOT=/jevois
+
+# and close all terminals and open a new terminal to make sure the environment is refreshed.
+
 ####################################################################################################
 ADVANCED: Installing OpenCV 3.2.0 on a Linux host system:
 ####################################################################################################
 
-Note: for compatibility with the JeVois hardware platform build, which downloads the latest "release" code, make
-sure you install that same release code on your host as well, as some modules, APIs, etc may differ between the
-release and latest github versions.
+SHORTCUT: sudo apt install jevois-opencv
 
-sudo apt-get install libgtk2.0-dev pkg-config python-dev python-numpy python-pip libdc1394-22 libdc1394-22-dev libjpeg-dev libpng-dev libtiff5-dev libjasper-dev libavcodec-dev libavformat-dev libswscale-dev libxine2-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libv4l-dev libtbb-dev libqt4-dev libfaac-dev libmp3lame-dev libopencore-amrnb-dev libopencore-amrwb-dev libtheora-dev libvorbis-dev libxvidcore-dev libx264-dev v4l-utils unzip qt5-default python3-dev python3-numpy python3-pip libgtk-3-dev libatlas-base-dev gfortran
+FROM SOURCE:
 
-mkdir $JEVOIS_SRC_ROOT/opencv32
-cd $JEVOIS_SRC_ROOT/opencv32
+sudo apt install build-essential gcc-6 g++-6 gfortran-6 cmake libboost-all-dev autoconf libeigen3-dev libgtk2.0-dev
+sudo apt install libdc1394-22 libdc1394-22-dev libjpeg-dev libpng-dev libtiff5-dev libavcodec-dev libavformat-dev
+sudo apt install libswscale-dev libxine2-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libv4l-dev
+sudo apt install libtbb-dev libqt4-dev libfaac-dev libmp3lame-dev libopencore-amrnb-dev libopencore-amrwb-dev
+sudo apt install libtheora-dev libvorbis-dev libxvidcore-dev x264 v4l-utils unzip qt5-default python3.5-dev
+sudo apt install python3-numpy python3-pip libgtk-3-dev libatlas-base-dev libturbojpeg
 
-wget https://github.com/opencv/opencv/archive/3.2.0.tar.gz
-tar zxvf 3.2.0.tar.gz
-rm -f 3.2.0.tar.gz
+mkdir opencv
+cd opencv
+export ver="3.2.0"
+export pyver="3.5"
 
-wget https://github.com/opencv/opencv_contrib/archive/3.2.0.tar.gz
-tar zxvf 3.2.0.tar.gz
-rm -f 3.2.0.tar.gz
+wget https://github.com/opencv/opencv/archive/${ver}.tar.gz
+tar zxvf ${ver}.tar.gz
+rm -f ${ver}.tar.gz
 
-# Run cmake to generate the makefile:
-cd opencv-3.2.0/
+wget https://github.com/opencv/opencv_contrib/archive/${ver}.tar.gz
+tar zxvf ${ver}.tar.gz
+rm -f ${ver}.tar.gz
+
+cd opencv-${ver}
+
+export opencvroot=`pwd`
+
 mkdir build
 cd build
 
-# Note: for now we disable building the hdf module in opencv_contrib as it needs to be patched on ubuntu 16.04 to
-# properly find hdf5.h in the system headers.
+cmake \
+    -DCMAKE_BUILD_TYPE=RELEASE \
+    -DCMAKE_INSTALL_PREFIX=/usr/share/jevois-opencv-${ver} \
+    -DCPACK_SET_DESTDIR=ON \
+    -DPYTHON_DEFAULT_EXECUTABLE=/usr/bin/python${pyver} -DPYTHON_EXECUTABLE=/usr/bin/python${pyver} \
+    -DWITH_TBB=ON -DWITH_V4L=ON -DWITH_QT=OFF -DWITH_OPENGL=OFF -DWITH_OPENCL=OFF -DWITH_VTK=OFF -DWITH_CUDA=OFF \
+    -DINSTALL_PYTHON_EXAMPLES=ON -DBUILD_EXAMPLES=ON -DINSTALL_C_EXAMPLES=OFF \
+    -DOPENCV_EXTRA_MODULES_PATH=${opencvroot}/opencv_contrib-${ver}/modules -DBUILD_opencv_hdf=OFF \
+    -DENABLE_PRECOMPILED_HEADERS=OFF \
+    ..
 
-# Note: we need to disable OpenGL support in OpenCV as otherwise it will conflict with OpenGL-ES which we use for GPU
-# image processing in JeVois:
+make -j 50 # replace 50 by your number of CPU cores
 
-cmake -DCMAKE_BUILD_TYPE=RELEASE -DCMAKE_INSTALL_PREFIX=/usr/local -DWITH_TBB=ON -DWITH_V4L=ON -DWITH_QT=OFF -DWITH_OPENGL=OFF -DWITH_VTK=OFF -DWITH_CUDA=OFF -DINSTALL_PYTHON_EXAMPLES=ON -DBUILD_EXAMPLES=ON -DINSTALL_C_EXAMPLES=OFF -DOPENCV_EXTRA_MODULES_PATH=$JEVOIS_SRC_ROOT/opencv32/opencv_contrib-3.2.0/modules -DBUILD_opencv_hdf=OFF -DENABLE_PRECOMPILED_HEADERS=OFF ..
+suto make install
 
-# Compile (replace 50 below by your number of cores):
-make -j 50
-
-# install:
-sudo make install
-
-# This installs into /usr/local/
-# The sample programs are in /usr/local/share/OpenCV/samples/
+# This installs into /usr/share/jevois-opencv-3.2.0
+# The sample programs are in /usr/share/jevois-opencv-3.2.0/share/OpenCV/samples/
 
 ####################################################################################################
 ADVANCED: SPECIAL CASE: Compiling OpenCV 3.2 on Raspberry Pi 3 host
@@ -238,13 +299,13 @@ pbuild directory for the files compiled for the PLATFORM
 Compiling JeVois library and base apps for host computer
 ####################################################################################################
 
-cd $JEVOIS_SRC_ROOT/jevois
+cd ~/jevois
 ./rebuild-host.sh
 cd hbuild
 make doc
 cd ..
 
-cd $JEVOIS_SRC_ROOT/jevoisbase
+cd ~/jevoisbase
 
 cd Contrib
 ./reinstall.sh  # do this only once, will download some contributed packages and patch them
@@ -252,44 +313,32 @@ cd ..
 
 ./rebuild-host.sh
 
-# FOR INFORMATION: rebuild-host is roughly equivalent to:
-
-mkdir hbuild && cd hbuild
-cmake ..
-make -j 48     # replace 48 by your number of CPU cores
-make doc       # optional, to build the documentation
-
-# If you get an Internal Compiler Error, maybe you are running out of memory during compilation. Try to use -j 1
-# (compile one source file at a time rather than several in parallel).
-
-# Library and executables are in the current directory (jevois/hbuild)
-sudo make install
-
-# install to /usr/local by default. In there, will install library under lib/, apps under bin/, include files under
-# include/, and doc file under share/doc/jevois/
-
-# Make sure your system will look for libraries in /usr/local/lib so it can find libjevois.so:
-sudo sh -c 'echo /usr/local/lib > /etc/ld.so.conf.d/jevois'
-sudo ldconfig
-
 # Plug in any USB webcam and try it:
+
 jevois-daemon
 
-# you can use the command-line interface in the shell where you started jevois-daemon
+# you can use the JeVois command-line interface in the shell where you started jevois-daemon
 # for example, try "help" or "listmappings"
 
 # to start with a specific mapping:
+
 jevois-daemon --videomapping=19
 
-# just issue a CTRL-C in the terminal where you started jevois-daemon to quit.
+# just issue a 'quit' in the terminal where you started jevois-daemon to quit.
 
 ####################################################################################################
-ADVANCED: Compiling the jevois-sdk from scratch
+Compiling the jevois-sdk from scratch
 ####################################################################################################
 
-# NOTE: This will take several hours.
+SHORTCUT: sudo apt install jevois-sdk-dev
 
-cd $JEVOIS_SRC_ROOT
+The shortcut will allow you to cross-compile JeVois software and new modules, and to flash microSD cards. It will not
+allow you to change the Linux kernel or operating system of JeVois. You need to follow the FROM SOURCE instructions here
+for that.
+
+FROM SOURCE: This will take several hours.
+
+cd
 git clone https://github.com/jevois/jevois-sdk.git    # if not already done above
 cd jevois-sdk
 rm -rf out
@@ -298,7 +347,7 @@ rm -rf out
 cd buildroot
 make distclean
 cp configs/sun8i_defconfig .config
-make xconfig  # OPTIONAL -- do not mess with these settings unless you know what you are doing
+make xconfig  # OPTIONAL: do not mess with these settings unless you know what you are doing
 cp .config configs/sun8i_defconfig  # OPTIONAL: if you modified some configs
 cd ..
 
@@ -306,7 +355,7 @@ cd ..
 cd linux-3.4
 make distclean
 cp config-jevois .config
-make xconfig # OPTIONAL -- do not mess with these settings unless you know what you are doing
+make xconfig # OPTIONAL: do not mess with these settings unless you know what you are doing
 cp .config config-jevois # OPTIONAL: if you modified some configs
 cd ..
 
@@ -316,62 +365,49 @@ cd ..
 # build it
 ./build.sh
 
-# make an sd card (note: the SD card at this point will not yet have JeVois software, see next step below):
+# install everything into staging areas for a new microSD card:
 ./jevois-build.sh
+
+# flash a microsd:
+./jevois-build/jevois-flash-card
 
 ####################################################################################################
 Compiling JeVois library and base apps for hardware platform
 ####################################################################################################
 
-This requires that the jevois-sdk, buildroot (for the filesystem on the SD card), and the linux kernel 3.4 for the
-platform be built already (see above).
+This requires that the jevois-sdk-dev be installed (either from a Ubuntu package or from source in the previous step, as
+it provides the operating system, Linux kernel 3.4, cross-compiled libraries, and cross-compilers needed to
+cross-compile jevois software for platform:
 
-cd $JEVOIS_SRC_ROOT/jevois
+cd ~/jevois
 ./rebuild-platform.sh
 
-cd $JEVOIS_SRC_ROOT/jevoisbase
-./rebuild-platform.sh -DJEVOIS_MODULES_TO_BUILDROOT=ON
+cd ~/jevoisbase
+./rebuild-platform.sh --staging
 
-# FOR INFORMATION: rebuild-platform is roughly equivalent to:
-
-mkdir pbuild && cd pbuild
-cmake -DJEVOIS_PLATFORM=ON -DJEVOIS_MODULES_TO_BUILDROOT=ON ..
-make -j 48     # replace 48 by your number of CPU cores
-sudo make install
-
-# If you get an Internal Compiler Error, maybe you are running out of memory during compilation. Try to use -j 1
-# (compile one source file at a time rather than several in parallel).
+See http://jevois.org/doc/CompilingJeVois.html and http://jevois.org/doc/CompilingJeVoisBase.html for more info.
 
 ####################################################################################################
 Flashing it all to microSD
 ####################################################################################################
 
-# rebuild-platform.sh in jevois/ installs the compiled files to buildroot in jevois-sdk
-
-# by default, however, rebuild-platform.sh in jevoisbase/ creates a package to be dropped onto the microSD
-
-# to install directly to buildroot, run:
-
-cd $JEVOIS_SRC_ROOT/jevoisbase
-./rebuild-platform.sh -DJEVOIS_MODULES_TO_BUILDROOT=ON
+# rebuild-platform.sh installs the cross-compiled files a staging area that is composed of two directories:
+#   - /var/lib/jevois-build - for operating system, boot files, and core JeVois software
+#   - /var/lib/jevois-microsd - for machine vision modules
+# See http://jevois.org/doc/ProgrammerOrganization.html for details.
 
 # Now you are ready to burn everything to microSD:
 
-cd $JEVOIS_SRC_ROOT/jevois-sdk
-./jevois-build.sh
+jevois-flash-card
 
 # once you know what you are doing, you can instruct jevois-build.sh to not ask any questions. Just be absolutely
 # certain that you are using the right device for your SD card, so that you do not destroy your main hard drive because
 # of a small typo:
 
-./jevois-build.sh -y /dev/sdX
-
+jevois-flash-card -y /dev/sdX
 
 ####################################################################################################
-Re-flashing after some code update:
+For more information
 ####################################################################################################
 
-cd $JEVOIS_SRC_ROOT/jevois ; ./rebuild-platform.sh
-cd $JEVOIS_SRC_ROOT/jevoisbase ; ./rebuild-platform.sh -DJEVOIS_MODULES_TO_BUILDROOT=ON
-cd $JEVOIS_SRC_ROOT/jevois-sdk ; ./jevois-build.sh -y /dev/sdX
-
+http://jevois.org/doc/Programmer.html

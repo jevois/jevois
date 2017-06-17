@@ -25,8 +25,12 @@
 
 #include <string.h> // for strncmp
 #include <fstream>
-
 #include <cstdarg> // for va_start, etc
+#include <cstdio>
+#include <iostream>
+#include <memory>
+#include <stdexcept>
+#include <array>
 
 // ####################################################################################################
 std::string jevois::fccstr(unsigned int fcc)
@@ -147,4 +151,16 @@ void jevois::flushcache()
   if (ofs.is_open()) ofs << "3" << std::endl;
   else LERROR("Failed to flush cache -- ignored");
 #endif
+}
+
+// ####################################################################################################
+// This code modified from here: https://stackoverflow.com/questions/478898/how-to-execute-a-command-and-get-
+// output-of-command-within-c-using-posix
+std::string jevois::system(std::string const & cmd)
+{
+  std::array<char, 128> buffer; std::string result;
+  std::shared_ptr<FILE> pipe(popen(cmd.c_str(), "r"), pclose);
+  if (!pipe) LFATAL("popen() failed for command [" << cmd << ']');
+  while (!feof(pipe.get())) if (fgets(buffer.data(), 128, pipe.get()) != NULL) result += buffer.data();
+  return result;
 }

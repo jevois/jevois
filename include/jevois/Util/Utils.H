@@ -91,8 +91,11 @@ namespace jevois
   template <typename dest_type, typename source_type>
   dest_type clamped_convert(source_type source);
 
-  //! Flush the caches, may sometimes be useful when running the cemare in turbo mode
+  //! Flush the caches, may sometimes be useful when running the camera in turbo mode
   void flushcache();
+
+  //! Execute a command and grab stdout output to a string
+  std::string system(std::string const & cmd);
   
   /*! @} */ // **********************************************************************
 

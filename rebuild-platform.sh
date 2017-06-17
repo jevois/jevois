@@ -4,4 +4,9 @@
 ncpu=`cat /proc/cpuinfo |grep processor|wc -l`
 if [ `cat /proc/cpuinfo | grep ARM | wc -l` -gt 0 ]; then ncpu=1; fi
 
-/bin/rm -rf pbuild && mkdir pbuild && cd pbuild && cmake "$@" -DJEVOIS_PLATFORM=ON .. && make -j ${ncpu} && make install
+sudo /bin/rm -rf pbuild \
+    && mkdir pbuild \
+    && cd pbuild \
+    && cmake "$@" -DJEVOIS_PLATFORM=ON .. \
+    && make -j ${ncpu} \
+    && sudo make install

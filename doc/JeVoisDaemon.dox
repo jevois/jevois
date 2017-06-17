@@ -125,25 +125,25 @@ Engine Options:
 jevois-daemon config files
 ==========================
 
-jevois-daemon uses several config files, source is in jevois/Config/ and they get installed into /jevois/config/ on host
-and JEVOIS:/jevois/config/ on platform microSD.
+jevois-daemon uses several config files, source is in <b>jevois/Config/</b> and they get installed into
+<b>/jevois/config/</b> on host and <b>JEVOIS:/jevois/config/</b> on platform microSD.
 
-- \c videomappings.cfg Lits of available videomappings, see \ref UserModes
+- \b videomappings.cfg Lits of available videomappings, see \ref UserModes
 
-- \c params.cfg Parameters that get set on startup, this is equivalent to specifying these parameters from the
+- \b params.cfg Parameters that get set on startup, this is equivalent to specifying these parameters from the
   command-line
 
-- \c initscript.cfg Script that gets run on startup, you can put in this file any valid commands as you have typed them
+- \b initscript.cfg Script that gets run on startup, you can put in this file any valid commands as you have typed them
   interactively, see \ref UserCli for more info.
 
 Running jevois-daemon on platform
 =================================
 
-jevois-daemon starts automatically on the platform. The script that starts it is installed in \c
-LINUX:/usr/bin/jevois.sh on the microSD. Its source is in \c jevois/bin/jevois.sh and it gets installed to microSD as
-part of the rebuild-platform process.
+\c jevois-daemon starts automatically on the platform. The script that starts it is installed in
+<b>LINUX:/usr/bin/jevois.sh</b> on the microSD. Its source is in <b>jevois/bin/jevois.sh</b> and it gets installed to
+microSD staging as part of the rebuild-platform.sh process.
 
-You can edit this script, for example if you wish to run jevois-daemon in the gdb debugger, just replace the last line
+You can edit this script, for example if you wish to run jevois-daemon in the \c gdb debugger, just replace the line
 
 \verbatim
 /usr/bin/jevois-daemon ${opts}

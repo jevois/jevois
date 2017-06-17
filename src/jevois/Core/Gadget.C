@@ -134,7 +134,7 @@ namespace
 jevois::Gadget::Gadget(std::string const & devname, jevois::VideoInput * camera, jevois::Engine * engine,
                        size_t const nbufs) :
     itsFd(-1), itsNbufs(nbufs), itsBuffers(nullptr), itsCamera(camera), itsEngine(engine), itsRunning(false),
-    itsStreaming(false), itsErrorCode(0), itsControl(0), itsEntity(0)
+    itsFormat(), itsFps(0.0F), itsStreaming(false), itsErrorCode(0), itsControl(0), itsEntity(0)
 {
   JEVOIS_TRACE(1);
   
@@ -208,6 +208,7 @@ void jevois::Gadget::setFormat(jevois::VideoMapping const & m)
   itsFormat.fmt.pix.pixelformat = m.ofmt;
   itsFormat.fmt.pix.field = V4L2_FIELD_NONE;
   itsFormat.fmt.pix.sizeimage = m.osize();
+  itsFps = m.ofps;
   
   // First try to set our own format, will throw if phony:
   XIOCTL(itsFd, VIDIOC_S_FMT, &itsFormat);
@@ -357,6 +358,7 @@ void jevois::Gadget::processVideo()
   img.width = itsFormat.fmt.pix.width;
   img.height = itsFormat.fmt.pix.height;
   img.fmt = itsFormat.fmt.pix.pixelformat;
+  img.fps = itsFps;
   img.buf = itsBuffers->get(buf.index);
   img.bufindex = buf.index;
 
@@ -736,6 +738,7 @@ void jevois::Gadget::streamOn()
     img.width = itsFormat.fmt.pix.width;
     img.height = itsFormat.fmt.pix.height;
     img.fmt = itsFormat.fmt.pix.pixelformat;
+    img.fps = itsFps;
     img.buf = itsBuffers->get(i);
     img.bufindex = i;
 

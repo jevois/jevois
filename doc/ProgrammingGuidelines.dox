@@ -13,16 +13,15 @@ JeVois core framework, quidelines are much looser and are described in the docum
   documentation cases (once you know the basics of doxygen).
 
 - JeVois treats all warnings as errors. So your code will not compile if you have warnings. This is a feature: if your
-  code has warnings, you are doing something wrong! /*If you are including files from a library not written by you and
+  code has warnings, you are doing something wrong! If you are including files from a library not written by you and
   that has warnings, you can use the following:
-
   \code
   JEVOIS_BEGIN_UNCHECKED_INCLUDES
   #include <trashystuff.h>
   JEVOIS_END_UNCHECKED_INCLUDES
   \endcode
 
-- Source code line length is 120. Add this to your \c ~/.emacs to set it:
+- Source code line length is 120. Add this to your <b>~/.emacs</b> to set it:
 
   \verbatim
   ;; set default line wrap len:
@@ -32,14 +31,12 @@ JeVois core framework, quidelines are much looser and are described in the docum
 - JeVois uses astyle to ensure uniform indentation styles across our various text editors. A style file is included with
   JeVois, and can be found in jevois/scripts/astylerc. To use this style file, invoke astyle using the –options flag,
   e.g.
-
   \code 
   astyle myfile --options=/path/to/nrt/scripts/astylerc
   \endcode
 
 - Indentation matching this style is as defined by the following emacs rules, on top of the default C mode of emacs
   indentation (ad this to your \c ~/.emacs to activate):
-
   \verbatim
   ;; JeVois indentation style for C++ and such
   (defun my-c-mode-common-hook ()
@@ -72,7 +69,6 @@ JeVois core framework, quidelines are much looser and are described in the docum
   \endverbatim
 
 - If you use vi, use this configuration:
-
   \verbatim
   
   "-------------Essential JeVois Style Compliance Settings-------------
@@ -122,7 +118,6 @@ JeVois core framework, quidelines are much looser and are described in the docum
     endif
   endfunction
   nmap ,o :call OpenOther()<CR>
-
   \endverbatim
 
 \section fileorg Files organization

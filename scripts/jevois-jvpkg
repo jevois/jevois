@@ -1,5 +1,6 @@
 #!/usr/bin/perl
-# USAGE: jevois-jvpkg.pl <dest>
+# USAGE: jevois-jvpkg <dest>
+# Pack a JeVois .jvpkg package from all the files in the current directory
 # Assumes that current working directory is in the jvpkg/ folder to archive
 
 use File::Basename;
@@ -23,4 +24,3 @@ system("tar jcvf $ARGV[0] . --exclude-from $tmpfile");
 
 unlink($tmpfile);
 
-    

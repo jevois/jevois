@@ -1,5 +1,5 @@
 #!/bin/bash
-usage="USAGE: jevois-create-module.sh <VendorName> <ModuleName>"
+usage="USAGE: jevois-create-module <VendorName> <ModuleName>"
 
 if [ "X$1" = "X" ]; then echo $usage; exit 1; fi
 if [ "X$2" = "X" ]; then echo $usage; exit 2; fi

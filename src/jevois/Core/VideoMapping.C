@@ -44,7 +44,8 @@ namespace
 // ####################################################################################################
 std::string jevois::VideoMapping::sopath() const
 {
-  return JEVOIS_MODULE_PATH "/" + vendor + '/' + modulename + '/' + modulename + ".so";
+  if (ispython) return JEVOIS_MODULE_PATH "/" + vendor + '/' + modulename + '/' + modulename + ".py";
+  else return JEVOIS_MODULE_PATH "/" + vendor + '/' + modulename + '/' + modulename + ".so";
 }
 
 // ####################################################################################################
@@ -172,10 +173,22 @@ std::vector<jevois::VideoMapping> jevois::videoMappingsFromStream(std::istream &
     m.vendor = tok[8];
     m.modulename = tok[9];
 
-    std::string const sopath = m.sopath();
+    // First assume that it is a C++ compiled module and check for the .so file:
+    m.ispython = false;
+    std::string sopath = m.sopath();
     std::ifstream testifs(sopath);
-    if (testifs.is_open() == false) { PERROR("Could not open module " << sopath << " -- SKIPPING"); continue; }
-
+    if (testifs.is_open() == false)
+    {
+      // Could not find the .so, maybe it is a python module:
+      m.ispython = true; sopath = m.sopath();
+      std::ifstream testifs2(sopath);
+      if (testifs2.is_open() == false)
+      {
+        PERROR("Could not open module " << sopath << "|.so -- SKIPPING");
+        continue;
+      }
+    }
+    
     // Handle optional star for default mapping. We tolerate several and pick the first one:
     if (tok.size() > 10)
     {

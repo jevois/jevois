@@ -32,6 +32,7 @@ void jevois::VideoOutputNone::setFormat(VideoMapping const & m)
   itsImage.width = m.ow;
   itsImage.height = m.oh;
   itsImage.fmt = m.ofmt;
+  itsImage.fps = m.ofps;
   itsImage.buf = itsBuffer;
   itsImage.bufindex = 0;
 }
