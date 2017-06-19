@@ -988,7 +988,7 @@ namespace
   // ####################################################################################################
   void convertCvGRAYtoYUYV(cv::Mat const & src, jevois::RawImage & dst)
   {
-    if (src.type() != CV_8UC3) LFATAL("src must have type CV_8UC3 and GRAY pixels");
+    if (src.type() != CV_8UC1) LFATAL("src must have type CV_8UC1 and GRAY pixels");
     if (dst.fmt != V4L2_PIX_FMT_YUYV) LFATAL("dst format must be V4L2_PIX_FMT_YUYV");
     if (int(dst.width) != src.cols || int(dst.height) < src.rows) LFATAL("src and dst dims must match");
 
@@ -1081,7 +1081,7 @@ void jevois::rawimage::convertCvBGRtoRawImage(cv::Mat const & src, RawImage & ds
 // ####################################################################################################
 void jevois::rawimage::convertCvRGBtoRawImage(cv::Mat const & src, RawImage & dst, int quality)
 {
-  if (src.type() != CV_8UC3) LFATAL("src must have type CV_8UC3 and BGR pixels");
+  if (src.type() != CV_8UC3) LFATAL("src must have type CV_8UC3 and RGB pixels");
   if (int(dst.width) != src.cols || int(dst.height) < src.rows) LFATAL("src and dst dims must match");
 
   // Note how the destination opencv image dstcv here is just a shell, the actual pixel data is in dst:

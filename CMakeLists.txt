@@ -224,6 +224,7 @@ else (JEVOIS_PLATFORM)
   # On host only, install helper scripts:
   install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/scripts/jevois-jvpkg" DESTINATION bin COMPONENT bin)
   install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/scripts/jevois-create-module" DESTINATION bin COMPONENT bin)
+  install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/scripts/jevois-create-python-module" DESTINATION bin COMPONENT bin)
   install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/scripts/jevois-modinfo" DESTINATION bin COMPONENT bin)
   install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/scripts/jevois-usbsd" DESTINATION bin COMPONENT bin)
 endif (JEVOIS_PLATFORM)

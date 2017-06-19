@@ -1,5 +1,5 @@
 #!/bin/bash
-usage="USAGE: jevois-create-module <VendorName> <ModuleName>"
+usage="USAGE: jevois-create-python-module <VendorName> <ModuleName>"
 
 if [ "X$1" = "X" ]; then echo $usage; exit 1; fi
 if [ "X$2" = "X" ]; then echo $usage; exit 2; fi
@@ -12,29 +12,29 @@ if [ -d ${dir} ]; then echo "Directory [${dir}] already exists -- ABORT"; exit 4
    
 read -p "Create module [$2] from vendor [$1] in new directory [${dir}]  (Y/n)? "
 if [ "X$REPLY" != "Xn" ]; then
-    echo "*** Cloning from samplemodule github..."
+    echo "*** Cloning from samplepythonmodule github..."
     mkdir -p ${dir}
     if [ ! -d ${dir} ]; then echo "Directory [${dir}] could not be created -- ABORT"; exit 5; fi
     cd ${dir}
-    git clone https://github.com/jevois/samplemodule.git
+    git clone https://github.com/jevois/samplepythonmodule.git
 
     echo "*** Patching up and customizing..."
     
-    /bin/mv samplemodule/* .
-    /bin/rm -rf samplemodule
+    /bin/mv samplepythonmodule/* .
+    /bin/rm -rf samplepythonmodule
 
     sed -i "s/SampleVendor/$1/g" CMakeLists.txt
 
-    /bin/mv src/Modules/SampleModule src/Modules/$2
-    /bin/mv src/Modules/$2/SampleModule.C src/Modules/$2/${2}.C 
+    /bin/mv src/Modules/SamplePythonModule src/Modules/$2
+    /bin/mv src/Modules/$2/SamplePythonModule.py src/Modules/$2/${2}.py 
 
-    sed -i "s/SampleModule/$2/g" src/Modules/$2/${2}.C
-    sed -i "s/SampleModule/$2/g" src/Modules/$2/postinstall
-    sed -i "s/samplemodule/${dir}/g" CMakeLists.txt
-    sed -i "s/SampleModule/$2/g" CMakeLists.txt
+    sed -i "s/SamplePythonModule/$2/g" src/Modules/$2/${2}.py
+    sed -i "s/SamplePythonModule/$2/g" src/Modules/$2/postinstall
+    sed -i "s/samplepythonmodule/${dir}/g" CMakeLists.txt
+    sed -i "s/SamplePythonModule/$2/g" CMakeLists.txt
 
     sed -i "s/SampleVendor/$1/g" src/Modules/$2/videomappings.cfg
-    sed -i "s/SampleModule/$2/g" src/Modules/$2/videomappings.cfg
+    sed -i "s/SamplePythonModule/$2/g" src/Modules/$2/videomappings.cfg
 
     chmod a+x src/Modules/$2/postinstall
 
