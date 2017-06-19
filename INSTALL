@@ -56,6 +56,7 @@ You need at least 15GB free space in your root partition.
 sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys DD24C027
 sudo add-apt-repository "deb http://jevois.usc.edu/apt zesty main"
 sudo apt update
+sudo apt upgrade
 
 - If you want everything:
 
