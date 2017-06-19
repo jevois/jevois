@@ -1,15 +1,16 @@
 #!/bin/bash
-# USAGE: jevois-usbsd <start|stop> [mountpoint [ttydev]]
+# USAGE: jevois-usbsd <start|stop> [mountpoint [ttydev [username]]]
 #
 # Starts or stops exporting microSD inside a JeVois camera to host as virtual flash drive.
 #
-# mountpoint: optional mount point for the exported drive, defaults to /media/${USER}/JEVOIS
-# ttydev: optional serial-over-USB tty device, defaults to /dev/ttyACM0
+# mountpoint: optional mount point for the exported drive, defaults to /media/${username}/JEVOIS
+# ttydev:     optional serial-over-USB tty device, defaults to /dev/ttyACM0
+# username:   username under which the card was mounted, useful if this script is run under sudo, def to `logname`
 
-ttydev="/dev/ttyACM0"
-if [ "$#" -eq 0 ]; then echo "USAGE: jevois-usbsd <start|stop> [mountpoint [ttydev]]"; exit 1; fi
-if [ "$#" -gt 1 ]; then mountpoint="$2"; else mountpoint="/media/${USER}/JEVOIS"; fi
+if [ "$#" -eq 0 ]; then echo "USAGE: jevois-usbsd <start|stop> [mountpoint [ttydev [username]]]"; exit 1; fi
+if [ "$#" -gt 3 ]; then username="$4"; else username=`logname`; username=${username/\n/}; fi
 if [ "$#" -gt 2 ]; then ttydev="$3"; else ttydev="/dev/ttyACM0"; fi
+if [ "$#" -gt 1 ]; then mountpoint="$2"; else mountpoint="/media/${username}/JEVOIS"; fi
 
 if [ ! -c "$ttydev" ]; then echo "Cannot access $ttydev -- is JeVois plugged in? -- ABORT"; exit 2; fi
 
@@ -17,30 +18,34 @@ if [ "X$1" = "Xstart" ]; then
     
     # First read any accumulated junk in the serial buffers:
     while true; do
-	sudo bash -c "read -t 0.05 -s < \"${ttydev}\""
-	if [ $? -ge 128 ]; then break; fi
+	sudo bash -c "read -s -t 0.05 -s < \"${ttydev}\""
+	if [ $? -ne 0 ]; then break; fi
     done
 
     # Send the command:
     sudo bash -c "echo usbsd > ${ttydev}"
 
     # Get the reply:
-    answer=`sudo bash -c "read -e -s -t 5 < ${ttydev} && echo \\${REPLY}"`
+    answer=`sudo bash -c "read -s -t 5 < ${ttydev} && echo -n \\${REPLY} | tr -d '\\n' | tr -d '\\r'"`
     if [ $? -ge 128 ]; then echo "Timeout communicating with JeVois -- ABORT"; exit 100; fi
+    if [ $? -ne 0 ]; then echo "Error communicating with JeVois -- ABORT"; exit 100; fi
     if [ "X${answer}" != "XOK" ]; then echo "JeVois camera returned error: ${answer} -- ABORT"; exit 3; fi
 
     # Check that the mountpoint is now mounted:
-    if [ ! -d "${mountpoint}" ]; then echo "Camera usbsd command but ${mountpoint} not found -- ABORT"; exit 4; fi
+    for retry in `seq 1 40`; do if [ ! -d "${mountpoint}" ]; then sleep 0.25s; else break; fi; done
+    if [ ! -d "${mountpoint}" ]; then echo "Camera usbsd command ok but ${mountpoint} not found -- ABORT"; exit 4; fi
 
     echo "JeVois smart camera virtual USB ready at ${mountpoint}"
 
 elif [ "X$1" = "Xstop" ]; then
-    sudo eject "${mountpoint}"
+    sync
+    blockdev=`mount | grep ${mountpoint} | cut -d" " -f1`
+    sudo eject ${blockdev}
     if [ $? -ne 0 ]; then echo "Error releasing ${mountpoint} -- ABORT"; exit 5; fi;
     echo "JeVois smart camera virtual USB disk ejected -- rebooting JeVois"
 
 else
-    echo "USAGE: jevois-usbsd <start|stop> [mountpoint [ttydev]]"
+    echo "USAGE: jevois-usbsd <start|stop> [mountpoint [ttydev [username]]]"
     exit 1
 fi
     

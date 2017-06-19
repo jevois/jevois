@@ -32,14 +32,23 @@ if (NOT DEFINED JEVOIS_VENDOR)
 endif (NOT DEFINED JEVOIS_VENDOR)
 message(STATUS "JEVOIS_VENDOR: ${JEVOIS_VENDOR}")
 
+# Mount point for the microSD exported by JeVois:
+set(JEVOIS_USER "$ENV{USER}" CACHE STRING "JeVois user name (before any sudo)")
+set(JEVOIS_USBSERIAL_DEV "/dev/ttyACM0" CACHE STRING "JeVois serial-over-USB device")
+set(JEVOIS_MICROSD_MOUNTPOINT "/media/${JEVOIS_USER}/JEVOIS" CACHE STRING "Mountpoint for JeVois microSD card")
+message(STATUS "JeVois microSD card mount point: ${JEVOIS_MICROSD_MOUNTPOINT}")
+message(STATUS "JeVois serial-over-USB device: ${JEVOIS_USBSERIAL_DEV}")
+
 # Settings for native host compilation or hardware platform compilation:
 if (JEVOIS_PLATFORM)
 
   # On platform, install to jvpkg, staging area, or live microSD?
   option(JEVOIS_MODULES_TO_STAGING "Install modules to ${JEVOIS_PLATFORM_INSTALL_PREFIX} as opposed to jvpkg" OFF)
   message(STATUS "JEVOIS_MODULES_TO_STAGING: ${JEVOIS_MODULES_TO_STAGING}")
-  option(JEVOIS_MODULES_TO_MICROSD "Install modules to /media/$ENV{USER}/JEVOIS as opposed to jvpkg" OFF)
+  option(JEVOIS_MODULES_TO_MICROSD "Install modules to ${JEVOIS_MICROSD_MOUNTPOINT} as opposed to jvpkg" OFF)
   message(STATUS "JEVOIS_MODULES_TO_MICROSD: ${JEVOIS_MODULES_TO_MICROSD}")
+  option(JEVOIS_MODULES_TO_LIVE "Install modules to live JeVois camera at ${JEVOIS_MICROSD_MOUNTPOINT} as opposed to jvpkg" OFF)
+  message(STATUS "JEVOIS_MODULES_TO_LIVE: ${JEVOIS_MODULES_TO_LIVE}")
 
   set(CMAKE_C_COMPILER ${JEVOIS_PLATFORM_C_COMPILER})
   set(CMAKE_CXX_COMPILER ${JEVOIS_PLATFORM_CXX_COMPILER})
@@ -105,15 +114,28 @@ macro(jevois_project_set_flags)
   else (DEFINED ENV{JEVOIS_ROOT})
     set(JEVOIS_ROOT "/jevois")
   endif (DEFINED ENV{JEVOIS_ROOT})
-
+  
+  # If installing to live microSD inside JeVois, mount it before make install:
+  if (JEVOIS_MODULES_TO_LIVE)
+    install(CODE "EXECUTE_PROCESS(COMMAND /usr/bin/jevois-usbsd start ${JEVOIS_MICROSD_MOUNTPOINT} ${JEVOIS_USBSERIAL_DEV})")
+  endif (JEVOIS_MODULES_TO_LIVE)
+    
   # If installing to microSD, add a check that it is here before make install:
   if (JEVOIS_MODULES_TO_MICROSD)
-    install(CODE "EXECUTE_PROCESS(COMMAND /bin/ls \"/media/$ENV{USER}/JEVOIS/\" )")
+    install(CODE "EXECUTE_PROCESS(COMMAND /bin/ls \"${JEVOIS_MICROSD_MOUNTPOINT}/\" )")
   endif (JEVOIS_MODULES_TO_MICROSD)
-
-    
+  
 endmacro()
 
+####################################################################################################
+# Helper to complete a project - should be called last in CMakeLists.txt:
+macro(jevois_project_finalize)
+  # If installing to live microSD inside JeVois, un-mount it after make install:
+  if (JEVOIS_MODULES_TO_LIVE)
+    install(CODE "EXECUTE_PROCESS(COMMAND /usr/bin/jevois-usbsd stop ${JEVOIS_MICROSD_MOUNTPOINT} ${JEVOIS_USBSERIAL_DEV})")
+  endif (JEVOIS_MODULES_TO_LIVE)
+endmacro()
+  
 ####################################################################################################
 # Setup some modules, base scenario:
 macro(jevois_setup_modules basedir deps)
@@ -165,19 +187,19 @@ macro(jevois_setup_modules basedir deps)
     # On platform, we install to jvpkg directory, staging, or live microsd; on host we always install to
     # JEVOIS_MODULES_ROOT which usually is /jevois:
     if (JEVOIS_PLATFORM)
-      if (JEVOIS_MODULES_TO_MICROSD) # if both are specified, microsd takes preference over staging
-	set(DESTDIR "/media/$ENV{USER}/JEVOIS/modules/${JEVOIS_VENDOR}")
-      else (JEVOIS_MODULES_TO_MICROSD)
+      if (JEVOIS_MODULES_TO_MICROSD OR JEVOIS_MODULES_TO_LIVE) # if both specified, microsd/live precedes staging
+	set(DESTDIR "${JEVOIS_MICROSD_MOUNTPOINT}/modules/${JEVOIS_VENDOR}")
+      else (JEVOIS_MODULES_TO_MICROSD OR JEVOIS_MODULES_TO_LIVE)
 	if (JEVOIS_MODULES_TO_STAGING)
 	  set(DESTDIR "${JEVOIS_PLATFORM_MODULES_ROOT}/modules/${JEVOIS_VENDOR}")
 	else (JEVOIS_MODULES_TO_STAGING)
 	  set(DESTDIR "${CMAKE_CURRENT_SOURCE_DIR}/jvpkg/modules/${JEVOIS_VENDOR}")
 	endif (JEVOIS_MODULES_TO_STAGING)
-      endif (JEVOIS_MODULES_TO_MICROSD)
+      endif (JEVOIS_MODULES_TO_MICROSD OR JEVOIS_MODULES_TO_LIVE)
     else (JEVOIS_PLATFORM)
       set(DESTDIR "${JEVOIS_MODULES_ROOT}/modules/${JEVOIS_VENDOR}")
     endif (JEVOIS_PLATFORM)
-      
+    
     # Install everything that is in that directory except for the source file:
     install(DIRECTORY ${basedir}/${JV_MODULE} DESTINATION "${DESTDIR}"
       PATTERN "*.[hHcC]" EXCLUDE
@@ -214,17 +236,17 @@ macro(jevois_setup_library basedir libname libversion)
   if (NOT JEVOIS_PLATFORM)
     set_target_properties(${libname} PROPERTIES VERSION "${libversion}" SOVERSION ${libversion})
   endif (NOT JEVOIS_PLATFORM)
-
+  
   link_libraries(${libname})
 
   # On platform, we install to jvpkg directory, staging, or live microsd; on host we always install to
   # JEVOIS_MODULES_ROOT which usually is /jevois:
   if (JEVOIS_PLATFORM)
-    if (JEVOIS_MODULES_TO_MICROSD) # if both are specified, microsd takes preference over staging
-	install(TARGETS ${libname} LIBRARY
-	  DESTINATION "/media/$ENV{USER}/JEVOIS/lib/${JEVOIS_VENDOR}"
-	  COMPONENT libs)
-    else (JEVOIS_MODULES_TO_MICROSD)
+    if (JEVOIS_MODULES_TO_MICROSD OR JEVOIS_MODULES_TO_LIVE) # if both specified, microsd/live precedes staging
+      install(TARGETS ${libname} LIBRARY
+	DESTINATION "${JEVOIS_MICROSD_MOUNTPOINT}/lib/${JEVOIS_VENDOR}"
+	COMPONENT libs)
+    else (JEVOIS_MODULES_TO_MICROSD OR JEVOIS_MODULES_TO_LIVE)
       if (JEVOIS_MODULES_TO_STAGING)
 	install(TARGETS ${libname} LIBRARY
 	  DESTINATION "${JEVOIS_PLATFORM_MODULES_ROOT}/lib/${JEVOIS_VENDOR}"
@@ -234,7 +256,7 @@ macro(jevois_setup_library basedir libname libversion)
 	  DESTINATION "${CMAKE_CURRENT_SOURCE_DIR}/jvpkg/lib/${JEVOIS_VENDOR}"
 	  COMPONENT libs)
       endif (JEVOIS_MODULES_TO_STAGING)
-    endif (JEVOIS_MODULES_TO_MICROSD)
+    endif (JEVOIS_MODULES_TO_MICROSD OR JEVOIS_MODULES_TO_LIVE)
   else (JEVOIS_PLATFORM)
     install(TARGETS ${libname} LIBRARY DESTINATION lib COMPONENT libs)
   endif (JEVOIS_PLATFORM)
