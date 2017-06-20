@@ -16,7 +16,7 @@
 /*! \file */
 
 #include <jevois/Debug/Log.H>
-#include <boost/python/errors.hpp> // for boost::python::error_already_set exception
+#include <jevois/Debug/PythonException.H>
 #include <mutex>
 #include <iostream>
 #include <fstream>
@@ -192,8 +192,10 @@ void jevois::warnAndRethrowException()
 
   catch (boost::python::error_already_set & e)
   {
-    LERROR("Received exception from the Python interpreter");
-    PyErr_PrintEx(0);
+    LERROR("Received exception from the Python interpreter:");
+    std::string str = jevois::getPythonExceptionString(e);
+    std::vector<std::string> lines = jevois::split(str, "\\n");
+    for (std::string const & li : lines) LERROR("   " << li);
     throw;
   }
   
@@ -219,8 +221,10 @@ std::string jevois::warnAndIgnoreException()
 
   catch (boost::python::error_already_set & e)
   {
-    LERROR("Ignoring exception from the Python interpreter");
-    PyErr_PrintEx(0);
+    LERROR("Ignoring exception from the Python interpreter:");
+    std::string str = jevois::getPythonExceptionString(e);
+    std::vector<std::string> lines = jevois::split(str, "\\n");
+    for (std::string const & li : lines) LERROR("   " << li);
   }
   
   catch (...)

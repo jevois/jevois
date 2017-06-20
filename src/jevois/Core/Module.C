@@ -185,9 +185,9 @@ void jevois::Module::sendSerial(std::string const & str)
 }
 
 // ####################################################################################################
-void jevois::Module::parseSerial(std::string const & JEVOIS_UNUSED_PARAM(str),
+void jevois::Module::parseSerial(std::string const & str,
                                  std::shared_ptr<jevois::UserInterface> JEVOIS_UNUSED_PARAM(s))
-{ throw std::runtime_error("Unsupported command"); }
+{ throw std::runtime_error("Unsupported command [" + str + ']'); }
 
 // ####################################################################################################
 void jevois::Module::supportedCommands(std::ostream & os)

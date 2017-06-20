@@ -113,8 +113,8 @@ List of bindings
 ----------------
 
 Click on any of the classes or functions below to see its documentation. Although the doc is for the C++ version, the
-functions and classes listed here have an exact binding to Python, except that you can ignore any C++ qualifiers (\c
-const and similar etc) and reference/pointer specifications (\c & or \c * before an argument name).
+functions and classes listed here have an exact binding to Python, except that you can ignore any C++ qualifiers
+(\c const and similar) and reference/pointer specifications (\c & or \c * before an argument name).
 
 - General utility functions declared in \ref Utils.H
   + fccstr()
@@ -191,6 +191,14 @@ const and similar etc) and reference/pointer specifications (\c & or \c * before
   function to place various variable values in that string):
   + LDEBUG(), LINFO(), LERROR(), LFATAL()
   + Log levels defined as constants: <b>jevois.LOG_DEBUG, jevois.LOG_INFO, jevois.LOG_ERR, jevois.LOG_CRIT</b>.
+
+
+Code documentation and accessory files
+======================================
+
+Follow the same rules as in \ref ProgrammerSDK, under "Module documentation and metadata"
+
+See the sample Python modules in jevoisbase for examples of how this translates to Python doxygen directives.
 
 */
 

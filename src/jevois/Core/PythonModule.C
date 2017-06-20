@@ -158,6 +158,13 @@ void jevois::OutputFramePython::sendCvRGBA(cv::Mat const & img) const
 }
 
 // ####################################################################################################
+namespace
+{
+  // from https://stackoverflow.com/questions/39924912/finding-if-member-function-exists-in-a-boost-pythonobject
+  bool hasattr(boost::python::object & o, char const * name) { return PyObject_HasAttrString(o.ptr(), name); }
+}
+
+// ####################################################################################################
 // ####################################################################################################
 // ####################################################################################################
 jevois::PythonModule::PythonModule(jevois::VideoMapping const & m) :
@@ -210,15 +217,22 @@ void jevois::PythonModule::process(InputFrame && inframe)
 // ####################################################################################################
 void jevois::PythonModule::parseSerial(std::string const & str, std::shared_ptr<UserInterface> s)
 {
-  boost::python::object ret = itsInstance.attr("parseSerial")(str);
-  std::string retstr = boost::python::extract<std::string>(ret);
-  if (retstr.empty() == false) s->writeString(retstr);
+  if (hasattr(itsInstance, "parseSerial"))
+  {
+    boost::python::object ret = itsInstance.attr("parseSerial")(str);
+    std::string retstr = boost::python::extract<std::string>(ret);
+    if (retstr.empty() == false) s->writeString(retstr);
+  }
+  else jevois::Module::parseSerial(str, s);
 }
 
 // ####################################################################################################
 void jevois::PythonModule::supportedCommands(std::ostream & os)
 {
-  boost::python::object ret = itsInstance.attr("supportedCommands")();
-  std::string retstr = boost::python::extract<std::string>(ret);
-  if (retstr.empty() == false) os << retstr;
+  if (hasattr(itsInstance, "supportedCommands"))
+  {
+    boost::python::object ret = itsInstance.attr("supportedCommands")();
+    std::string retstr = boost::python::extract<std::string>(ret);
+    if (retstr.empty() == false) os << retstr;
+  } else jevois::Module::supportedCommands(os);
 }

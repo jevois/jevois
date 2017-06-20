@@ -730,9 +730,9 @@ void jevois::Engine::mainLoop()
             {
               try { itsModule->parseSerial(str, s); success = true; }
               catch (std::exception const & me) { s->writeString(std::string("ERR ") + me.what()); }
-              catch (...) { s->writeString("ERR Command not recognized by Engine or Module"); }
+              catch (...) { s->writeString("ERR Command [" + str + "] not recognized by Engine or Module"); }
             }
-            else s->writeString("ERR Unsupported command and no module");
+            else s->writeString("ERR Unsupported command [" + str + "] and no module");
           }
           
           // If success, let user know:
@@ -1453,7 +1453,7 @@ void jevois::Engine::runScriptFromFile(std::string const & filename, std::shared
       catch (std::exception const & e)
       { ser->writeString("ERR " + filename + ':' + std::to_string(linenum) + ": " + e.what()); }
       catch (...)
-      { ser->writeString("ERR " + filename + ':' + std::to_string(linenum) + ": Bogus command ignored"); }
+      { ser->writeString("ERR " + filename + ':' + std::to_string(linenum) + ": Bogus command ["+line+"] ignored"); }
 
       if (parsed == false)
       {
@@ -1463,9 +1463,9 @@ void jevois::Engine::runScriptFromFile(std::string const & filename, std::shared
           catch (std::exception const & me)
           { ser->writeString("ERR " + filename + ':' + std::to_string(linenum) + ": " + me.what()); }
           catch (...)
-          { ser->writeString("ERR " + filename + ':' + std::to_string(linenum) + ": Bogus command ignored"); }
+          { ser->writeString("ERR " + filename + ':' + std::to_string(linenum)+": Bogus command ["+line+"] ignored"); }
         }
-        else ser->writeString("ERR Unsupported command and no module");
+        else ser->writeString("ERR Unsupported command [" + line + "] and no module");
       }
     }
     catch (...) { jevois::warnAndIgnoreException(); }
