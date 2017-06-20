@@ -1,0 +1,198 @@
+namespace jevois
+{
+namespace rawimage
+{
+/*! \page ProgrammerPython Programming machine vision modules with Python
+
+Starting with \jvversion{1.1}, you can program machine vision modules for JeVois in Python 3.5.
+
+Overview
+========
+
+The basic framework is as follows:
+
+- Many of the basic facilities provided by the core JeVois software are wrapped so that they can be accessed from
+  Python. This includes, for example, video frame capture, image conversion, video frame output over USB, log messages,
+  sending messages to serial port, etc.
+
+- OpenCV is also wrapped to Python and can be used in JeVois modules written in Python. This allows one to use the
+  machine vision and image processing functions provided by OpenCV. In this framework, images are represented as Python
+  numpy arrays. Functions are exposed by the JeVois core to allow converting camera video frames and output video frames
+  to/from Python numpy arrays.
+
+- JeVois modules written in Python should consist of a single Python class that exposes a specific interface, including
+  a process() function that will be called by the JeVois engine each time a new video frame is to be processed by the
+  module.
+
+- So, the Python integration works in a two-way manner:
+  + JeVois core provides a \b libjevois Python library that can be used by modules written in Python.
+  + Modules written in python expose a class with specific member functions, which will be instantiated and called
+    by the JeVois core when the modules is loaded.
+  + Modules written in Python are invoked by the JeVois core just like C++ modules, using a process() function as
+    explained in \ref Concepts.
+
+- JeVois modules written in Python are otherwise treated just like modules written in C++: They get loaded when a
+  particular video resolution is selected by the host computer, which corresponds to an entry in \b videomappings.cfg
+  that matches the modules of interest. They also have a directory under <b>JEVOIS:/modules</b> and they may have the
+  same auxiliary files as C++ modules do.
+
+Examples
+========
+
+Modules in jevoisbase are available to help you understand how this works:
+
+- [PythonTest](/basedoc/jvpkg_2modules_2JeVois_2PythonTest_2PythonTest_8py_source.html) uses functions and classes
+  exported by JeVois.
+
+- [PythonOpenCV](/basedoc/jvpkg_2modules_2JeVois_2PythonOpenCV_2PythonOpenCV_8py_source.html) also uses OpenCV.
+
+JeVois core expectations from modules written in Python
+=======================================================
+
+Just like the Module C++ abstract base class defines an interface for how C++ modules will be used by the JeVois Engine,
+Python modules should be organized as follow:
+
+- A single .py file in a directory under <b>JEVOIS:/modules/vendor/</b> declares a Python class, with the filename stem
+  (without extension), directory name, and class name all an exact match.
+
+- The module may declare and implememt (all are optional, but most modules should at least implement one of the
+  process() functions to be useful):
+  + Constructor with no arguments: `__init__(self)`
+  + Process function with no USB output: `process(self, inframe)`
+  + Process function with USB output: `process(self, inframe, outframe)`
+  + Function to parse a serial command forwarded to the module by the JeVois Engine, return a string:
+    `parseSerial(self, str)`
+  + Function to return a string that describes the custom commands the module supports, for the JeVois help message:
+    `supportedCommands(self)`
+  + Note that sendSerial() which is provided by the C++ Module base class to allow derived modules to send messages over
+    the serial port should not be defined and will not be invoked (since it is implemented by the JeVois core library
+    rather than the module); instead, a function `jevois.sendSerial()` is exposed to Python modules by the JeVois core
+    library which achieves the same result.
+
+Python bindings provided by JeVois core
+=======================================
+
+The following functions and classes of the JeVois core software are wrapped for use in Python. To use the Python version
+of a given class or function, just inspect the C++ documentation and assume that the same class name, function name, and
+number and types of arguments will be used (except for a few exceptions noted below).
+
+Refer to the source code in \ref BOOST_PYTHON_MODULE() for the latest up-to-date list of Python bindings.
+
+The bindings can be imported into Python through:
+
+\code{.py}
+import libjevois as jevois
+\endcode
+
+Every JeVois module written in Python should start with that import.
+
+Since all Python bindings are under the \b jevois module (actually, libjevois which we import as jevois), you should
+call these by prefixing the \b jevois module name.
+
+For example, consider the C++ function fccstr() defined in the jevois C++ namespace with signature:
+
+\code
+  // Convert a V4L2 four-cc code (V4L2_PIX_FMT_...) to a 4-char string
+  std::string fccstr(unsigned int fcc);
+\endcode
+
+Invoking this function from Python would take the form:
+
+\code{.py}
+s = jevois.fccstr(code)
+\endcode
+
+will invoke the C++ function fccstr() of JeVois, passing it the contents of variable \b code (which should be a positive
+integer number as expected by the C++ function, otherwise the binding engine will throw an exception for incorrect input
+argument type). The C++ string returned by the C++ function will then be copied to Python string \b s and will be
+available for further use in Python, as any Python strings.
+
+
+
+List of bindings
+----------------
+
+Click on any of the classes or functions below to see its documentation. Although the doc is for the C++ version, the
+functions and classes listed here have an exact binding to Python, except that you can ignore any C++ qualifiers (\c
+const and similar etc) and reference/pointer specifications (\c & or \c * before an argument name).
+
+- General utility functions declared in \ref Utils.H
+  + fccstr()
+  + v4l2BytesPerPix()
+  + v4l2ImageSize()
+  + flushcache()
+  + system()
+
+- Coordinate helpers declared in \ref Coordinates.H
+  + imgToStd()
+  + stdToImg()
+
+- Support for raw image buffers from camera and to USB from \ref RawImage.H
+  + class RawImage
+  + member functions: invalidate(), valid(), require(), bytesperpix(), bytesize(), coordsOk()
+  + member variables: width, height, fmt, fps
+
+- Raw format YUYV colors by name as in \ref RawImage.H
+  + These are mapped to a Python enum <b>jevois.YUYV</b> with values Black = 0x8000, DarkGrey = 0x8050, MedGrey =
+    0x8080, LightGrey = 0x80a0, White = 0x80ff, DarkGreen = 0x0000, MedGreen = 0x0040, LightGreen = 0x00ff, DarkTeal =
+    0x7070, MedTeal = 0x7090, LightTeal = 0x70b0, DarkPurple = 0xa030, MedPurple = 0xa050, LightPurple = 0xa080,
+    DarkPink = 0xff00, MedPink = 0xff80, LightPink = 0xffff.
+
+- Video4Linux2 (V4L2) RawImage pixel formats supported by the camera sensor and by the USB output:
+  + These are mapped to constants <b>jevois.V4L2_PIX_FMT_SRGGB8, jevois.V4L2_PIX_FMT_YUYV, jevois.V4L2_PIX_FMT_GREY,
+    jevois.V4L2_PIX_FMT_RGB565, jevois.V4L2_PIX_FMT_MJPEG, and jevois.V4L2_PIX_FMT_BGR24</b>.
+
+- Input frame wrappers around the InputFrame class from \ref Module.H
+  + class InputFrame
+  + member functions: get(), done(), getCvGRAY(), getCvBGR(), getCvRGB(), getCvRGBA()
+  
+- Output frame wrappers around the OutputFrame class from \ref Module.H
+  + class OutputFrame
+  + member functions: get(), send(), sendCvGRAY(), sendCvBGR(), sendCvRGB(), sendCvRGBA()
+
+- Operations on raw images as declared in \ref RawImageOps.H
+  + cvImage()
+  + convertToCvGray()
+  + convertToCvBGR()
+  + convertToCvRGB()
+  + convertToCvRGBA()
+  + byteSwap()
+  + paste()
+  + pasteGreyToYUYV()
+  + roipaste()
+  + drawDisk()
+  + drawCircle()
+  + drawLine()
+  + drawRect()
+  + writeText() with font selected through a Python enum <b>jevois.Font</b> with values <b>Font5x7, Font6x10, Font7x13,
+    Font8x13bold, Font9x15bold, Font10x20, Font11x22, Font12x22, Font14x26, Font15x28, Font16x29, Font20x38</b>.
+  + convertCvGRAYtoRawImage()
+  + convertCvBGRtoRawImage()
+  + convertCvRGBtoRawImage()
+  + convertCvRGBAtoRawImage()
+  + unpackCvRGBAtoGrayRawImage()
+  + hFlipYUYV()
+
+- Timer class declared in \ref Timer.H
+  + class Timer (note that constructor takes arguments; see below for log level definitions)
+  + member functions: start(), stop()
+
+- Profiler class declared in \ref Profiler.H
+  + class Profiler (note that constructor takes arguments; see below for log level definitions)
+  + member functions: start(), checkpoint(), stop()
+
+- System utilities declared in SysInfo.H
+  + getSysInfoCPU()
+  + getSysInfoMem()
+  + getSysInfoVersion()
+
+- Logging functions, simplified versions of the macros declared in \ref Log.H, taking a single string argument instead
+  of the streaming interface used on the C++ side (hence, Python programmers should use the Python string format()
+  function to place various variable values in that string):
+  + LDEBUG(), LINFO(), LERROR(), LFATAL()
+  + Log levels defined as constants: <b>jevois.LOG_DEBUG, jevois.LOG_INFO, jevois.LOG_ERR, jevois.LOG_CRIT</b>.
+
+*/
+
+}
+}

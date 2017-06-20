@@ -155,8 +155,8 @@ BOOST_PYTHON_MODULE(libjevois)
   void (*stdToImg1)(float & x, float & y, jevois::RawImage const & camimg, float const eps) = jevois::coords::stdToImg;
   void (*stdToImg2)(float & x, float & y, unsigned int const width, unsigned int const height, float const eps) =
     jevois::coords::stdToImg;
-  boost::python::def("imgToStd", stdToImg1);
-  boost::python::def("imgToStd", stdToImg2);
+  boost::python::def("stdToImg", stdToImg1);
+  boost::python::def("stdToImg", stdToImg2);
 
   // #################### RawImage.H
   boost::python::class_<jevois::RawImage>("RawImage") // default constructor is included
@@ -272,9 +272,10 @@ BOOST_PYTHON_MODULE(libjevois)
                      unsigned int col, jevois::rawimage::Font font) = jevois::rawimage::writeText;
   boost::python::def("writeText", writeText1);
 
-  JEVOIS_PYTHON_RAWIMAGE_FUNC(convertCvBGRtoRawImage);
-  JEVOIS_PYTHON_RAWIMAGE_FUNC(convertCvRGBAtoRawImage);
   JEVOIS_PYTHON_RAWIMAGE_FUNC(convertCvGRAYtoRawImage);
+  JEVOIS_PYTHON_RAWIMAGE_FUNC(convertCvBGRtoRawImage);
+  JEVOIS_PYTHON_RAWIMAGE_FUNC(convertCvRGBtoRawImage);
+  JEVOIS_PYTHON_RAWIMAGE_FUNC(convertCvRGBAtoRawImage);
   JEVOIS_PYTHON_RAWIMAGE_FUNC(unpackCvRGBAtoGrayRawImage);
   JEVOIS_PYTHON_RAWIMAGE_FUNC(hFlipYUYV);
 
