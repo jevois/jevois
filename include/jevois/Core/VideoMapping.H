@@ -93,6 +93,16 @@ namespace jevois
 
       //! Convenience function to print out the whole mapping in a human-friendly way
       std::string str() const;
+
+      //! Equality operator for specs but not vendor or module name
+      /*! Note that two mappings will be declared to match if their fps values are within 0.01fps, to avoid mismatches
+          due to floating point representation and rounding. */
+      bool hasSameSpecsAs(VideoMapping const & other) const;
+
+      //! Equality operator for specs and also vendor or module name
+      /*! Note that two mappings will be declared to match if their fps values are within 0.01fps, to avoid mismatches
+          due to floating point representation and rounding. */
+      bool isSameAs(VideoMapping const & other) const;
   };
 
   //! Stream a VideoMapping out, intended for machines

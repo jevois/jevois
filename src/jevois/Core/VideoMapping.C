@@ -111,6 +111,20 @@ std::string jevois::VideoMapping::str() const
 }
 
 // ####################################################################################################
+bool jevois::VideoMapping::hasSameSpecsAs(VideoMapping const & other) const
+{
+  return (ofmt == other.ofmt && ow == other.ow && oh == other.oh && std::abs(ofps - other.ofps) < 0.01F &&
+          cfmt == other.cfmt && cw == other.cw && ch == other.ch && std::abs(cfps - other.cfps) < 0.01F);
+}
+
+// ####################################################################################################
+bool jevois::VideoMapping::isSameAs(VideoMapping const & other) const
+{
+  return (hasSameSpecsAs(other) && vendor == other.vendor && modulename == other.modulename &&
+          ispython == other.ispython);
+}
+
+// ####################################################################################################
 std::ostream & jevois::operator<<(std::ostream & out, jevois::VideoMapping const & m)
 {
   out << jevois::fccstr(m.ofmt) << ' ' << m.ow << ' ' << m.oh << ' ' << m.ofps << ' '
@@ -249,8 +263,10 @@ std::vector<jevois::VideoMapping> jevois::videoMappingsFromStream(std::istream &
   {
     jevois::VideoMapping const & a = mappings[i-1];
     jevois::VideoMapping & b = mappings[i];
-    
-    if (b.ofmt != 0 && a.ofmt == b.ofmt && a.ow == b.ow && a.oh == b.oh)
+
+    // Discard exact duplicates, adjust frame rates for matching specs but different modules:
+    if (a.isSameAs(b)) mappings.erase(mappings.begin() + i);
+    else if (b.ofmt != 0 && a.ofmt == b.ofmt && a.ow == b.ow && a.oh == b.oh)
     {
       if (std::abs(a.ofps - b.ofps) < 0.01F) b.ofps -= 1.0F; // equal fps, decrease b.ofps by 1fps
       else if (b.ofps > a.ofps) b.ofps = a.ofps - 1.0F; // got out of order because of a previous decrease
@@ -264,7 +280,7 @@ std::vector<jevois::VideoMapping> jevois::videoMappingsFromStream(std::istream &
     jevois::VideoMapping m;
     m.ofmt = V4L2_PIX_FMT_YUYV; m.ow = 640; m.oh = 480; m.ofps = 30.0F;
     m.cfmt = V4L2_PIX_FMT_YUYV; m.cw = 640; m.ch = 480; m.cfps = 30.0F;
-    m.vendor = "JeVois"; m.modulename = "PassThrough";
+    m.vendor = "JeVois"; m.modulename = "PassThrough"; m.ispython = false;
 
     // We are guaranteed that this will not create a duplicate output mapping:
     mappings.push_back(m);
