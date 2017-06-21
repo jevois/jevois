@@ -17,6 +17,7 @@
 
 #include <jevois/Debug/Log.H>
 #include <jevois/Debug/PythonException.H>
+#include <jevois/Image/RawImageOps.H>
 #include <mutex>
 #include <iostream>
 #include <fstream>
@@ -207,33 +208,62 @@ void jevois::warnAndRethrowException()
 }
 
 // ##############################################################################################################
-std::string jevois::warnAndIgnoreException()
+std::string jevois::warnAndIgnoreException(jevois::RawImage * videoerrimg)
 {
-  std::string ret;
+  std::vector<std::string> retvec;
 
   // great trick to get back the type of an exception caught via a catch(...), just rethrow it and catch again:
   try { throw; }
 
   catch (std::exception const & e)
   {
-    ret = "Ignoring std::exception [" + std::string(e.what()) + ']';
+    retvec.push_back("Ignoring std::exception [" + std::string(e.what()) + ']');
   }
 
   catch (boost::python::error_already_set & e)
   {
-    LERROR("Ignoring exception from the Python interpreter:");
+    retvec.push_back("Ignoring exception from the Python interpreter:");
     std::string str = jevois::getPythonExceptionString(e);
     std::vector<std::string> lines = jevois::split(str, "\\n");
-    for (std::string const & li : lines) LERROR("   " << li);
+    for (std::string const & li : lines) retvec.push_back("   " + li);
   }
   
   catch (...)
   {
-    ret = "Ignoring unknown exception";
+    retvec.push_back("Ignoring unknown exception");
   }
 
-  LERROR(ret);
+  // Prepare a video error message if needed:
+  bool dovideo = (videoerrimg && videoerrimg->valid() && videoerrimg->fmt != V4L2_PIX_FMT_MJPEG);
+  int ypos = 40; int yinc = 10; jevois::rawimage::Font font = jevois::rawimage::Font6x10;
+  unsigned int white = 0xffff;
+  if (dovideo)
+  {
+    white = jevois::whiteColor(videoerrimg->fmt);
+    videoerrimg->clear();
 
+    // Draw a sad face:
+    jevois::rawimage::drawDisk(*videoerrimg, 10, 8, 4, white);
+    jevois::rawimage::drawDisk(*videoerrimg, 25, 8, 4, white);
+    jevois::rawimage::drawLine(*videoerrimg, 8, 20, 27, 23, 2, white);
+
+    // Initial message:
+    jevois::rawimage::writeText(*videoerrimg, "Oooops...", 45, 3, white, jevois::rawimage::Font14x26);
+
+    // Prepare font size for error log:
+    if (videoerrimg->height <= 240) { font = jevois::rawimage::Font6x10; yinc = 12; }
+    else if (videoerrimg->height <= 480) { font = jevois::rawimage::Font7x13; yinc = 15; }
+    else { font = jevois::rawimage::Font10x20; yinc = 22; }
+  }
+
+  // Write out the message:
+  std::string ret;
+  for (std::string const & m : retvec)
+  {
+    LERROR(m); ret += m + "\n";
+    if (dovideo) { jevois::rawimage::writeText(*videoerrimg, m, 3, ypos, white, font); ypos += yinc; }
+  }
+  
   // Return the message except for the first 2 words:
   size_t idx = ret.find(' '); idx = ret.find(' ', idx + 1);
   return ret.substr(idx + 1);

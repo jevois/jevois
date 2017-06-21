@@ -200,7 +200,7 @@ namespace
 jevois::Engine::Engine(std::string const & instance) :
     jevois::Manager(instance), itsMappings(jevois::loadVideoMappings(itsDefaultMappingIdx)),
     itsRunning(false), itsStreaming(false), itsStopMainLoop(false), itsTurbo(false),
-    itsManualStreamon(false)
+    itsManualStreamon(false), itsVideoErrors(false)
 {
   JEVOIS_TRACE(1);
 
@@ -217,7 +217,8 @@ jevois::Engine::Engine(std::string const & instance) :
 // ####################################################################################################
 jevois::Engine::Engine(int argc, char const* argv[], std::string const & instance) :
     jevois::Manager(argc, argv, instance), itsMappings(jevois::loadVideoMappings(itsDefaultMappingIdx)),
-    itsRunning(false), itsStreaming(false), itsStopMainLoop(false)
+    itsRunning(false), itsStreaming(false), itsStopMainLoop(false), itsTurbo(false),
+    itsManualStreamon(false), itsVideoErrors(false)
 {
   JEVOIS_TRACE(1);
 
@@ -324,6 +325,13 @@ void jevois::Engine::onParamChange(jevois::engine::cpumax const & JEVOIS_UNUSED_
   }
 
   ofs << newval * 1000U << std::endl;
+}
+
+// ####################################################################################################
+void jevois::Engine::onParamChange(jevois::engine::videoerrors const & JEVOIS_UNUSED_PARAM(param),
+                                   bool const & newval)
+{
+  itsVideoErrors.store(newval);
 }
 
 // ####################################################################################################
@@ -681,15 +689,40 @@ void jevois::Engine::mainLoop()
       JEVOIS_TIMED_LOCK(itsMtx);
 
       if (itsModule)
+      {
         try
         {
           if (itsCurrentMapping.ofmt) // Process with USB outputs:
-            itsModule->process(jevois::InputFrame(itsCamera, itsTurbo), jevois::OutputFrame(itsGadget));
+            itsModule->process(jevois::InputFrame(itsCamera, itsTurbo),
+                               jevois::OutputFrame(itsGadget, itsVideoErrors.load() ? &itsVideoErrorImage : nullptr));
           else  // Process with no USB outputs:
             itsModule->process(jevois::InputFrame(itsCamera, itsTurbo));
           dosleep = false;
         }
-        catch (...) { jevois::warnAndIgnoreException(); }
+        catch (...)
+        {
+          // Report exceptions to video if desired:
+          if (itsVideoErrors.load())
+          {
+            // If the module threw before get() or after send() on the output frame, get a buffer from the gadget:
+            if (itsVideoErrorImage.valid() == false) itsGadget->get(itsVideoErrorImage);
+            
+            // Report module exception to serlog and video, and ignore:
+            jevois::warnAndIgnoreException(&itsVideoErrorImage);
+            
+            // Send the error image over USB:
+            itsGadget->send(itsVideoErrorImage);
+            
+            // Invalidate the error image so it is clean for the next frame:
+            itsVideoErrorImage.invalidate();
+          }
+          else
+          {
+            // Report module exception to serlog, and ignore:
+            jevois::warnAndIgnoreException();
+          }
+        }
+      }
     }
   
     if (itsStopMainLoop.load())

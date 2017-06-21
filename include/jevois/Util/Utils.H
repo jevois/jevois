@@ -37,6 +37,15 @@ namespace jevois
 
   //! Return the image size in bytes for a given V4L2_PIX_FMT_..., width, height
   unsigned int v4l2ImageSize(unsigned int fcc, unsigned int width, unsigned int height);
+
+  //! Return a value that corresponds to black for the given video format
+  /*! The returned value is appropriate to use as the color value for the image drawing functions in \ref image and may
+      not always be zero. */
+  unsigned int blackColor(unsigned int fcc);
+  
+  //! Return a value that corresponds to white for the given video format
+  /*! The returned value is appropriate to use as the color value for the image drawing functions in \ref image. */
+  unsigned int whiteColor(unsigned int fcc);
   
   //! Split string into vector of tokens using a regex to specify what to split on; default regex splits by whitespace
   std::vector<std::string> split(std::string const & input, std::string const & regex = "\\s+");

@@ -18,6 +18,8 @@
 #include <jevois/Image/RawImage.H>
 #include <jevois/Util/Utils.H>
 
+#include <algorithm> // for std::fill
+
 // ####################################################################################################
 jevois::RawImage::RawImage()
 { }
@@ -43,6 +45,24 @@ void jevois::RawImage::invalidate()
 // ####################################################################################################
 bool jevois::RawImage::valid() const
 { return (buf.get() != nullptr); }
+
+// ####################################################################################################
+void jevois::RawImage::clear()
+{
+  if (valid() == false) LFATAL("Cannot clear because not valid()");
+
+  switch (fmt)
+  {
+  case V4L2_PIX_FMT_YUYV: std::fill(pixelsw<unsigned short>(), pixelsw<unsigned short>() + width * height,
+                                    jevois::yuyv::Black); break;
+  case V4L2_PIX_FMT_GREY: memset(pixelsw<void>(), 0, bytesize()); break;
+  case V4L2_PIX_FMT_SRGGB8: memset(pixelsw<void>(), 0, bytesize()); break;
+  case V4L2_PIX_FMT_RGB565: memset(pixelsw<void>(), 0, bytesize()); break;
+  case V4L2_PIX_FMT_MJPEG: break;
+  case V4L2_PIX_FMT_BGR24: memset(pixelsw<void>(), 0, bytesize()); break;
+  default: LFATAL("Unsupported pixel format " << jevois::fccstr(fmt));
+  }
+}
 
 // ####################################################################################################
 void jevois::RawImage::require(char const * info, unsigned int w, unsigned int h, unsigned int f) const

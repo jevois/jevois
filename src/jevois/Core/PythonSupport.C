@@ -142,6 +142,8 @@ BOOST_PYTHON_MODULE(libjevois)
   JEVOIS_PYTHON_FUNC(fccstr);
   JEVOIS_PYTHON_FUNC(v4l2BytesPerPix);
   JEVOIS_PYTHON_FUNC(v4l2ImageSize);
+  JEVOIS_PYTHON_FUNC(blackColor);
+  JEVOIS_PYTHON_FUNC(whiteColor);
   JEVOIS_PYTHON_FUNC(flushcache);
   JEVOIS_PYTHON_FUNC(system);
 
@@ -162,6 +164,7 @@ BOOST_PYTHON_MODULE(libjevois)
   boost::python::class_<jevois::RawImage>("RawImage") // default constructor is included
     .def("invalidate", &jevois::RawImage::invalidate)
     .def("valid", &jevois::RawImage::valid)
+    .def("clear", &jevois::RawImage::clear)
     .def("require", &jevois::RawImage::require)
     .def_readwrite("width", &jevois::RawImage::width)
     .def_readwrite("height", &jevois::RawImage::height)

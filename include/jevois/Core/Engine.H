@@ -20,6 +20,7 @@
 #include <jevois/Core/VideoMapping.H>
 #include <jevois/Component/Manager.H>
 #include <jevois/Types/Enum.H>
+#include <jevois/Image/RawImage.H>
 
 #include <memory>
 #include <mutex>
@@ -128,6 +129,11 @@ namespace jevois
                              SerPort::None, SerPort_Values, ParamCateg);
 
     //! Parameter \relates jevois::Engine
+    JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(videoerrors, bool, "Show any machine vision module errors (exceptions) "
+                                           "in the video stream. Only takes effect if streaming video to USB.",
+                                           true, ParamCateg);
+
+    //! Parameter \relates jevois::Engine
     JEVOIS_DECLARE_PARAMETER(serout, SerPort, "Send module serial messages to selected serial port(s)",
                              SerPort::None, SerPort_Values, ParamCateg);
 
@@ -223,7 +229,8 @@ namespace jevois
   class Engine : public Manager,
                  public Parameter<engine::cameradev, engine::cameranbuf, engine::gadgetdev, engine::gadgetnbuf,
                                   engine::videomapping, engine::serialdev, engine::usbserialdev, engine::camreg,
-                                  engine::camturbo, engine::serlog, engine::serout, engine::cpumode, engine::cpumax>
+                                  engine::camturbo, engine::serlog, engine::videoerrors, engine::serout,
+                                  engine::cpumode, engine::cpumax>
   {
     public:
       //! Constructor
@@ -304,6 +311,9 @@ namespace jevois
       //! Parameter callback
       void onParamChange(engine::cpumax const & param, unsigned int const & newval);
 
+      //! Parameter callback
+      void onParamChange(engine::videoerrors const & param, bool const & newval);
+
       size_t itsDefaultMappingIdx; //!< Index of default mapping
       std::vector<VideoMapping> const itsMappings; //!< All our mappings from videomappings.cfg
       VideoMapping itsCurrentMapping; //!< Current video mapping, may not match any in itsMappings if setmapping2 used
@@ -345,7 +355,9 @@ namespace jevois
       
       bool itsTurbo;
       bool itsManualStreamon; // allow manual streamon when outputing video to None or file
-
+      std::atomic<bool> itsVideoErrors; // fast cached value for engine::videoerrors
+      jevois::RawImage itsVideoErrorImage;
+      
 #ifdef JEVOIS_PLATFORM
       // Things related to mass storage gadget to export our /jevois partition as a virtual USB flash drive:
       void checkMassStorage(); // thread to check mass storage gadget status

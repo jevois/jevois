@@ -28,6 +28,7 @@
 namespace jevois
 {
   class Engine;
+  class RawImage;
   
   /*! \defgroup debugging Debugging helper classes, functions and macros */
   
@@ -97,8 +98,13 @@ namespace jevois
       \endcode
 
       Note that the message that is logged to console is also returned as a string (without the "Ignoring uncaught..."
-      part), in case one wants to report it in some other way (e.g., in a GUI). \ingroup debugging */
-  std::string warnAndIgnoreException();
+      part), in case one wants to report it in some other way (e.g., in a GUI).
+
+      If a non-null pointer to a valid() RawImage is given, the image will be cleared and the error message will be
+      written into it. This is useful to display module exceptions in the video stream that is sent over USB.
+
+      \ingroup debugging */
+  std::string warnAndIgnoreException(RawImage * videoerrimg = nullptr);
 
   //! Set an Engine so that all log messages will be forwarded to its serial ports
   /*! This function is not intended for general use, Engine uses it internally when users set one of its

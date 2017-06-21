@@ -122,6 +122,8 @@ functions and classes listed here have an exact binding to Python, except that y
   + fccstr()
   + v4l2BytesPerPix()
   + v4l2ImageSize()
+  + blackColor()
+  + whiteColor()
   + flushcache()
   + system()
 
@@ -131,7 +133,7 @@ functions and classes listed here have an exact binding to Python, except that y
 
 - Support for raw image buffers from camera and to USB from \ref RawImage.H
   + class RawImage
-  + member functions: invalidate(), valid(), require(), bytesperpix(), bytesize(), coordsOk()
+  + member functions: invalidate(), valid(), clear(), require(), bytesperpix(), bytesize(), coordsOk()
   + member variables: width, height, fmt, fps
 
 - Raw format YUYV colors by name as in \ref RawImage.H

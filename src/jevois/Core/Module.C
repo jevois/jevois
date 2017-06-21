@@ -94,8 +94,8 @@ cv::Mat jevois::InputFrame::getCvRGBA(bool casync) const
 
 // ####################################################################################################
 // ####################################################################################################
-jevois::OutputFrame::OutputFrame(std::shared_ptr<jevois::VideoOutput> const & gad) :
-    itsGadget(gad), itsDidGet(false), itsDidSend(false)
+jevois::OutputFrame::OutputFrame(std::shared_ptr<jevois::VideoOutput> const & gad, jevois::RawImage * excimg) :
+    itsGadget(gad), itsDidGet(false), itsDidSend(false), itsImagePtrForException(excimg)
 { }
 
 // ####################################################################################################
@@ -106,9 +106,20 @@ jevois::OutputFrame::~OutputFrame()
 
   // If we did not get(), just end now:
   if (itsDidGet == false) return;
-
-  // If we did get() but not send(), send now (the image will likely contain garbage):
-  if (itsDidSend == false) try { itsGadget->send(itsImage); } catch (...) { }
+  
+  // If Engine gave us a non-zero image pointer for exceptions, and we did get(), pass down the buffer we did get, so
+  // that Engine can write exception text into it, unless it is too late (exception occurred after send()) or too early
+  // (before get()), in which case Engine will get its own buffer:
+  if (itsImagePtrForException)
+  {
+    if (itsDidSend == false) { *itsImagePtrForException = itsImage; }
+    // Engine will be responsible for the final send()
+  }
+  else
+  {
+    // If we did get() but not send(), send now (the image will likely contain garbage):
+    if (itsDidSend == false) try { itsGadget->send(itsImage); } catch (...) { }
+  }
 }
 
 // ####################################################################################################

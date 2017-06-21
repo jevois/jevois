@@ -203,13 +203,15 @@ namespace jevois
       OutputFrame(OutputFrame const & other) = delete;
       OutputFrame & operator=(OutputFrame const & other) = delete;
 
+      // Only our friends can construct us:
       friend class Engine;
-      OutputFrame(std::shared_ptr<VideoOutput> const & gad); // Only our friends can construct us
+      OutputFrame(std::shared_ptr<VideoOutput> const & gad, RawImage * excimg = nullptr);
 
       std::shared_ptr<VideoOutput> itsGadget;
       mutable bool itsDidGet;
       mutable bool itsDidSend;
       mutable RawImage itsImage;
+      jevois::RawImage * itsImagePtrForException;
   };
   
   //! Virtual base class for a vision processing module

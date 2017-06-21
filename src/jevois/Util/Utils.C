@@ -64,7 +64,37 @@ unsigned int jevois::v4l2BytesPerPix(unsigned int fcc)
 // ####################################################################################################
 unsigned int jevois::v4l2ImageSize(unsigned int fcc, unsigned int width, unsigned int height)
 { return width * height * jevois::v4l2BytesPerPix(fcc); }
-  
+
+// ####################################################################################################
+unsigned int jevois::blackColor(unsigned int fcc)
+{
+  switch (fcc)
+  {
+  case V4L2_PIX_FMT_YUYV: return 0x8000;
+  case V4L2_PIX_FMT_GREY: return 0;
+  case V4L2_PIX_FMT_SRGGB8: return 0;
+  case V4L2_PIX_FMT_RGB565: return 0;
+  case V4L2_PIX_FMT_MJPEG: return 0;
+  case V4L2_PIX_FMT_BGR24: return 0;
+  default: LFATAL("Unsupported pixel format " << jevois::fccstr(fcc));
+  }
+}
+
+// ####################################################################################################
+unsigned int jevois::whiteColor(unsigned int fcc)
+{
+  switch (fcc)
+  {
+  case V4L2_PIX_FMT_YUYV: return 0x80ff;
+  case V4L2_PIX_FMT_GREY: return 0xff;
+  case V4L2_PIX_FMT_SRGGB8: return 0xff;
+  case V4L2_PIX_FMT_RGB565: return 0xffff;
+  case V4L2_PIX_FMT_MJPEG: return 0xff;
+  case V4L2_PIX_FMT_BGR24: return 0xffffff;
+  default: LFATAL("Unsupported pixel format " << jevois::fccstr(fcc));
+  }
+}
+
 // ####################################################################################################
 std::vector<std::string> jevois::split(std::string const & input, std::string const & regex)
 {

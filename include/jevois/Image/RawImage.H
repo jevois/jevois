@@ -131,6 +131,12 @@ namespace jevois
       //! Check whether the image has a valid pixel buffer
       bool valid() const;
 
+      //! Clear the pixels to all black
+      /*! Black value depends on format. Does not work with MJPEG. Throws if the raw image is not valid() and silently
+          does nothing if the raw image has MJPEG pixels (since the raw image buffer will be overwritten by the MJPEG
+          compressor anyway). */
+      void clear();
+      
       //! Require a particular image size and format, issue a fatal error message and throw if no match
       /*! The info string is included in the fatal error message to help identifying which image failed the
           requirement. Typically, you would pass "input" or "output" as info. */
