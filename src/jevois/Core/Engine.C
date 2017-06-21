@@ -614,58 +614,72 @@ void jevois::Engine::setFormatInternal(jevois::VideoMapping const & m)
   // image resolution, etc:
   if (itsModule) { removeComponent(itsModule); itsModule.reset(); }
 
-  // For python modules, we do not need a loader, we just instantiate our special python wrapper module instead:
-  std::string const sopath = m.sopath();
-  if (m.ispython)
+
+  // Instantiate the module. If the constructor throws, code is bogus, for example some syntax error in a python module
+  // that is detected at load time. We get the exception's error message for later display into video frames in the main
+  // loop, and mark itsModuleConstructionError:
+  try
   {
-    // Instantiate the python wrapper:
-    itsModule.reset(new jevois::PythonModule(m));
-  }
-  else
-  {
-    // C++ compiled module. We can re-use the same loader and avoid closing the .so if we will use the same module:
-    if (itsLoader.get() == nullptr || itsLoader->sopath() != sopath)
+    // For python modules, we do not need a loader, we just instantiate our special python wrapper module instead:
+    std::string const sopath = m.sopath();
+    if (m.ispython)
     {
-      // Nuke our previous loader and free its resources if needed, then start a new loader:
-      LINFO("Instantiating dynamic loader for " << sopath);
-      itsLoader.reset(new jevois::DynamicLoader(sopath, true));
+      // Instantiate the python wrapper. 
+      itsModule.reset(new jevois::PythonModule(m));
+    }
+    else
+    {
+      // C++ compiled module. We can re-use the same loader and avoid closing the .so if we will use the same module:
+      if (itsLoader.get() == nullptr || itsLoader->sopath() != sopath)
+      {
+        // Nuke our previous loader and free its resources if needed, then start a new loader:
+        LINFO("Instantiating dynamic loader for " << sopath);
+        itsLoader.reset(new jevois::DynamicLoader(sopath, true));
+      }
+      
+      // Check version match:
+      auto version_major = itsLoader->load<int()>(m.modulename + "_version_major");
+      auto version_minor = itsLoader->load<int()>(m.modulename + "_version_minor");
+      if (version_major() != JEVOIS_VERSION_MAJOR || version_minor() != JEVOIS_VERSION_MINOR)
+        LERROR("Module " << m.modulename << " in file " << sopath << " was build for JeVois v" << version_major() << '.'
+               << version_minor() << ", but running framework is v" << JEVOIS_VERSION_STRING << " -- TRYING ANYWAY");
+      
+      // Instantiate the new module:
+      auto create = itsLoader->load<std::shared_ptr<jevois::Module>(std::string const &)>(m.modulename + "_create");
+      itsModule = create(m.modulename); // Here we just use the class name as instance name
     }
     
-    // Check version match:
-    auto version_major = itsLoader->load<int()>(m.modulename + "_version_major");
-    auto version_minor = itsLoader->load<int()>(m.modulename + "_version_minor");
-    if (version_major() != JEVOIS_VERSION_MAJOR || version_minor() != JEVOIS_VERSION_MINOR)
-      LERROR("Module " << m.modulename << " in file " << sopath << " was build for JeVois v" << version_major() << '.'
-             << version_minor() << ", but running framework is v" << JEVOIS_VERSION_STRING << " -- TRYING ANYWAY");
-  
-    // Instantiate the new module:
-    auto create = itsLoader->load<std::shared_ptr<jevois::Module>(std::string const &)>(m.modulename + "_create");
-    itsModule = create(m.modulename); // Here we just use the class name as instance name
-  }
-  
-  // Add the module as a component to us. Keep this code in sync with Manager::addComponent():
-  {
-    // Lock up so we guarantee the instance name does not get robbed as we add the sub:
-    boost::unique_lock<boost::shared_mutex> ulck(itsSubMtx);
+    // Add the module as a component to us. Keep this code in sync with Manager::addComponent():
+    {
+      // Lock up so we guarantee the instance name does not get robbed as we add the sub:
+      boost::unique_lock<boost::shared_mutex> ulck(itsSubMtx);
+      
+      // Then add it as a sub-component to us:
+      itsSubComponents.push_back(itsModule);
+      itsModule->itsParent = this;
+      itsModule->setPath(sopath.substr(0, sopath.rfind('/')));
+    }
     
-    // Then add it as a sub-component to us:
-    itsSubComponents.push_back(itsModule);
-    itsModule->itsParent = this;
-    itsModule->setPath(sopath.substr(0, sopath.rfind('/')));
-  }
-  
-  // Bring it to our runstate and load any extra params. NOTE: Keep this in sync with Component::init():
-  if (itsInitialized) itsModule->runPreInit();
-  
-  std::string const paramcfg = itsModule->absolutePath(JEVOIS_MODULE_PARAMS_FILENAME);
-  std::ifstream ifs(paramcfg); if (ifs.is_open()) itsModule->setParamsFromStream(ifs, paramcfg);
-  
-  if (itsInitialized) { itsModule->setInitialized(); itsModule->runPostInit(); }
+    // Bring it to our runstate and load any extra params. NOTE: Keep this in sync with Component::init():
+    if (itsInitialized) itsModule->runPreInit();
+    
+    std::string const paramcfg = itsModule->absolutePath(JEVOIS_MODULE_PARAMS_FILENAME);
+    std::ifstream ifs(paramcfg); if (ifs.is_open()) itsModule->setParamsFromStream(ifs, paramcfg);
+    
+    if (itsInitialized) { itsModule->setInitialized(); itsModule->runPostInit(); }
 
-  // And finally run any config script:
-  runScriptFromFile(itsModule->absolutePath(JEVOIS_MODULE_SCRIPT_FILENAME), nullptr, false);
-  
-  LINFO("Module [" << m.modulename << "] loaded, initialized, and ready.");
+    // And finally run any config script:
+    runScriptFromFile(itsModule->absolutePath(JEVOIS_MODULE_SCRIPT_FILENAME), nullptr, false);
+    
+    LINFO("Module [" << m.modulename << "] loaded, initialized, and ready.");
+    itsModuleConstructionError.clear();
+  }
+  catch (...)
+  {
+    itsModuleConstructionError = jevois::warnAndIgnoreException();
+    if (itsModule) { removeComponent(itsModule); itsModule.reset(); }
+    LERROR("Module [" << m.modulename << "] startup error and not operational.");
+  }
 }
 
 // ####################################################################################################
@@ -711,8 +725,11 @@ void jevois::Engine::mainLoop()
               // If the module threw before get() or after send() on the output frame, get a buffer from the gadget:
               if (itsVideoErrorImage.valid() == false) itsGadget->get(itsVideoErrorImage); // could throw when streamoff
               
-              // Report module exception to serlog and video, and ignore:
-              jevois::warnAndIgnoreException(&itsVideoErrorImage);
+              // Report module exception to serlog and get it back as a string:
+              std::string errstr = jevois::warnAndIgnoreException();
+
+              // Draw the error message into our video frame:
+              jevois::drawErrorImage(errstr, itsVideoErrorImage);
             }
             catch (...) { jevois::warnAndIgnoreException(); }
 
@@ -732,6 +749,23 @@ void jevois::Engine::mainLoop()
             jevois::warnAndIgnoreException();
           }
         }
+      }
+      else
+      {
+        // No module. If we have a module construction error, render it to an image and stream it over USB now (if we
+        // are doing USB and we want to see errors in the video stream):
+        if (itsCurrentMapping.ofmt && itsVideoErrors.load())
+          try
+          {
+            // Get an output image, draw error message, and send to host:
+            itsGadget->get(itsVideoErrorImage);
+            jevois::drawErrorImage(itsModuleConstructionError, itsVideoErrorImage);
+            itsGadget->send(itsVideoErrorImage);
+
+            // Also get one camera frame to avoid accumulation of stale buffers:
+            (void)jevois::InputFrame(itsCamera, itsTurbo);
+          }
+          catch (...) { jevois::warnAndIgnoreException(); }
       }
     }
   

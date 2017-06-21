@@ -172,27 +172,23 @@ jevois::PythonModule::PythonModule(jevois::VideoMapping const & m) :
 {
   if (m.ispython == false) LFATAL("Passed video mapping is not for a python module");
 
-  try
-  {
-    // Get the python interpreter going:
-    itsMainModule = boost::python::import("__main__");
-    itsMainNamespace = itsMainModule.attr("__dict__");
+  // Get the python interpreter going:
+  itsMainModule = boost::python::import("__main__");
+  itsMainNamespace = itsMainModule.attr("__dict__");
 
-    // Import the module. Note that we import the whole directory:
-    std::string const pypath = m.sopath();
-    std::string const pydir = pypath.substr(0, pypath.rfind('/'));
-    std::string const execstr =
-      "import sys\n"
-      "sys.path.append(\"/usr/lib\")\n" // To find libjevois module in /usr/lib
-      "sys.path.append(\"" JEVOIS_OPENCV_PYTHON_PATH "/lib\")\n" // To find cv2 module
-      "sys.path.append(\"" + pydir + "\")\n" +
-      "from " + m.modulename + " import " + m.modulename + "\n";
-    boost::python::exec(execstr.c_str(), itsMainNamespace, itsMainNamespace);
+  // Import the module. Note that we import the whole directory:
+  std::string const pypath = m.sopath();
+  std::string const pydir = pypath.substr(0, pypath.rfind('/'));
+  std::string const execstr =
+    "import sys\n"
+    "sys.path.append(\"/usr/lib\")\n" // To find libjevois module in /usr/lib
+    "sys.path.append(\"" JEVOIS_OPENCV_PYTHON_PATH "/lib\")\n" // To find cv2 module
+    "sys.path.append(\"" + pydir + "\")\n" +
+    "from " + m.modulename + " import " + m.modulename + "\n";
+  boost::python::exec(execstr.c_str(), itsMainNamespace, itsMainNamespace);
 
-    // Create an instance of the python class defined in the module:
-    itsInstance = boost::python::eval((m.modulename + "()").c_str(), itsMainNamespace, itsMainNamespace);
-  }
-  catch (...) { jevois::warnAndRethrowException(); }
+  // Create an instance of the python class defined in the module:
+  itsInstance = boost::python::eval((m.modulename + "()").c_str(), itsMainNamespace, itsMainNamespace);
 }
 
 // ####################################################################################################

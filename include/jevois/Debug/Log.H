@@ -97,15 +97,16 @@ namespace jevois
       try { do_something_risky_and_we_dont_care_if_it_fails(); } catch (...) { jevois::warnAndIgnoreException(); }
       \endcode
 
-      Note that the message that is logged to console is also returned as a string (without the "Ignoring uncaught..."
-      part), in case one wants to report it in some other way (e.g., in a GUI).
+      Note that the message that is logged to console is also returned as a string, in case one wants to report it in
+      some other way (e.g., in a GUI or in a video frame using drawErrorImage()). \ingroup debugging */
+  std::string warnAndIgnoreException();
 
-      If a non-null pointer to a valid() RawImage is given, the image will be cleared and the error message will be
-      written into it. This is useful to display module exceptions in the video stream that is sent over USB.
-
-      \ingroup debugging */
-  std::string warnAndIgnoreException(RawImage * videoerrimg = nullptr);
-
+  //! Display an error message into a RawImage
+  /*! The error message should consist of a string where multiple lines may be separated by \\n characters, such as the
+      string returned by warnAndIgnoreException(). The message will be written in the image, which should be
+      valid(). This is useful to display module exceptions in the video stream that is sent over USB.*/
+  void drawErrorImage(std::string const & errmsg, RawImage & videoerrimg);
+  
   //! Set an Engine so that all log messages will be forwarded to its serial ports
   /*! This function is not intended for general use, Engine uses it internally when users set one of its
       parameters to enable forwarding of log messages to serial ports. \ingroup debugging*/

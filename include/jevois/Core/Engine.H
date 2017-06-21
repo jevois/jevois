@@ -357,6 +357,7 @@ namespace jevois
       bool itsManualStreamon; // allow manual streamon when outputing video to None or file
       std::atomic<bool> itsVideoErrors; // fast cached value for engine::videoerrors
       jevois::RawImage itsVideoErrorImage;
+      std::string itsModuleConstructionError; // Non-empty error message if module constructor threw
       
 #ifdef JEVOIS_PLATFORM
       // Things related to mass storage gadget to export our /jevois partition as a virtual USB flash drive:

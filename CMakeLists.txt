@@ -227,6 +227,7 @@ else (JEVOIS_PLATFORM)
   install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/scripts/jevois-create-python-module" DESTINATION bin COMPONENT bin)
   install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/scripts/jevois-modinfo" DESTINATION bin COMPONENT bin)
   install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/scripts/jevois-usbsd" DESTINATION bin COMPONENT bin)
+  install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/scripts/jevois-cmd" DESTINATION bin COMPONENT bin)
 endif (JEVOIS_PLATFORM)
 
 # Install all of our CMakeModules as well

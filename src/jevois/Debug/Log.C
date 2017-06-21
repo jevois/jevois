@@ -208,7 +208,7 @@ void jevois::warnAndRethrowException()
 }
 
 // ##############################################################################################################
-std::string jevois::warnAndIgnoreException(jevois::RawImage * videoerrimg)
+std::string jevois::warnAndIgnoreException()
 {
   std::vector<std::string> retvec;
 
@@ -233,55 +233,55 @@ std::string jevois::warnAndIgnoreException(jevois::RawImage * videoerrimg)
     retvec.push_back("Caught unknown exception");
   }
 
-  // Prepare a video error message if needed:
-  bool dovideo = (videoerrimg && videoerrimg->valid() && videoerrimg->fmt != V4L2_PIX_FMT_MJPEG);
-  int ypos = 40; int fw = 6, fh = 10; jevois::rawimage::Font font = jevois::rawimage::Font6x10;
-  unsigned int white = 0xffff;
-  if (dovideo)
-  {
-    white = jevois::whiteColor(videoerrimg->fmt);
-    videoerrimg->clear();
-
-    // Draw a sad face:
-    jevois::rawimage::drawDisk(*videoerrimg, 10, 8, 4, white);
-    jevois::rawimage::drawDisk(*videoerrimg, 25, 8, 4, white);
-    jevois::rawimage::drawLine(*videoerrimg, 8, 20, 27, 23, 2, white);
-
-    // Initial message:
-    jevois::rawimage::writeText(*videoerrimg, "Oooops...", 45, 3, white, jevois::rawimage::Font14x26);
-
-    // Prepare font size for error log:
-    if (videoerrimg->width <= 352 || videoerrimg->height <= 240)
-    { font = jevois::rawimage::Font6x10; fw = 6; fh = 10; }
-    else if (videoerrimg->width <= 640 || videoerrimg->height <= 480)
-    { font = jevois::rawimage::Font7x13; fw = 7; fh = 13; }
-    else { font = jevois::rawimage::Font10x20; fw = 10; fh = 20; }
-  }
-
   // Write out the message:
   std::string ret;
-  for (std::string & m : retvec)
-  {
-    LERROR(m); ret += m + "\n";
-    if (dovideo)
-    {
-      // Do some simple linewrap:
-      unsigned int nchar = (videoerrimg->width - 6) / fw; // yes this will be a huge number if width < 6
-      while (m.size() > nchar)
-      {
-        jevois::rawimage::writeText(*videoerrimg, m.substr(0, nchar), 3, ypos, white, font);
-        ypos += fh + 2;
-        m = m.substr(nchar + 1, m.npos);
-      }
-      // Print out the last chunk (or the whole thing if it was short):
-      jevois::rawimage::writeText(*videoerrimg, m, 3, ypos, white, font);
-      ypos += fh + 2;
-    }
-  }
+  for (std::string & m : retvec) { LERROR(m); ret += m + "\n"; }
+
+  return ret;
+}
+
+// ##############################################################################################################
+void jevois::drawErrorImage(std::string const & errmsg, jevois::RawImage & videoerrimg)
+{
+  if (videoerrimg.valid() == false) { LERROR("Cannot draw in empty image -- IGNORED"); return; }
+
+  int ypos = 40; int fw = 6, fh = 10; jevois::rawimage::Font font = jevois::rawimage::Font6x10;
+  unsigned int white = jevois::whiteColor(videoerrimg.fmt);
+
+  // Clear image:
+  videoerrimg.clear();
+
+  // Draw a sad face:
+  jevois::rawimage::drawDisk(videoerrimg, 10, 8, 4, white);
+  jevois::rawimage::drawDisk(videoerrimg, 25, 8, 4, white);
+  jevois::rawimage::drawLine(videoerrimg, 8, 20, 27, 23, 2, white);
   
-  // Return the message except for the first 2 words:
-  size_t idx = ret.find(' '); idx = ret.find(' ', idx + 1);
-  return ret.substr(idx + 1);
+  // Initial message:
+  jevois::rawimage::writeText(videoerrimg, "Oooops...", 45, 3, white, jevois::rawimage::Font14x26);
+
+  // Prepare font size for error log:
+  if (videoerrimg.width <= 352 || videoerrimg.height <= 240)
+  { font = jevois::rawimage::Font6x10; fw = 6; fh = 10; }
+  else if (videoerrimg.width <= 640 || videoerrimg.height <= 480)
+  { font = jevois::rawimage::Font7x13; fw = 7; fh = 13; }
+  else { font = jevois::rawimage::Font10x20; fw = 10; fh = 20; }
+
+  // Write out the message:
+  std::vector<std::string> lines = jevois::split(errmsg, "\\n");
+  for (std::string & m : lines)
+  {
+    // Do some simple linewrap:
+    unsigned int nchar = (videoerrimg.width - 6) / fw; // yes this will be a huge number if width < 6
+    while (m.size() > nchar)
+    {
+      jevois::rawimage::writeText(videoerrimg, m.substr(0, nchar), 3, ypos, white, font);
+      ypos += fh + 2;
+      m = m.substr(nchar + 1, m.npos);
+    }
+    // Print out the last chunk (or the whole thing if it was short):
+    jevois::rawimage::writeText(videoerrimg, m, 3, ypos, white, font);
+    ypos += fh + 2;
+  }
 }
 
 // ##############################################################################################################
