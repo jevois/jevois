@@ -155,7 +155,15 @@ by
 gdb --args /usr/bin/jevois-daemon ${opts}
 \endverbatim
 
+Note that since the addition of Python support in \jvversion{1.1}, libcrypto gets pulled in when \c jevois-daemon
+starts, and this causes problems with gdb on the platform. Thus, when gdb starts on the platform, issue a
 
+\verbatim
+handle SIGILL nostop noprint
+\endverbatim
+
+before you give gdb the \c run command. See https://www.raspberrypi.org/forums/viewtopic.php?p=155085 for the same issue
+reported on the Raspberry Pi.
 
 
 */

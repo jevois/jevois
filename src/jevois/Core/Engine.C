@@ -719,7 +719,7 @@ void jevois::Engine::mainLoop()
             try
             {
               // Send the error image over USB:
-              itsGadget->send(itsVideoErrorImage); // could throw if gadget stream off
+              if (itsVideoErrorImage.valid()) itsGadget->send(itsVideoErrorImage); // could throw if gadget stream off
             }
             catch (...) { jevois::warnAndIgnoreException(); }
 
@@ -1398,15 +1398,15 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
     // ----------------------------------------------------------------------------------------------------
     if (cmd == "sync")
     {
-      if (std::system("sync")) LERROR("Disk sync failed -- IGNORED");
-      return true;
+      if (std::system("sync")) errmsg = "Disk sync failed";
+      else return true;
     }
 
     // ----------------------------------------------------------------------------------------------------
     if (cmd == "date")
     {
       std::string dat = jevois::system("/bin/date " + rem);
-      LINFO("date now " << dat.substr(0, dat.size()-1)); // skip trailing newline
+      s->writeString("date now " + dat.substr(0, dat.size()-1)); // skip trailing newline
       return true;
     }
 
@@ -1417,7 +1417,7 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
       if (itsModule) fname = itsModule->absolutePath(rem); else fname = rem;
       
       try { runScriptFromFile(fname, s, true); return true; }
-      catch (...) { errmsg = "Script execution failed."; }
+      catch (...) { errmsg = "Script execution failed"; }
     }
  
 #ifdef JEVOIS_PLATFORM
@@ -1426,11 +1426,12 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
     {
       s->writeString("Restart command received - bye-bye!");
 
-      if (itsStreaming.load()) LERROR("Video streaming is on - you should quit your video viewer before rebooting");
+      if (itsStreaming.load())
+        s->writeString("ERR Video streaming is on - you should quit your video viewer before rebooting");
       
       // Turn off the SD storage if it is there:
       std::ofstream(JEVOIS_USBSD_SYS).put('\n'); // ignore errors
-      if (std::system("sync")) LERROR("Disk sync failed -- IGNORED");
+      if (std::system("sync")) s->writeString("ERR Disk sync failed -- IGNORED");
 
       // Hard reboot:
       this->reboot();

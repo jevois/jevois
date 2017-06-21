@@ -215,8 +215,8 @@ Explanations:
   JeVois engine. This is achieved by implementing a \c parseSerial() function in the module. The JeVois Engine will
   forward to that function any commands received over the command-line interface that it does not recognize. Here, we
   support a new command \c hello, which will call the \c hello() member function of our module (Lines 87-88). The \c
-  parseSerial() function should return a string with form either "OK", or "ERR: some error message", or it could throw
-  an exception (which the Engine will catch and report with a message that starts with "ERR: "). The Engine will forward
+  parseSerial() function should return a string with form either "OK", or "ERR some error message", or it could throw
+  an exception (which the Engine will catch and report with a message that starts with "ERR "). The Engine will forward
   any returned string here to the appropriate \b serlog serial port (see \ref UserCli for details on \b serlog).
 
 - Lines 81-83: If we support custom commands, we should let user knows by describing them in the \c help message. This
