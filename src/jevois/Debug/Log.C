@@ -217,12 +217,12 @@ std::string jevois::warnAndIgnoreException(jevois::RawImage * videoerrimg)
 
   catch (std::exception const & e)
   {
-    retvec.push_back("Ignoring std::exception [" + std::string(e.what()) + ']');
+    retvec.push_back("Caught std::exception [" + std::string(e.what()) + ']');
   }
 
   catch (boost::python::error_already_set & e)
   {
-    retvec.push_back("Ignoring exception from the Python interpreter:");
+    retvec.push_back("Caught exception from the Python interpreter:");
     std::string str = jevois::getPythonExceptionString(e);
     std::vector<std::string> lines = jevois::split(str, "\\n");
     for (std::string const & li : lines) retvec.push_back("   " + li);
@@ -230,7 +230,7 @@ std::string jevois::warnAndIgnoreException(jevois::RawImage * videoerrimg)
   
   catch (...)
   {
-    retvec.push_back("Ignoring unknown exception");
+    retvec.push_back("Caught unknown exception");
   }
 
   // Prepare a video error message if needed:

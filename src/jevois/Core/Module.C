@@ -135,6 +135,7 @@ void jevois::OutputFrame::send() const
 {
   itsGadget->send(itsImage);
   itsDidSend = true;
+  if (itsImagePtrForException) itsImagePtrForException->invalidate();
 }
 
 // ####################################################################################################

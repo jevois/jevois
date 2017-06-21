@@ -454,7 +454,7 @@ void jevois::Engine::postInit()
   itsRunning.store(true);
 
   // Set initial format:
-  setFormat(midx);
+  try { setFormat(midx); } catch (...) { jevois::warnAndIgnoreException(); }
   
   // Run init script:
   JEVOIS_TIMED_LOCK(itsMtx);
@@ -1285,8 +1285,13 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
           std::to_string(itsMappings.size()-1) + ']';
       else
       {
-        setFormatInternal(idx);
-        return true;
+        try
+        {
+          setFormatInternal(idx);
+          return true;
+        }
+        catch (std::exception const & e) { errmsg = "Error parsing or setting mapping [" + rem + "]: " + e.what(); }
+        catch (...) { errmsg = "Error parsing or setting mapping [" + rem + ']'; }
       }
     }
 
