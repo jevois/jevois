@@ -701,18 +701,28 @@ void jevois::Engine::mainLoop()
         }
         catch (...)
         {
-          // Report exceptions to video if desired:
+          // Report exceptions to video if desired: We have to be extra careful here because the exception might have
+          // been called by the input frame (camera not streaming) or the output frame (gadget not streaming), in
+          // addition to exceptions thrown by the module:
           if (itsVideoErrors.load())
           {
-            // If the module threw before get() or after send() on the output frame, get a buffer from the gadget:
-            if (itsVideoErrorImage.valid() == false) itsGadget->get(itsVideoErrorImage);
-            
-            // Report module exception to serlog and video, and ignore:
-            jevois::warnAndIgnoreException(&itsVideoErrorImage);
-            
-            // Send the error image over USB:
-            itsGadget->send(itsVideoErrorImage);
-            
+            try
+            {
+              // If the module threw before get() or after send() on the output frame, get a buffer from the gadget:
+              if (itsVideoErrorImage.valid() == false) itsGadget->get(itsVideoErrorImage); // could throw when streamoff
+              
+              // Report module exception to serlog and video, and ignore:
+              jevois::warnAndIgnoreException(&itsVideoErrorImage);
+            }
+            catch (...) { jevois::warnAndIgnoreException(); }
+
+            try
+            {
+              // Send the error image over USB:
+              itsGadget->send(itsVideoErrorImage); // could throw if gadget stream off
+            }
+            catch (...) { jevois::warnAndIgnoreException(); }
+
             // Invalidate the error image so it is clean for the next frame:
             itsVideoErrorImage.invalidate();
           }

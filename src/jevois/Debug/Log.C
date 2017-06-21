@@ -235,7 +235,7 @@ std::string jevois::warnAndIgnoreException(jevois::RawImage * videoerrimg)
 
   // Prepare a video error message if needed:
   bool dovideo = (videoerrimg && videoerrimg->valid() && videoerrimg->fmt != V4L2_PIX_FMT_MJPEG);
-  int ypos = 40; int yinc = 10; jevois::rawimage::Font font = jevois::rawimage::Font6x10;
+  int ypos = 40; int fw = 6, fh = 10; jevois::rawimage::Font font = jevois::rawimage::Font6x10;
   unsigned int white = 0xffff;
   if (dovideo)
   {
@@ -251,17 +251,32 @@ std::string jevois::warnAndIgnoreException(jevois::RawImage * videoerrimg)
     jevois::rawimage::writeText(*videoerrimg, "Oooops...", 45, 3, white, jevois::rawimage::Font14x26);
 
     // Prepare font size for error log:
-    if (videoerrimg->height <= 240) { font = jevois::rawimage::Font6x10; yinc = 12; }
-    else if (videoerrimg->height <= 480) { font = jevois::rawimage::Font7x13; yinc = 15; }
-    else { font = jevois::rawimage::Font10x20; yinc = 22; }
+    if (videoerrimg->width <= 352 || videoerrimg->height <= 240)
+    { font = jevois::rawimage::Font6x10; fw = 6; fh = 10; }
+    else if (videoerrimg->width <= 640 || videoerrimg->height <= 480)
+    { font = jevois::rawimage::Font7x13; fw = 7; fh = 13; }
+    else { font = jevois::rawimage::Font10x20; fw = 10; fh = 20; }
   }
 
   // Write out the message:
   std::string ret;
-  for (std::string const & m : retvec)
+  for (std::string & m : retvec)
   {
     LERROR(m); ret += m + "\n";
-    if (dovideo) { jevois::rawimage::writeText(*videoerrimg, m, 3, ypos, white, font); ypos += yinc; }
+    if (dovideo)
+    {
+      // Do some simple linewrap:
+      unsigned int nchar = (videoerrimg->width - 6) / fw; // yes this will be a huge number if width < 6
+      while (m.size() > nchar)
+      {
+        jevois::rawimage::writeText(*videoerrimg, m.substr(0, nchar), 3, ypos, white, font);
+        ypos += fh + 2;
+        m = m.substr(nchar + 1, m.npos);
+      }
+      // Print out the last chunk (or the whole thing if it was short):
+      jevois::rawimage::writeText(*videoerrimg, m, 3, ypos, white, font);
+      ypos += fh + 2;
+    }
   }
   
   // Return the message except for the first 2 words:
