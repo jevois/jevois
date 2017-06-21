@@ -1,7 +1,241 @@
 /*! \page ModulePythonTutorial Tutorial on how to write new machine vision modules in Python
 
 
+\section pyoverview Overview
 
+Machine vision Python modules are programmed as a single class that exposes a specific interface expected by the JeVois
+Engine. See \ref ProgrammerPython for an introduction.
+
+As an initial (slightly over-simplified) idea, the overall workflow for JeVois vision modules is that they implement a
+processing function that will receive an image captured by the camera sensor, and a pre-allocated output image that will
+be sent to the host computer over USB. The task of the processing function is to fill in the output image with results
+that arise from processing the input image.
+
+In this tutorial, we first show you how to program a few very simple modules, to bring in the necessary
+concepts. Towards the end of this tutorial, we will point you to further detailed reading.
+
+Before you start, you should understand \ref Concepts.
+
+\subsection pymappings Pixel formats and video mappings
+
+As a reminder, the JeVois smart camera can capture images in the following camera pixel formats: YUYV, BAYER, or
+RGB565. These formats are the ones that are supported by the camera sensor chip.
+
+JeVois can send a wider range of pixel formats to a host connected over USB: YUYV, GREY, MJPG, BAYER, RGB565, and BGR24.
+
+For explanations about these formats, please see \ref UserModes for details.
+
+\subsection pyvideomappings Camera to USB video mappings
+
+A module is invoked when a particular image resolution and pixel format is selected by a host computer over USB. A list
+of video mappings associate a given output resolution and pixel type to the corresponding camera resolution and pixel
+type that should be used and to the machine vision module that should be invoked. Again see \ref UserModes for details.
+
+Because an output video format is selected by the host computer, it is not negotiable. If a video mapping has been
+specified in \b videomappings.cfg that invokes a particular machine vision module, that module just must perform (or
+throw an exception), and process the images that it receives from the camera to generate the desired output images.
+
+// ####################################################################################################
+\section pygetstarted Getting started: an edge detection module
+
+Here we program a simple edge detection module in Python using OpenCV's Canny edge detector. We will grab a color video
+frame, convert it to grayscale, compute the edge map (also grayscale), and send that over USB to the host computer.
+
+Here is the complete, working code. We will look at it step-by-step below:
+
+\includelineno PythonTutorial1.py
+
+Explanations:
+
+- line 1: The JeVois core exposes a library called libjevois to Python. This allows Python modules to use some of the
+  core functionality programmed in JeVois. See \ref ProgrammerPython for details. Here, we import this library into our
+  module under the alias name \b jevois.
+
+- line 2: Likewise, OpenCV (which is written in C++) exposes bindings that allow Python programs to call the image
+  processing functions of OpenCV. Here we import that library as well.
+
+- line 3: Another library, numpy, is useful for manipulating arrays, including images. Indeed, OpenCV uses numpy
+  ND-arrays to represent images.
+
+- Lines 5-24: We use doxygen and custom tags for JeVois to document the code so that a simple documentation page will be
+  created automatically from the comments in the code. The page for this module is
+  [here](/moddoc/PythonOpenCV/modinfo.html) and it is generated automatically from the comments in the code. See \ref
+  ProgrammerSDK for details.
+
+- line 25: We declare a class. Its name must exactly match the file name (without .py extension) and the directory name
+  under which this module is stored.
+
+- Line 28: The JeVois Engine expects a function called \c process() which it will call on every video frame. The Engine
+  will give us an InputFrame here named \b inframe (a wrapper over C++ class jevois::InputFrame, which is a proxy to a
+  camera sensor frame), and an OutputFrame here named \b outframe (wrapper over C++ class jevois::OutputFrame, which is
+  a proxy to a video buffer that can be sent over USB). Our task in the \c process() function is to create an output
+  image that we will send over the USB link using the \b outframe wrapper, from the input image that we are getting via
+  the \b inframe wrapper.
+
+- Line 30: In this tutorial, we want a grayscale input image. We extract it from the inframe. This call may block until
+  the camera sensor has finished capturing the next frame. See jevois::InputFrame for more details.
+
+- Line 33: We detect edges in our gray image using OpenCV, see
+  http://docs.opencv.org/trunk/da/d22/tutorial_py_canny.html for very nice explanations of how it works.
+
+- Line 36: We send our output image to the host computer over USB. Note how \c sendCvGRAY() is used here because our
+  edge map is grayscale. sendCvGRAY() will convert from grayscale to whatever the host is expecting (which depends on
+  the videomapping that invoked our module).
+
+
+// ####################################################################################################
+\section pysandbox Try it yourself: a sandbox module
+
+Here we program a simple color image filtering module using OpenCV's Laplacian detector. We will grab a color video
+frame, apply the filter to it, and send the color result USB to the host computer.
+
+Here is the complete, working code. We will look at it step-by-step below:
+
+\includelineno PythonTutorial2.py
+
+Explanations:
+
+- lines 1-27: Same as in the previous tutorial above.
+
+- Line 30: Constructor. In this module, we will use a persistent member object of our class, a Timer which is provided
+  by JeVois (see jevois::Timer). It will measure how much time it takes to process each frame, and it will report the
+  average frame rate every 100 frames. Because the timer will remain across many frames, we declare it as a member
+  variable of our class and we initialize it in the constructor of our module.
+
+- Line 32: We add the timer as a new member variable of our class and we initialize it.
+
+- Line 36: The JeVois Engine expects a function called \c process() which it will call on every video frame. Same as in
+  the previous tutorial above.
+
+- Line 40: In this tutorial, we want a color input image. We extract it from the inframe, as 'BGR' color because, for
+  historical reasons, this is the preferred color format of OpenCV (though RGB is nowadays more popular in other machine
+  vision libraries). This call may block until the camera sensor has finished capturing the next frame. See
+  jevois::InputFrame for more details.
+
+- Line 43: Start measuring time for the current run through \c process()
+
+- Line 60: We compute the Laplacian in our color image using OpenCV, see
+  http://docs.opencv.org/trunk/d5/db5/tutorial_laplace_operator.html for very nice explanations of how it works (note
+  that they run it on a grayscale image, while we here run it on our color image). As written in the commends, this
+  module is an invitation for you to experiment and try some other image filters (pick those that take a color image in,
+  and output a color image of the same size). In fact, this tutorial also exists as module [Python
+  Sandbox](/moddoc/PythonSandbox/modinfo.html) in \b jevoisbase, and is pre-installed on the latest microSD images. See
+  the [JeVois interactive tutorials](/tutorials) for examples of how to play with it.
+
+- Lines 63-64: Write a title near the top of our output image. See
+  http://docs.opencv.org/3.2.0/d6/d6e/group__imgproc__draw.html for details about \c putText()
+
+- Line 67: Tell our timer to stop measure time for this frame. As we stop it, it also returns a string that contains
+  average frames/s, CPU usage, CPU temperature, and CPU frequency and which gets updated every 100 frames. Here we store
+  that info into a string \b fps which we will display on top of our results.
+
+- Line 68: Get the image width, height and number of channels. Here we need this so we can compute the Y coordinate of
+  the bottom of the frame, which we will use to display text near the bottom.
+
+- line 69: Write the fps information near the bottom of the frame.
+
+- Line 73: We send our output image to the host computer over USB. Note how \c sendCvBGR() is used here because our
+  output image has BGR color. sendCvBGR() will convert from BGR to whatever the host is expecting (which depends on the
+  videomapping that invoked our module).
+
+// ####################################################################################################
+\section pylowlevel More fine-grained control using JeVois raw images
+
+In the above two tutorials, we used the easiest route of converting the input image to OpenCV, then working with OpenCV
+images, and converting the output image from OpenCV to a raw image buffer that will be sent over USB. While this is
+great to get started, we do incur some cost (i.e., time) converting the images. The core JeVois library also exposes
+lower-level access to the camera sensor raw image data and to the raw output buffer that will be sent over USB.
+
+Here we write a module that does not use OpenCV at all. It uses JeVois drawing functions that work directly with raw
+YUYV images. This avoids having to convert from YUYV (camera sensor raw format) to BGR and then back to YUYV (format
+sent natively over the USB link).
+
+Here is the complete, working code. We will look at it step-by-step below:
+
+\includelineno PythonTutorial3.py
+
+Explanations:
+
+- Lines 1-24: Same as above.
+
+- Lines 27-30: Constructor. We print a couple of messages using the JeVois LINFO() logging function. These messages will
+  be sent either to the hardware serial port (if you type `setpar serlog Hard` in the JeVois console), serial-over-USB
+  port (if `setpar serlog USB`) or both (if `setpar serlog All`). See \ref UserCli for details about \b serlog.
+
+- Lines 34-35: JeVois also supports modules which process video frames from the camera sensor but do not produce any
+  video output. These modules would typically only product text outputs over serial ports. See \ref Concepts. Here we do
+  not implement the \c process() function that only takes a camera image in, but we provide a skeleton for it. Examples
+  of how this function is implemented ate provided in several of the \b jevoisbase C++ modules. Look for modules that
+  claim to <em>support mappings with NO USB output</em> under \ref UserDemos for details (for example, DemoArUco).
+
+- Line 39: Here is our \c process() function with video output to USB.
+
+- Line 43: We get the raw video frame from the camera sensor. Given our recommended videomapping (see comment on line
+  13), we expect that this will be YUYV. See \ref UserModes for a refresher on pixel formats and video mappings. The
+  object returned by \c get() here is a Python-wrapped jevois::RawImage object. It contains a direct pointer to the
+  memory buffer allocated in the Linux Kernel and into which the camera sensor stuffs pixel information using direct
+  memory access (DMA). Hence, jevois::RawImage is a <em>lightweight</em> object, which just holds a shared pointer to
+  the pixel data as supposed to owning a copy to that data. So, unlike the tutorials above, so far we have made zero
+  copy or conversion of the raw pixel array that is coming from the camera sensor. This is very fast.
+
+- Line 47: We also get the output video buffer as raw YUYV jevois::RawImage. Here again, RawImage directly points to a
+  raw pixel buffer allocated by the Linux kernel, which will be used directly to stream data over the USB link using
+  DMA. Very efficient zero-copy access.
+
+- Line 51: In this tutorial module, we start by copying the pixels from the camera sensor into our output raw buffer, so
+  that users can see what the camera sees. In more complex scenarios, the input buffer could be copied to a small window
+  within the output buffer (e.g., as in \ref DemoSaliency), or may not be copied at all, just processed in some way to
+  yield a computed output image that will be sent out (e.g., computing an edge map from the input image).  Thus, we here
+  just paste \b inimg into \b outimg starting at location (0,0), which is the top-left corner, in \b outimg.
+
+- Line 54: From this point on, we will work with the output image only, so we can release the input image, so that its
+  buffer will be recycled to the camera sensor kernel driver, to be used for subsequent frame capture. It is generally a
+  good idea to mark the input frame as done as early as possible, so that its buffer becomes available to the camera
+  sensor as early as possible.
+
+- Line 57: The JeVois core provides a number of operations that can work directly on YUYV images. Here, for example, we
+  flip the output image horizontally in place. See \ref image for more operations.
+
+- Lines 60-61: The JeVois core also provides simple drawing functions that can work directly with YUYV images. Again,
+  see \ref image for details. Here, we just draw a circle and write a text message.
+
+- Line 64: Once we are done and the output image is finalized, we can send it to the host computer over USB. This call
+  to \c send() on the output frame is optional, it would be called anyway when \c process() ends.
+
+- Line 68: Here is an example of sending a text string to the \b serout serial port, for example intended for an Arduino
+  connected to JeVois. The Engine parameter \b serout determines where that string will go (hardware serial port,
+  serial-over-USB, none, or both). Note that by default it will go to no port. You need to issue a `setpar serout Hard`
+  in the JeVois console (or in a config file) to send output to the hardware serial port. See \ref UserCli for more
+  information about \b serout.
+
+- Line 69: We increment our internal frame counter and we are done for this frame. The JeVois Engine will call \c
+  process() again on the next frame.
+
+- Lines 73-77: Modules can optionally support custom commands, which add to the commands already interpreted by the
+  JeVois engine. This is achieved by implementing a \c parseSerial() function in the module. The JeVois Engine will
+  forward to that function any commands received over the command-line interface that it does not recognize. Here, we
+  support a new command \c hello, which will call the \c hello() member function of our module (Lines 87-88). The \c
+  parseSerial() function should return a string with form either "OK", or "ERR: some error message", or it could throw
+  an exception (which the Engine will catch and report with a message that starts with "ERR: "). The Engine will forward
+  any returned string here to the appropriate \b serlog serial port (see \ref UserCli for details on \b serlog).
+
+- Lines 81-83: If we support custom commands, we should let user knows by describing them in the \c help message. This
+  is achieved by implementing a member function \c supportedCommands(self) in the module. The Engine will call it when
+  users type \c help in the command-line interface. This function should return a string with the command name and a
+  brief description. If the module supports multiple commands, return only one string, separating the different commands
+  with a newline \\n character.
+
+- Lines 87-88: This is the module member function that gets invoked when users type \c hello on the command-line
+  interface.
+
+// ####################################################################################################
+\section pymoremoduletutorial For more Module tutorials and examples
+
+For more, see:
+
+- [the documentation of the JeVoisBase collection of modules](/basedoc/), look for those written in Python (the language
+  field towards top of the documentation page of each module).
+- [JeVois tutorials](/tutorials/)
 
 */
 

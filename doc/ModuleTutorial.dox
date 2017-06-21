@@ -2,7 +2,7 @@
 
 \section overview Overview
 
-Machine vision modules are programmed as a single class that derives from jevois::Module, which specifies the basic
+Machine vision C++ modules are programmed as a single class that derives from jevois::Module, which specifies the basic
 interface.
 
 As an initial (slightly over-simplified) idea, the overall workflow for JeVois vision modules is that they implement a

@@ -46,6 +46,8 @@ Modules in jevoisbase are available to help you understand how this works:
 
 - [PythonOpenCV](/basedoc/jvpkg_2modules_2JeVois_2PythonOpenCV_2PythonOpenCV_8py_source.html) also uses OpenCV.
 
+- [PythonSandbox](/basedoc/jvpkg_2modules_2JeVois_2PythonSandbox_2PythonSandbox_8py_source.html) also uses OpenCV.
+
 JeVois core expectations from modules written in Python
 =======================================================
 
