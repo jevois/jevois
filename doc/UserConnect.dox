@@ -247,5 +247,40 @@ Where to find the correct cables and supplies
 Cables, battery banks, DC/DC converters, etc that have been certified to work with JeVois are available at
 http://jevoisinc.com
 
+
+Troubleshooting
+---------------
+
+With <em>thin</em> USB cables not rated for charging, sometimes JeVois may appear to correctly startup but is not
+detected by the host computer, or appears to work erratically (video connection drops, etc).
+
+On Linux, try to issue a \c dmesg command in a terminal, and check for the following (exact numbers will change, but you
+want to see a <b>JeVois-A33 Smart Camera</b> detected:
+
+\verbatim
+[14985.916593] usb 1-1.2: new high-speed USB device number 30 using xhci_hcd
+[14986.021050] usb 1-1.2: New USB device found, idVendor=1d6b, idProduct=0102
+[14986.021053] usb 1-1.2: New USB device strings: Mfr=1, Product=2, SerialNumber=0
+[14986.021055] usb 1-1.2: Product: JeVois-A33 Smart Camera
+[14986.021056] usb 1-1.2: Manufacturer: JeVois Inc
+[14986.043758] uvcvideo: Found UVC 1.00 device JeVois-A33 Smart Camera (1d6b:0102)
+[14986.045193] input: JeVois-A33 Smart Camera as /devices/pci0000:00/0000:00:1c.6/0000:09:00.0/usb1/1-1/1-1.2/1-1.2:1.0/input/input48
+[14986.046144] cdc_acm 1-1.2:1.2: ttyACM0: USB ACM device
+[14986.047206] usb-storage 1-1.2:1.4: USB Mass Storage device detected
+[14986.047353] scsi host32: usb-storage 1-1.2:1.4
+[14987.044678] scsi 32:0:0:0: Direct-Access     JeVois   Smart Camera     0333 PQ: 0 ANSI: 2
+[14987.045298] sd 32:0:0:0: Attached scsi generic sg8 type 0
+[14987.046092] sd 32:0:0:0: [sdh] Attached SCSI removable disk
+\endverbatim
+
+if you see errors like this:
+
+\verbatim
+[14977.226733] uvcvideo: Failed to query (129) UVC probe control : -19 (exp. 26).
+[14977.226736] uvcvideo: Failed to initialize the device (-5).
+\endverbatim
+
+then likely your cable is bad (not able to carry enough current), our your USB port is too weak, etc.
+
 */
 

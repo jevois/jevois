@@ -326,10 +326,13 @@ Typical workflow is as follows:
 
 - Connect JeVois to a host computer and let it start up.
 
+- Make sure that you are not capturing video from JeVois.
+
 - Connect to the JeVois command line interface (either using the hardware serial port, or serial over USB; see \ref
   UserCli).
 
-- When you want to modify the contents of the microSD inside JeVois, issue the \c usbsd command.
+- When you want to modify the contents of the microSD inside JeVois, issue the \c usbsd command. The virtual USB flash
+  drive will appear on your host computer.
 
 - Add/modify/remove files. This includes:
   + modify configuration or parameter files in \b JEVOIS:/config
@@ -338,8 +341,13 @@ Typical workflow is as follows:
   + retrieve any data, e.g., video files recorded by JeVois
   + compile and install a new C++ module using `./rebuild-platform.sh --microsd`
 
-- When you are done, properly eject the virtual USB drive. JeVois will detect this and will automatically restart and
-  then be able to use the new or modified files.
+- When you are done, properly eject the virtual USB drive (drag to trash, click eject button, etc). JeVois will detect
+  this and will automatically restart and then be able to use the new or modified files. You should see the following on
+  the JeVois LED:
+  + Blinks off - shutdown complete
+  + Solid green - restarting
+  + Orange blink - camera sensor detected
+  + Solid orange: ready for action
 
 
 */

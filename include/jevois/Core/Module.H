@@ -20,6 +20,7 @@
 #include <memory>
 #include <jevois/Image/RawImage.H>
 #include <jevois/Core/VideoBuf.H>
+#include <jevois/Core/UserInterface.H> // not strictly needed but derived classes will want to use it
 #include <jevois/Component/Component.H>
 #include <opencv2/core/core.hpp>
 #include <ostream>
@@ -29,7 +30,6 @@ namespace jevois
   class VideoInput;
   class VideoOutput;
   class Engine;
-  class UserInterface;
   
   //! Exception-safe wrapper around a raw camera input frame
   /*! This wrapper operates much like std:future in standard C++11. Users can get the next image captured by the camera

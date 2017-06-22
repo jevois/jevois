@@ -59,6 +59,20 @@ void jevois::paramStringToVal(std::string const & valstring, std::vector<Q> & re
 }
 
 // ######################################################################
+template <typename F, typename S> inline
+void jevois::paramValToString(std::pair<F, S> const & val, std::string & result) 
+{  
+  std::stringstream s; s << val.first << ' ' << val.second; result = s.str();
+}
+
+// ######################################################################
+template <typename F, typename S> inline
+void jevois::paramStringToVal(std::string const & valstring, std::pair<F, S> & result) 
+{
+  std::stringstream s(valstring); s >> result.first >> std::skipws >> result.second;
+}
+
+// ######################################################################
 template <typename K, typename V> inline
 void jevois::paramValToString(std::map<K,V> const & val, std::string & result) 
 {  

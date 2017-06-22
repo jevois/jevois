@@ -94,7 +94,8 @@ void jevois::ParameterCore<T>::set(T const & newVal)
   if (itsFrozen)
   {
     std::ostringstream os;
-    os << descriptor() << ": Provided value [" << newVal << "] rejected because Parameter is frozen";
+    std::string strval; jevois::paramValToString(newVal, strval);
+    os << descriptor() << ": Provided value [" << strval << "] rejected because Parameter is frozen";
     throw std::range_error(os.str());
   }
 
@@ -103,7 +104,8 @@ void jevois::ParameterCore<T>::set(T const & newVal)
   if (itsDef.itsValidValuesSpec->checkValueValidity(newVal) == false)
   {
     std::ostringstream os;
-    os << descriptor() << ": Provided value [" << newVal << "] not valid according to specification "
+    std::string strval; jevois::paramValToString(newVal, strval);
+    os << descriptor() << ": Provided value [" << strval << "] not valid according to specification "
        << itsDef.itsValidValuesSpec->str();
     throw std::range_error(os.str());
   }
@@ -115,13 +117,15 @@ void jevois::ParameterCore<T>::set(T const & newVal)
     catch (std::exception const & e)
     {
       std::ostringstream os;
-      os << descriptor() << ": Provided value [" << newVal << "] rejected by callback with reason [" << e.what() << ']';
+      std::string strval; jevois::paramValToString(newVal, strval);
+      os << descriptor() << ": Provided value [" << strval << "] rejected by callback with reason [" << e.what() << ']';
       throw std::range_error(os.str());
     }
     catch (...)
     {
       std::ostringstream os;
-      os << descriptor() << ": Provided value [" << newVal << "] rejected by callback with unknown reason";
+      std::string strval; jevois::paramValToString(newVal, strval);
+      os << descriptor() << ": Provided value [" << strval << "] rejected by callback with unknown reason";
       throw std::range_error(os.str());
     }
 
@@ -168,13 +172,15 @@ void jevois::ParameterCore<T>::callbackInitCall()
     catch (std::exception const & e)
     {
       std::ostringstream os;
-      os << descriptor() << ": Value [" << itsVal << "] rejected by callback with reason [" << e.what() << ']';
+      std::string strval; jevois::paramValToString(itsVal, strval);
+      os << descriptor() << ": Value [" << strval << "] rejected by callback with reason [" << e.what() << ']';
       throw std::range_error(os.str());
     }
     catch (...)
     {
       std::ostringstream os;
-      os << descriptor() << ": Value [" << itsVal << "] rejected by callback with unknown reason";
+      std::string strval; jevois::paramValToString(itsVal, strval);
+      os << descriptor() << ": Value [" << strval << "] rejected by callback with unknown reason";
       throw std::range_error(os.str());
     }
   }
