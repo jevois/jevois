@@ -276,7 +276,7 @@ void jevois::drawErrorImage(std::string const & errmsg, jevois::RawImage & video
     {
       jevois::rawimage::writeText(videoerrimg, m.substr(0, nchar), 3, ypos, white, font);
       ypos += fh + 2;
-      m = m.substr(nchar + 1, m.npos);
+      m = m.substr(nchar, m.npos);
     }
     // Print out the last chunk (or the whole thing if it was short):
     jevois::rawimage::writeText(videoerrimg, m, 3, ypos, white, font);

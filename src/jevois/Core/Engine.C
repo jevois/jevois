@@ -763,7 +763,7 @@ void jevois::Engine::mainLoop()
             itsGadget->send(itsVideoErrorImage);
 
             // Also get one camera frame to avoid accumulation of stale buffers:
-            (void)jevois::InputFrame(itsCamera, itsTurbo);
+            (void)jevois::InputFrame(itsCamera, itsTurbo).get();
           }
           catch (...) { jevois::warnAndIgnoreException(); }
       }

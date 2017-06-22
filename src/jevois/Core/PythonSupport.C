@@ -70,10 +70,9 @@ namespace
     // Initialize Python:
     Py_Initialize();
 
-    // Initialize numpy array. Use the signal handler hack from
+    // Initialize numpy array. Use the signal handler hack to prevent numpy from grabbing CTRL-C from
     // https://stackoverflow.com/questions/28750774/
     //         python-import-array-makes-it-impossible-to-kill-embedded-python-with-ctrl-c
-
     //PyOS_sighandler_t sighandler = PyOS_getsig(SIGINT);
     import_array();
     //PyOS_setsig(SIGINT,sighandler);
