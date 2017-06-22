@@ -1241,9 +1241,18 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
     // ----------------------------------------------------------------------------------------------------
     if (cmd == "setpar")
     {
-      std::istringstream ss(rem); std::string desc, val; ss >> desc; ss >> val;
-      setParamString(desc, val);
-      return true;
+      size_t const remidx = rem.find(' ');
+      if (remidx != rem.npos)
+      {
+        std::string const desc = rem.substr(0, remidx);
+        if (remidx < rem.length())
+        {
+          std::string const val = rem.substr(remidx+1);
+          setParamString(desc, val);
+          return true;
+        }
+      }
+      errmsg = "Need to provide a parameter name and a parameter value in setpar";
     }
 
     // ----------------------------------------------------------------------------------------------------
@@ -1282,7 +1291,7 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
         itsCamera->writeRegister(std::stoi(reg, nullptr, 0), std::stoi(val, nullptr, 0));
         return true;
       }
-      errmsg = "Access to camera registers is disabled, enable with --camreg=true";
+      errmsg = "Access to camera registers is disabled, enable with: setpar camreg true";
     }
 
     // ----------------------------------------------------------------------------------------------------
@@ -1295,7 +1304,7 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
         s->writeString(os.str());
         return true;
       }
-      errmsg = "Access to camera registers is disabled, enable with --camreg=true";
+      errmsg = "Access to camera registers is disabled, enable with: setpar camreg true";
     }
 
     // ----------------------------------------------------------------------------------------------------
