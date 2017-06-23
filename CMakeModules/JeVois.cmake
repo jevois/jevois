@@ -16,7 +16,7 @@
 
 # CMake helper functions for JeVois and additional libraries and modules:
 
-message(STATUS "JeVois version ${JEVOIS_VERSION_MAJOR}.${JEVOIS_VERSION_MINOR}")
+message(STATUS "JeVois version ${JEVOIS_VERSION_MAJOR}.${JEVOIS_VERSION_MINOR}.${JEVOIS_VERSION_PATCH}")
 
 # Platform choice:
 option(JEVOIS_PLATFORM "Cross-compile for hardware platform" OFF)

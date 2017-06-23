@@ -26,7 +26,8 @@ set(JEVOIS_VENDOR "JeVois")
 # Project version:
 set(JEVOIS_VERSION_MAJOR  1)
 set(JEVOIS_VERSION_MINOR  2)
-set(JEVOIS_SOVERSION "${JEVOIS_VERSION_MAJOR}.${JEVOIS_VERSION_MINOR}" )
+set(JEVOIS_VERSION_PATCH  0)
+set(JEVOIS_SOVERSION "${JEVOIS_VERSION_MAJOR}.${JEVOIS_VERSION_MINOR}.${JEVOIS_VERSION_PATCH}" )
 
 ########################################################################################################################
 # Python version to use for python modules:
@@ -294,7 +295,7 @@ set(CPACK_DEBIAN_PACKAGE_SECTION "universe")
 set(CPACK_PACKAGE_VENDOR "iLab at the University of Southern California")
 set(CPACK_PACKAGE_VERSION_MAJOR "${JEVOIS_VERSION_MAJOR}")
 set(CPACK_PACKAGE_VERSION_MINOR "${JEVOIS_VERSION_MINOR}")
-set(CPACK_PACKAGE_VERSION_PATCH "0")
+set(CPACK_PACKAGE_VERSION_PATCH "${JEVOIS_VERSION_PATCH}")
 set(JEVOIS_PACKAGE_RELEASE "1") # packager revision number
 
 set(CPACK_DEBIAN_PACKAGE_DEPENDS "build-essential, cmake (>= 3.1), gcc (>= 5.2), g++ (>=5.2), gfortran (>= 5.2), \

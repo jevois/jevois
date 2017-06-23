@@ -14,4 +14,7 @@ video resolution on the host computer.
 - \subpage PixelFormats
 - \subpage VideoMapping
 
+\image html demo-salgistfaceobj.png "Visual saliency + scene gist + face detection + handwritten digit recognition launched by selecting video resolution YUYV 640x312 @@ 30 fps"
+
+
 */
