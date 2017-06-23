@@ -93,6 +93,11 @@ if (!$ispython)
 #print DOXYFILE "TAGFILES               = $ENV{'JEVOIS_SRC_ROOT'}/jevois/doc/jevois.tag=/doc $ENV{'JEVOIS_SRC_ROOT'}/jevoisbase/doc/jevoisbase.tag=/basedoc\n";
 print DOXYFILE "TAGFILES               = $ENV{'JEVOIS_SRC_ROOT'}/jevois/doc/jevois.tag=/doc\n";
 
+print DOXYFILE 'ALIASES += youtube{1}="@htmlonly<div align=\'center\'><iframe width=\'560\' height=\'315\' src=\'http://www.youtube.com/embed/\1?rel=0&loop=1\' frameborder=\'0\' allowfullscreen align=\'middle\'></iframe></div>@endhtmlonly"' . "\n";
+print DOXYFILE 'ALIASES += jvversion{1}="@htmlonly<strong class=\'jvversion\'>JeVois v\1</strong>@endhtmlonly"' . "\n";
+print DOXYFILE 'ALIASES += jvhost="@htmlonly<strong class=\'jvhostplatform\'>Host Only</strong>@endhtmlonly"' . "\n";
+print DOXYFILE 'ALIASES += jvplatform="@htmlonly<strong class=\'jvhostplatform\'>Platform Only</strong>@endhtmlonly"' . "\n";
+
 # We here create some custom doxygen tags to allow code writers to input more manifest data in their doc:
 my @dtags = qw/ email mainurl supporturl otherurl address copyright license distribution 
  restrictions videomapping subcomponents depends displayname modulecommand /;
@@ -288,10 +293,22 @@ if (!$ispython)
     getParams($inputFilename, $className);
     
     # now also include the parameters for all components, recursively:
+    my %subcomps;
     my @sclist = `/bin/grep addSubComponent $inputFilename`;
-    foreach my $comp (@sclist) { my @tmp = split(/\<|\>/, $comp); push(@subcomps, $tmp[1]); }
-    
-    foreach my $comp (@subcomps) {
+    while ($#sclist >= 0)
+    {
+        my $comp = shift(@sclist);
+        my @tmp = split(/\<|\>/, $comp);
+        $subcomps{$tmp[1]} = 1;
+
+        # Add any subs of that sub:
+        my $subfilename = `find ../../../src/Components/ -name $tmp[1].C`;
+        my @subsclist = `/bin/grep addSubComponent $subfilename`;
+        push(@sclist, @subsclist);
+    }
+
+    # eliminate duplicates:
+    foreach my $comp (keys %subcomps) {
         my $filename = `find ../../../include/jevoisbase/Components/ -name ${comp}.H`;
         chomp $filename;
         print STEDRR  "INCLUDING $filename\n";
