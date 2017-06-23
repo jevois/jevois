@@ -2,6 +2,9 @@
 # USAGE: jevois-cmd [-d /dev/ttyACMX] command
 #
 # Send a command to a connected JeVois camera using the serial-over-USB port
+#
+# Tip: If things appear garbled in some way, maybe your TTY settings got messed up. Run screen /dev/ttyACM0 115200 to
+# reset to th eexpected state.
 
 ttydev="/dev/ttyACM0"
 if [ "X$1" = "X-d" ]; then ttydev=$2; shift 2; fi 
@@ -18,20 +21,4 @@ done
 sudo bash -c "echo \"$*\" > ${ttydev}"
 
 # Get the reply, which may have multiple lines:
-
-
-# FIXME: this misses lines of multiline replies. Probably need something better than 'read'
-
-
-#tiout=5
-#while true; do
-#    answer=`sudo bash -c "read -s -t ${tiout} < ${ttydev} && echo -n \\${REPLY} | tr -d '\\n' | tr -d '\\r'"`
-#    if [ $? -ge 128 ]; then
-#	if [ $tiout -ne 5 ]; then exit 0; fi    # got some lines previously but no more: done
-#	echo "Timeout communicating with JeVois -- ABORT"
-#	exit 100
-#    fi
-#    if [ $? -ne 0 ]; then echo "Error communicating with JeVois -- ABORT"; exit 100; fi
-#    echo ${answer}
-#    tiout=1 # after we got the first line, use a shorter timeout for any subsequent lines
-#done
+sudo timeout 0.5 cat ${ttydev}
