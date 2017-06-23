@@ -54,8 +54,7 @@ namespace
 
 // ##############################################################################################################
 jevois::Camera::Camera(std::string const & devname, unsigned int const nbufs) :
-    jevois::VideoInput(devname, nbufs), itsFd(-1), itsBuffers(nullptr), itsFormat(), itsStreaming(false),
-    itsFps(0.0F), itsDoneIdx(itsInvalidIdx), itsRunning(false)
+    jevois::VideoInput(devname, nbufs), itsFd(-1), itsBuffers(nullptr), itsFormat(), itsStreaming(false), itsFps(0.0F)
 {
   JEVOIS_TRACE(1);
 
@@ -216,25 +215,25 @@ void jevois::Camera::run()
   // as the SUNXI-VFE driver does not like that. Thus, there is high contention on itsMtx which we lock most of the
   // time. For this reason we do a bit of sleeping with itsMtx unlocked at places where we know it will not increase our
   // captured image delivery latency.
+  std::vector<size_t> doneidx;
   
   // Wait for event from the gadget kernel driver and process them:
   while (itsRunning.load())
     try
     {
       // Requeue any done buffer. To avoid having to use a double lock on itsOutputMtx (for itsDoneIdx) and itsMtx (for
-      // itsBuffers->qbuf()), we just copy itsDoneIdx into a local variable here, and invalidate it, with itsOutputMtx
+      // itsBuffers->qbuf()), we just swap itsDoneIdx into a local variable here, and invalidate it, with itsOutputMtx
       // locked, then we will do the qbuf() later, if needed, while itsMtx is locked:
-      size_t doneidx;
       {
         std::lock_guard<std::mutex> _(itsOutputMtx);
-        doneidx = itsDoneIdx;
-        itsDoneIdx = itsInvalidIdx;
+        if (itsDoneIdx.empty() == false) itsDoneIdx.swap(doneidx);
       }
 
       std::unique_lock<std::timed_mutex> lck(itsMtx);
 
-      // Do the actual qbuf of any done buffer:
-      if (doneidx != itsInvalidIdx) itsBuffers->qbuf(doneidx);
+      // Do the actual qbuf of any done buffer, ignoring any exception:
+      for (size_t idx : doneidx) try { itsBuffers->qbuf(idx); } catch (...) { jevois::warnAndIgnoreException(); }
+      doneidx.clear();
       
       // SUNXI-VFE does not like to be polled when not streaming; if indeed we are not streaming, unlock and then sleep
       // a bit to avoid too much contention on itsMtx:
@@ -376,8 +375,7 @@ void jevois::Camera::streamOff()
 
   // User may have called done() but our run() thread has not yet gotten to requeueing this image, if so requeue it here
   // as it seems to keep the driver happier:
-  if (itsDoneIdx != itsInvalidIdx && itsBuffers) itsBuffers->qbuf(itsDoneIdx);
-  itsDoneIdx = itsInvalidIdx;
+  for (size_t idx : itsDoneIdx) try { itsBuffers->qbuf(idx); } catch (...) { jevois::warnAndIgnoreException(); }
   
   // Stop streaming at the device level:
   int type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -419,11 +417,8 @@ void jevois::Camera::done(jevois::RawImage & img)
 
   // To avoid blocking for a long time here, we do not try to lock itsMtx and to qbuf() the buffer right now, instead we
   // just make a note that this buffer is available and it will be requeued by our run() thread:
-  {
-    std::lock_guard<std::mutex> _(itsOutputMtx);
-    if (itsDoneIdx != itsInvalidIdx) LFATAL("Previous done() image not yet recycled by driver");
-    itsDoneIdx = img.bufindex;
-  }
+  std::lock_guard<std::mutex> _(itsOutputMtx);
+  itsDoneIdx.push_back(img.bufindex);
 
   LDEBUG("Image " << img.bufindex << " freed by processing");
 }

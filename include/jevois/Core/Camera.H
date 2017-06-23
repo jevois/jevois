@@ -138,8 +138,7 @@ namespace jevois
       mutable std::condition_variable itsOutputCondVar;
       mutable std::mutex itsOutputMtx;
       RawImage itsOutputImage;
-      size_t itsDoneIdx;
-      static size_t const itsInvalidIdx = ~0LU;
+      std::vector<size_t> itsDoneIdx;
       
       void run();
       std::future<void> itsRunFuture;
