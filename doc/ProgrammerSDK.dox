@@ -134,7 +134,7 @@ Module documentation and metadata
 
 A really nasty perl script, \c /usr/bin/jevois-modinfo (source in \c ~/jevois/scripts/jevois-modinfo), will parse your
 module to generate a single-page documentation for it. This script is a mess and its operation is quite brittle. It is
-invoked automatically when you compile your module (see rules in \b ~/jevois/CMakeModules/jevois.cmake).
+invoked automatically when you compile your module (see rules in \b ~/jevois/CMakeModules/JeVois.cmake).
 
 The script creates modinfo.html (and modinfo.yaml, currently not used) by parsing your modules and other files in its
 directory.
@@ -207,7 +207,7 @@ the shared library. This is the approach taken in \b jevoisbase
 
 For guidance on this, inspect the \b CMakeLists.txt in \b jevoisbase.
 
-Note how several CMake macros have been defined to assist you; those are in \b jevois/CMakeModules/jevois.cmake
+Note how several CMake macros have been defined to assist you; those are in \b jevois/CMakeModules/JeVois.cmake
 
 In jevoisbase, we compile everything that is under \b src/Components into \b libjevoisbase.so
 
@@ -218,4 +218,5 @@ To create your own, roughly the first 50 lines of the \b jevoisbase \b CMakeList
 for your project. The rest of the \b jevoisbase \b CMakeLists.txt is basically to add required dependencies, such as on
 the ZBar library, the OpenCV library, etc and those will vary with your specific project.
 
+Make sure you keep the call to \c jevois_project_finalize() at the nd of your \b CMakeLists.txt file.
 */

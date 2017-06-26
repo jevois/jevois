@@ -182,7 +182,7 @@ jevois::PythonModule::PythonModule(jevois::VideoMapping const & m) :
   std::string const execstr =
     "import sys\n"
     "sys.path.append(\"/usr/lib\")\n" // To find libjevois module in /usr/lib
-    "sys.path.append(\"" JEVOIS_OPENCV_PYTHON_PATH "/lib\")\n" // To find cv2 module
+    "sys.path.append(\"" JEVOIS_OPENCV_PYTHON_PATH "\")\n" // To find cv2 module
     "sys.path.append(\"" + pydir + "\")\n" +
     "from " + m.modulename + " import " + m.modulename + "\n";
   boost::python::exec(execstr.c_str(), itsMainNamespace, itsMainNamespace);
