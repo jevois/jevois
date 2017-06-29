@@ -73,6 +73,34 @@ void jevois::paramStringToVal(std::string const & valstring, std::pair<F, S> & r
 }
 
 // ######################################################################
+template <typename T> inline
+void jevois::paramValToString(cv::Point_<T> const & val, std::string & result)
+{
+  std::stringstream s; s << val.x << ' ' << val.y; result = s.str();
+}
+
+// ######################################################################
+template <typename T> inline
+void jevois::paramStringToVal(std::string const & valstring, cv::Point_<T> & result)
+{
+  std::stringstream s(valstring); s >> result.x >> std::skipws >> result.y;
+}
+
+// ######################################################################
+template <typename T> inline
+void jevois::paramValToString(cv::Size_<T> const & val, std::string & result)
+{
+  std::stringstream s; s << val.width << ' ' << val.height; result = s.str();
+}
+
+// ######################################################################
+template <typename T> inline
+void jevois::paramStringToVal(std::string const & valstring, cv::Size_<T> & result)
+{
+  std::stringstream s(valstring); s >> result.width >> std::skipws >> result.height;
+}
+
+// ######################################################################
 template <typename K, typename V> inline
 void jevois::paramValToString(std::map<K,V> const & val, std::string & result) 
 {  

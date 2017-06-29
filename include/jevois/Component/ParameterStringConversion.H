@@ -23,6 +23,7 @@
 #include <iostream>
 #include <sstream>
 #include <vector>
+#include <opencv2/core/core.hpp> // for Point_ and Size
 
 namespace jevois
 {
@@ -68,6 +69,22 @@ namespace jevois
   //! Machine-readable input from a string, for use in jevois::Parameter: reads \c first \c second
   template <typename F, typename S>
   void paramStringToVal(std::string const & valstring, std::pair<F, S> & result);
+
+  //! Machine-readable output to a string, for use in jevois::Parameter: outputs \c x \c y
+  template <typename T>
+  void paramValToString(cv::Point_<T> const & val, std::string & result);
+
+  //! Machine-readable input from a string, for use in jevois::Parameter: reads \c x \c y
+  template <typename T>
+  void paramStringToVal(std::string const & valstring, cv::Point_<T> & result);
+
+  //! Machine-readable output to a string, for use in jevois::Parameter: outputs \c width \c height
+  template <typename T>
+  void paramValToString(cv::Size_<T> const & val, std::string & result);
+
+  //! Machine-readable input from a string, for use in jevois::Parameter: reads \c width \c height
+  template <typename T>
+  void paramStringToVal(std::string const & valstring, cv::Size_<T> & result);
 
    //! Machine-readable output to a string, for use in jevois::Parameter: outputs [\c Key1:Value1, \c Key2:Value2, ...]
    /*! Specialization for std::map which supports nesting of other maps/vectors */
