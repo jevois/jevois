@@ -224,6 +224,25 @@ int jevois::Serial::read(void * buffer, const int nbytes)
 
   return n;
 }
+
+// ######################################################################
+int jevois::Serial::read2(void * buffer, const int nbytes)
+{
+  std::lock_guard<std::mutex> _(itsMtx);
+
+  int n = ::read(itsDev, buffer, nbytes);
+
+  if (n == -1)
+  {
+    if (errno == EAGAIN) return false; // no new char available
+    else throw std::runtime_error("Serial: Read error");
+  }
+
+  if (n == 0) return false; // no new char available
+
+  return n;
+}
+
 // ######################################################################
 bool jevois::Serial::readSome(std::string & str)
 {
@@ -368,6 +387,27 @@ void jevois::Serial::write(void const * buffer, const int nbytes)
 }
 
 // ######################################################################
+void jevois::Serial::writeNoCheck(void const * buffer, const int nbytes)
+{
+    std::lock_guard<std::mutex> _(itsMtx);
+
+    int ndone = 0; char const * b = reinterpret_cast<char const *>(buffer); int iter = 0;
+    while (ndone < nbytes && iter++ < 50)
+    {
+        int n = ::write(itsDev, b + ndone, nbytes - ndone);
+        if (n == -1 && errno != EAGAIN) throw std::runtime_error("Serial: Write error");
+        ndone += n;
+    }
+
+    if (ndone < nbytes)
+    {
+      // If after a number of iterations there are still unbuffered bytes, flush the output buffer
+      if (tcflush(itsDev, TCOFLUSH) != 0) LDEBUG("Serial flushOut error -- IGNORED");
+
+    }
+}
+
+// ######################################################################
 void jevois::Serial::flush(void)
 {
   std::lock_guard<std::mutex> _(itsMtx);
@@ -375,6 +415,7 @@ void jevois::Serial::flush(void)
   // Flush the input
   if (tcflush(itsDev, TCIFLUSH) != 0) LDEBUG("Serial flush error -- IGNORED");
 }
+
 
 // ######################################################################
 jevois::Serial::~Serial(void)
