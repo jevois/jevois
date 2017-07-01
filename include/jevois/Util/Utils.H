@@ -57,6 +57,9 @@ namespace jevois
   /*! Note that if str is shorter than prefix, return is false (like in strncmp()). */ 
   bool stringStartsWith(std::string const & str, std::string const & prefix);
 
+  //! Replace white space characters in a string with underscore (default) or another characters
+  std::string replaceWhitespace(std::string const & str, char rep = '_');
+
   //! Create a string using printf style arguments
   /*! Example:
       @code

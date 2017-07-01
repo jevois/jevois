@@ -31,6 +31,7 @@
 #include <memory>
 #include <stdexcept>
 #include <array>
+#include <cctype> // for std::isspace()
 
 // ####################################################################################################
 std::string jevois::fccstr(unsigned int fcc)
@@ -123,6 +124,14 @@ std::string jevois::join(std::vector<std::string> const & strings, std::string c
 bool jevois::stringStartsWith(std::string const & str, std::string const & prefix)
 {
   return (strncmp(str.c_str(), prefix.c_str(), prefix.length()) == 0);
+}
+
+// ####################################################################################################
+std::string jevois::replaceWhitespace(std::string const & str, char rep)
+{
+  std::string ret = str;
+  for (char & c : ret) if (std::isspace(c)) c = rep;
+  return ret;
 }
 
 // ####################################################################################################

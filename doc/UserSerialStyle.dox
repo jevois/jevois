@@ -1,0 +1,174 @@
+/*! \page UserSerialStyle Standardized serial messages formatting
+
+\jvversion{1.3}
+
+JeVois provides a standardized set of serial output messages, with the goal of harmonizing serial messages across many
+machine vision modules, so that different vision modules can control an Arduino or similar embedded controller in the
+same way. Users can then experiment with different machine vision modules without needing to rewrite and reflash their
+Arduino code. For example, a motorized pan/tilt head can be directly controlled by a color-based object tracker, a
+saliency-based visual attention module, an object recognition module, or an ArUco virtual reality marker detection
+module using the same Arduino code to receive the control messages from JeVois and to actuate the pan/tilt motors.
+
+The parameters \c serstyle and \c serprec of jevois::Module define the following standardized serial message styles.
+
+Coordinates precision
+=====================
+
+All 1D and 2D coordinates use the JeVois standardized coordinates (between -1000 and 1000), as defined in \ref
+coordhelpers.
+
+All 3D coordinates are assumed to arise from a calibrated camera and are expressed in millimeters of real-world space.
+
+Parameter \c serprec defines the precision with which these coordinate will be sent out over serial, as the number of
+decimal positions after the decimal point. For example:
+
+- When \c serprec is 0, coordinates will be sent as integer numbers, e.g., 123 (no trailing decimal point).
+- When \c serprec is 1, coordinates will be sent with 1 decimal position, e.g., 123.4
+- When \c serprec is 2, coordinates will be sent with 2 decimal positions, e.g., 123.45
+- And so on.
+
+Given the already large range of -1000 to 1000 provided by the \ref coordhelpers for 1D and 2D coordinates, or the quite
+high (millimeter) accuracy of 3D coordinates, the expectation is that \c serprec will be non-zero only in exceptional
+situations. Most Arduino control software can reasonably be expected to support \c serprec=0 only.
+
+One-dimensional (1D) location messages
+======================================
+
+1D location messages are used to communicate the location of something on a 1D axis (usually, the horizontal axis). For
+example, the \a x coordinate of the vanishing point in the \ref RoadNavigation module.
+
+Inputs from machine vision module:
+
+- \a x the standardized 1D position of the center of the reported object.
+
+- \a id a text string describing what the reported object is (e.g., which ArUco marker ID it has). To ease parsing by
+  the receiving Arduino, ID should have no white space. Any white space will be replaced by underscores.
+
+- \a size the standardized 1D size of the reported object (thus, object extends from x-size/2 to x+size/2). Note that
+  size will be output with the same precision as the coordinate.
+
+- \a extra any additional text string about the reported object.
+
+- \a xmin and \a xmax the standardized 1D positions of the two edges of the reported object. For 1D objects, specifying
+  \a xmin and \a xmax is equivalent to specifying \a x and \a size (but that is not always true in 2D, 3D, etc).
+
+Serial messages:
+
+serstyle | message
+---------|---------------------------------------------------------------------------------------------------------
+Terse    | <tt>T1D x</tt>
+Normal   | <tt>N1D id x size</tt>
+Detail   | <tt>D1D id xmin xmax extra</tt>
+Fine     | N/A - a \c D1D message will be issued instead.
+
+Two-dimensional (2D) location messages
+======================================
+
+2D location messages are used to communicate the location of something in 2D space (usually, the plane of the camera
+image). For example, the \a x,y standardized coordinates of an object detected by the \ref ObjectDetect module.
+
+Inputs from machine vision module:
+
+- <em>x,y</em> the standardized 2D position of the center of the reported object.
+
+- \a id a text string describing what the reported object is (e.g., which ArUco marker ID it has). To ease parsing by
+  the receiving Arduino, ID should have no white space. Any white space will be replaced by underscores.
+
+- <em>w,h</em> the standardized width and height of the reported object (thus, object extends from x-w/2 to x+w/2
+  horizontally, and from y-h/2 to y+h/2 vertically).  Note that size data will be output with the same precision as the
+  coordinate data.
+
+- \a extra any additional text string about the reported object.
+
+- <em>x1,y1</em> ... <em>x4,y4</em> the standardized x,y coordinates of the 4 corners of a bounding rectangle around the
+  reported object.
+  
+- <em>x1,y1</em> ... <em>xn,yn</em> the standardized x,y coordinates of <em>n</em> vertices of a bounding polygon around
+  the reported object. Note than n can vary from object to object.
+
+Serial messages:
+
+serstyle | message
+---------|---------------------------------------------------------------------------------------------------------
+Terse    | <tt>T2D x y</tt>
+Normal   | <tt>N2D id x y w h</tt>
+Detail   | <tt>D2D id x1 y1 x2 y2 x3 y3 x4 y4 extra</tt>
+Fine     | <tt>F2D id n x1 y1 ... xn yn extra</tt>
+
+Three-dimensional (3D) location messages
+========================================
+
+
+\warning This is not implemented yet!
+
+
+3D location messages are used to communicate the location of something in the real-world's 3D space, and usually are
+available from modules where the camera has been calibrated and an object of known real-world size is observed by the
+camera. For example, the ArUco module can recover the full 3D location and pose of markers of known real-world size.
+
+We use the [right-hand rule](https://en.wikipedia.org/wiki/Right-hand_rule) for 3D coordinates as it is the dominant
+convention in robotics. We also follow the conventions of [REP-0103](http://www.ros.org/reps/rep-0103.html) of the
+Robotics Operating System (ROS) for camera frames (called <em>suffix frames</em>) to ease inter-operability, except that
+we report distances in millimeters as opposed to meters:
+
+- X axis points right
+- Y axis points down
+- Z axis points forward
+
+Inputs from machine vision module:
+
+- <em>x,y,z</em> the real-world 3D position of the center of the reported object in millimeters from the camera's
+  optical center.
+
+- \a id a text string describing what the reported object is (e.g., which ArUco marker ID it has). To ease parsing by
+  the receiving Arduino, ID should have no white space. Any white space will be replaced by underscores.
+
+- <em>w,h,d</em> the width (X axis), height (Y axis), and depth (Z axis) of the reported object in mm (thus, object
+  extends from x-w/2 to x+w/2 horizontally, from y-h/2 to y+h/2 vertically, and from from z-d/2 t z+d/2 along the
+  optical axis of the camera). Note that size data will be output with the same precision as the coordinate data.
+
+- \a extra any additional text string about the reported object.
+
+- <em>nx,ny,nz</em> the normal vector to the object, if appropriate (e.g., object is a 2D planar patch).
+
+- <em>x1,y1,zn</em> ... <em>xn,yn,zn</em> the 3D coordinates of <em>n</em> vertices defining a 3D polyhedron around the
+  object.
+
+Serial messages:
+
+serstyle | message
+---------|---------------------------------------------------------------------------------------------------------
+Terse    | <tt>T3D x y z</tt>
+Normal   | <tt>N3D id x y z w h d</tt>
+Detail   | <tt>D3D id x y z w h d nx ny nz extra</tt>
+Fine     | <tt>F3D id n x1 y1 z1 ... xn yn zn extra</tt>
+
+New machine vision modules can use the convenience functions provided in the jevois::Module class to send standardized
+serial messages.
+
+Recommendations for embedded controllers and robots
+===================================================
+
+- A robot that can only orient towards something along one axis (e.g., steering of a robot car) would usually expect \c
+  T1D messages.
+
+- A robot that can only orient towards something in the 2D image plane (e.g., a motorized pan/tilt head) would usually
+  expect \c T2D messages.
+
+- A robot that can move an end-effector towards an object in 3D space (e.g., robot arm with no gripper) would usually
+  expect \c T3D messages.
+
+- A robot that will take different actions depending on what the object is would typically expect \c N1D, \c N2D, or \c
+  N3D messages, then decoding the \a id field to decide what to do.
+
+- A robot that also needs to know the size of an object in a controlled setting (e.g., inspection robot that may eject
+  defective items that are coming on a conveyor belt, with the camera placed at a fixed distance above the belt and
+  looking down at it) would typically expect \c D1D, \c D2D, or \c D3D messages, or, if shape is important, \c F2D
+  or \c F3D messages.
+
+- A robot that can move an end-effector towards an object in 3D space and grasp it (e.g., robot arm with a gripper)
+  would usually expect \c D3D or \c F3D messages.
+
+
+
+*/

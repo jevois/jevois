@@ -130,6 +130,10 @@ functions and classes listed here have an exact binding to Python, except that y
 - Coordinate helpers declared in \ref Coordinates.H
   + imgToStd()
   + stdToImg()
+  + imgToStdX()
+  + imgToStdY()
+  + imgToStdSize()
+  + stdToImgSize()
 
 - Support for raw image buffers from camera and to USB from \ref RawImage.H
   + class RawImage
@@ -195,7 +199,6 @@ functions and classes listed here have an exact binding to Python, except that y
   function to place various variable values in that string):
   + LDEBUG(), LINFO(), LERROR(), LFATAL()
   + Log levels defined as constants: <b>jevois.LOG_DEBUG, jevois.LOG_INFO, jevois.LOG_ERR, jevois.LOG_CRIT</b>.
-
 
 Code documentation and accessory files
 ======================================

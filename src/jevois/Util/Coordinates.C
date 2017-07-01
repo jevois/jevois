@@ -33,6 +33,30 @@ void jevois::coords::imgToStd(float & x, float & y, unsigned int const width, un
 }
 
 // ####################################################################################################
+void jevois::coords::imgToStdX(float & x, unsigned int const width, float const eps)
+{
+  x = 2000.0F * x / width - 1000.0F;
+  if (eps) x = std::round(x / eps) * eps;
+}
+
+// ####################################################################################################
+void jevois::coords::imgToStdY(float & y, unsigned int const height, float const eps)
+{
+  y = (1.0F / JEVOIS_CAMERA_ASPECT) * (2000.0F * y / height - 1000.0F);
+  if (eps) y = std::round(y / eps) * eps;
+}
+
+// ####################################################################################################
+void jevois::coords::imgToStdSize(float & w, float & h, unsigned int const width, unsigned int const height,
+                                  float const eps)
+{
+  w = 2000.0F * w / width;
+  h = (1.0F / JEVOIS_CAMERA_ASPECT) * (2000.0F * h / height);
+
+  if (eps) { w = std::round(w / eps) * eps; h = std::round(h / eps) * eps; }
+}
+
+// ####################################################################################################
 void jevois::coords::stdToImg(float & x, float & y, jevois::RawImage const & camimg, float const eps)
 { jevois::coords::stdToImg(x, y, camimg.width, camimg.height, eps); }
 
@@ -44,4 +68,14 @@ void jevois::coords::stdToImg(float & x, float & y, unsigned int const width, un
   y = (JEVOIS_CAMERA_ASPECT * y * 0.0005F + 0.5F) * height;
 
   if (eps) { x = std::round(x / eps) * eps; y = std::round(y / eps) * eps; }
+}
+
+// ####################################################################################################
+void jevois::coords::stdToImgSize(float & w, float & h, unsigned int const width, unsigned int const height,
+                                  float const eps)
+{
+  w = (w * 0.0005F) * width;
+  h = (JEVOIS_CAMERA_ASPECT * h * 0.0005F) * height;
+
+  if (eps) { w = std::round(w / eps) * eps; h = std::round(h / eps) * eps; }
 }

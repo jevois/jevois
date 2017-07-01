@@ -22,6 +22,7 @@
 #include <jevois/Core/VideoBuf.H>
 #include <jevois/Core/UserInterface.H> // not strictly needed but derived classes will want to use it
 #include <jevois/Component/Component.H>
+#include <jevois/Types/Enum.H>
 #include <opencv2/core/core.hpp>
 #include <ostream>
 
@@ -213,6 +214,25 @@ namespace jevois
       mutable RawImage itsImage;
       jevois::RawImage * itsImagePtrForException;
   };
+
+
+  namespace module
+  {
+    static ParameterCategory const ParamCateg("Module Serial Message Options");
+
+    //! Enum for Parameter \relates jevois::Module
+    JEVOIS_DEFINE_ENUM_CLASS(SerStyle, (Terse) (Normal) (Detail) (Fine) )
+    
+    //! Parameter \relates jevois::Module
+    JEVOIS_DECLARE_PARAMETER(serstyle, SerStyle, "Style for standardized serial messages as defined in "
+                             "http://jevois.org/doc/UserSerialStyle.html",
+                             SerStyle::Terse, SerStyle_Values, ParamCateg);
+
+    //! Parameter \relates jevois::Module
+    JEVOIS_DECLARE_PARAMETER(serprec, unsigned int, "Number of decimal points in standardized serial messages as "
+                             "defined in http://jevois.org/doc/UserSerialStyle.html",
+                             0U, ParamCateg);
+  }
   
   //! Virtual base class for a vision processing module
   /*! Module is the base class to implement camera-to-USB frame-by-frame video processing. The Engine instantiates one
@@ -275,7 +295,7 @@ namespace jevois
       library (.so) file to instantiate the module. See \ref ModuleTutorial for examples.
 
       \ingroup core */
-  class Module : public Component
+  class Module : public Component, public Parameter<module::serprec, module::serstyle>
   {
     public:
       //! Constructor
@@ -322,6 +342,57 @@ namespace jevois
           serout Hard' over the JeVois command line to enable serial outputs to the hardware serial port. An Arduino
           would issue that setpar commands when it is ready to work. See ArduinoTutorial for an example. */
       virtual void sendSerial(std::string const & str);
+
+      //! Send standardized 1D message for an X image coordinate
+      /*! See \ref UserSerialStyle for more info. Coordinates should be in camera image pixels, this function will
+          convert them to standardized coordinates as per \ref coordhelpers. */
+      void sendSerialImg1Dx(unsigned int camw, float x, float size = 0.0F, std::string const & id = "",
+                            std::string const & extra = "");
+
+      //! Send standardized 1D message for a standardized X coordinate
+      /*! See \ref UserSerialStyle for more info. Coordinates should be in camera image pixels, this function will
+          convert them to standardized coordinates as per \ref coordhelpers. */
+      void sendSerialStd1Dx(float x, float size = 0.0F, std::string const & id = "", std::string const & extra = "");
+
+      //! Send standardized 1D message for an Y image coordinate
+      /*! See \ref UserSerialStyle for more info. Coordinates should be in camera image pixels, this function will
+          convert them to standardized coordinates as per \ref coordhelpers. */
+      void sendSerialImg1Dy(unsigned int camh, float y, float size = 0.0F, std::string const & id = "",
+                            std::string const & extra = "");
+
+      //! Send standardized 1D message for a standardized Y coordinate
+      /*! See \ref UserSerialStyle for more info. Coordinates should be in camera image pixels, this function will
+          convert them to standardized coordinates as per \ref coordhelpers. */
+      void sendSerialStd1Dy(float y, float size = 0.0F, std::string const & id = "", std::string const & extra = "");
+
+      //! Send standardized 2D message for image coordinates
+      /*! Use this function if you only know location and optionally size. Use the other variants if you have the
+          corners. An upright rectangular shape will be assumed here. See \ref UserSerialStyle for more
+          info. Coordinates should be in camera image pixels, this function will convert them to standardized
+          coordinates as per \ref coordhelpers. */
+      void sendSerialImg2D(unsigned int camw, unsigned int camh, float x, float y, float w = 0.0F, float h = 0.0F,
+                           std::string const & id = "", std::string const & extra = "");
+      
+      //! Send standardized 2D message for standardized coordinates
+      /*! Use this function if you only know location and optionally size. Use the other variants if you have the
+          corners. An upright rectangular shape will be assumed here. See \ref UserSerialStyle for more
+          info. Coordinates should be in camera image pixels, this function will convert them to standardized
+          coordinates as per \ref coordhelpers. */
+      void sendSerialStd2D(float x, float y, float w = 0.0F, float h = 0.0F,
+                           std::string const & id = "", std::string const & extra = "");
+
+      //! Send standardized 2D message for polygons in image coordinates
+      /*! Use this function if you have a polygon around your object, for example, one of the contours found with
+          cv::findContours(), or if you have the 4 corners of a rectangular object. See \ref UserSerialStyle for more
+          info. Coordinates should be in camera image pixels, this function will convert them to standardized
+          coordinates as per \ref coordhelpers. For \b Terse serial style, the center of gravity of the points will be
+          computed and output; for \b Normal, an upright bounding rectangle will be computed and output; for \b
+          Detailed, a rotated bounding rectangle will be computed and output; for \b Fine, all the given points will
+          be output. Make sure you try to reduce the number of points so the message is not too long; for example see
+          OpenCV approxPolyDP() or similar. */
+      template <typename T = int>
+      void sendSerialContour2D(unsigned int camw, unsigned int camh, std::vector<cv::Point_<T> > points,
+                                std::string const & id = "", std::string const & extra = "");
 
       //! Receive a string from a serial port which contains a user command
       /*! This function may be called in between calls to process() with any received string from any of the serial

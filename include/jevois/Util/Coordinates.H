@@ -51,6 +51,9 @@ namespace jevois
         When writing a machine vision algorithm that sends over serial the coordinates of things detected in the camera
         frames, be sure to first transform those coordinates from image to standardized space.
         
+        For more on how standardized coordinates are used to communicate with embedded controllers, and for 3D
+        coordinates, see \ref UserSerialStyle
+
         \ingroup utils */
 
     //! Aspect ratio of the JeVois camera
@@ -78,7 +81,40 @@ namespace jevois
 
         \ingroup coordhelpers */
     void imgToStd(float & x, float & y, unsigned int const width, unsigned int const height, float const eps = 0.1F);
+
+    //! Transform X coordinate in-place from camera to standardized, using given image width and height
+    /*! The width is used to specify pixel width of the camera image, and this is the source
+        coordinate system. The destination coordinate system is the standardized one, with x in [-1000 ... 1000].
+
+        eps is used for rounding of returned coordinates, which is convenient to avoid sending very long floating point
+        values over serial port.
+
+        \ingroup coordhelpers */
+    void imgToStdX(float & x, unsigned int const width, float const eps = 0.1F);
     
+    //! Transform Y coordinate in-place from camera to standardized, using given image width and height
+    /*! The height is used to specify pixel height of the camera image, and this is the source
+        coordinate system. The destination coordinate system is the standardized one, with y in [-750 ... 750].
+
+        eps is used for rounding of returned coordinates, which is convenient to avoid sending very long floating point
+        values over serial port.
+
+        \ingroup coordhelpers */
+    void imgToStdY(float & y, unsigned int const height, float const eps = 0.1F);
+
+    //! Transform size in-place from camera to standardized, using given image width and height
+    /*! Arguments w and h define the size of an object in pixels, which will be converted to standardized units. The
+        width and height are used to specify pixel width and height of the camera image, and this is the source
+        coordinate system. The destination coordinate system is the standardized one, with x in [-1000 ... 1000] and y
+        in [-750 ... 750].
+
+        eps is used for rounding of returned coordinates, which is convenient to avoid sending very long floating point
+        values over serial port.
+
+        \ingroup coordhelpers */
+    void imgToStdSize(float & w, float & h, unsigned int const width, unsigned int const height,
+                      float const eps = 0.1F);
+
     //! Transform coordinates in-place from standardized to image, using a RawImage to establish image size
     /*! The RawImage would typically be from the camera is used to specify pixel width and height of the camera image,
         and this is the destination coordinate system. The source coordinate system is the standardized one, with x in
@@ -91,7 +127,7 @@ namespace jevois
     void stdToImg(float & x, float & y, RawImage const & camimg, float const eps = 0.1F);
 
     //! Transform coordinates in-place from standardized to image, using a RawImage to establish image size
-    /*! The witdth and height would typically be from the camera and are used to specify pixel width and height of the
+    /*! The width and height would typically be from the camera and are used to specify pixel width and height of the
         camera image, and this is the destination coordinate system. The source coordinate system is the standardized
         one, with x in [-1000 ... 1000] and y in [-750 ... 750].
 
@@ -100,6 +136,19 @@ namespace jevois
 
         \ingroup coordhelpers */
     void stdToImg(float & x, float & y, unsigned int const width, unsigned int const height, float const eps = 0.1F);
+
+    //! Transform size in-place from standardized to image, using a RawImage to establish image size
+    /*! Arguments w and h define the size of an object in standardized units, which will be converted to pixels. The
+        width and height would typically be from the camera and are used to specify pixel width and height of the
+        camera image, and this is the destination coordinate system. The source coordinate system is the standardized
+        one, with x in [-1000 ... 1000] and y in [-750 ... 750].
+
+        eps is used for rounding of returned coordinates, which is convenient to avoid sending very long floating point
+        values over serial port.
+
+        \ingroup coordhelpers */
+    void stdToImgSize(float & x, float & y, unsigned int const width, unsigned int const height,
+                      float const eps = 0.1F);
   }
 }
 

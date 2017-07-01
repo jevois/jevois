@@ -21,6 +21,13 @@
 #include <jevois/Core/Engine.H>
 #include <jevois/Core/UserInterface.H>
 #include <jevois/Image/RawImageOps.H>
+#include <jevois/Util/Coordinates.H>
+
+#include <opencv2/imgproc/imgproc.hpp>
+
+#include <cmath>
+#include <sstream>
+#include <iomanip>
 
 // ####################################################################################################
 jevois::InputFrame::InputFrame(std::shared_ptr<jevois::VideoInput> const & cam, bool turbo) :
@@ -194,6 +201,244 @@ void jevois::Module::sendSerial(std::string const & str)
   if (e == nullptr) LFATAL("My parent is not Engine -- CANNOT SEND SERIAL");
 
   e->sendSerial(str);
+}
+
+// ####################################################################################################
+void jevois::Module::sendSerialImg1Dx(unsigned int camw, float x, float size, std::string const & id,
+                                      std::string const & extra)
+{
+  // Normalize the coordinate and size using the given precision to do rounding:
+  float const eps = std::pow(10.0F, -float(serprec::get()));
+  
+  jevois::coords::imgToStdX(x, camw, eps);
+  float dummy = 0.0F; jevois::coords::imgToStdSize(size, dummy, camw, 100, eps);
+  
+  // Delegate:
+  sendSerialStd1Dx(x, size, id, extra);
+}
+
+// ####################################################################################################
+void jevois::Module::sendSerialStd1Dx(float x, float size, std::string const & id, std::string const & extra)
+{
+  // Build the message depending on desired style:
+  std::ostringstream oss; oss << std::fixed << std::setprecision(serprec::get());
+  
+  switch (serstyle::get())
+  {
+  case jevois::module::SerStyle::Terse:
+    oss << "T1D " << x;
+    break;
+    
+  case jevois::module::SerStyle::Normal:
+    oss << "N1D ";
+    if (id.empty()) oss << "unknown "; else oss << jevois::replaceWhitespace(id) << ' ';
+    oss << x << ' ' << size;
+    break;
+    
+  case jevois::module::SerStyle::Detail:
+  case jevois::module::SerStyle::Fine:
+    oss << "D1D ";
+    if (id.empty()) oss << "unknown "; else oss << jevois::replaceWhitespace(id) << ' ';
+    oss << x - 0.5F * size << ' ' << x + 0.5F * size;
+    if (extra.empty() == false) oss << ' ' << extra;
+    break;
+  }
+  
+  // Send the message:
+  sendSerial(oss.str());
+}
+
+// ####################################################################################################
+void jevois::Module::sendSerialImg1Dy(unsigned int camh, float y, float size, std::string const & id,
+                                      std::string const & extra)
+{
+  // Normalize the coordinate and size using the given precision to do rounding:
+  float const eps = std::pow(10.0F, -float(serprec::get()));
+  jevois::coords::imgToStdY(y, camh, eps);
+  float dummy = 0.0F; jevois::coords::imgToStdSize(dummy, size, 100, camh, eps);
+  
+  // Delegate:
+  sendSerialStd1Dy(y, size, id, extra);
+}
+
+// ####################################################################################################
+void jevois::Module::sendSerialStd1Dy(float y, float size, std::string const & id, std::string const & extra)
+{
+  // Build the message depending on desired style:
+  std::ostringstream oss; oss << std::fixed << std::setprecision(serprec::get());
+  
+  switch (serstyle::get())
+  {
+  case jevois::module::SerStyle::Terse:
+    oss << "T1D " << y;
+    break;
+    
+  case jevois::module::SerStyle::Normal:
+    oss << "N1D ";
+    if (id.empty()) oss << "unknown "; else oss << jevois::replaceWhitespace(id) << ' ';
+    oss << y << ' ' << size;
+    break;
+    
+  case jevois::module::SerStyle::Detail:
+  case jevois::module::SerStyle::Fine:
+    oss << "D1D ";
+    if (id.empty()) oss << "unknown "; else oss << jevois::replaceWhitespace(id) << ' ';
+    oss << y - 0.5F * size << ' ' << y + 0.5F * size;
+    if (extra.empty() == false) oss << ' ' << extra;
+    break;
+  }
+  
+  // Send the message:
+  sendSerial(oss.str());
+}
+
+// ####################################################################################################
+void jevois::Module::sendSerialImg2D(unsigned int camw, unsigned int camh, float x, float y, float w, float h,
+                                  std::string const & id, std::string const & extra)
+{
+  // Normalize the coordinates and sizes using the given precision to do rounding:
+  float const eps = std::pow(10.0F, -float(serprec::get()));
+
+  jevois::coords::imgToStd(x, y, camw, camh, eps);
+  jevois::coords::imgToStdSize(w, h, camw, camh, eps);
+
+  // Delegate:
+  sendSerialStd2D(x, y, w, h, id, extra);
+}
+// ####################################################################################################
+void jevois::Module::sendSerialStd2D(float x, float y, float w, float h, std::string const & id,
+                                     std::string const & extra)
+{
+  // Build the message depending on desired style:
+  std::ostringstream oss; oss << std::fixed << std::setprecision(serprec::get());
+
+  switch (serstyle::get())
+  {
+  case jevois::module::SerStyle::Terse:
+    oss << "T2D " << x << ' ' << y;
+    break;
+    
+  case jevois::module::SerStyle::Normal:
+    oss << "N2D ";
+    if (id.empty()) oss << "unknown "; else oss << jevois::replaceWhitespace(id) << ' ';
+    oss << x << ' ' << y << ' ' << w << ' ' << h;
+    break;
+    
+  case jevois::module::SerStyle::Detail:
+    oss << "D2D ";
+    if (id.empty()) oss << "unknown "; else oss << jevois::replaceWhitespace(id) << ' ';
+    oss << x - 0.5F * w << ' ' << y - 0.5F * h << ' ';
+    oss << x + 0.5F * w << ' ' << y - 0.5F * h << ' ';
+    oss << x + 0.5F * w << ' ' << y + 0.5F * h << ' ';
+    oss << x + 0.5F * w << ' ' << y - 0.5F * h;
+    if (extra.empty() == false) oss << ' ' << extra;
+    break;
+
+  case jevois::module::SerStyle::Fine:
+    oss << "F2D ";
+    if (id.empty()) oss << "unknown "; else oss << jevois::replaceWhitespace(id) << ' ';
+    oss << 4 << ' '; // number of vertices
+    oss << x - 0.5F * w << ' ' << y - 0.5F * h << ' ';
+    oss << x + 0.5F * w << ' ' << y - 0.5F * h << ' ';
+    oss << x + 0.5F * w << ' ' << y + 0.5F * h << ' ';
+    oss << x + 0.5F * w << ' ' << y - 0.5F * h;
+    if (extra.empty() == false) oss << ' ' << extra;
+    break;
+  }
+  
+  // Send the message:
+  sendSerial(oss.str());
+}
+
+// ####################################################################################################
+template <typename T>
+void jevois::Module::sendSerialContour2D(unsigned int camw, unsigned int camh, std::vector<cv::Point_<T> > points,
+                                          std::string const & id, std::string const & extra)
+{
+  switch (serstyle::get())
+  {
+  case jevois::module::SerStyle::Terse:
+  {
+    // Compute center of gravity:
+    float cx = 0.0F, cy = 0.0F;
+    for (cv::Point const & p : points) { cx += p.x; cy += p.y; }
+    if (points.size()) { cx /= points.size(); cy /= points.size(); }
+    sendSerialImg2D(camw, camh, cx, cy, 0.0F, 0.0F, id, extra);
+  }
+  break;
+    
+  case jevois::module::SerStyle::Normal:
+  {
+    // Compute upright bounding rectangle:
+    cv::Rect r = cv::boundingRect(points);
+    sendSerialImg2D(camw, camh, r.x + 0.5F * r.width, r.y + 0.5F * r.height, r.width, r.height, id, extra);
+  }
+  break;
+    
+  case jevois::module::SerStyle::Detail:
+  {
+    // Compute minimal rotated rectangle enclosing the points:
+    cv::RotatedRect r = cv::minAreaRect(points);
+
+    // Build the message:
+    unsigned int const prec = serprec::get(); float const eps = std::pow(10.0F, -float(prec));
+    std::ostringstream oss; oss << std::fixed << std::setprecision(prec);
+    oss << "D2D ";
+    if (id.empty()) oss << "unknown "; else oss << jevois::replaceWhitespace(id) << ' ';
+    cv::Point2f corners[4];
+    r.points(corners);
+    
+    oss << 4; // number of vertices
+
+    for (int i = 0; i < 4; ++i)
+    {
+      float x = corners[i].x, y = corners[i].y;
+      jevois::coords::imgToStd(x, y, camw, camh, eps);
+      oss << ' ' << x << ' ' << y;
+    }
+    if (extra.empty() == false) oss << ' ' << extra;
+
+    // Send the message:
+    sendSerial(oss.str());
+  }
+  break;
+
+  case jevois::module::SerStyle::Fine:
+  {
+    // Build the message:
+    unsigned int const prec = serprec::get(); float const eps = std::pow(10.0F, -float(prec));
+    std::ostringstream oss; oss << std::fixed << std::setprecision(prec);
+    oss << "F2D ";
+    if (id.empty()) oss << "unknown "; else oss << jevois::replaceWhitespace(id) << ' ';
+    oss << points.size(); // number of vertices
+
+    for (cv::Point const & p : points)
+    {
+      float x = p.x, y = p.y;
+      jevois::coords::imgToStd(x, y, camw, camh, eps);
+      oss << ' ' << x << ' ' << y;
+    }
+    if (extra.empty() == false) oss << ' ' << extra;
+
+    // Send the message:
+    sendSerial(oss.str());
+  }
+  break;
+  }
+}
+
+// Compile in explicit template instantiations:
+namespace jevois
+{
+  template
+  void Module::sendSerialContour2D(unsigned int camw, unsigned int camh, std::vector<cv::Point_<int> > points,
+                                   std::string const & id, std::string const & extra);
+  template
+  void Module::sendSerialContour2D(unsigned int camw, unsigned int camh, std::vector<cv::Point_<float> > points,
+                                   std::string const & id, std::string const & extra);
+  template
+  void Module::sendSerialContour2D(unsigned int camw, unsigned int camh, std::vector<cv::Point_<double> > points,
+                                   std::string const & id, std::string const & extra);
 }
 
 // ####################################################################################################

@@ -125,7 +125,7 @@ BOOST_PYTHON_MODULE(libjevois)
   
   // #################### module sendSerial() emulation:
   boost::python::def("sendSerial", pythonSendSerial);
-
+  
   // #################### Log.H
   JEVOIS_PYTHON_CONSTANT(LOG_DEBUG);
   JEVOIS_PYTHON_CONSTANT(LOG_INFO);
@@ -159,6 +159,11 @@ BOOST_PYTHON_MODULE(libjevois)
   boost::python::def("stdToImg", stdToImg1);
   boost::python::def("stdToImg", stdToImg2);
 
+  boost::python::def("imgToStdX", jevois::coords::imgToStdX);
+  boost::python::def("imgToStdY", jevois::coords::imgToStdY);
+  boost::python::def("imgToStdSize", jevois::coords::imgToStdSize);
+  boost::python::def("stdToImgSize", jevois::coords::stdToImgSize);
+  
   // #################### RawImage.H
   boost::python::class_<jevois::RawImage>("RawImage") // default constructor is included
     .def("invalidate", &jevois::RawImage::invalidate)
