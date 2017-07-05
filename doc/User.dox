@@ -16,6 +16,7 @@ New users, be sure to check out [JeVois Start](/start/start.html).
 - \subpage MicroSD
 - \subpage NewMicroSD
 - \subpage UserSerial
+- \subpage UserSerialStyle
 - \subpage UserCli
 - \subpage ArduinoTutorial
 - \subpage CaseMounting

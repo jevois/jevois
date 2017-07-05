@@ -56,9 +56,9 @@ Serial messages:
 
 serstyle | message
 ---------|---------------------------------------------------------------------------------------------------------
-Terse    | <tt>T1D x</tt>
-Normal   | <tt>N1D id x size</tt>
-Detail   | <tt>D1D id xmin xmax extra</tt>
+Terse    | <tt>T1 x</tt>
+Normal   | <tt>N1 id x size</tt>
+Detail   | <tt>D1 id xmin xmax extra</tt>
 Fine     | N/A - a \c D1D message will be issued instead.
 
 Two-dimensional (2D) location messages
@@ -90,10 +90,16 @@ Serial messages:
 
 serstyle | message
 ---------|---------------------------------------------------------------------------------------------------------
-Terse    | <tt>T2D x y</tt>
-Normal   | <tt>N2D id x y w h</tt>
-Detail   | <tt>D2D id x1 y1 x2 y2 x3 y3 x4 y4 extra</tt>
-Fine     | <tt>F2D id n x1 y1 ... xn yn extra</tt>
+Terse    | <tt>T2 x y</tt>
+Normal   | <tt>N2 id x y w h</tt>
+Detail   | <tt>D2 id x1 y1 x2 y2 x3 y3 x4 y4 extra</tt>
+Fine     | <tt>F2 id n x1 y1 ... xn yn extra</tt>
+
+\note The tightness of the bounding box for \b Normal and \b Detail messages depends on what information a machine
+vision module produces. Typically, machine vision modules will invoke the serial message functions of jevois::Module
+with a list of 2D vertices defining a shape (polygonal contour). In \b Normal style, an upright bounding rectangle is
+fit to those vertices to generate the message, and a rotated rectangle is fit around the vertices to generate the \b
+Detail message.
 
 Three-dimensional (3D) location messages
 ========================================
@@ -129,7 +135,7 @@ Inputs from machine vision module:
 
 - \a extra any additional text string about the reported object.
 
-- <em>nx,ny,nz</em> the normal vector to the object, if appropriate (e.g., object is a 2D planar patch).
+- <em>q1,q2,q3,q4</em> a quaternion that relates the object's frame to the camera's frame, if appropriate.
 
 - <em>x1,y1,zn</em> ... <em>xn,yn,zn</em> the 3D coordinates of <em>n</em> vertices defining a 3D polyhedron around the
   object.
@@ -138,10 +144,10 @@ Serial messages:
 
 serstyle | message
 ---------|---------------------------------------------------------------------------------------------------------
-Terse    | <tt>T3D x y z</tt>
-Normal   | <tt>N3D id x y z w h d</tt>
-Detail   | <tt>D3D id x y z w h d nx ny nz extra</tt>
-Fine     | <tt>F3D id n x1 y1 z1 ... xn yn zn extra</tt>
+Terse    | <tt>T3 x y z</tt>
+Normal   | <tt>N3 id x y z w h d</tt>
+Detail   | <tt>D3 id x y z w h d q1 q2 q3 q4 extra</tt>
+Fine     | <tt>F3 id n x1 y1 z1 ... xn yn zn extra</tt>
 
 New machine vision modules can use the convenience functions provided in the jevois::Module class to send standardized
 serial messages.
@@ -150,24 +156,24 @@ Recommendations for embedded controllers and robots
 ===================================================
 
 - A robot that can only orient towards something along one axis (e.g., steering of a robot car) would usually expect \c
-  T1D messages.
+  T1 messages.
 
 - A robot that can only orient towards something in the 2D image plane (e.g., a motorized pan/tilt head) would usually
-  expect \c T2D messages.
+  expect \c T2 messages.
 
 - A robot that can move an end-effector towards an object in 3D space (e.g., robot arm with no gripper) would usually
-  expect \c T3D messages.
+  expect \c T3 messages.
 
-- A robot that will take different actions depending on what the object is would typically expect \c N1D, \c N2D, or \c
-  N3D messages, then decoding the \a id field to decide what to do.
+- A robot that will take different actions depending on what the object is would typically expect \c N1, \c N2, or \c
+  N3 messages, then decoding the \a id field to decide what to do.
 
 - A robot that also needs to know the size of an object in a controlled setting (e.g., inspection robot that may eject
   defective items that are coming on a conveyor belt, with the camera placed at a fixed distance above the belt and
-  looking down at it) would typically expect \c D1D, \c D2D, or \c D3D messages, or, if shape is important, \c F2D
-  or \c F3D messages.
+  looking down at it) would typically expect \c D1, \c D2, or \c D3 messages, or, if shape is important, \c F2
+  or \c F3 messages.
 
 - A robot that can move an end-effector towards an object in 3D space and grasp it (e.g., robot arm with a gripper)
-  would usually expect \c D3D or \c F3D messages.
+  would usually expect \c D3 or \c F3 messages.
 
 
 

@@ -501,21 +501,21 @@ This operates like the \c serlog command but uses the serial port selected by th
 
 For example, to interactively debug some Arduino code, one may want to manually type the kinds of strings that a JeVois
 machine vision module would issue, to make sure that the Arduino always correctly interprets them. Assume that we are
-debugging the pan/tilt Arduino code provided with JeVois. One may want to try to issue a number of "T2D targetx targety"
+debugging the pan/tilt Arduino code provided with JeVois. One may want to try to issue a number of "T2 targetx targety"
 messages by hand to check that the pan/tilt camera moves in the correct way. With the Arduino connected to the 4-pin
 hardware serial port of JeVois, and a human interacting with JeVois through the serial-over-USB port, the human could
 type:
 
 \verbatim
 setpar serout Hard
-serout T2D 0 0
-serout T2D 1000 1000
-serout T2D -1000 -1000
-serout T2D &^%$@ try to crash arduino by using buggy T2D command
+serout T2 0 0
+serout T2 1000 1000
+serout T2 -1000 -1000
+serout T2 &^%$@ try to crash arduino by using buggy T2 command
 \endverbatim
 
-The "T2D x y" strings would then be forwarded to the Arduino, which should move the pan/tilt motors accordingly. With
-the last (ill-formatted) T2D command, the Arduino should correctly reject it and not move the motors.
+The "T2 x y" strings would then be forwarded to the Arduino, which should move the pan/tilt motors accordingly. With
+the last (ill-formatted) T2 command, the Arduino should correctly reject it and not move the motors.
 
 Remember that module data output messages (e.g., coordinates of a detected target object) issued by the JeVois camera
 itself are also sent to the port selected by the \c serout parameter.
