@@ -105,7 +105,7 @@ Three-dimensional (3D) location messages
 ========================================
 
 
-\warning This is not implemented yet!
+\warning This is not fully tested yet!
 
 
 3D location messages are used to communicate the location of something in the real-world's 3D space, and usually are
@@ -151,6 +151,9 @@ Fine     | <tt>F3 id n x1 y1 z1 ... xn yn zn extra</tt>
 
 New machine vision modules can use the convenience functions provided in the jevois::Module class to send standardized
 serial messages.
+
+\note If you will use the quaternion data (\b Detail message style), you should probably set the \p serprec parameter to
+something non-zero to get enough accuracy in the quaternion values.
 
 Recommendations for embedded controllers and robots
 ===================================================

@@ -188,6 +188,7 @@ git clone https://github.com/jevois/jevois.git
 git clone https://github.com/jevois/jevoisbase.git
 git clone https://github.com/jevois/jevois-sdk.git
 git clone https://github.com/jevois/samplemodule.git
+git clone https://github.com/jevois/samplepythonmodule.git
 git clone https://github.com/jevois/jevois-tutorials.git
 
 # Set the following environment variables in your ~/.bashrc
@@ -195,7 +196,7 @@ git clone https://github.com/jevois/jevois-tutorials.git
 # JEVOIS_SDK_ROOT is where you setup the jevois development kit that is used to build the linux kernel,
 #   libraries and packages cross-compiled for JeVois platform, etc
 
-export JEVOIS_SRC_ROOT=${HOME}/jevois-sdk
+export JEVOIS_SDK_ROOT=${HOME}/jevois-sdk
 export JEVOIS_ROOT=/jevois
 
 # and close all terminals and open a new terminal to make sure the environment is refreshed.

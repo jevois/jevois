@@ -226,18 +226,18 @@ void jevois::Module::sendSerialStd1Dx(float x, float size, std::string const & i
   switch (serstyle::get())
   {
   case jevois::module::SerStyle::Terse:
-    oss << "T1D " << x;
+    oss << "T1 " << x;
     break;
     
   case jevois::module::SerStyle::Normal:
-    oss << "N1D ";
+    oss << "N1 ";
     if (id.empty()) oss << "unknown "; else oss << jevois::replaceWhitespace(id) << ' ';
     oss << x << ' ' << size;
     break;
     
   case jevois::module::SerStyle::Detail:
   case jevois::module::SerStyle::Fine:
-    oss << "D1D ";
+    oss << "D1 ";
     if (id.empty()) oss << "unknown "; else oss << jevois::replaceWhitespace(id) << ' ';
     oss << x - 0.5F * size << ' ' << x + 0.5F * size;
     if (extra.empty() == false) oss << ' ' << extra;
@@ -270,18 +270,18 @@ void jevois::Module::sendSerialStd1Dy(float y, float size, std::string const & i
   switch (serstyle::get())
   {
   case jevois::module::SerStyle::Terse:
-    oss << "T1D " << y;
+    oss << "T1 " << y;
     break;
     
   case jevois::module::SerStyle::Normal:
-    oss << "N1D ";
+    oss << "N1 ";
     if (id.empty()) oss << "unknown "; else oss << jevois::replaceWhitespace(id) << ' ';
     oss << y << ' ' << size;
     break;
     
   case jevois::module::SerStyle::Detail:
   case jevois::module::SerStyle::Fine:
-    oss << "D1D ";
+    oss << "D1 ";
     if (id.empty()) oss << "unknown "; else oss << jevois::replaceWhitespace(id) << ' ';
     oss << y - 0.5F * size << ' ' << y + 0.5F * size;
     if (extra.empty() == false) oss << ' ' << extra;
@@ -315,17 +315,17 @@ void jevois::Module::sendSerialStd2D(float x, float y, float w, float h, std::st
   switch (serstyle::get())
   {
   case jevois::module::SerStyle::Terse:
-    oss << "T2D " << x << ' ' << y;
+    oss << "T2 " << x << ' ' << y;
     break;
     
   case jevois::module::SerStyle::Normal:
-    oss << "N2D ";
+    oss << "N2 ";
     if (id.empty()) oss << "unknown "; else oss << jevois::replaceWhitespace(id) << ' ';
     oss << x << ' ' << y << ' ' << w << ' ' << h;
     break;
     
   case jevois::module::SerStyle::Detail:
-    oss << "D2D ";
+    oss << "D2 ";
     if (id.empty()) oss << "unknown "; else oss << jevois::replaceWhitespace(id) << ' ';
     oss << x - 0.5F * w << ' ' << y - 0.5F * h << ' ';
     oss << x + 0.5F * w << ' ' << y - 0.5F * h << ' ';
@@ -335,7 +335,7 @@ void jevois::Module::sendSerialStd2D(float x, float y, float w, float h, std::st
     break;
 
   case jevois::module::SerStyle::Fine:
-    oss << "F2D ";
+    oss << "F2 ";
     if (id.empty()) oss << "unknown "; else oss << jevois::replaceWhitespace(id) << ' ';
     oss << 4 << ' '; // number of vertices
     oss << x - 0.5F * w << ' ' << y - 0.5F * h << ' ';
@@ -383,7 +383,7 @@ void jevois::Module::sendSerialContour2D(unsigned int camw, unsigned int camh, s
     // Build the message:
     unsigned int const prec = serprec::get(); float const eps = std::pow(10.0F, -float(prec));
     std::ostringstream oss; oss << std::fixed << std::setprecision(prec);
-    oss << "D2D ";
+    oss << "D2 ";
     if (id.empty()) oss << "unknown "; else oss << jevois::replaceWhitespace(id) << ' ';
     cv::Point2f corners[4];
     r.points(corners);
@@ -408,7 +408,7 @@ void jevois::Module::sendSerialContour2D(unsigned int camw, unsigned int camh, s
     // Build the message:
     unsigned int const prec = serprec::get(); float const eps = std::pow(10.0F, -float(prec));
     std::ostringstream oss; oss << std::fixed << std::setprecision(prec);
-    oss << "F2D ";
+    oss << "F2 ";
     if (id.empty()) oss << "unknown "; else oss << jevois::replaceWhitespace(id) << ' ';
     oss << points.size(); // number of vertices
 
@@ -439,6 +439,129 @@ namespace jevois
   template
   void Module::sendSerialContour2D(unsigned int camw, unsigned int camh, std::vector<cv::Point_<double> > points,
                                    std::string const & id, std::string const & extra);
+}
+
+// ####################################################################################################
+void jevois::Module::sendSerialStd3D(float x, float y, float z, float w, float h, float d,
+                                     float q1, float q2, float q3, float q4,
+                                     std::string const & id, std::string const & extra)
+{
+  // Build the message depending on desired style:
+  std::ostringstream oss; oss << std::fixed << std::setprecision(serprec::get());
+
+  switch (serstyle::get())
+  {
+  case jevois::module::SerStyle::Terse:
+    oss << "T3 " << x << ' ' << y << ' ' << z;
+    break;
+    
+  case jevois::module::SerStyle::Normal:
+    oss << "N3 ";
+    if (id.empty()) oss << "unknown "; else oss << jevois::replaceWhitespace(id) << ' ';
+    oss << x << ' ' << y << ' ' << ' ' << z << ' ' << w << ' ' << h << ' ' << d;
+    break;
+    
+  case jevois::module::SerStyle::Detail:
+    oss << "D3 ";
+    if (id.empty()) oss << "unknown "; else oss << jevois::replaceWhitespace(id) << ' ';
+    oss << x << ' ' << y << ' ' << ' ' << z << ' ' << w << ' ' << h << ' ' << d << ' '
+        << q1 << ' ' << q2 << ' ' << q3 << ' ' << q4;
+    if (extra.empty() == false) oss << ' ' << extra;
+    break;
+
+  case jevois::module::SerStyle::Fine:
+    oss << "F3 ";
+    if (id.empty()) oss << "unknown "; else oss << jevois::replaceWhitespace(id) << ' ';
+    oss << 8 << ' '; // number of vertices
+    oss << x - 0.5F * w << ' ' << y - 0.5F * h << ' ' << z - 0.5F * d << ' ';
+    oss << x + 0.5F * w << ' ' << y - 0.5F * h << ' ' << z - 0.5F * d << ' ';
+    oss << x + 0.5F * w << ' ' << y + 0.5F * h << ' ' << z - 0.5F * d << ' ';
+    oss << x + 0.5F * w << ' ' << y - 0.5F * h << ' ' << z - 0.5F * d << ' ';
+    oss << x - 0.5F * w << ' ' << y - 0.5F * h << ' ' << z + 0.5F * d << ' ';
+    oss << x + 0.5F * w << ' ' << y - 0.5F * h << ' ' << z + 0.5F * d << ' ';
+    oss << x + 0.5F * w << ' ' << y + 0.5F * h << ' ' << z + 0.5F * d << ' ';
+    oss << x + 0.5F * w << ' ' << y - 0.5F * h << ' ' << z + 0.5F * d << ' ';
+    if (extra.empty() == false) oss << ' ' << extra;
+    break;
+  }
+  
+  // Send the message:
+  sendSerial(oss.str());
+}
+
+// ####################################################################################################
+void jevois::Module::sendSerialStd3D(std::vector<cv::Point3f> points, std::string const & id,
+                                     std::string const & extra)
+{
+  switch (serstyle::get())
+  {
+  case jevois::module::SerStyle::Terse:
+  {
+    // Compute center of gravity:
+    cv::Point3f cg(0.0F, 0.0F, 0.0F);
+    for (cv::Point3f const & p : points) cg += p;
+    if (points.size()) { cg.x /= points.size(); cg.y /= points.size(); cg.z /= points.size(); }
+    sendSerialStd3D(cg.x, cg.y, cg.z, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, id, extra);
+  }
+  break;
+    
+  case jevois::module::SerStyle::Normal:
+  {
+    // Compute upright bounding parallelepiped:
+    cv::Point3f cg(0.0F, 0.0F, 0.0F), pmin(1e30F, 1e30F, 1e30F), pmax(-1e30F, -1e30F, -1e30F);
+    for (cv::Point3f const & p : points)
+    {
+      cg += p;
+      if (p.x < pmin.x) pmin.x = p.x;
+      if (p.y < pmin.y) pmin.y = p.y;
+      if (p.z < pmin.z) pmin.z = p.z;
+      if (p.x > pmax.x) pmax.x = p.x;
+      if (p.y > pmax.y) pmax.y = p.y;
+      if (p.z > pmax.z) pmax.z = p.z;
+    }
+    if (points.size()) { cg.x /= points.size(); cg.y /= points.size(); cg.z /= points.size(); }
+    sendSerialStd3D(cg.x, cg.y, cg.z, pmax.x - pmin.x, pmax.y - pmin.y, pmax.z - pmin.z, 0.0F, 0.0F, 0.0F, 0.0F,
+                    id, extra);
+  }
+  break;
+  
+  case jevois::module::SerStyle::Detail:
+  {
+    // Compute upright bounding parallelepiped:
+    cv::Point3f cg(0.0F, 0.0F, 0.0F), pmin(1e30F, 1e30F, 1e30F), pmax(-1e30F, -1e30F, -1e30F);
+    for (cv::Point3f const & p : points)
+    {
+      cg += p;
+      if (p.x < pmin.x) pmin.x = p.x;
+      if (p.y < pmin.y) pmin.y = p.y;
+      if (p.z < pmin.z) pmin.z = p.z;
+      if (p.x > pmax.x) pmax.x = p.x;
+      if (p.y > pmax.y) pmax.y = p.y;
+      if (p.z > pmax.z) pmax.z = p.z;
+    }
+    if (points.size()) { cg.x /= points.size(); cg.y /= points.size(); cg.z /= points.size(); }
+    // FIXME what should we send for the quaternion?
+    sendSerialStd3D(cg.x, cg.y, cg.z, pmax.x - pmin.x, pmax.y - pmin.y, pmax.z - pmin.z, 0.0F, 0.0F, 0.0F, 1.0F,
+                    id, extra);
+  }
+  
+  case jevois::module::SerStyle::Fine:
+  {
+    // Build the message:
+    unsigned int const prec = serprec::get();
+    std::ostringstream oss; oss << std::fixed << std::setprecision(prec);
+    oss << "F3 ";
+    if (id.empty()) oss << "unknown "; else oss << jevois::replaceWhitespace(id) << ' ';
+    oss << points.size(); // number of vertices
+    
+    for (cv::Point3f const & p : points) oss << ' ' << p.x << ' ' << p.y << ' ' << p.z;
+    if (extra.empty() == false) oss << ' ' << extra;
+    
+    // Send the message:
+    sendSerial(oss.str());
+  }
+  break;
+  }
 }
 
 // ####################################################################################################

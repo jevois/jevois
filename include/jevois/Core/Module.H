@@ -394,6 +394,21 @@ namespace jevois
       void sendSerialContour2D(unsigned int camw, unsigned int camh, std::vector<cv::Point_<T> > points,
                                 std::string const & id = "", std::string const & extra = "");
 
+      //! Send standardized 3D message
+      /*! Use this function if you only know location and optionally size and an orientation quaternion. Use the other
+          variants if you have a bunch of vertices. See \ref UserSerialStyle for more info. Coordinates should be in
+          millimeters. */
+      void sendSerialStd3D(float x, float y, float z, float w = 0.0F, float h = 0.0F, float d = 0.0F,
+                           float q1 = 0.0F, float q2 = 0.0F, float q3 = 0.0f, float q4 = 0.0F,
+                           std::string const & id = "", std::string const & extra = "");
+
+      //! Send standardized 3D message
+      /*! Use this function if you only know location and optionally size and an orientation quaternion. Use the other
+          variants if you have a bunch of vertices. See \ref UserSerialStyle for more info. Coordinates should be in
+          millimeters. */
+      void sendSerialStd3D(std::vector<cv::Point3f> points, std::string const & id = "",
+                           std::string const & extra = "");
+
       //! Receive a string from a serial port which contains a user command
       /*! This function may be called in between calls to process() with any received string from any of the serial
           ports. Some commands are parsed upstream already (like "help", set param value, set camera control, etc; see
