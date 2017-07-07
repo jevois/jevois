@@ -6,18 +6,146 @@ low light conditions.
 The brightness of the captured video depends on (at least):
 
 - the exposure time. Longer exposure will collect more photons and yield brighter video. The exposure time is capped by
-  the farmerate, that is, faster frame rates limit the maximum possible exposure time because the frame needs to be sent
+  the framerate, that is, faster frame rates limit the maximum possible exposure time because the frame needs to be sent
   out for processing.
 
 - the sensor gain, which is the amplification applied to the raw signals from the photoreceptors. Higher gain yields
   brighter but also noisier images.
 
 - the gamma curve, which is a correction curve applied in post-processing to adjust pixel values, possibly making them
-  brighter or darker.
+  brighter or darker. In addition to a gamma curve, the JeVois image sensor also has a programmable color matrix, which
+  specifies how pixel values should be converted from the raw pixel array (BAYER format; see \ref PixelFormats) to a
+  given sensor image format (e.g., YUYV). By putting higher values in that color matrix, one can achieve overall higher
+  brightness of the images.
+
+Default settings
+----------------
+
+By default, JeVois attempts to maintain the frame rate specified in a given video mapping. The rationale for this is
+that some downstream computer connected to JeVois may require the specified framerate for smooth real-time
+operation. With some of the machine vision modules bundled with JeVois, the framerate is high, for example 60 frames/s
+or even 120 frames/s for DemoEyeTracker.
+
+At higher frame rates, there is very little time available for exposure.
+
+Operating in low light
+----------------------
+
+Let us compare JeVois with a professional video camera (Sony FDR-AX1, about 100 times the price of JeVois), and with an
+inexpensive USB camera (a small bullet camera).
+
+\image html lowlight-bullet-30fps.jpg An expensive Sony camera, JeVois camera (circled in red), and inexpensive bullet USB camera (circled in blue), all looking at the same scene, with office lights turned on. All cameras perform well in these conditions.
+
+When lighting is low (here, we turned off the light on an evening close to sunset, but not yet past sunset), the image
+captured by all cameras darkens, as seen below. Here, we can see that the bullet camera adapts by dropping framerate to
+4 frames/s to allow for more exposure time (the bullet camera's picture is shown on the computer screen, and guvcview used to display the frames from it reports 4.12 frames/s).
+
+\image html lowlight-bullet-4fps.jpg Darker images are captured in low light conditions, and one strategy to counter that is to increase exposure time by lowering frame rate, as done here by the inexpensive USB bullet camera, which drops frame rate to 4 frames/s.
+
+The expensive Sony camera was here set to capture at a fixed 60 fps, and we can see on the little LCD screen of that
+camera that, despite its much higher cost, that camera too has difficulty producing a bright picture in low light and
+under high frame rate.
+
+Let us have a closer look at the JeVois camera. With low light, and when using high frame rate, the video can get very,
+very dark, as shown below.
+
+\image html lowlight-auto-60fps.jpg The JeVois camera operating in low light at a fixed 60 frames/s. Clearly there is not enough light to get a decent image at this high frame rate.
+
+JeVois provides several ways to handle this:
+
+Brightness control
+------------------
+
+As a first thing to try, JeVois provides standard USB camera controls for brightness, contrast, etc. Those affect the
+color matrix. You may want to try to play with these controls first in your video capture software, and see whether you
+can achieve a good enough picture quality under your lighting conditions.
+
+Allowing for automatic lower frame rates
+----------------------------------------
+
+If brightness control is not sufficient, one strategy is to allow for frame rate to decrease when JeVois is used in low
+light, to allow for longer exposure time. This can be achieved using the \p presetwb camera parameter available in the
+JeVois command-line interface (see \ref UserCli). Unfortunately, such controls do not seem to exist in the USB Video
+Class specification, and hence we cannot expose them to the host computer so that they would show up as available
+controls in the video capture software. Thus, you have to modify these controls using the JeVois command-line
+interface. Let us switch to night mode (called \b shade in the Video4Linux2 specifications):
+
+`setcam presetwb 9`
+
+(available values, as reported by \c help, are: 0:manual 1:auto 2:incandescent 3:fluorescent 4:fluorescent_h 5:horizon
+6:daylight 7:flash 8:cloudy 9:shade).
+
+\image html lowlight-auto-shade.jpg Same lighting conditions as above, but \b shade camera preset turned on in JeVois. The image is now much brighter as frame rate has been automatically reduced by the camera sensor to 7.5 frames/s to allow for sufficient exposure under these low light conditions.
+
+Feel free to try out the other presets. Preset 9 is the one that allows for the most drastic automatic reduction in
+frame rate, up to 8x reduction. Some of the other presets allow for only smaller reductions, or for no automatic frame
+rate adjustment in low light.
+
+\note There is hysteresis when modifying camera presets, i.e., switching from preset 1 to 9 and then back to 1 will
+leave the camera in a different state than it originally was. Just power JeVois off and back on to get back to the
+original state.
 
 
+Using lower fixed frame rates
+-----------------------------
 
+In the demos bundled with JeVois, we have often used 60 frames/s to show how fast JeVois can process video on the fly.
 
-MORE COMING SOON
+However, if you do not need, for example, to detect colorful objects with the ObjectTracker module at 60 frames/s, and
+your application will work well with 15 frames/s, then just edit the corresponding video mapping and reduce both the USB
+output frame rate and the camera frame rate in your \b videomappings.cfg file (see \ref VideoMapping).
+
+When JeVois starts, it will by default use automatic exposure and gain control, and the lower frame rate will allow a
+much wider range of automatic exposure and gain adjustments, which in turn will allow JeVois to operate better in low
+light.
+
+Manual exposure and gain
+------------------------
+
+Another option is to turn to manual controls. Two controls are of interest here:
+
+- exposure: for how long the photo-sensors will collect light. This is capped by frame rate (i.e., cannot expose for
+  longer than the frame period). The longer the exposure, the brighter the video will be, but it will also become more
+  susceptible to motion blur.
+
+- gain: for how strongly the analog signal received from the photo-sensors should be amplified before they are
+  digitized. Higher gain will brighten the video but will also tend to amplify noise.
+
+First set the <b>Exposure, Auto</b> control in your video viewer to <b>Manual Mode</b>, and then start setting the
+<b>Exposure (absolute)</b> and <b>Gain</b> controls. Note that, although the exposure control has a scale from 0 to
+1000, only a fraction of that scale may be usable depending on framerate (that is, exposure cannot be increased to a
+longer time than the frame period. If one attempts to set an exposure time longer than the frame period, exposure will
+automatically be capped at slightly below the frame period).
+
+Generally speaking, a compromise should be found between gain and exposure values. If motion blur is not a problem, then
+highest possible exposure and lowest possible gain will yield less noisy and grainy images.
+
+\note Because auto-gain is not defined as a camera control in the USB Video Class specification, in JeVois we have
+coupled the auto-exposure and auto-gain settings: When you select manual exposure, it also selects manual gain, and when
+you select auto exposure, it also selects auto gain.
+
+\image html lowlight-manexp.jpg Example of using manual exposure and gain to obtain a brighter image in low light. Note how here we manage to sustain a fixed 30 frames/s as used by default for the DemoArUco machine vision module.
+
+With higher gain, the image will look grainier and, if frame rate must be kept high, will not be pleasant to look
+at.
+
+But this may not necessarily be a problem for the machine vision algorithms.
+
+For example, in the image above, we have turned up the gain very high to be able to still operate at 30 frames/s in very
+dark conditions. Significant pixel noise is apparent in the video captured by JeVois. But ... the ArUco algorithm
+running inside JeVois does not seem to be affected and is running just fine, readily detecting and decoding the two
+ArUco markers present in the scene!
+
+Further exploration
+-------------------
+
+JeVois allows you to poke at the camera sensor registers through the \c setcamreg and \c getcamreg commands (parameter
+\c camreg must first be turned to true, as an extra protection against accidental use of these commands). Just beware
+that changing any register that has to do with pixel clock and details of the image format, polarity of pulses, etc is
+likely to just crash the sensor and you will have to power JeVois off to recover.
+
+You may want to explore loading different gamma curves, different color matrices, etc into the sensor and see whether
+you can achieve better low-light performance.
 
 */
+
