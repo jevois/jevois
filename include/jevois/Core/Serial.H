@@ -113,12 +113,23 @@ namespace jevois
           @param nbytes number of bytes to attempt to read
           @return 0 on a timeout, -1 on error, number of bytes actually read on a success */
       int read(void * buffer, const int nbytes);
+
+      //! Attempt to read up to nbytes from serial port into the buffer
+      /*! @param buffer holds bytes after read
+          @param nbytes number of bytes to attempt to read
+          @return 0 on a timeout, 0 on no new characters, -1 on error, number of bytes actually read on a success */
+      int read2(void * buffer, const int nbytes);
       
       //! Write bytes to the port
       /*! @param buffer begin writing from the location buffer.
           @param nbytes number of bytes to write */
       void write(void const * buffer, const int nbytes);
 
+      //! Write bytes to the port - does not wait for buffer to be emptied
+      /*! @param buffer begin writing from the location buffer.
+          @param nbytes number of bytes to write */
+      void writeNoCheck(void const * buffer, const int nbytes);
+      
       //! Flush all inputs
       void flush(void);
 
