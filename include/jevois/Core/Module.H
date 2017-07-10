@@ -215,25 +215,6 @@ namespace jevois
       jevois::RawImage * itsImagePtrForException;
   };
 
-
-  namespace module
-  {
-    static ParameterCategory const ParamCateg("Module Serial Message Options");
-
-    //! Enum for Parameter \relates jevois::Module
-    JEVOIS_DEFINE_ENUM_CLASS(SerStyle, (Terse) (Normal) (Detail) (Fine) )
-    
-    //! Parameter \relates jevois::Module
-    JEVOIS_DECLARE_PARAMETER(serstyle, SerStyle, "Style for standardized serial messages as defined in "
-                             "http://jevois.org/doc/UserSerialStyle.html",
-                             SerStyle::Terse, SerStyle_Values, ParamCateg);
-
-    //! Parameter \relates jevois::Module
-    JEVOIS_DECLARE_PARAMETER(serprec, unsigned int, "Number of decimal points in standardized serial messages as "
-                             "defined in http://jevois.org/doc/UserSerialStyle.html",
-                             0U, ParamCateg);
-  }
-  
   //! Virtual base class for a vision processing module
   /*! Module is the base class to implement camera-to-USB frame-by-frame video processing. The Engine instantiates one
       class derived from Module, according to the current VideoMapping selected by the end user (e.g., current image
@@ -295,7 +276,7 @@ namespace jevois
       library (.so) file to instantiate the module. See \ref ModuleTutorial for examples.
 
       \ingroup core */
-  class Module : public Component, public Parameter<module::serprec, module::serstyle>
+  class Module : public Component
   {
     public:
       //! Constructor
@@ -342,6 +323,64 @@ namespace jevois
           serout Hard' over the JeVois command line to enable serial outputs to the hardware serial port. An Arduino
           would issue that setpar commands when it is ready to work. See ArduinoTutorial for an example. */
       virtual void sendSerial(std::string const & str);
+
+      //! Receive a string from a serial port which contains a user command
+      /*! This function may be called in between calls to process() with any received string from any of the serial
+          ports. Some commands are parsed upstream already (like "help", set param value, set camera control, etc; see
+          the Engine class) and will not be received here. Only the ones not recognized by the Engine will be received
+          (i.e., custom commands specific to your module).
+
+          The default implementation just throws std::runtime_error("Unsupported command"), but some modules may want to
+          override this function to handle custom commands. If you successfully process the command, just return;
+          otherwise, throw, and if your exception derives from std::exception, the Engine will append its what() to the
+          error message issued to the user. When you support commands here, you should update the implementation of
+          supportedCommands() to provide some description of those commands to the users.
+
+          The \c s parameter is the serial port that received the command. You can send any results back to that port
+          using writeString() on it. Note that the Engine will automatically add the 'OK' message upon success, so you
+          do not have to send that here. */
+      virtual void parseSerial(std::string const & str, std::shared_ptr<UserInterface> s);
+
+      //! Human-readable description of this Module's supported custom commands
+      /*! The format here is free. Just use std::endl to demarcate lines, these will be converted to the appropriate
+          line endings by the serial ports. Default implementation writes "None" to os. */
+      virtual void supportedCommands(std::ostream & os);
+  };
+
+  namespace module
+  {
+    static ParameterCategory const ParamCateg("Module Serial Message Options");
+
+    //! Enum for Parameter \relates jevois::Module
+    JEVOIS_DEFINE_ENUM_CLASS(SerStyle, (Terse) (Normal) (Detail) (Fine) )
+    
+    //! Parameter \relates jevois::Module
+    JEVOIS_DECLARE_PARAMETER(serstyle, SerStyle, "Style for standardized serial messages as defined in "
+                             "http://jevois.org/doc/UserSerialStyle.html",
+                             SerStyle::Terse, SerStyle_Values, ParamCateg);
+
+    //! Parameter \relates jevois::Module
+    JEVOIS_DECLARE_PARAMETER(serprec, unsigned int, "Number of decimal points in standardized serial messages as "
+                             "defined in http://jevois.org/doc/UserSerialStyle.html",
+                             0U, ParamCateg);
+  }
+  
+  //! Base class for a module that supports standardized serial messages
+  /*! Modules that can output standardized serial messages should derive from StdModule instead of Module. StdModule
+      brings in extra parameters to set serial message style and precision, and extra member functions to assemble,
+      format, and send standardized serial messages. The process(), sendSerial(), parseSerial(), supportedCommands(),
+      etc of StdModule functions are directly inherited from Module. See \ref UserSerialStyle for standardized serial
+      messages. \ingoup core */
+  class StdModule : public Module, public Parameter<module::serprec, module::serstyle>
+  {
+    public:
+      //! Constructor
+      /*! the instance is a user-defined string that may be used to differentiate between several instances of the
+          same module. */
+      StdModule(std::string const & instance);
+
+      //! Virtual destructor for safe inheritance
+      virtual ~StdModule();
 
       //! Send standardized 1D message for an X image coordinate
       /*! See \ref UserSerialStyle for more info. Coordinates should be in camera image pixels, this function will
@@ -408,28 +447,6 @@ namespace jevois
           millimeters. */
       void sendSerialStd3D(std::vector<cv::Point3f> points, std::string const & id = "",
                            std::string const & extra = "");
-
-      //! Receive a string from a serial port which contains a user command
-      /*! This function may be called in between calls to process() with any received string from any of the serial
-          ports. Some commands are parsed upstream already (like "help", set param value, set camera control, etc; see
-          the Engine class) and will not be received here. Only the ones not recognized by the Engine will be received
-          (i.e., custom commands specific to your module).
-
-          The default implementation just throws std::runtime_error("Unsupported command"), but some modules may want to
-          override this function to handle custom commands. If you successfully process the command, just return;
-          otherwise, throw, and if your exception derives from std::exception, the Engine will append its what() to the
-          error message issued to the user. When you support commands here, you should update the implementation of
-          supportedCommands() to provide some description of those commands to the users.
-
-          The \c s parameter is the serial port that received the command. You can send any results back to that port
-          using writeString() on it. Note that the Engine will automatically add the 'OK' message upon success, so you
-          do not have to send that here. */
-      virtual void parseSerial(std::string const & str, std::shared_ptr<UserInterface> s);
-
-      //! Human-readable description of this Module's supported custom commands
-      /*! The format here is free. Just use std::endl to demarcate lines, these will be converted to the appropriate
-          line endings by the serial ports. Default implementation writes "None" to os. */
-      virtual void supportedCommands(std::ostream & os);
   };
 }
 

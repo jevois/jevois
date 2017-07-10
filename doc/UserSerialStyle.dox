@@ -9,10 +9,17 @@ Arduino code. For example, a motorized pan/tilt head can be directly controlled 
 saliency-based visual attention module, an object recognition module, or an ArUco virtual reality marker detection
 module using the same Arduino code to receive the control messages from JeVois and to actuate the pan/tilt motors.
 
-The parameters \c serstyle and \c serprec of jevois::Module define the following standardized serial message styles.
+The standardized serial messages focus (at least for now) onto sending location and identity information (in 1D, 2D, or
+3D) about things that have been detected by JeVois.
 
-Coordinates precision
-=====================
+Modules that wish to send standardized messages as defined below should derive from jevois::StdModule instead of
+jevois::Module. The class jevois::StdModule adds parameters that allow end users to control the formatting of the serial
+messages, and additional member functions that assist programmers in issuing standardized messages.
+
+The parameters \c serstyle and \c serprec of jevois::StdModule define the following standardized serial message styles.
+
+Coordinates conventions and precision
+=====================================
 
 All 1D and 2D coordinates use the JeVois standardized coordinates (between -1000 and 1000), as defined in \ref
 coordhelpers.
@@ -96,7 +103,7 @@ Detail   | <tt>D2 id x1 y1 x2 y2 x3 y3 x4 y4 extra</tt>
 Fine     | <tt>F2 id n x1 y1 ... xn yn extra</tt>
 
 \note The tightness of the bounding box for \b Normal and \b Detail messages depends on what information a machine
-vision module produces. Typically, machine vision modules will invoke the serial message functions of jevois::Module
+vision module produces. Typically, machine vision modules will invoke the serial message functions of jevois::StdModule
 with a list of 2D vertices defining a shape (polygonal contour). In \b Normal style, an upright bounding rectangle is
 fit to those vertices to generate the message, and a rotated rectangle is fit around the vertices to generate the \b
 Detail message.
@@ -149,8 +156,8 @@ Normal   | <tt>N3 id x y z w h d</tt>
 Detail   | <tt>D3 id x y z w h d q1 q2 q3 q4 extra</tt>
 Fine     | <tt>F3 id n x1 y1 z1 ... xn yn zn extra</tt>
 
-New machine vision modules can use the convenience functions provided in the jevois::Module class to send standardized
-serial messages.
+New machine vision modules can use the convenience functions provided in the jevois::StdModule class to send
+standardized serial messages.
 
 \note If you will use the quaternion data (\b Detail message style), you should probably set the \p serprec parameter to
 something non-zero to get enough accuracy in the quaternion values.
@@ -176,7 +183,7 @@ Recommendations for embedded controllers and robots
   or \c F3 messages.
 
 - A robot that can move an end-effector towards an object in 3D space and grasp it (e.g., robot arm with a gripper)
-  would usually expect \c D3 or \c F3 messages.
+  would usually expect \c N3, \c D3, or \c F3 messages.
 
 
 

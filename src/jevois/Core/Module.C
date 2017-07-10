@@ -204,7 +204,26 @@ void jevois::Module::sendSerial(std::string const & str)
 }
 
 // ####################################################################################################
-void jevois::Module::sendSerialImg1Dx(unsigned int camw, float x, float size, std::string const & id,
+void jevois::Module::parseSerial(std::string const & str,
+                                 std::shared_ptr<jevois::UserInterface> JEVOIS_UNUSED_PARAM(s))
+{ throw std::runtime_error("Unsupported command [" + str + ']'); }
+
+// ####################################################################################################
+void jevois::Module::supportedCommands(std::ostream & os)
+{ os << "None" << std::endl; }
+
+// ####################################################################################################
+// ####################################################################################################
+jevois::StdModule::StdModule(std::string const & instance) :
+    jevois::Module(instance)
+{ }
+
+// ####################################################################################################
+jevois::StdModule::~StdModule()
+{ }
+
+// ####################################################################################################
+void jevois::StdModule::sendSerialImg1Dx(unsigned int camw, float x, float size, std::string const & id,
                                       std::string const & extra)
 {
   // Normalize the coordinate and size using the given precision to do rounding:
@@ -218,7 +237,7 @@ void jevois::Module::sendSerialImg1Dx(unsigned int camw, float x, float size, st
 }
 
 // ####################################################################################################
-void jevois::Module::sendSerialStd1Dx(float x, float size, std::string const & id, std::string const & extra)
+void jevois::StdModule::sendSerialStd1Dx(float x, float size, std::string const & id, std::string const & extra)
 {
   // Build the message depending on desired style:
   std::ostringstream oss; oss << std::fixed << std::setprecision(serprec::get());
@@ -249,8 +268,8 @@ void jevois::Module::sendSerialStd1Dx(float x, float size, std::string const & i
 }
 
 // ####################################################################################################
-void jevois::Module::sendSerialImg1Dy(unsigned int camh, float y, float size, std::string const & id,
-                                      std::string const & extra)
+void jevois::StdModule::sendSerialImg1Dy(unsigned int camh, float y, float size, std::string const & id,
+                                         std::string const & extra)
 {
   // Normalize the coordinate and size using the given precision to do rounding:
   float const eps = std::pow(10.0F, -float(serprec::get()));
@@ -262,7 +281,7 @@ void jevois::Module::sendSerialImg1Dy(unsigned int camh, float y, float size, st
 }
 
 // ####################################################################################################
-void jevois::Module::sendSerialStd1Dy(float y, float size, std::string const & id, std::string const & extra)
+void jevois::StdModule::sendSerialStd1Dy(float y, float size, std::string const & id, std::string const & extra)
 {
   // Build the message depending on desired style:
   std::ostringstream oss; oss << std::fixed << std::setprecision(serprec::get());
@@ -293,8 +312,8 @@ void jevois::Module::sendSerialStd1Dy(float y, float size, std::string const & i
 }
 
 // ####################################################################################################
-void jevois::Module::sendSerialImg2D(unsigned int camw, unsigned int camh, float x, float y, float w, float h,
-                                  std::string const & id, std::string const & extra)
+void jevois::StdModule::sendSerialImg2D(unsigned int camw, unsigned int camh, float x, float y, float w, float h,
+                                        std::string const & id, std::string const & extra)
 {
   // Normalize the coordinates and sizes using the given precision to do rounding:
   float const eps = std::pow(10.0F, -float(serprec::get()));
@@ -306,8 +325,8 @@ void jevois::Module::sendSerialImg2D(unsigned int camw, unsigned int camh, float
   sendSerialStd2D(x, y, w, h, id, extra);
 }
 // ####################################################################################################
-void jevois::Module::sendSerialStd2D(float x, float y, float w, float h, std::string const & id,
-                                     std::string const & extra)
+void jevois::StdModule::sendSerialStd2D(float x, float y, float w, float h, std::string const & id,
+                                        std::string const & extra)
 {
   // Build the message depending on desired style:
   std::ostringstream oss; oss << std::fixed << std::setprecision(serprec::get());
@@ -352,8 +371,8 @@ void jevois::Module::sendSerialStd2D(float x, float y, float w, float h, std::st
 
 // ####################################################################################################
 template <typename T>
-void jevois::Module::sendSerialContour2D(unsigned int camw, unsigned int camh, std::vector<cv::Point_<T> > points,
-                                          std::string const & id, std::string const & extra)
+void jevois::StdModule::sendSerialContour2D(unsigned int camw, unsigned int camh, std::vector<cv::Point_<T> > points,
+                                            std::string const & id, std::string const & extra)
 {
   switch (serstyle::get())
   {
@@ -431,20 +450,20 @@ void jevois::Module::sendSerialContour2D(unsigned int camw, unsigned int camh, s
 namespace jevois
 {
   template
-  void Module::sendSerialContour2D(unsigned int camw, unsigned int camh, std::vector<cv::Point_<int> > points,
-                                   std::string const & id, std::string const & extra);
+  void StdModule::sendSerialContour2D(unsigned int camw, unsigned int camh, std::vector<cv::Point_<int> > points,
+                                      std::string const & id, std::string const & extra);
   template
-  void Module::sendSerialContour2D(unsigned int camw, unsigned int camh, std::vector<cv::Point_<float> > points,
-                                   std::string const & id, std::string const & extra);
+  void StdModule::sendSerialContour2D(unsigned int camw, unsigned int camh, std::vector<cv::Point_<float> > points,
+                                      std::string const & id, std::string const & extra);
   template
-  void Module::sendSerialContour2D(unsigned int camw, unsigned int camh, std::vector<cv::Point_<double> > points,
-                                   std::string const & id, std::string const & extra);
+  void StdModule::sendSerialContour2D(unsigned int camw, unsigned int camh, std::vector<cv::Point_<double> > points,
+                                      std::string const & id, std::string const & extra);
 }
 
 // ####################################################################################################
-void jevois::Module::sendSerialStd3D(float x, float y, float z, float w, float h, float d,
-                                     float q1, float q2, float q3, float q4,
-                                     std::string const & id, std::string const & extra)
+void jevois::StdModule::sendSerialStd3D(float x, float y, float z, float w, float h, float d,
+                                        float q1, float q2, float q3, float q4,
+                                        std::string const & id, std::string const & extra)
 {
   // Build the message depending on desired style:
   std::ostringstream oss; oss << std::fixed << std::setprecision(serprec::get());
@@ -490,8 +509,8 @@ void jevois::Module::sendSerialStd3D(float x, float y, float z, float w, float h
 }
 
 // ####################################################################################################
-void jevois::Module::sendSerialStd3D(std::vector<cv::Point3f> points, std::string const & id,
-                                     std::string const & extra)
+void jevois::StdModule::sendSerialStd3D(std::vector<cv::Point3f> points, std::string const & id,
+                                        std::string const & extra)
 {
   switch (serstyle::get())
   {
@@ -563,13 +582,3 @@ void jevois::Module::sendSerialStd3D(std::vector<cv::Point3f> points, std::strin
   break;
   }
 }
-
-// ####################################################################################################
-void jevois::Module::parseSerial(std::string const & str,
-                                 std::shared_ptr<jevois::UserInterface> JEVOIS_UNUSED_PARAM(s))
-{ throw std::runtime_error("Unsupported command [" + str + ']'); }
-
-// ####################################################################################################
-void jevois::Module::supportedCommands(std::ostream & os)
-{ os << "None" << std::endl; }
-
