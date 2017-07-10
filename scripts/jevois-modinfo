@@ -125,8 +125,8 @@ if ($ispython)
 }
 else
 {
-    # Find the right class in the file by finding the one which inherits from jevois::Module. If there are multiple,
-    # find the one with the lowest levenshtein distance to the filename.
+    # Find the right class in the file by finding the one which inherits from jevois::Module or jevois::StdModule. If
+    # there are multiple, find the one with the lowest levenshtein distance to the filename.
     my $headerFileName = (split("/", $inputFilename))[-1]; $headerFileName =~ s/\..*//; my $minDist = 100000000000000;
     foreach my $tmpclassref (@classes) 
     {
@@ -136,7 +136,8 @@ else
         {
             my %base = %{$baseref};
             
-            if ($base{name} eq "jevois::Module" or $base{name} eq "Module")
+            if ($base{name} eq "jevois::Module" or $base{name} eq "Module"
+                or $base{name} eq "jevois::StdModule" or $base{name} eq "StdModule")
             {
                 my $distance = levenshtein($tmpclass{name}, $headerFileName);
                 if ($distance < $minDist) { %class = %tmpclass; $minDist = $distance; }

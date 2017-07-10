@@ -59,7 +59,7 @@ sudo apt-get remove modemmanager # to get rid of it entirely, you can always re-
 Try to send a \c ping command to JeVois. This command is just to test that JeVois is alive and well:
 
 \verbatim
-sudo echo ping > /dev/ttyACM0
+sudo bash -c 'echo ping > /dev/ttyACM0'
 \endverbatim
 
 and then get the reply by reading from the JeVois serial device:
@@ -74,6 +74,10 @@ OK
 \endverbatim
 
 Hit \c CTRL-C to stop listening to the serial port.
+
+\note Just issuing `sudo echo ping > /dev/ttyACM0` would not work if your user does not have permissions to /dev/ttyACM0
+as the redirection is applied by the calling shell to the result of the sudo command, i.e., that redirection does not
+have sudo privileges.
 
 \section serusblinuxscreen Using the screen command
 
@@ -120,6 +124,56 @@ host. For example, on Ubuntu:
 sudo killall ModemManager
 \endverbatim
 
+Using shortcut shell command jevois-cmd
+=======================================
+
+\jvversion{1.3}
+
+
+Under Linux, the \b jevois package provides the command `jevois-cmd` in <b>/usr/bin</b> of the host computer (source in
+<b>~/jevois/scripts</b>), which can be executed directly in any terminal on the host computer (as opposed to being run
+in the JeVois command-line interface after opening some serial terminal to it). Use it as follows:
+
+\verbatim
+jevois-cmd help
+\endverbatim
+
+Connects to JeVois using the serial-over-USB port, issues the command `help` to jevois, collects an displays the results
+returned by JeVois.
+
+Any valid JeVois command-line command can be sent. For example:
+
+\verbatim
+jevois-cmd setpar cpumax 1200
+\endverbatim
+
+should return
+
+\verbatim
+OK
+\endverbatim
+
+and a subsequent
+
+\verbatim
+jevois-cmd info
+\endverbatim
+
+should show the updated CPU frequency of 1200 MHz as follows:
+
+\verbatim
+INFO: JeVois 1.3.0
+INFO: Linux version 3.4.39
+INFO: CPU: 1200MHz, 28C, load: 0.98 0.53 0.22 1/59 86
+INFO: MemTotal: 238452 kB, MemFree: 170188 kB
+INFO: OUT: YUYV 640x300 @ 60fps CAM: YUYV 320x240 @ 60fps MOD: JeVois:DemoSaliency
+OK
+\endverbatim
+
+
+\note If JeVois complains about errors but you know that your command is correct, maybe the Linux \b ModemManager is
+running on your host computer and is trying to configure JeVois as a modem, sending it all kinds of commands that JeVois
+is not interested in. See above.
 
 */
 
