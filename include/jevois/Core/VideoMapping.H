@@ -117,7 +117,7 @@ namespace jevois
 
   //! Load all the video mappings from the default config file
   /*! \relates VideoMapping */
-  std::vector<VideoMapping> loadVideoMappings(size_t & defidx);
+  std::vector<VideoMapping> loadVideoMappings(size_t & defidx, bool checkso = true);
   
   //! Parse all the mappings in a config file and also indicate which one is the default
   /*! The contents of the file are sorted so that the resulting vector is ordered by increasing 1) format fcc, then 2)
@@ -152,6 +152,6 @@ namespace jevois
 
       See \ref UserModes for explanations about how to organize \b videomappings.cfg
       \relates VideoMapping */
-  std::vector<VideoMapping> videoMappingsFromStream(std::istream & is, size_t & defidx);
+  std::vector<VideoMapping> videoMappingsFromStream(std::istream & is, size_t & defidx, bool checkso = true);
 }
 

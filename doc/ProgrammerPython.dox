@@ -120,6 +120,7 @@ functions and classes listed here have an exact binding to Python, except that y
 
 - General utility functions declared in \ref Utils.H
   + fccstr()
+  + strfcc()
   + v4l2BytesPerPix()
   + v4l2ImageSize()
   + blackColor()

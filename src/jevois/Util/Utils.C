@@ -47,6 +47,19 @@ std::string jevois::fccstr(unsigned int fcc)
 }
 
 // ####################################################################################################
+unsigned int jevois::strfcc(std::string const & str)
+{
+  if (str == "BAYER") return V4L2_PIX_FMT_SRGGB8;
+  else if (str == "YUYV") return V4L2_PIX_FMT_YUYV;
+  else if (str == "GREY" || str == "GRAY") return V4L2_PIX_FMT_GREY;
+  else if (str == "MJPG") return V4L2_PIX_FMT_MJPEG;
+  else if (str == "RGB565") return V4L2_PIX_FMT_RGB565;
+  else if (str == "BGR24") return V4L2_PIX_FMT_BGR24;
+  else if (str == "NONE") return 0;
+  else throw std::runtime_error("Invalid pixel format " + str);
+}
+
+// ####################################################################################################
 unsigned int jevois::v4l2BytesPerPix(unsigned int fcc)
 {
   switch (fcc)

@@ -139,6 +139,7 @@ BOOST_PYTHON_MODULE(libjevois)
   
   // #################### Utils.H
   JEVOIS_PYTHON_FUNC(fccstr);
+  JEVOIS_PYTHON_FUNC(strfcc);
   JEVOIS_PYTHON_FUNC(v4l2BytesPerPix);
   JEVOIS_PYTHON_FUNC(v4l2ImageSize);
   JEVOIS_PYTHON_FUNC(blackColor);

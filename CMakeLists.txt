@@ -218,6 +218,10 @@ add_executable(jevois-camtest src/Apps/jevois-camtest.C)
 target_link_libraries(jevois-camtest jevois)
 install(TARGETS jevois-camtest RUNTIME DESTINATION bin COMPONENT bin)
 
+add_executable(jevois-add-videomapping src/Apps/jevois-add-videomapping.C)
+target_link_libraries(jevois-add-videomapping jevois)
+install(TARGETS jevois-add-videomapping RUNTIME DESTINATION bin COMPONENT bin)
+
 if (JEVOIS_PLATFORM)
   # On platform only, install jevois.sh from bin/ in the source tree into /usr/bin:
   install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/bin/jevois.sh" DESTINATION bin COMPONENT bin)

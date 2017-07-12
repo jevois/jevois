@@ -67,11 +67,12 @@ for f in modules/*/*/postinstall; do
 done
 
 ##############################################################################################################
-# Build videomappings.cfg, if missing, from any info in the modules:
+# Build a default videomappings.cfg, if missing:
 ##############################################################################################################
 
 if [ ! -f /jevois/config/videomappings.cfg ]; then
-    cat /jevois/modules/*/*/videomappings.cfg > /jevois/config/videomappings.cfg
+    echo 'YUYV 640 360 30.0 YUYV 320 240 30.0 JeVois JeVoisIntro *' > /jevois/config/videomappings.cfg
+    echo 'YUYV 640 480 30.0 YUYV 320 240 30.0 JeVois JeVoisIntro' >> /jevois/config/videomappings.cfg
 fi
 
 ##############################################################################################################

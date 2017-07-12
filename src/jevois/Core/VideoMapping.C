@@ -26,21 +26,6 @@
 
 #define PERROR(x) LERROR("In file " << JEVOIS_ENGINE_CONFIG_FILE << ':' << linenum << ": " << x)
 
-namespace
-{
-  unsigned int parseFormat(std::string const & str)
-  {
-    if (str == "BAYER") return V4L2_PIX_FMT_SRGGB8;
-    else if (str == "YUYV") return V4L2_PIX_FMT_YUYV;
-    else if (str == "GREY" || str == "GRAY") return V4L2_PIX_FMT_GREY;
-    else if (str == "MJPG") return V4L2_PIX_FMT_MJPEG;
-    else if (str == "RGB565") return V4L2_PIX_FMT_RGB565;
-    else if (str == "BGR24") return V4L2_PIX_FMT_BGR24;
-    else if (str == "NONE") return 0;
-    else throw std::runtime_error("Invalid pixel format " + str);
-  }
-}
-
 // ####################################################################################################
 std::string jevois::VideoMapping::sopath() const
 {
@@ -139,22 +124,22 @@ std::istream & jevois::operator>>(std::istream & in, jevois::VideoMapping & m)
   std::string of, cf;
   in >> of >> m.ow >> m.oh >> m.ofps >> cf >> m.cw >> m.ch >> m.cfps >> m.vendor >> m.modulename;
 
-  m.ofmt = parseFormat(of);
-  m.cfmt = parseFormat(cf);
+  m.ofmt = jevois::strfcc(of);
+  m.cfmt = jevois::strfcc(cf);
 
   return in;
 }
 
 // ####################################################################################################
-std::vector<jevois::VideoMapping> jevois::loadVideoMappings(size_t & defidx)
+std::vector<jevois::VideoMapping> jevois::loadVideoMappings(size_t & defidx, bool checkso)
 {
   std::ifstream ifs(JEVOIS_ENGINE_CONFIG_FILE);
   if (ifs.is_open() == false) LFATAL("Could not open [" << JEVOIS_ENGINE_CONFIG_FILE << ']');
-  return jevois::videoMappingsFromStream(ifs, defidx);
+  return jevois::videoMappingsFromStream(ifs, defidx, checkso);
 }
 
 // ####################################################################################################
-std::vector<jevois::VideoMapping> jevois::videoMappingsFromStream(std::istream & is, size_t & defidx)
+std::vector<jevois::VideoMapping> jevois::videoMappingsFromStream(std::istream & is, size_t & defidx, bool checkso)
 {
   size_t linenum = 1;
   std::vector<jevois::VideoMapping> mappings;
@@ -171,12 +156,12 @@ std::vector<jevois::VideoMapping> jevois::videoMappingsFromStream(std::istream &
     jevois::VideoMapping m;
     try
     {
-      m.ofmt = parseFormat(tok[0]);
+      m.ofmt = jevois::strfcc(tok[0]);
       m.ow = std::stoi(tok[1]);
       m.oh = std::stoi(tok[2]);
       m.ofps = std::stof(tok[3]);
 
-      m.cfmt = parseFormat(tok[4]);
+      m.cfmt = jevois::strfcc(tok[4]);
       m.cw = std::stoi(tok[5]);
       m.ch = std::stoi(tok[6]);
       m.cfps = std::stof(tok[7]);
@@ -189,17 +174,20 @@ std::vector<jevois::VideoMapping> jevois::videoMappingsFromStream(std::istream &
 
     // First assume that it is a C++ compiled module and check for the .so file:
     m.ispython = false;
-    std::string sopath = m.sopath();
-    std::ifstream testifs(sopath);
-    if (testifs.is_open() == false)
+    if (checkso)
     {
-      // Could not find the .so, maybe it is a python module:
-      m.ispython = true; sopath = m.sopath();
-      std::ifstream testifs2(sopath);
-      if (testifs2.is_open() == false)
+      std::string sopath = m.sopath();
+      std::ifstream testifs(sopath);
+      if (testifs.is_open() == false)
       {
-        PERROR("Could not open module " << sopath << "|.so -- SKIPPING");
-        continue;
+        // Could not find the .so, maybe it is a python module:
+        m.ispython = true; sopath = m.sopath();
+        std::ifstream testifs2(sopath);
+        if (testifs2.is_open() == false)
+        {
+          PERROR("Could not open module " << sopath << "|.so -- SKIPPING");
+          continue;
+        }
       }
     }
     
@@ -256,23 +244,6 @@ std::vector<jevois::VideoMapping> jevois::videoMappingsFromStream(std::istream &
               return false;
             });
 
-  // If we had duplicate output formats, adjust framerates slightly: In the sorting above, we ordered by decreasing ofps
-  // (all else being equal). Here we are going to decrease ofps on the second mapping when we hit a match. We need to
-  // beware that this should propagate down to subsequent matching mappings while preserving the ordering:
-  for (size_t i = 1; i < mappings.size(); ++i)
-  {
-    jevois::VideoMapping const & a = mappings[i-1];
-    jevois::VideoMapping & b = mappings[i];
-
-    // Discard exact duplicates, adjust frame rates for matching specs but different modules:
-    if (a.isSameAs(b)) mappings.erase(mappings.begin() + i);
-    else if (b.ofmt != 0 && a.ofmt == b.ofmt && a.ow == b.ow && a.oh == b.oh)
-    {
-      if (std::abs(a.ofps - b.ofps) < 0.01F) b.ofps -= 1.0F; // equal fps, decrease b.ofps by 1fps
-      else if (b.ofps > a.ofps) b.ofps = a.ofps - 1.0F; // got out of order because of a previous decrease
-    }
-  }
-  
   // We need at least one mapping to work, and we need at least one with UVC output too keep hosts happy:
   if (mappings.empty() || mappings.back().ofmt == 0)
   {
@@ -282,10 +253,28 @@ std::vector<jevois::VideoMapping> jevois::videoMappingsFromStream(std::istream &
     m.cfmt = V4L2_PIX_FMT_YUYV; m.cw = 640; m.ch = 480; m.cfps = 30.0F;
     m.vendor = "JeVois"; m.modulename = "PassThrough"; m.ispython = false;
 
-    // We are guaranteed that this will not create a duplicate output mapping:
+    // We are guaranteed that this will not create a duplicate output mapping since either mappings was empty or it had
+    // no USB-out modes:
     mappings.push_back(m);
   }
 
+  // If we had duplicate output formats, discard full exact duplicates (including same module), and otherwise adjust
+  // framerates slightly: In the sorting above, we ordered by decreasing ofps (all else being equal). Here we are going
+  // to decrease ofps on the second mapping when we hit a match. We need to beware that this should propagate down to
+  // subsequent matching mappings while preserving the ordering:
+  auto a = mappings.begin(), b = a + 1;
+  while (b != mappings.end())
+  {
+    // Discard exact duplicates, adjust frame rates for matching specs but different modules:
+    if (a->isSameAs(*b)) { b = mappings.erase(b); continue; }
+    else if (b->ofmt != 0 && a->ofmt == b->ofmt && a->ow == b->ow && a->oh == b->oh)
+    {
+      if (std::abs(a->ofps - b->ofps) < 0.01F) b->ofps -= 1.0F; // equal fps, decrease b.ofps by 1fps
+      else if (b->ofps > a->ofps) b->ofps = a->ofps - 1.0F; // got out of order because of a previous decrease
+    }
+    a = b; ++b;
+  }
+  
   // Find back our default mapping index in the sorted array:
   if (defmapping.cfmt == 0)
   {
