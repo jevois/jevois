@@ -1,0 +1,22 @@
+/*! \page Change12log Changes and new features in JeVois 1.2
+
+JeVois 1.2 brings the following new features:
+
+- Added support to compile and install new modules directly to microSD: `./rebuild-platform.sh --live` will
+  cross-compile the module, instruct a connected JeVois camera to export its microSD as a virtual flash drive, install
+  the cross-compiled module to microSD, eject the virtual flash drive, and restart JeVois. The new module is ready for
+  immediate use.
+
+- More documentation and tutorials
+
+- Full stack trace is now reported with Python errors
+
+- New video error reporting, showing a exception messages in the video stream to ease debugging of modules on the
+  platform hardware:
+
+\image html videoerror.png
+
+- Added support for JeVois parameters of types std::pair, cv::Size and cv::Point
+
+
+*/

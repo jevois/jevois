@@ -322,6 +322,10 @@ potential data consistency issues, for now, we have restricted file access over 
 video. Likewise, a reboot of the JeVois camera is necessary to allow it to use any new or modified files from th ehost
 computer.
 
+On Linux and with \jvversion{1.2} and later, you can use host command `jevois-usbsd start` to instruct a connected
+JeVois camera to start exporting its microSD, without having to open a serial terminal application and to connect to
+JeVois. Likewise, you can issue `jevois-usbsd stop` to release the card and restart JeVois.
+
 Typical workflow is as follows:
 
 - Connect JeVois to a host computer and let it start up.
@@ -333,6 +337,9 @@ Typical workflow is as follows:
 
 - When you want to modify the contents of the microSD inside JeVois, issue the \c usbsd command. The virtual USB flash
   drive will appear on your host computer.
+
+- With \jvversion{1.3} and later, you do not need to open a serial terminal and type into it, you can instead use new
+  host command `jevois-usbsd start` directly from any Linux shell.
 
 - Add/modify/remove files. This includes:
   + modify configuration or parameter files in \b JEVOIS:/config
@@ -349,6 +356,10 @@ Typical workflow is as follows:
   + Orange blink - camera sensor detected
   + Solid orange: ready for action
 
+
+Note that \jvversion{1.3} adds an even simpler way to install new machine vision modules: `./rebuild-platform.sh
+--live`, which will first issue a `jevois-usbsd start` to tell JeVois to export its microSD, will install the
+module, and will then issue a `jevois-usbsd stop` to restart JeVois.
 
 */
 

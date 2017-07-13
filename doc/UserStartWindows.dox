@@ -41,8 +41,9 @@ strong external power supply (transformer, wall adapter).
 
 \image html amcap-menu.png
 
-- Once you see the Properties dialog, select one of the available "Output Size" resolutions as shown below to launch the
-  corresponding machine vision algorithm on your JeVois camera:
+- Once you see the Properties dialog, select one of the available "Color Space / Compression" (most machine vision
+  modules output \b YUY2 video), and one "Output Size" resolutions as shown below to launch the corresponding machine
+  vision algorithm on your JeVois camera:
 
 \image html amcap-setres.png
 

@@ -136,6 +136,13 @@ dark conditions. Significant pixel noise is apparent in the video captured by Je
 running inside JeVois does not seem to be affected and is running just fine, readily detecting and decoding the two
 ArUco markers present in the scene!
 
+Here is an even more extreme example, in almost compete darkness and cranking up the exposure and the gain to the
+max. The image quality is horrible (see the very high pixel noise on the black areas of the markers). But ArUco markers
+are getting detected just fine...
+
+\image html lowlight-night.jpg 
+
+
 Further exploration
 -------------------
 

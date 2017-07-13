@@ -11,9 +11,10 @@ Please observe the following precautions when handling your JeVois smart camera:
 - Do not disassemble. No user-serviceable parts inside.
 - Avoid liquids or moisture.
 - Do not use wet hands.
-- Consumer-grade device: Do not use in medical or life-sustaining applications, or with heavy machinery.
+- <b>Consumer-grade device: Do not use in medical or life-sustaining applications, or with heavy machinery.</b>
 - Read and understand the user manual at http://jevois.org/doc before using.
 - Dispose of the device according to your country's requlations about disposal of electronic devices.
+- <b>Small parts, not for children under 3 years old.</b>
 
 */
 

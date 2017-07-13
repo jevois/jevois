@@ -93,6 +93,23 @@ Here is a simple command to export the microSD of a live JeVois camera without h
 sudo sh -c 'echo usbsd > /dev/ttyACM0'
 \endverbatim
 
+With \jvversion{1.2} and later, you can just instead type `jevois-usbsd start` to start exporting the microSD, and
+`jevois-usbsd stop` to eject it and restart JeVois.
+
+With \jvversion{1.3} and later, you do not need to manually take out or even manually export the microSD inside JeVois
+anymore. A new build option `--live` can do it automatically. Just connect JeVois and allow it to start, then type:
+
+\verbatim
+./rebuild-platform.sh --live
+\endverbatim
+
+which will:
+
+- cross-compile the module for platform
+- issue a `jevois-usbsd start` to instruct JeVois to export its microSD as a virtual flash drive
+- install the cross-compiled module to the microSD inside JeVois
+- issue a `jevois-usbsd stop` to eject the virtual flash drive and restart JeVois.
+
 Adding your module to a microSD card: jvpkg
 -------------------------------------------
 
@@ -158,15 +175,22 @@ Special doxygen tags in your module's doc will be parsed, here are some examples
 Specially named files will also be used if present:
 
 - \b icon.png (or any other extension, like .jpg, etc): an icon for your module.
+
 - \b screenshot*.*: screenshots, will appear in the doc in the same order as \c ls lists them.
+
 - \b video*.*: demo videos, will appear in the doc in the same order as \c ls lists them.
-- \b videomappings.cfg: any videomappings that should be installed when your module is installed.
-  This usually is a subset of all the mappings listed in the doc using the doxygen tags.
-- \b postinstall: a script that will be executed after your module is unpackes
+
+- \b postinstall: a script that will be executed after your module is unpacked. You may use command
+  `jevois-add-videomapping` (installed in <b>/usr/bin/</b>, source in <b>~/jevois/src/Apps/</b>) in this script to add
+  to the \b videomappings.cfg file any videomappings that should be installed when your module is installed.  This
+  usually is a subset of all the mappings listed in the doc using the doxygen tags.
+
 - \b params.cfg: parameters values that should get set when the module is loaded. These are set before the
   module is initialized.
+
 - \b script.cfg: script of jevois comand-line interface commands that should be run when the module is loaded. This is
   run after the module is initialized.
+
 - \b jvpkg-exclude.cfg: list of files that should not be included into the jvpkg package. Same format as in
   `tar --exclude-from`
 

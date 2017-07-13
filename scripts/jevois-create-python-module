@@ -33,9 +33,6 @@ if [ "X$REPLY" != "Xn" ]; then
     sed -i "s/samplepythonmodule/${dir}/g" CMakeLists.txt
     sed -i "s/SamplePythonModule/$2/g" CMakeLists.txt
 
-    sed -i "s/SampleVendor/$1/g" src/Modules/$2/videomappings.cfg
-    sed -i "s/SamplePythonModule/$2/g" src/Modules/$2/videomappings.cfg
-
     chmod a+x src/Modules/$2/postinstall
 
     cd ..
