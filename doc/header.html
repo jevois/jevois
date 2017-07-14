@@ -21,20 +21,35 @@
 
 
 
+    <!-- for email feedback -->
     <script language="javascript">
       function emailCurrentPage() {
-      window.location.href="mailto:?subject="+escape('JeVoisDoc feedback for '+window.location.href)+"&body="+escape('Hello\n\nI have some suggestions for page\n'+window.location.href);
+      window.location.href="mailto:jevois.org@gmail.com?subject="+escape('JeVoisDoc feedback for '+window.location.href)+"&body="+escape('Hello\n\nI have some suggestions for page\n'+window.location.href);
       }
     </script>
-
     
+    <!-- for google + 1 button. -->
+    <script src="https://apis.google.com/js/platform.js" async defer></script>
+
+    <!-- for pinterest button. -->
+    <script type="text/javascript" async defer src="//assets.pinterest.com/js/pinit.js"></script>
+
   </head>
   <body>
+    
+    <!-- for facebook share button -->
+    <div id="fb-root"></div> <script>(function(d, s, id) {
+      var js, fjs = d.getElementsByTagName(s)[0]; if (d.getElementById(id)) return;
+      js = d.createElement(s); js.id = id; js.src = "//connect.facebook.net/en_US/sdk.js#xfbml=1&version=v2.9";
+      fjs.parentNode.insertBefore(js, fjs); }(document, 'script', 'facebook-jssdk'));</script>
+
+
+
     <div id="top"><!-- do not remove this div, it is closed by doxygen! -->
       
       <!--BEGIN TITLEAREA-->
       <div id="titlearea">
-	<table cellspacing="0" cellpadding="0">
+	<table cellspacing="0" cellpadding="0" width='100%'>
 	  <tbody>
 	    <tr style="height: 56px;">
 	      <!--BEGIN PROJECT_LOGO-->
@@ -60,6 +75,29 @@
 	      <td>$searchbox</td>
 	      <!--END SEARCHENGINE-->
 	      <!--END DISABLE_INDEX-->
+
+	      <td style="align:right; vertical-align:middle">
+		<table width=600 cellpadding=5px style="align:right;">
+		  <tr style="align:right; vertical-align:middle;">
+		    <td>Share this page:</td>
+		    
+		    <td width=70 style="align:center;"><div class='fb-share-button' data-layout='button' data-size='small' data-mobile-iframe='true'></div></td>
+
+		    <td width=70 style="align:center;"><a href="https://twitter.com/share" class="twitter-share-button" data-hashtags="JeVoisOrg">Tweet</a>
+<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script></td>
+
+
+		    <td width=70 style="align:center;"><div class="g-plusone" data-annotation="none"></div></td>
+
+		    <td width=70 style="align:center;"><a href="https://www.pinterest.com/pin/create/button/"><img src="//assets.pinterest.com/images/pidgets/pinit_fg_en_rect_gray_20.png" /></a></td>
+
+		    <td width=70 style="align:center;"><a href="javascript:emailCurrentPage()"><img src="/i/email-icon.png"></a></td>
+
+		  </tr>
+		</table>
+	      </td>
+
+
 	    </tr>
 	  </tbody>
 	</table>

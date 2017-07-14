@@ -6,7 +6,7 @@ JeVois 1.3 brings the following new features:
   Arduino code. See \ref UserSerialStyle
 
 - New host command `jevois-add-videomapping` to add a new video mapping to \b videomappings.cfg, checking for
-  duplicates. This is now ised in the `postinstall` script of new modules.
+  duplicates. This is now used in the `postinstall` script of new modules.
 
 - New host command `jevois-cmd` to send a simple command to JeVois and get the result without having to open a serial
   terminal and connect it to JeVois.
