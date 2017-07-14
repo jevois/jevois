@@ -99,6 +99,10 @@ namespace jevois
     //! Paste a grey byte image into a YUYV image
     /*! \ingroup image */
     void pasteGreyToYUYV(cv::Mat const & src, RawImage & dest, int dx, int dy);
+
+    //! Paste a BGR byte image into a YUYV image
+    /*! \ingroup image */
+    void pasteBGRtoYUYV(cv::Mat const & src, RawImage & dst, int dx, int dy);
     
     //! Paste an ROI from an image to within another of same pixel type
     /*! To keep this function fast, throws if the source image does not fully fit within the destination image or if the
