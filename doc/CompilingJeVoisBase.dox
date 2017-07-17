@@ -68,14 +68,13 @@ Scripts are provided to recompile everything:
     - Thus, all target files are directly copied to microSD for immediate use.
     - JeVois will be instructed to stop exporting its microSD as a virtual flash drive and to restart (the build script
       will run host command `jevois-usbsd stop`)
-
   + Otherwise, if you just run `./rebuild-platform.sh`, libraries and modules will be installed into the \c jvpkg
     directory in jevoisbase
     - To pack those files, cd to pbuild and type 'make jvpkg', which will create \c jevoisbase/JeVois_jevoisbase.jvpkg
     - You can then drop this into the \c packages/ directory of a JeVois microSD to install the package
       next time you start your JeVois smart camera. See \ref ProgrammerSDK for more info.
 
-\note Once you select a destination in `rebuild-platform.sh` (none, staging, or microsd), that will remain for
+\note Once you select a destination in `rebuild-platform.sh` (none, staging, microsd, or live), that will remain for
 subsequent `make install` commands, until you change it by re-running `rebuild-platform.sh` with another destination.
 
 Once jevoisbase is compiled and installed for host, you can try it out using \ref JeVoisDaemon.

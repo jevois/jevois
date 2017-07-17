@@ -30,11 +30,12 @@ See https://github.com/jevois for full source code.
 On Github, the master branch is for stable releases, minor patch work, or addition of new features that do not break the
 current release version. More disruptive development is in devX.Y branches.
 
-JeVois software is organized into four top-level packages:
+JeVois software is organized into five top-level packages:
 
    - jevois: The core C++17 JeVois software.
    - jevoisbase: The base collection of 25+ machine vision modules for JeVois.
-   - samplemodule: A sample standalone module for JeVois, to use as a template for new modules.
+   - samplemodule: A sample standalone module for JeVois written in C++, to use as a template for new modules.
+   - samplepythonmodule: A sample standalone module for JeVois wrtten in Python, to use as a template for new modules.
    - jevois-sdk: The framework that provides a Linux kernel and operating system for a JeVois camera, to be flashed
         to a microSD card.
 
@@ -43,7 +44,7 @@ vision development in Python only, you should just download a pre-build microSD 
 as you do not need any of what is described here.
 
 ####################################################################################################
-Shortcut installation using Ubuntu packages
+Installation using Ubuntu packages (for most people except Linux kernel hackers)
 ####################################################################################################
 
 JeVois provides Ubuntu packages that will pull in all the dependencies required to run JeVois software and develop for
@@ -58,33 +59,68 @@ sudo add-apt-repository "deb http://jevois.usc.edu/apt zesty main"
 sudo apt update
 sudo apt upgrade
 
-- If you want everything:
+- If you want everything to be able to compile C++ modules for JeVois and flash to microSD:
 
           sudo apt install jevois-sdk-dev
 
+  Will install:
+  + jevois-opencv: OpenCV compiled for your host computer (amd64) and installed in /usr/share/jevois-opencv-x.y.z
+    so that it will not interfere with any other OpenCV installation you might already have.
+  + jevois-host: pre-compiled JeVois core software to run on your host computer.
+  + jevois-platform: pre-compiled JeVois core software to flash to microSD and run inside the smart camera.
+  + jevoisbase-host: pre-compiled JeVois base suite of machine vision modules to run on your host computer.
+  + jevoisbase-platform: pre-compiled JeVois base suite of machine vision modules to flash to microSD and run inside
+    the smart camera.
+  + jevois-sdk: pre-compiled Linux kernel and operating system to be flashed to microSD and run inside the smart camera.
+  + jevois-sdk-dev: cross-compilers, libraries, and tools to cross-compile new machine vision modules that will
+    run inside the smart camera.
+  + and all the dependencies required by these packages.
+
 - Or, depending on what you want to do:
 
-    If you just want to run JeVois software (jevois-daemon) on your host computer with a standard webcam:
+  If you just want to run JeVois software (jevois-daemon) on your host computer with a standard webcam:
 
     	  sudo apt install jevois-host jevoisbase-host
-    	
 
-    If you want jevois and jevoisbase cross-compiled for the platform hardware:
+  Will install:
+  + jevois-opencv: OpenCV compiled for your host computer (amd64) and installed in /usr/share/jevois-opencv-x.y.z
+    so that it will not interfere with any other OpenCV installation you might already have.
+  + jevois-host: pre-compiled JeVois core software to run on your host computer.
+  + jevoisbase-host: pre-compiled JeVois base suite of machine vision modules to run on your host computer.
+  + and all the dependencies required by these packages.
+
+
+  If you want jevois and jevoisbase cross-compiled for the platform hardware:
 
     	  sudo apt install jevois-platform jevoisbase-platform
     	
+  Will install:
+  + jevois-platform: pre-compiled JeVois core software to flash to microSD and run inside the smart camera.
+  + jevoisbase-platform: pre-compiled JeVois base suite of machine vision modules to flash to microSD and run inside
+    the smart camera.
+  + and all the dependencies required by these packages.
 
-    If you want to be able to flash a microSD card using jevois-flash-card:
+  If you want to be able to flash a microSD card using jevois-flash-card:
 
     	  sudo apt install jevois-sdk
     	
+  + jevois-opencv: OpenCV compiled for your host computer (amd64) and installed in /usr/share/jevois-opencv-x.y.z
+    so that it will not interfere with any other OpenCV installation you might already have.
+  + jevois-host: pre-compiled JeVois core software to run on your host computer.
+  + jevois-platform: pre-compiled JeVois core software to flash to microSD and run inside the smart camera.
+  + jevoisbase-host: pre-compiled JeVois base suite of machine vision modules to run on your host computer.
+  + jevoisbase-platform: pre-compiled JeVois base suite of machine vision modules to flash to microSD and run inside
+    the smart camera.
+  + jevois-sdk: pre-compiled Linux kernel and operating system to be flashed to microSD and run inside the smart camera.
+  + and all the dependencies required by these packages.
 
-    If you want to be able to cross-compile new modules for JeVois platform hardware:
+  If you want to be able to cross-compile new modules for JeVois platform hardware:
 
     	  sudo apt install jevois-sdk-dev
 
-
-    If you want to be able to recompile the platform Linux kernel or change the platform O.S. or add
+  (installs everything, see above).
+  
+  If you want to be able to recompile the platform Linux kernel or change the platform O.S. or add
        new buildroot packages to the platform:
 
     	  You need to install jevois-sdk-dev and then rebuild jevois-sdk from source. Follow the instructions in this
@@ -115,9 +151,19 @@ to listmappings).
 
 From there, go to http://jevois.org/doc
 
+Note: If you want to recompile jevois and jevoisbase from the latest source on GitHub, you will first need to get them
+from GitHub as well. See the programmer tutorials at http://jevois.org/tutorials for instructions.
+
 ####################################################################################################
 Full installation from scratch
 ####################################################################################################
+
+Only do this if you want to:
+
+- re-compile the Linux kernel of JeVois, and/or
+- change the operating system of JeVois (e.g., add new libraries or new programs)
+
+Otherwise, see above
 
 Getting JeVois to install from scratch for full developer capability requires several steps, outlined below:
 

@@ -48,11 +48,11 @@ hardware (ARM processor).
 - \subpage UserConnect
 - \subpage Concepts
 - \subpage Navigation
-- \subpage Change11log
-- \subpage Change12log
-- \subpage Change13log
+- \subpage Versions
 - \subpage User
+- \subpage UserTutorials
 - \subpage Programmer
+- \subpage ProgrammerTutorials
 - \subpage History
 
 For tutorials on how to use and program JeVois, see the <a href="/tutorials">JeVois Tutorials</a>.

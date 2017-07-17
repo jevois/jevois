@@ -28,6 +28,15 @@ make docweb
 cd $JEVOIS_SRC_ROOT/jevois-tutorials
 make docweb
 
+# install redirects
+cat > /lab/jevois/doc/UserTutorials.html <<EOF
+<html><head><meta http-equiv="refresh" content="0; url=/tutorials/UserTutorials.html"></head><body></body></html>
+EOF
+
+cat > /lab/jevois/doc/ProgrammerTutorials.html <<EOF
+<html><head><meta http-equiv="refresh" content="0; url=/tutorials/ProgrammerTutorials.html"></head><body></body></html>
+EOF
+
 # Make and publish the blog:
 cd $JEVOIS_SRC_ROOT/jevois-blog
 make docweb
