@@ -199,6 +199,48 @@ namespace
   };
 } // anonymous namespace
 
+#ifdef JEVOIS_PLATFORM
+// NEON accelerated YUYV to Gray:
+namespace
+{
+  class yuyvToGrayNEON : public cv::ParallelLoopBody
+  {
+    public:
+      yuyvToGrayNEON(cv::Mat const & inputImage,  unsigned char * outImage, size_t outw) :
+          inImg(inputImage), outImg(outImage)
+      {
+        inlinesize = inputImage.cols * 2; // 2 bytes/pix for YUYV
+        outlinesize = outw * 1; // 1 byte/pix for Gray
+        initer = (inputImage.cols >> 4); // we process 16 pixels (32 input bytes) at a time
+      }
+
+      virtual void operator()(const cv::Range & range) const
+      {
+        unsigned char const * inptr = inImg.data + range.start * inlinesize;
+        unsigned char * outptr = outImg + range.start * outlinesize;
+        
+        for (int j = range.start; j < range.end; ++j)
+        {
+          unsigned char const * ip = inptr; unsigned char * op = outptr;
+
+          for (int i = 0; i < initer; ++i)
+          {
+            uint8x16x2_t const pixels = vld2q_u8(ip); // load 16 YUYV pixels
+            vst1q_u8(op, pixels.val[0]); // store the 16 Y values
+            ip += 32; op += 16;
+          }
+          inptr += inlinesize; outptr += outlinesize;
+        }
+      }
+
+    private:
+      cv::Mat const & inImg;
+      unsigned char * outImg;
+      int inlinesize, outlinesize, initer;
+  };
+} // anonymous namespace
+#endif
+
 // ####################################################################################################
 cv::Mat jevois::rawimage::convertToCvGray(jevois::RawImage const & src)
 {
@@ -207,8 +249,18 @@ cv::Mat jevois::rawimage::convertToCvGray(jevois::RawImage const & src)
   
   switch (src.fmt)
   {
-  case V4L2_PIX_FMT_YUYV: cv::cvtColor(rawimgcv, result, CV_YUV2GRAY_YUYV); return result;
+  case V4L2_PIX_FMT_YUYV:
+#if 0
+    //#ifdef JEVOIS_PLATFORM
+    result = cv::Mat(cv::Size(src.width, src.height), CV_8UC1);
+    cv::parallel_for_(cv::Range(0, src.height), yuyvToGrayNEON(rawimgcv, result.data, result.cols));
+#else
+    cv::cvtColor(rawimgcv, result, CV_YUV2GRAY_YUYV);
+#endif
+    return result;
+
   case V4L2_PIX_FMT_GREY: return rawimgcv;
+
   case V4L2_PIX_FMT_SRGGB8: cv::cvtColor(rawimgcv, result, CV_BayerBG2GRAY); return result;
 
   case V4L2_PIX_FMT_RGB565: // camera outputs big-endian pixels, cv::cvtColor() assumes little-endian
@@ -217,6 +269,7 @@ cv::Mat jevois::rawimage::convertToCvGray(jevois::RawImage const & src)
     return result;
 
   case V4L2_PIX_FMT_MJPEG: LFATAL("MJPEG not supported");
+
   case V4L2_PIX_FMT_BGR24: cv::cvtColor(rawimgcv, result, CV_BGR2GRAY); return result;
   }
    LFATAL("Unknown RawImage pixel format");
@@ -586,8 +639,9 @@ void jevois::rawimage::writeText(jevois::RawImage & img, char const * txt, int x
   }
   
   // Clip the text so that it does not go outside the image:
+  if (y < 0 || y + fonth > int(img.height)) return;
   while (x + len * fontw > int(imgw)) { --len; if (len <= 0) return; }
-
+  
   // Be nice and handle various pixel formats:
   switch (img.bytesperpix())
   {

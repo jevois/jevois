@@ -477,13 +477,13 @@ void jevois::StdModule::sendSerialStd3D(float x, float y, float z, float w, floa
   case jevois::module::SerStyle::Normal:
     oss << "N3 ";
     if (id.empty()) oss << "unknown "; else oss << jevois::replaceWhitespace(id) << ' ';
-    oss << x << ' ' << y << ' ' << ' ' << z << ' ' << w << ' ' << h << ' ' << d;
+    oss << x << ' ' << y << ' ' << z << ' ' << w << ' ' << h << ' ' << d;
     break;
     
   case jevois::module::SerStyle::Detail:
     oss << "D3 ";
     if (id.empty()) oss << "unknown "; else oss << jevois::replaceWhitespace(id) << ' ';
-    oss << x << ' ' << y << ' ' << ' ' << z << ' ' << w << ' ' << h << ' ' << d << ' '
+    oss << x << ' ' << y << ' ' << z << ' ' << w << ' ' << h << ' ' << d << ' '
         << q1 << ' ' << q2 << ' ' << q3 << ' ' << q4;
     if (extra.empty() == false) oss << ' ' << extra;
     break;
