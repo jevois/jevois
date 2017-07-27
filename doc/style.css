@@ -103,3 +103,10 @@ strong.jvhostplatform {
     background-color: #f0f0f0;
     border-radius: 4px
 }
+
+strong.jvmod {
+    padding: 2px 4px;
+    color: Blue;
+    background-color: #f0f0f0;
+    border-radius: 4px
+}

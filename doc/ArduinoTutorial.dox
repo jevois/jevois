@@ -4,24 +4,24 @@
 
 <h2>Serial strings output by JeVois modules</h2>
 
-In this simple example, we create an Arduino program that will listen for messages from the SaliencyDemo,
-RoadNavigation, ObjectTracker, or other modules that output messages over serial port that contain information about the
-location of a target. These modules output strings of the form:
+In this simple example, we create an Arduino program that will listen for messages from \jvmod{DemoSaliency},
+\jvmod{RoadNavigation}, \jvmod{ObjectTracker}, \jvmod{DemoArUco}, or other modules that output messages over serial port
+that contain information about the location of a target. These modules output strings of the form:
 
 \verbatim
 T1 <target_x>
 \endverbatim
 
-for one-dimentional guidance (e.g., direction of the vanishing point in the RoadFinder module), or
+for one-dimentional guidance (e.g., direction of the vanishing point in \jvmod{RoadNavigation}), or
 
 \verbatim
 T2 <target_x> <target_y>
 \endverbatim
 
-for two-dimensional coordinates.
+for two-dimensional coordinates. See \ref UserSerialStyle for information about customizing thee serial messages.
 
-To make the outputs independent of video image resolution, they are always normalized by all modules ot a range of -1000
-(full left or full up) to 1000 (full right or full down).
+To make the outputs independent of video image resolution, coordinates are always normalized by all modules ot a range
+of -1000 (full left or full up) to 1000 (full right or full down).
 
 One string is typically output on every video frame, that is, these strings are coming out of the JeVois camera at rates
 of 30 per second, 60 per second, or more.

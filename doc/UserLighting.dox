@@ -24,7 +24,7 @@ Default settings
 By default, JeVois attempts to maintain the frame rate specified in a given video mapping. The rationale for this is
 that some downstream computer connected to JeVois may require the specified framerate for smooth real-time
 operation. With some of the machine vision modules bundled with JeVois, the framerate is high, for example 60 frames/s
-or even 120 frames/s for DemoEyeTracker.
+or even 120 frames/s for \jvmod{DemoEyeTracker}.
 
 At higher frame rates, there is very little time available for exposure.
 
@@ -132,9 +132,9 @@ at.
 But this may not necessarily be a problem for the machine vision algorithms.
 
 For example, in the image above, we have turned up the gain very high to be able to still operate at 30 frames/s in very
-dark conditions. Significant pixel noise is apparent in the video captured by JeVois. But ... the ArUco algorithm
-running inside JeVois does not seem to be affected and is running just fine, readily detecting and decoding the two
-ArUco markers present in the scene!
+dark conditions. Significant pixel noise is apparent in the video captured by JeVois. But ... the \jvmod{DemoArUco}
+algorithm running inside JeVois does not seem to be affected and is running just fine, readily detecting and decoding
+the two ArUco markers present in the scene!
 
 Here is an even more extreme example, in almost compete darkness and cranking up the exposure and the gain to the
 max. The image quality is horrible (see the very high pixel noise on the black areas of the markers). But ArUco markers
