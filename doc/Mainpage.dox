@@ -50,9 +50,9 @@ hardware (ARM processor).
 - \subpage Navigation
 - \subpage Versions
 - \subpage User
-- \subpage UserTutorials
+- \subpage UserTutos
 - \subpage Programmer
-- \subpage ProgrammerTutorials
+- \subpage ProgrammerTutos
 - \subpage History
 
 For tutorials on how to use and program JeVois, see the <a href="/tutorials">JeVois Tutorials</a>.
