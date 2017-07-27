@@ -23,6 +23,24 @@ connected camera, and video output will be to your computer's display. It can al
 the JeVois smart camera (\b platform mode), in which case video will be captured from the video sensor inside the
 JeVois camera, and video output will be streamed over the USB link.
 
+Getting the source code from GitHub
+-----------------------------------
+
+\verbatim
+cd
+git clone https://github.com/jevois/jevois.git
+\endverbatim
+
+We also strongly recommend that you get the other JeVois source code repositories from GitHub:
+
+\verbatim
+git clone https://github.com/jevois/jevoisbase.git
+git clone https://github.com/jevois/jevois-sdk.git
+git clone https://github.com/jevois/samplemodule.git
+git clone https://github.com/jevois/samplepythonmodule.git
+git clone https://github.com/jevois/jevois-tutorials.git
+\endverbatim
+
 Full reconfiguration and compilation
 ------------------------------------
 

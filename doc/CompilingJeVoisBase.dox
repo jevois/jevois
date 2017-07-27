@@ -32,6 +32,27 @@ component, JeVoisBase is architectured as:
 - Modules then simply connect a collection of those components together, to the camera input, and to the video streaming
   output over USB.
 
+Getting the source code from GitHub
+-----------------------------------
+
+\verbatim
+cd
+git clone https://github.com/jevois/jevoisbase.git
+\endverbatim
+
+Before compiling for the first time: Getting the contributed packages
+---------------------------------------------------------------------
+
+The directory <b>jevoisbase/Contrib</b> is for a collection of contributed source code packages.
+
+Before you attempt to compile jevoisbase the first time, you should download and patch those contributed packages, as
+follows:
+
+\verbatim
+cd jevoisbase/Contrib
+./reinstall.sh
+\endverbatim
+
 Full reconfiguration and compilation
 ------------------------------------
 
