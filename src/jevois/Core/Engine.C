@@ -851,6 +851,16 @@ void jevois::Engine::sendSerial(std::string const & str, bool islog)
   }
 }
 
+jevois::Serial* jevois::Engine::getHardwareSerial()
+{
+  for (auto & s : itsSerials)
+  {
+    if (s->type() == jevois::UserInterface::Type::Hard)
+      return static_cast<jevois::Serial*>(s.get());
+  }
+  return nullptr;
+}
+
 // ####################################################################################################
 jevois::VideoMapping const & jevois::Engine::getCurrentVideoMapping() const
 {

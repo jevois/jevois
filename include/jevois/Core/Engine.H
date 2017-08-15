@@ -18,6 +18,7 @@
 #pragma once
 
 #include <jevois/Core/VideoMapping.H>
+#include <jevois/Core/Serial.H>
 #include <jevois/Component/Manager.H>
 #include <jevois/Types/Enum.H>
 #include <jevois/Image/RawImage.H>
@@ -285,6 +286,10 @@ namespace jevois
       /*! \note When islog is true, this is assumes to be a log message, and it will be sent to the port(s) specified by
           parameter serlog. Otherwise, the message will be sent to the ports specified by parameter serout. */
       void sendSerial(std::string const & str, bool islog = false);
+      
+      //! Retrieve a pointer to the hardware serial interface
+      /*! \note  Returns nullptr if none is available */
+      Serial* getHardwareSerial();
 
     protected:
       //! Run a script from file
