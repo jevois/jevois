@@ -52,11 +52,11 @@ jevois::Serial for full documentation of the serial interface):
 - \b serial:format - Data format. Should be a string with 3 characters:
   + Number of data bits: \b 5 to \b 8, default is \b 8
   + Parity: \b N for none, \b O for odd, \b E for even. Default is \b N
-  + Stop bits: \b 1 or \b 2. Default is \b 2
+  + Stop bits: \b 1 or \b 2. Default is \b 1
   + Example: \b 8N1 (default)
 
 
-For example, to reduce the serial rate to 9600 bauds when piping teh serial data to a Bluetooth BLE transmitter, \b
+For example, to reduce the serial rate to 9600 bauds when piping the serial data to a Bluetooth BLE transmitter, \b
 params.cfg should contain:
 
 \verbatim

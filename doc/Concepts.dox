@@ -91,10 +91,10 @@ Thus, two video formats are usually considered when running machine vision algor
   video frames in camera format captured by the camera sensor are sent to a JeVois machine vision \b module for
   processing.
 
-- <b>output (USB) format</b>: pixel type, resolution, and framerate used to send video frames with the camera
-  sensor. This format is selected by a video capture software running on a host computer. The video frames in output
-  format are created by the current JeVois machine vision \b module and are streamed to the host computer over the USB
-  link.
+- <b>output (USB) format</b>: pixel type, resolution, and framerate used to send video frames over the USB link to a
+  host computer. This format is selected by a video capture software running on a host computer. The video frames in
+  output format are created by the current JeVois machine vision \b module and are streamed to the host computer over
+  the USB link.
 
 The \b camera and \b output formats do not have to match, and they usually do not because machine vision often involves
 transforming an image into another one that is different, including with possiby different pixel type, resolution, and
@@ -236,10 +236,10 @@ Summary of key concepts and terms
   video frames in camera format captured by the camera sensor are sent to a JeVois machine vision \b module for
   processing.
 
-- <b>output (USB) format</b>: pixel type, resolution, and framerate used to send video frames with the camera
-  sensor. This format is selected by a video capture software running on a host computer. The video frames in output
-  format are created by the current JeVois machine vision \b module and are streamed to the host computer over the USB
-  link.
+- <b>output (USB) format</b>: pixel type, resolution, and framerate used to send video frames over the USB link to a
+  host computer. This format is selected by a video capture software running on a host computer. The video frames in
+  output format are created by the current JeVois machine vision \b module and are streamed to the host computer over
+  the USB link.
 
 - <b>video mapping</b>: establishes a correspondence between a user-selected \b output video format, a \b camera sensor
   video format, and a machine vision \b module. The \b camera and \b output formats do not have to be the same; for

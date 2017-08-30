@@ -50,6 +50,10 @@ namespace jevois
     //! Parameter \relates jevois::Manager
     JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(tracelevel, unsigned int, "Set the minimum trace level to display",
                                            0, ParamCateg);
+
+    //! Parameter \relates jevois::Manager
+    JEVOIS_DECLARE_PARAMETER(nickname, std::string, "Nickname associated with this camera, useful when multiple "
+                             "JeVois cameras are connected to a same USB bus", "jevois", ParamCateg);
   }
 
   // ######################################################################
@@ -62,9 +66,12 @@ namespace jevois
       Parameters, and call init() on all subComponents (which in turn calls init() on all of their subComponents,
       etc.). See the documentation of Component for more information about the init() flow.
 
+      The parameter \p nickname is not internally used by the Manager. It can be set, for example, in \b initscript.cfg
+      to a different value for each camera, in systems that use multiple JeVois cameras connected to a single USB bus.
+
       \ingroup component */
   class Manager : public Component,
-                  public Parameter<manager::help, manager::loglevel, manager::tracelevel>
+                  public Parameter<manager::help, manager::loglevel, manager::tracelevel, manager::nickname>
   {
     public:
       // END_JEVOIS_CODE_SNIPPET

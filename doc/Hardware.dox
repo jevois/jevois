@@ -32,7 +32,7 @@ Features at a glance:
   no need to install drivers on Windows, MacOS, Android, and Linux (iOS detects the device but does not seem to support
   webcam class devices as of iOS 9, either from JeVois or from other manufacturers we tested).
 
-- Dual-voltage serial port (UART 5V or 3.3V, selected through a VCC-IO pin), allows the device to comunicate directly
+- Dual-voltage serial port (UART 5V or 3.3V, selected through a VCC-IO pin), allows the device to communicate directly
   with Arduino or other embedded controllers.
 
 - Micro-SD socket holds embedded operating system, JeVois machine vision modules, and can store user data (e.g., video
