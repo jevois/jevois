@@ -109,7 +109,13 @@ if [ "X${use_serialtty}" = "X1" ]; then opts="${opts} --serialdev="; fi
 if [ "X${use_serialtty}" = "X1" -o "X${use_usbserialtty}" = "X1" ]; then
     /usr/bin/jevois-daemon ${opts} &
 else
+    # If you have not specified any special files in /boot other than possibly "login", this is where you would launch
+    # jevois-daemon in gdb for debugging hard crashes using a USB-to-serial cable connected to the hardware serial port
+    # of JeVois. Note that since the inclusion of Python support, libcrypto gets pulled in, which triggers some illegal
+    # instruction exception caught by gdb. This is a known issue. Type this in gdb to suppress these errors before you
+    # run the program: "handle SIGILL nostop noprint" and see https://www.raspberrypi.org/forums/viewtopic.php?p=155085
     /usr/bin/jevois-daemon ${opts}
+    # gdb --args /usr/bin/jevois-daemon ${opts}
 fi
 
 ##############################################################################################################

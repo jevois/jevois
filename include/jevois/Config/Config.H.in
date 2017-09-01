@@ -53,6 +53,9 @@
 //! Base path for config files
 #define JEVOIS_CONFIG_PATH JEVOIS_ROOT_PATH "/config"
 
+//! Base path for shared files (e.g., neural network weights, etc)
+#define JEVOIS_SHARE_PATH JEVOIS_ROOT_PATH "/share"
+
 //! Location of the engine videomappings.cfg definition file
 #define JEVOIS_ENGINE_CONFIG_FILE JEVOIS_CONFIG_PATH "/videomappings.cfg"
 

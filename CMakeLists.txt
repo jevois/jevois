@@ -107,8 +107,7 @@ else (HOST_IS_RPI3)
   set(JEVOIS_HOST_ARCH_FLAGS "-msse4 -Ofast")
 endif (HOST_IS_RPI3)
 
-set(JEVOIS_PLATFORM_ARCH_FLAGS "-mcpu=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard -ftree-vectorize -Ofast")
-# NOTE: could add -funsafe-math-optimizations to use NEON for general maths but NEON is not 100% IEEE-754 compatible
+set(JEVOIS_PLATFORM_ARCH_FLAGS "-mcpu=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard -ftree-vectorize -Ofast -funsafe-math-optimizations -mfp16-format=ieee")
 
 ########################################################################################################################
 # Setup the cross-compilers for the platform:
@@ -285,6 +284,8 @@ install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/Config/params.cfg"
   DESTINATION "${JEVOIS_MODULES_ROOT}/config" COMPONENT bin)
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/Config/initscript.cfg"
   DESTINATION "${JEVOIS_MODULES_ROOT}/config" COMPONENT bin)
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/share"
+  DESTINATION "${JEVOIS_MODULES_ROOT}" COMPONENT bin)
 
 ########################################################################################################################
 # Debian packaging:

@@ -1013,6 +1013,17 @@ namespace
 } // anonymous namespace
 
 // ####################################################################################################
+void jevois::rawimage::pasteRGBtoYUYV(cv::Mat const & src, jevois::RawImage & dst, int x, int y)
+{
+  if (src.type() != CV_8UC3) LFATAL("src must have type CV_8UC3 and RGB pixels");
+  if (dst.fmt != V4L2_PIX_FMT_YUYV) LFATAL("dst format must be V4L2_PIX_FMT_YUYV");
+  if (x + src.cols > int(dst.width) || y + src.rows > int(dst.height)) LFATAL("src does not fit within dst");
+
+  cv::parallel_for_(cv::Range(0, src.rows), rgbToYUYV(src, dst.pixelsw<unsigned char>() +
+                                                      (x + y * dst.width) * dst.bytesperpix(), dst.width));
+}
+
+// ####################################################################################################
 namespace
 {
   class grayToYUYV : public cv::ParallelLoopBody
