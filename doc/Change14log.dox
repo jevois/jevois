@@ -1,0 +1,27 @@
+/*! \page Change14log Changes and new features in JeVois 1.4
+
+JeVois 1.4 brings the following new features:
+
+- New <b>/jevois/share/</b> directory to store data that may be shared across several machine vision modules, such as
+  neural network config files and weights, pre-trained classifiers, etc
+
+- Object recognition on ImageNet (1000 object categories) and Pascal VOC using Darknet and Darknet YOLO. Not fully
+  optimized for speed yet but already looking very promising.
+  \image html darknet-demo.png 
+  See two new modules in jevoisbase:
+  + \jvmod{DarknetSingle} passes a central 224x224 cop to a Darnket neural network. The neural network precicts the top
+    N object category candidates (among 1000 possible from imagenet), and those above a minimum confidence threshold are
+    shown and sent to serial.
+  + \jvmod{DarknetYOLO} passes a whe 640x480 frame to a Darknet YOLO (you only look once) network that combines
+    detection (finding where objects might be) and identification (what objects are) for all objects in the scene in one
+    pass.
+
+- A few more image conversion functions in RawImageOps.H
+
+- New machine vision modules for ARtoolkit (ultra fast detection of augmented reality markers), Darknet, Darknet YOLO.
+
+- Updated \jvmod{RoadNavigation} module to output correct VP information.
+
+- New tutorial on how to build a simple vision-guided mobile robot
+
+*/
