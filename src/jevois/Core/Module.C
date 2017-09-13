@@ -563,6 +563,7 @@ void jevois::StdModule::sendSerialStd3D(std::vector<cv::Point3f> points, std::st
     sendSerialStd3D(cg.x, cg.y, cg.z, pmax.x - pmin.x, pmax.y - pmin.y, pmax.z - pmin.z, 0.0F, 0.0F, 0.0F, 1.0F,
                     id, extra);
   }
+  break;
   
   case jevois::module::SerStyle::Fine:
   {

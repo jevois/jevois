@@ -1,0 +1,29 @@
+/*! \page Change15log Changes and new features in JeVois 1.5
+
+JeVois 1.5 brings the following new features:
+
+- Updated to OpenCV 3.3.0
+
+- Merged with buildroot 2017.08 which updates the JeVois operating system to:
+  + binutils 2.29
+  + gcc/g++ 7.2
+  + python 3.6
+  + tesseract OCR 3.05.00 (English, French, German, Spanish, Simplified Chinese, Traditional Chinese)
+  + boost 1.64.0
+  + eigen
+  + fftw
+  + flann
+  + clbas     / clapack 3.2.1
+  + blas/lapack
+  + openblas
+  + libinear
+  + protobuf 3.3.0
+  
+
+- TODO: boost 1.62 on host can only support python 3.5, but we can already support python 3.6 on target. May need to
+  split host vs platform python version until boost 1.64 is available on host.
+
+- TODO: Updated tiny-dnn to latest version from GitHub (there have not been any release lately). This changes the API a
+  bit, see updated ObjectRecognition components in jevoisbase.
+
+*/
