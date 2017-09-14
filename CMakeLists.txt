@@ -30,9 +30,16 @@ set(JEVOIS_SOVERSION "${JEVOIS_VERSION_MAJOR}.${JEVOIS_VERSION_MINOR}.${JEVOIS_V
 
 ########################################################################################################################
 # Python version to use for python modules:
-set(JEVOIS_PYTHON_MAJOR 3)
-set(JEVOIS_PYTHON_MINOR 6)
-set(JEVOIS_PYTHON_M "m")
+
+# FIXME: temporarily (until ubuntu 17.10 is out maybe?) we use python 3.5 on host (max supported by boost 1.62 on Ubuntu
+# 17.04) but python 3.6 on platform (supported by boost 1.64 on platform):
+set(JEVOIS_HOST_PYTHON_MAJOR 3)
+set(JEVOIS_HOST_PYTHON_MINOR 5)
+set(JEVOIS_HOST_PYTHON_M "m")
+
+set(JEVOIS_PLATFORM_PYTHON_MAJOR 3)
+set(JEVOIS_PLATFORM_PYTHON_MINOR 6)
+set(JEVOIS_PLATFORM_PYTHON_M "m")
 
 ########################################################################################################################
 # OpenCV version to use with JeVois:
@@ -120,7 +127,7 @@ set(JEVOIS_PLATFORM_CXX_COMPILER "${CROSS_COMPILE}g++")
 # Config for opencv libs.  note: videoio is for video capture, movies, etc and we may want to not use it on platform if
 # we define it out in VideoInput.  In opencv3.1, imread() is in libopencv_imgcodecs.  On the host, we also link against
 # opencv highgui to enable display windows.
-# Note: On host, get opencv from jevois-opencv package, in /usr/share/jevois-opencv-3.2.0, on platform it is in /usr
+# Note: On host, get opencv from jevois-opencv package, in /usr/share/jevois-opencv-3.3.0, on platform it is in /usr
 set(OPENCV_LIBS_FOR_JEVOIS "-lopencv_core -lopencv_imgproc -lopencv_features2d -lopencv_flann -lopencv_ml \
 -lopencv_objdetect -lopencv_imgcodecs -lopencv_tracking -lopencv_video -lopencv_videoio")
 
@@ -139,11 +146,12 @@ set(JEVOIS_TBB_INCLUDE "-I${JEVOIS_BUILDROOT_BASE}/build/opencv3-3.3.0/buildroot
 # NOTE: it is too early here to try to use standard find_package() of CMake. In any case, that will not find the
 # platform version which has to be done by hand here.
 set(JEVOIS_PLATFORM_PYTHON_INCLUDE
-  "-I${JEVOIS_BUILDROOT_BASE}/host/usr/arm-buildroot-linux-gnueabihf/sysroot/usr/include/python${JEVOIS_PYTHON_MAJOR}.${JEVOIS_PYTHON_MINOR}${JEVOIS_PYTHON_M} -I${JEVOIS_BUILDROOT_BASE}/target/usr/lib/python${JEVOIS_PYTHON_MAJOR}.${JEVOIS_PYTHON_MINOR}/site-packages/numpy/core/include/")
-set(JEVOIS_PLATFORM_PYTHON_LIBS "-lpython${JEVOIS_PYTHON_MAJOR}.${JEVOIS_PYTHON_MINOR}${JEVOIS_PYTHON_M} -lboost_python${JEVOIS_PYTHON_MAJOR}")
+  "-I${JEVOIS_BUILDROOT_BASE}/host/usr/arm-buildroot-linux-gnueabihf/sysroot/usr/include/python${JEVOIS_PLATFORM_PYTHON_MAJOR}.${JEVOIS_PLATFORM_PYTHON_MINOR}${JEVOIS_PLATFORM_PYTHON_M} -I${JEVOIS_BUILDROOT_BASE}/target/usr/lib/python${JEVOIS_PLATFORM_PYTHON_MAJOR}.${JEVOIS_PLATFORM_PYTHON_MINOR}/site-packages/numpy/core/include/")
+set(JEVOIS_PLATFORM_PYTHON_LIBS "-lpython${JEVOIS_PLATFORM_PYTHON_MAJOR}.${JEVOIS_PLATFORM_PYTHON_MINOR}${JEVOIS_PLATFORM_PYTHON_M} -lboost_python${JEVOIS_PLATFORM_PYTHON_MAJOR}")
+
 set(JEVOIS_HOST_PYTHON_INCLUDE
-  "-I/usr/include/python${JEVOIS_PYTHON_MAJOR}.${JEVOIS_PYTHON_MINOR}${JEVOIS_PYTHON_M}")
-set(JEVOIS_HOST_PYTHON_LIBS "-lpython${JEVOIS_PYTHON_MAJOR}.${JEVOIS_PYTHON_MINOR}${JEVOIS_PYTHON_M} -lboost_python-py${JEVOIS_PYTHON_MAJOR}${JEVOIS_PYTHON_MINOR}")
+  "-I/usr/include/python${JEVOIS_HOST_PYTHON_MAJOR}.${JEVOIS_HOST_PYTHON_MINOR}${JEVOIS_HOST_PYTHON_M}")
+set(JEVOIS_HOST_PYTHON_LIBS "-lpython${JEVOIS_HOST_PYTHON_MAJOR}.${JEVOIS_HOST_PYTHON_MINOR}${JEVOIS_HOST_PYTHON_M} -lboost_python-py${JEVOIS_HOST_PYTHON_MAJOR}${JEVOIS_HOST_PYTHON_MINOR}")
   
 ########################################################################################################################
 # Include path:
