@@ -23,7 +23,12 @@ JeVois 1.5 brings the following new features:
 - TODO: boost 1.62 on host can only support python 3.5, but we can already support python 3.6 on target. May need to
   split host vs platform python version until boost 1.64 is available on host.
 
-- TODO: Updated tiny-dnn to latest version from GitHub (there have not been any release lately). This changes the API a
-  bit, see updated ObjectRecognition components in jevoisbase.
+- Updated tiny-dnn to latest version from GitHub (there have not been any release lately). This changes the API a bit,
+  see updated ObjectRecognition components in jevoisbase.
+
+
+sudo rm -rf /jevois
+sudo rm -rf /var/lib/jevois-microsd/*
+
 
 */

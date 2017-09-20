@@ -84,8 +84,15 @@ option(JEVOIS_LOG_TO_FILE "Enable sending all log messages to file jevois.log in
 with async logging." OFF)
 message(STATUS "JEVOIS_LOG_TO_FILE: ${JEVOIS_LOG_TO_FILE}")
 
-option(HOST_IS_RPI3 "When compiling for host, assume a Raspberry Pi 3 instead of default Intel" OFF)
-message(STATUS "HOST_IS_RPI3: ${HOST_IS_RPI3}")
+########################################################################################################################
+# Detect whether host processor is ARM, so we can set some compiler flags (use NEON instead of SSE, etc):
+if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm")
+  set(HOST_IS_ARM ON)
+else (${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm")
+  set(HOST_IS_ARM OFF)
+endif (${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm")
+  
+message(STATUS "HOST_IS_ARM: ${HOST_IS_ARM}")
 
 ########################################################################################################################
 # Check for JEVOIS_ROOT environment variable:
@@ -105,13 +112,13 @@ set(JEVOIS_PLATFORM_INSTALL_PREFIX "/var/lib/jevois-build/usr")
 
 ########################################################################################################################
 # Architecture flags to optimize compilation:
-if (HOST_IS_RPI3)
+if (HOST_IS_ARM)
   # Should optimize for A53 on RPI3, but fails to compile TBB. /proc/cpuinfo on RPI3 reports ARMv7 and vfpv4 anyway
   #set(JEVOIS_HOST_ARCH_FLAGS "-mcpu=cortex-a53 -mfpu=neon-fp-armv8 -mfloat-abi=hard -ftree-vectorize -Ofast")
   set(JEVOIS_HOST_ARCH_FLAGS "-mcpu=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard -ftree-vectorize -Ofast")
-else (HOST_IS_RPI3)
+else (HOST_IS_ARM)
   set(JEVOIS_HOST_ARCH_FLAGS "-msse4 -Ofast")
-endif (HOST_IS_RPI3)
+endif (HOST_IS_ARM)
 
 set(JEVOIS_PLATFORM_ARCH_FLAGS "-mcpu=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard -ftree-vectorize -Ofast -funsafe-math-optimizations -mfp16-format=ieee")
 

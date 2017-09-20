@@ -4,9 +4,8 @@
 
 The following pages will help you program with JeVois.
 
-- \subpage ProgrammingGuidelines
-- \subpage DocumentationRules
 - \subpage ProgrammerSource
+- \subpage Virtualbox
 - \subpage ProgrammerOrganization
 - \subpage CompilingJeVois
 - \subpage CompilingJeVoisBase
@@ -18,5 +17,7 @@ The following pages will help you program with JeVois.
 - \subpage ProgrammerPython
 - \subpage ModulePythonTutorial
 - \subpage Debugging
+- \subpage ProgrammingGuidelines
+- \subpage DocumentationRules
 
 */

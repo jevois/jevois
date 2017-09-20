@@ -1,0 +1,66 @@
+/*! \page Virtualbox Using Virtualbox to setup jevois-sdk in a virtual machine
+
+It is highly recommended that you use a virtual machine software to create a fresh installation of Ubuntu into which you
+will install the JeVois development environment. This way, you will not envounter problems with differemt versions of
+packages required by JeVois and by possibly other applications you run on your desktop and laptop.
+
+Here are summary instructions on how to do this with the free Virtualbox software:
+
+- Download and install Virtualbox from https://www.virtualbox.org/wiki/Downloads (get the version for your current
+  computer, which is called the \a host computer, e.g., if using a Mac, get the version for OS X host).
+
+- Download and install the corresponding VirtualBox Oracle VM VirtualBox Extension Pack, making sure that the version of
+  the extension pack matches exactly the version of Virtualbox you installed.
+
+- \a IMPORTANT: you must restart your computer for the installation to work properly later on. Especially for Mac users,
+  it is unusual to have to reboot your mac, but you need to do it here otherwise video capture will likely not work
+  later on.
+
+- Create a new virtual machine: select Linux 64-bit OS, allocate as much RAM and CPU as is reasonable (usually, move the
+  sliders to the point where they become red), and create a new virtual hard drive, using the VDI method and selecting
+  at least 30GB size.
+
+  \image html vbox1.png Above: creating a new virtual machine
+
+  \image html vbox2.png Above: setting memory size
+
+  \image html vbox3.png Above: Creating a virtual hard disk
+
+  \image html vbox4.png Above: Selecting VDI hard disk type
+
+  \image html vbox5.png Above: Setting VDI size to at least 30GB
+ 
+
+- Get an Ubuntu Desttop amd64 iso file from https://www.ubuntu.com/download/desktop (as of \jvversion{1.5}, Ubuntu 17.04
+  is recommended).
+
+- Start your virtual machine. Because it has no operating system yet, you will be asked to provide an iso file, select
+  the Ubuntu iso you just downloaded.
+
+- Install Ubuntu. Make sure you allocate the whole virtual disk to a single root partition. This is the default on 17.04
+  but 16.04 by default allocates a small root partition and a larger home partition. To avoid this, select the
+  <b>something else</b> option when asked how to install Ubuntu, and then manually create a single ext4 partition
+  filling the whole disk and mounted as <b>/</b> (root).
+
+- After Ubuntu is installed, you can start it, open a terminal, and proceed with the installation of the JeVois SDK as
+  detailed in \ref ProgrammerSource and in [the programmer setup
+  tutorial](http://jevois.org/tutorials/ProgrammerSetup.html).
+
+- To be able to grab video, go to the settings of your virtual machine (yellow cog-wheel in the main panel of
+  Virtualbox) and make sure that you enable USB 2.0 or USB 3.0 under Ports, USB. Then plug-in a USB camera, and add a
+  device filter for it (click the icon with the + sign on top of a USB connector). We recommend that you then restart
+  your virtual machine and your host.
+
+  \image html vbox6.png Above: adding a USB filter
+
+  \image html vbox7.png Above: you can also enable a connected USB camera using the little USB connector icon at the bottom of your virtualbox screen.
+
+- Back to the virtual machine, install `guvcview` by typing:
+  \verbatim
+  sudo apt install guvcview
+  \endverbatim
+  and you should be able to grab video from your USB camera.
+
+  \image html vbox8.png Above: guvcview working inside virtualbox
+
+*/
