@@ -171,7 +171,7 @@ Getting JeVois to install from scratch for full developer capability requires se
 
 2. Download the JeVois source code from Github.
 
-3. Download and install OpenCV 3.2 specially configured for JeVois.
+3. Download and install OpenCV 3.3 specially configured for JeVois.
 
 4. Setup jevois-sdk, cross-compile all the programs that will run on the camera, cross-compile its kernel.
 
@@ -220,7 +220,7 @@ sudo apt install libxvidcore-dev x264 v4l-utils unzip qt5-default python3-dev py
 sudo apt install libatlas-base-dev gfortran libturbojpeg libgles2-mesa libgles2-mesa-dev
 
 sudo ln -s /usr/bin/arm-linux-gnueabi-gcc-4.7 /usr/bin/arm-linux-gnueabi-gcc
-sudo ln -s /usr/lib/x86_64-linux-gnu/libturbojpeg.so.0.0.0 /usr/lib/x86_64-linux-gnu/libturbojpeg.so ###FIXME
+sudo ln -s /usr/lib/x86_64-linux-gnu/libturbojpeg.so.0.?.0 /usr/lib/x86_64-linux-gnu/libturbojpeg.so
 
 # to prevent nautilus from opening 3 windows each time you insert a JeVois microSD card:
 gsettings set org.gnome.desktop.media-handling automount-open false
@@ -248,7 +248,7 @@ export JEVOIS_ROOT=/jevois
 # and close all terminals and open a new terminal to make sure the environment is refreshed.
 
 ####################################################################################################
-ADVANCED: Installing OpenCV 3.2.0 on a Linux host system:
+ADVANCED: Installing OpenCV 3.3.0 on a Linux host system:
 ####################################################################################################
 
 SHORTCUT: sudo apt install jevois-opencv
@@ -261,10 +261,11 @@ sudo apt install libswscale-dev libxine2-dev libgstreamer1.0-dev libgstreamer-pl
 sudo apt install libtbb-dev libqt4-dev libfaac-dev libmp3lame-dev libopencore-amrnb-dev libopencore-amrwb-dev
 sudo apt install libtheora-dev libvorbis-dev libxvidcore-dev x264 v4l-utils unzip qt5-default python3.5-dev
 sudo apt install python3-numpy python3-pip libgtk-3-dev libatlas-base-dev libturbojpeg
+sudo apt install protobuf-compiler libprotobuf-dev
 
 mkdir opencv
 cd opencv
-export ver="3.2.0"
+export ver="3.3.0"
 export pyver="3.5"
 
 wget https://github.com/opencv/opencv/archive/${ver}.tar.gz
@@ -288,6 +289,7 @@ cmake \
     -DCPACK_SET_DESTDIR=ON \
     -DPYTHON_DEFAULT_EXECUTABLE=/usr/bin/python${pyver} -DPYTHON_EXECUTABLE=/usr/bin/python${pyver} \
     -DWITH_TBB=ON -DWITH_V4L=ON -DWITH_QT=OFF -DWITH_OPENGL=OFF -DWITH_OPENCL=OFF -DWITH_VTK=OFF -DWITH_CUDA=OFF \
+    -DWITH_EIGEN=ON -DBUILD_opencv_python2=OFF -DENABLE_FAST_MATH=1 -DWITH_OPENMP=ON -DENABLE_CXX11=ON \
     -DINSTALL_PYTHON_EXAMPLES=ON -DBUILD_EXAMPLES=ON -DINSTALL_C_EXAMPLES=OFF \
     -DOPENCV_EXTRA_MODULES_PATH=${opencvroot}/opencv_contrib-${ver}/modules -DBUILD_opencv_hdf=OFF \
     -DENABLE_PRECOMPILED_HEADERS=OFF \
@@ -297,34 +299,8 @@ make -j 50 # replace 50 by your number of CPU cores
 
 suto make install
 
-# This installs into /usr/share/jevois-opencv-3.2.0
-# The sample programs are in /usr/share/jevois-opencv-3.2.0/share/OpenCV/samples/
-
-####################################################################################################
-ADVANCED: SPECIAL CASE: Compiling OpenCV 3.2 on Raspberry Pi 3 host
-####################################################################################################
-
-This step is only if your host computer is a Raspberry Pi 3.
-
-# First, build tbb from source before you continue with OpenCV:
-wget https://www.threadingbuildingblocks.org/sites/default/files/software_releases/source/tbb43_20150611oss_src.tgz
-tar xvf tbb43_20150611oss_src.tgz
-cd tbb43_20150611oss
-make tbb CXXFLAGS="-DTBB_USE_GCC_BUILTINS=1 -D__TBB_64BIT_ATOMICS=0" 
-cd build/linux_armv7_gcc_cc4.9.2_libc2.19_kernel4.4.21_release/
-source tbbvars.sh
-
-# remove these from the apt-get list for OpenCV shown above: libtbb-dev libfaac-dev
-# and otherwise proceed with downloading and installing OpenCV 3.2 as detailed above.
-
-# Also we need g++6 to compile jevois code, it is not provided by raspbian but we can get it:
-sudo apt-get update
-sudo apt-get upgrade
-sudo vim /etc/apt/sources.list # replace 'jessie' with 'stretch' in there
-sudo apt-get update
-sudo apt-get install gcc-6 g++-6 # this will also pull in boost-1.61
-sudo vim /etc/apt/sources.list # revert back to 'jessie' from 'stretch' in there
-sudo apt-get update
+# This installs into /usr/share/jevois-opencv-3.3.0
+# The sample programs are in /usr/share/jevois-opencv-3.3.0/share/OpenCV/samples/
 
 ####################################################################################################
 Compiling JeVois library and base apps
