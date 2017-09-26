@@ -62,7 +62,6 @@ JeVois 1.5 brings the following new features:
   + ramspeed-2.6.0
   + readline-7.0
   + sed-4.4
-  + skeleton
   + sqlite-3190300
   + strace-4.18
   + stress-1.0.4

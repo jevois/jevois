@@ -303,19 +303,17 @@ if (!$ispython)
         $subcomps{$tmp[1]} = 1;
 
         # Add any subs of that sub:
-        my $subfilename = `find ../../../src/Components/ -name $tmp[1].C`;
+        my $subfilename = `find $ENV{'JEVOIS_SRC_ROOT'}/jevoisbase/src/Components/ -name $tmp[1].C`;
         my @subsclist = `/bin/grep addSubComponent $subfilename`;
         push(@sclist, @subsclist);
     }
 
     # eliminate duplicates:
     foreach my $comp (keys %subcomps) {
-        my $filename = `find ../../../include/jevoisbase/Components/ -name ${comp}.H`;
+        my $filename = `find $ENV{'JEVOIS_SRC_ROOT'}/jevoisbase/include/jevoisbase/Components/ -name ${comp}.H`;
         chomp $filename;
         print STEDRR  "INCLUDING $filename\n";
         getParams($filename, $comp);
-        
-        # FIXME this is not recursive yet
     }
 }
 

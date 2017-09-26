@@ -551,7 +551,7 @@ void jevois::Engine::streamOff()
   itsGadget->abortStream();
   itsCamera->abortStream();
 
-  // Stop the main loop, which will flit itsStreaming to false and will make it easier for us to lock itsMtx:
+  // Stop the main loop, which will flip itsStreaming to false and will make it easier for us to lock itsMtx:
   LDEBUG("Stopping main loop...");
   itsStopMainLoop.store(true);
   while (itsStopMainLoop.load() && itsRunning.load()) std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -1486,6 +1486,11 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
     if (cmd == "quit")
     {
       s->writeString("Quit command received - bye-bye!");
+      itsGadget->abortStream();
+      itsCamera->abortStream();
+      itsStreaming.store(false);
+      itsGadget->streamOff();
+      itsCamera->streamOff();
       itsRunning.store(false);
       return true;
     }
