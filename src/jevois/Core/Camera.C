@@ -375,7 +375,9 @@ void jevois::Camera::streamOff()
 
   // User may have called done() but our run() thread has not yet gotten to requeueing this image, if so requeue it here
   // as it seems to keep the driver happier:
-  for (size_t idx : itsDoneIdx) try { itsBuffers->qbuf(idx); } catch (...) { jevois::warnAndIgnoreException(); }
+  if (itsBuffers)
+    for (size_t idx : itsDoneIdx) try { itsBuffers->qbuf(idx); } catch (...) { jevois::warnAndIgnoreException(); }
+  itsDoneIdx.clear();
   
   // Stop streaming at the device level:
   int type = V4L2_BUF_TYPE_VIDEO_CAPTURE;

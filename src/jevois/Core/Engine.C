@@ -551,7 +551,7 @@ void jevois::Engine::streamOff()
   itsGadget->abortStream();
   itsCamera->abortStream();
 
-  // Stop the main loop, which will flit itsStreaming to false and will make it easier for us to lock itsMtx:
+  // Stop the main loop, which will flip itsStreaming to false and will make it easier for us to lock itsMtx:
   LDEBUG("Stopping main loop...");
   itsStopMainLoop.store(true);
   while (itsStopMainLoop.load() && itsRunning.load()) std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -1141,12 +1141,14 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
     size_t const idx = str.find(' '); std::string cmd, rem;
     if (idx == str.npos) cmd = str; else { cmd = str.substr(0, idx); if (idx < str.length()) rem = str.substr(idx+1); }
     
+    // ----------------------------------------------------------------------------------------------------
     if (cmd == "help")
     {
       // Show all commands, first ours, as supported below:
       s->writeString("GENERAL COMMANDS:");
       s->writeString("");
       s->writeString("help - print this help message");
+      s->writeString("help2 - print compact help message about current vision module only");
       s->writeString("info - show system information including CPU speed, load and temperature");
       s->writeString("setpar <name> <value> - set a parameter value");
       s->writeString("getpar <name> - get a parameter value(s)");
@@ -1226,6 +1228,52 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
       return true;
     }
 
+    // ----------------------------------------------------------------------------------------------------
+    if (cmd == "help2")
+    {
+      if (itsModule)
+      {
+        // Start with the module's commands:
+        std::stringstream css; itsModule->supportedCommands(css);
+        s->writeString("MODULE-SPECIFIC COMMANDS:");
+        s->writeString("");
+        for (std::string line; std::getline(css, line); /* */) s->writeString(line);
+        s->writeString("");
+
+        // Now the parameters for that module (and its subs) only:
+        s->writeString("MODULE PARAMETERS:");
+        s->writeString("");
+        
+        // Keep this in sync with Manager::constructHelpMessage():
+        std::unordered_map<std::string, // category:description
+                           std::unordered_map<std::string, // --name (type) default=[def]
+                                              std::vector<std::pair<std::string, // component name
+                                                                    std::string  // current param value
+                                                                    > > > > helplist;
+        itsModule->populateHelpMessage("", helplist);
+        
+        if (helplist.empty())
+          s->writeString("None.");
+        else
+        {
+          for (auto & c : helplist)
+          {
+            // Print out the category name and description
+            s->writeString(c.first);
+            
+            // Print out the parameter details
+            for (auto const & n : c.second) s->writeString(n.first);
+
+            s->writeString("");
+          }
+        }
+      }
+      else
+        s->writeString("No module loaded.");
+      
+      return true;
+    }
+    
     // ----------------------------------------------------------------------------------------------------
     if (cmd == "info")
     {
@@ -1486,6 +1534,11 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
     if (cmd == "quit")
     {
       s->writeString("Quit command received - bye-bye!");
+      itsGadget->abortStream();
+      itsCamera->abortStream();
+      itsStreaming.store(false);
+      itsGadget->streamOff();
+      itsCamera->streamOff();
       itsRunning.store(false);
       return true;
     }

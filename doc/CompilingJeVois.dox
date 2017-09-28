@@ -129,7 +129,7 @@ include (see CMakeLists.txt in jevois/ for the latest):
 - \b -DJEVOIS_LOG_TO_FILE=ON Enable sending all log messages to file jevois.log instead of console. Only works with
   async logging.
 
-- \b -DHOST_IS_RPI3=ON When compiling for host, assume a Raspberry Pi 3 instead of default Intel.
+- \b -DHOST_IS_ARM=ON When compiling for host, assume an ARM processor instead of default Intel.
 
 */
 

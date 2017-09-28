@@ -1,4 +1,5 @@
 doc/html
 doc/jevois.tag
 pkgconfig/jevois.pc
+doc/snip/*
 *~

@@ -15,7 +15,6 @@
 ######################################################################################################################
 
 # CMAKE BUILD RULES FOR JEVOIS CORE LIBRARY AND EXECUTABLES
-
 CMAKE_MINIMUM_REQUIRED(VERSION 3.1)
 
 ########################################################################################################################
@@ -25,20 +24,27 @@ set(JEVOIS_VENDOR "JeVois")
 ########################################################################################################################
 # Project version:
 set(JEVOIS_VERSION_MAJOR  1)
-set(JEVOIS_VERSION_MINOR  4)
+set(JEVOIS_VERSION_MINOR  5)
 set(JEVOIS_VERSION_PATCH  0)
 set(JEVOIS_SOVERSION "${JEVOIS_VERSION_MAJOR}.${JEVOIS_VERSION_MINOR}.${JEVOIS_VERSION_PATCH}" )
 
 ########################################################################################################################
 # Python version to use for python modules:
-set(JEVOIS_PYTHON_MAJOR 3)
-set(JEVOIS_PYTHON_MINOR 5)
-set(JEVOIS_PYTHON_M "m")
+
+# FIXME: temporarily (until ubuntu 17.10 is out maybe?) we use python 3.5 on host (max supported by boost 1.62 on Ubuntu
+# 17.04) but python 3.6 on platform (supported by boost 1.64 on platform):
+set(JEVOIS_HOST_PYTHON_MAJOR 3)
+set(JEVOIS_HOST_PYTHON_MINOR 5)
+set(JEVOIS_HOST_PYTHON_M "m")
+
+set(JEVOIS_PLATFORM_PYTHON_MAJOR 3)
+set(JEVOIS_PLATFORM_PYTHON_MINOR 6)
+set(JEVOIS_PLATFORM_PYTHON_M "m")
 
 ########################################################################################################################
 # OpenCV version to use with JeVois:
 set(JEVOIS_OPENCV_MAJOR 3)
-set(JEVOIS_OPENCV_MINOR 2)
+set(JEVOIS_OPENCV_MINOR 3)
 set(JEVOIS_OPENCV_PATCH 0)
 set(JEVOIS_OPENCV_VERSION "${JEVOIS_OPENCV_MAJOR}.${JEVOIS_OPENCV_MINOR}.${JEVOIS_OPENCV_PATCH}")
 
@@ -78,8 +84,15 @@ option(JEVOIS_LOG_TO_FILE "Enable sending all log messages to file jevois.log in
 with async logging." OFF)
 message(STATUS "JEVOIS_LOG_TO_FILE: ${JEVOIS_LOG_TO_FILE}")
 
-option(HOST_IS_RPI3 "When compiling for host, assume a Raspberry Pi 3 instead of default Intel" OFF)
-message(STATUS "HOST_IS_RPI3: ${HOST_IS_RPI3}")
+########################################################################################################################
+# Detect whether host processor is ARM, so we can set some compiler flags (use NEON instead of SSE, etc):
+if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm")
+  set(HOST_IS_ARM ON)
+else (${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm")
+  set(HOST_IS_ARM OFF)
+endif (${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm")
+  
+message(STATUS "HOST_IS_ARM: ${HOST_IS_ARM}")
 
 ########################################################################################################################
 # Check for JEVOIS_ROOT environment variable:
@@ -99,13 +112,13 @@ set(JEVOIS_PLATFORM_INSTALL_PREFIX "/var/lib/jevois-build/usr")
 
 ########################################################################################################################
 # Architecture flags to optimize compilation:
-if (HOST_IS_RPI3)
+if (HOST_IS_ARM)
   # Should optimize for A53 on RPI3, but fails to compile TBB. /proc/cpuinfo on RPI3 reports ARMv7 and vfpv4 anyway
   #set(JEVOIS_HOST_ARCH_FLAGS "-mcpu=cortex-a53 -mfpu=neon-fp-armv8 -mfloat-abi=hard -ftree-vectorize -Ofast")
   set(JEVOIS_HOST_ARCH_FLAGS "-mcpu=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard -ftree-vectorize -Ofast")
-else (HOST_IS_RPI3)
+else (HOST_IS_ARM)
   set(JEVOIS_HOST_ARCH_FLAGS "-msse4 -Ofast")
-endif (HOST_IS_RPI3)
+endif (HOST_IS_ARM)
 
 set(JEVOIS_PLATFORM_ARCH_FLAGS "-mcpu=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard -ftree-vectorize -Ofast -funsafe-math-optimizations -mfp16-format=ieee")
 
@@ -121,7 +134,7 @@ set(JEVOIS_PLATFORM_CXX_COMPILER "${CROSS_COMPILE}g++")
 # Config for opencv libs.  note: videoio is for video capture, movies, etc and we may want to not use it on platform if
 # we define it out in VideoInput.  In opencv3.1, imread() is in libopencv_imgcodecs.  On the host, we also link against
 # opencv highgui to enable display windows.
-# Note: On host, get opencv from jevois-opencv package, in /usr/share/jevois-opencv-3.2.0, on platform it is in /usr
+# Note: On host, get opencv from jevois-opencv package, in /usr/share/jevois-opencv-3.3.0, on platform it is in /usr
 set(OPENCV_LIBS_FOR_JEVOIS "-lopencv_core -lopencv_imgproc -lopencv_features2d -lopencv_flann -lopencv_ml \
 -lopencv_objdetect -lopencv_imgcodecs -lopencv_tracking -lopencv_video -lopencv_videoio")
 
@@ -133,18 +146,19 @@ set(JEVOIS_HOST_OPENCV_LIBS "-L${JEVOIS_HOST_OPENCV_PREFIX}/lib ${OPENCV_LIBS_FO
 
 # Use TBB and kernel includes for platform from the buildroot installation.  On the host, we may have local packages,
 # eg, latest opencv compiled from source:
-set(JEVOIS_KERNEL_INCLUDE "-I${JEVOIS_BUILDROOT_BASE}/build/linux-headers-3.4.110/usr/include")
-set(JEVOIS_TBB_INCLUDE "-I${JEVOIS_BUILDROOT_BASE}/build/opencv3-3.2.0/3rdparty/tbb/tbb44_20160128oss/include")
+set(JEVOIS_KERNEL_INCLUDE "-I${JEVOIS_BUILDROOT_BASE}/build/linux-headers-3.4.113/usr/include")
+set(JEVOIS_TBB_INCLUDE "-I${JEVOIS_BUILDROOT_BASE}/build/opencv3-3.3.0/buildroot-build/3rdparty/tbb/tbb-4.4.3/include")
 
 # Find python 3.x on host and platform:
 # NOTE: it is too early here to try to use standard find_package() of CMake. In any case, that will not find the
 # platform version which has to be done by hand here.
 set(JEVOIS_PLATFORM_PYTHON_INCLUDE
-  "-I${JEVOIS_BUILDROOT_BASE}/host/usr/arm-buildroot-linux-gnueabihf/sysroot/usr/include/python${JEVOIS_PYTHON_MAJOR}.${JEVOIS_PYTHON_MINOR}${JEVOIS_PYTHON_M} -I${JEVOIS_BUILDROOT_BASE}/target/usr/lib/python${JEVOIS_PYTHON_MAJOR}.${JEVOIS_PYTHON_MINOR}/site-packages/numpy/core/include/")
-set(JEVOIS_PLATFORM_PYTHON_LIBS "-lpython${JEVOIS_PYTHON_MAJOR}.${JEVOIS_PYTHON_MINOR}${JEVOIS_PYTHON_M} -lboost_python${JEVOIS_PYTHON_MAJOR}")
+  "-I${JEVOIS_BUILDROOT_BASE}/host/usr/arm-buildroot-linux-gnueabihf/sysroot/usr/include/python${JEVOIS_PLATFORM_PYTHON_MAJOR}.${JEVOIS_PLATFORM_PYTHON_MINOR}${JEVOIS_PLATFORM_PYTHON_M} -I${JEVOIS_BUILDROOT_BASE}/target/usr/lib/python${JEVOIS_PLATFORM_PYTHON_MAJOR}.${JEVOIS_PLATFORM_PYTHON_MINOR}/site-packages/numpy/core/include/")
+set(JEVOIS_PLATFORM_PYTHON_LIBS "-lpython${JEVOIS_PLATFORM_PYTHON_MAJOR}.${JEVOIS_PLATFORM_PYTHON_MINOR}${JEVOIS_PLATFORM_PYTHON_M} -lboost_python${JEVOIS_PLATFORM_PYTHON_MAJOR}")
+
 set(JEVOIS_HOST_PYTHON_INCLUDE
-  "-I/usr/include/python${JEVOIS_PYTHON_MAJOR}.${JEVOIS_PYTHON_MINOR}${JEVOIS_PYTHON_M}")
-set(JEVOIS_HOST_PYTHON_LIBS "-lpython${JEVOIS_PYTHON_MAJOR}.${JEVOIS_PYTHON_MINOR}${JEVOIS_PYTHON_M} -lboost_python-py${JEVOIS_PYTHON_MAJOR}${JEVOIS_PYTHON_MINOR}")
+  "-I/usr/include/python${JEVOIS_HOST_PYTHON_MAJOR}.${JEVOIS_HOST_PYTHON_MINOR}${JEVOIS_HOST_PYTHON_M}")
+set(JEVOIS_HOST_PYTHON_LIBS "-lpython${JEVOIS_HOST_PYTHON_MAJOR}.${JEVOIS_HOST_PYTHON_MINOR}${JEVOIS_HOST_PYTHON_M} -lboost_python-py${JEVOIS_HOST_PYTHON_MAJOR}${JEVOIS_HOST_PYTHON_MINOR}")
   
 ########################################################################################################################
 # Include path:
@@ -162,7 +176,7 @@ file(TO_NATIVE_PATH "/var/lib/jevois-microsd" JEVOIS_PLATFORM_MODULES_ROOT)
 set(JEVOIS_HOST_CFLAGS "${JEVOIS_HOST_ARCH_FLAGS} -W -Wall -Wextra -g -O4 -I${JEVOIS_SRC_ROOT}/jevois/include \
 ${JEVOIS_HOST_INCLUDE} -fPIC -Wno-deprecated-declarations")
 set(JEVOIS_PLATFORM_CFLAGS "${JEVOIS_PLATFORM_ARCH_FLAGS} -W -Wall -Wextra -g -O4 -I${JEVOIS_SRC_ROOT}/jevois/include \
-${JEVOIS_PLATFORM_INCLUDE} -fPIC -Wno-deprecated-declarations")
+${JEVOIS_PLATFORM_INCLUDE} -fPIC -Wno-deprecated-declarations -Wno-psabi")
 
 ########################################################################################################################
 # Include our helper functions, this will allow selection of host or platform and set variables accordingly:
@@ -304,8 +318,8 @@ set(CPACK_PACKAGE_VERSION_PATCH "${JEVOIS_VERSION_PATCH}")
 set(JEVOIS_PACKAGE_RELEASE "1") # packager revision number
 
 set(CPACK_DEBIAN_PACKAGE_DEPENDS "build-essential, cmake (>= 3.1), gcc (>= 5.2), g++ (>=5.2), gfortran (>= 5.2), \
-guvcview, subversion, cmake, git, mercurial, doxygen-gui, graphviz, libboost-all-dev, libjpeg-turbo8-dev, autoconf, \
-libeigen3-dev, screen, libgtk2.0-dev, libdc1394-22, libdc1394-22-dev, libjpeg-dev, libpng-dev, libtiff5-dev, \
+guvcview, subversion, cmake, git, mercurial, doxygen-gui, graphviz, libboost-all-dev, libjpeg-turbo8-dev, \
+autoconf, libeigen3-dev, screen, libgtk2.0-dev, libdc1394-22, libdc1394-22-dev, libjpeg-dev, libpng-dev, libtiff5-dev, \
 libavcodec-dev, libavformat-dev, libswscale-dev, libxine2-dev, libgstreamer1.0-dev, libgstreamer-plugins-base1.0-dev, \
 libv4l-dev, libtbb2, libtbb-dev, libqt4-dev, libfaac-dev, libmp3lame-dev, libopencore-amrnb-dev, \
 libopencore-amrwb-dev, libtheora-dev, libvorbis-dev, libxvidcore-dev, x264, v4l-utils, unzip, qt5-default, \

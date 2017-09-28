@@ -1,0 +1,110 @@
+/*! \page Change15log Changes and new features in JeVois 1.5
+
+JeVois 1.5 brings the following new features:
+
+- Updated to OpenCV 3.3.0 including OpenCV-Contrib packages and python 3.6 support
+
+- Merged with buildroot 2017.08 which updates the JeVois operating system to:
+  + gcc/g++-7.2.0
+  + boost-1.64.0
+  + python-3.6.1
+  + python-numpy-1.8.0
+  + eigen-3.3.3
+
+  + tbb-4.4
+  + attr-2.4.47
+  + binutils-2.29
+  + busybox-1.27.1
+  + bzip2-1.0.6
+  + clapack-3.2.1
+  + dhrystone-2
+  + diffutils-3.6
+  + dos2unix-7.3.4
+  + expat-2.2.2
+  + ffmpeg-3.3.3
+  + fftw-3.3.6-pl2
+  + findutils-4.6.0
+  + flann-1.9.1
+  + gawk-4.1.4
+  + gdb-7.11.1
+  + glibc-2.25
+  + gmp-6.1.2
+  + grep-3.1
+  + gsl-2.3
+  + gst1-plugins-base-1.12.2
+  + gstreamer1-1.12.2
+  + jasper-version-2.0.13
+  + jpeg-turbo-1.5.2
+  + keyutils-1.5.10
+  + lapack-3.7.1
+  + leptonica-1.74.4
+  + libcurl-7.55.0
+  + libffi-3.2.1
+  + libglib2-2.52.2
+  + liblinear-2.1
+  + libpng-1.6.31
+  + libpthread-stubs-0.4
+  + libump-ec0680628744f30b8fac35e41a7bd8e23e59c39f
+  + libv4l-1.12.5
+  + libyaml-0.1.6
+  + libyuv-1ebf86795cb213a37f06eb1ef3713cff080568ea
+  + linux-headers-3.4.113
+  + memstat-1.0
+  + memtester-4.3.0
+  + mpdecimal-2.4.1
+  + ncurses-6.0
+  + openblas-f04af36ad0e85b64f12a7c38095383192cc52345
+  + oprofile-1.1.0
+  + pcre-8.41
+  + popt-1.16
+  + protobuf-3.3.0
+  + ramsmp-3.5.0
+  + ramspeed-2.6.0
+  + readline-7.0
+  + sed-4.4
+  + sqlite-3190300
+  + strace-4.18
+  + stress-1.0.4
+  + stress-ng-0.06.15
+  + sunxi-cedarx-b8f52d913f73720e50d8f1b2f8610467b575dc45
+  + sunxi-mali-d343311efc8db166d8371b28494f0f27b6a5872
+  + tesseract-ocr-3.05.00
+  + tiff-4.0.8
+  + util-linux-2.30.1
+  + valgrind-3.12.0
+  + whetstone-1.2
+  + xutil_util-macros-1.19.1
+  + xz-5.2.3
+  + zbar-854a5d97059e395807091ac4d80c53f7968abb8f
+  + zlib-1.2.11
+
+- NOTE: the platform (based on buildroot) is now a bit ahead of the host (assuming Ubuntu 17.04). Some of the
+  differences will likely disappear with future Ubuntu releases, but in the meantime be aware that:
+  
+  Software      | Platform   |  Ubuntu 17.04
+  --------------|------------|---------------------------------
+  gcc / g++     | 7.2        | 6.3
+  python        | 3.6        | 3.5
+  boost         | 1.64       | 1.62
+
+  For most, this should make no difference. Because g++ 7.2 is a bit more strict than 6.3, you may get a few additional
+  warnings when compiling your code for platform compared to host. You should fix them anyway as the host setup will
+  move to g++7 soon.
+  
+- Updated tiny-dnn to latest version from GitHub (there has not been any release lately). This changes the API a bit,
+  see updated ObjectRecognition components in jevoisbase.
+
+- Small improvements on jevois-flash-card to avoid mistakenly erasing large hard disks.
+
+- This releases changes the platform operating system (buildroot). You need to get the new JeVois Debian packages from
+  https://jevois.usc.edu
+
+- Recommended upgrade workflow: see http://jevois.org/tutorials/ProgrammerSetup.html under Upgrading.
+
+- Added new `help2` command-line interface command to show a more compact help message about the current vision module
+  only.
+
+- Added profiling to darknet, which will allow one to easily find out which deep neural network layers take a lot of
+  time to compute.
+
+*/
