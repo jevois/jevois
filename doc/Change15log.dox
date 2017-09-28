@@ -94,11 +94,17 @@ JeVois 1.5 brings the following new features:
 - Updated tiny-dnn to latest version from GitHub (there has not been any release lately). This changes the API a bit,
   see updated ObjectRecognition components in jevoisbase.
 
-- Small improvements on jevois-flash-card
+- Small improvements on jevois-flash-card to avoid mistakenly erasing large hard disks.
 
 - This releases changes the platform operating system (buildroot). You need to get the new JeVois Debian packages from
   https://jevois.usc.edu
 
 - Recommended upgrade workflow: see http://jevois.org/tutorials/ProgrammerSetup.html under Upgrading.
+
+- Added new `help2` command-line interface command to show a more compact help message about the current vision module
+  only.
+
+- Added profiling to darknet, which will allow one to easily find out which deep neural network layers take a lot of
+  time to compute.
 
 */
