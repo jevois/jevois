@@ -492,7 +492,7 @@ my @videos = glob("video*.*");
 my @youtube; my $yout = $tagdata{'youtubevideo'}; if ($yout ne "") { @youtube = split(/\|/, $yout); }
 
 if ($#youtube == -1 && $#screenshots == -1 && $#videos == -1) {
-    print OF "<td>This module has no screenshots and no videos</td>\n";
+    print OF "<font color=black>This module has no screenshots and no videos</font>\n";
 } else {
     foreach my $yo (@youtube) { print OF "<div class=galleryItem><a href=\"http://youtube.com/watch?v=$yo\"><div class=videothumb><img src=\"http://img.youtube.com/vi/$yo/0.jpg\"></div></a></div>\n"; }
     foreach my $sc (@screenshots) { print OF "<div class=galleryItem><a href=\"$sc\"><img src=\"$sc\"></a></div>\n"; }

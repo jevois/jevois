@@ -205,10 +205,9 @@ th.modulecommand {
     color: #797478;
     font: 10px/1.5 Verdana, Helvetica, sans-serif;
     width: 16%;
-    margin: 2% 2% 50px 2%;
+    margin: 2% 2% 20px 2%;
     float: left;
     -webkit-transition: color 0.5s ease;
-    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
 }
 
 .galleryItem h3 {
@@ -225,6 +224,7 @@ th.modulecommand {
     -webkit-border-radius: 5px;
     -moz-border-radius: 5px;
     border-radius: 5px;
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
 }
 
 /* responsive gallery: MEDIA QUERIES*/
