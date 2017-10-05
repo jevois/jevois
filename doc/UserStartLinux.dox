@@ -80,6 +80,42 @@ unplug the camera.
 </ul>
 
 // ##############################################################################################################
+\section obslinux Getting started with Linux - Open Broadcaster Studio
+
+Open Broadcaster Studio is another great free program that allows you to select different video resolutions, as needed
+by JeVois.
+
+- Check out OBS Studio from https://obsproject.com
+
+- Under Ubuntu 16.04 and later, install as follows:
+  \verbatim
+  sudo apt install obs-studio
+  \endverbatim
+
+- Connect JeVois to your computer and allow it to start up.
+
+- Open OBS Studio (just type `obs` in a terminal or find in in the Ubuntu menu), towards the bottom left of the screen,
+  click the `+` icon under \b Sources to add a new <b>video capture device (V4L2)</b>.
+  \image html lobs1.png
+
+- Create a new source
+  \image html lobs2.png
+
+- Select the Jevois-A33 Smart camera as its device if you have more than one camera, and you will see live video from
+  JeVois.
+  \image html lobs3.png
+
+- When you double-click on that source, a dialog comes up. In there, you can select:
+  + Device: JeVois-A33 Smart Camera
+  + Resolution: pick any that you want to try out
+  + Frame rate: either pick <b>Leave Unchanged</b> or pick one of your choice.
+  \image html lobs4.png
+
+- Enjoy! You can drag and resize the video preview for best viewing experience.
+  \image html lobs5.png
+
+
+// ##############################################################################################################
 \section troubleshootlinux Troubleshooting
 
 If things are not working right, try to type \c dmesg in a Linux terminal and observe towards the end of what is

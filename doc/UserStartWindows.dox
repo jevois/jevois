@@ -68,6 +68,35 @@ unplug the camera.
 </ul>
 
 // ##############################################################################################################
+\section obswindows Using Open Broadcaster Studio for Windows
+
+Open Broadcaster Studio is a great free program that allows you to select different video resolutions, as needed by
+JeVois.
+
+- Download OBS Studio from https://obsproject.com
+
+- Install it, during installation, just say that you will not be streaming video.
+
+- Connect JeVois to your computer and allow it to start up.
+
+- Open OBS Studio, towards the bottom left of the screen, click the `+` icon under \b Sources to add a new <b>video
+  capture device</b>.
+  \image html wobs1.png
+
+- Create a new source
+  \image html wobs2.png
+
+- When you double-click on that source, a dialog comes up. In there, select:
+  + Device: Video Control (this is the name Windows assigns to JeVois; it may differ on different Windows versions,
+    just pick the device that you know is not your built-in webcam if you have one).
+  + Resolution/FPS type: custom
+  + Resolution: pick any that you want to try out
+  + FPS: Highest FPS
+  \image html wobs4.png
+
+- Enjoy! You can drag and resize the video preview for best viewing experience.
+  
+// ##############################################################################################################
 \section enablegreywindows Enabling greyscale capture
 
 In addition to being able to output color streaming video, JeVois can, when some machine vision algorithms are enabled,

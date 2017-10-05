@@ -37,7 +37,7 @@ Launch PhotoBooth from your Applications folder. You should see this:
 
 \image html photobooth1.png
 
-Photobooth does not give you access to contrast, exposure, etc controls. But you can get thrid-party apps from the App
+Photobooth does not give you access to contrast, exposure, etc controls. But you can get third-party apps from the App
 Store to do that. Here is for example using Webcam Settings after getting it from the App Store (free):
 
 \image html mac-webcam-settings.png
@@ -46,6 +46,40 @@ You can also try VLC, Skype, Facetime, etc. The built-in Photobooth app is very 
 if the camera exposes BAYER or RGB565 video modes, too many modes, etc. It also does not allow you to select video
 resolution. To use the JeVois camera on a mac it is recommended that you configure it with only one available video
 resolution (one entry in your \c videomappings.cfg file). See UserModes for more info.
+
+// ##############################################################################################################
+\section obsmac  Getting started with Mac - Open Broadcaster Studio
+
+Open Broadcaster Studio is a great free program that allows you to select different video resolutions, as needed by
+JeVois.
+
+- Download OBS Studio from https://obsproject.com
+
+- Install it, during installation, just say that you will not be streaming video.
+
+- Connect JeVois to your computer and allow it to start up.
+
+- Open OBS Studio, towards the bottom left of the screen, click the `+` icon under \b Sources to add a new <b>video
+  capture device</b>.
+  \image html mobs1.png
+
+- Create a new source
+  \image html mobs2.png
+
+- Select the Jevois-A33 Smart camera as its device, uncheck <b>Use Preset</b> to enable all JeVois resolutions, pick a
+  resolution that you want to try out, select <b>Simple FPS Values</b>, and pick one of the available FPS values.
+
+- When you double-click on that source, a dialog comes up. In there, you can select:
+  + Device: JeVois-A33 Smart Camera
+  + Make sure you keep <b>Use preset</b> unchecked
+  + Resolution: pick any that you want to try out
+  + FPS: when you change resolution, sometimes you will be offered some <b>Rational FPS values</b>, but it is simpler to
+    just switch back to <b>Simple FPS values</b> and pick one that JeVois is offering.
+  \image html mobs4.png
+
+- Enjoy! You can drag and resize the video preview for best viewing experience.
+  \image html mobs5.png
+
 
 // ####################################################################################################
 \section userstartmaccamtwist Getting started with Mac - CamTwist Studio
@@ -104,14 +138,10 @@ unplug the camera.
 
 
 // ####################################################################################################
-\section userstartmacother Getting started with Mac - other video software
+\section userstartmacother Getting started with Mac - ffplay
 
-Selection of different machine vision algorithms is achieved by selecting different video resolutions in your video
-capture software. However, on Mac OSX, we have not yet found many apps that would allow a user to select a particular
-video resolution and framerate. For example, the buit-in PhotoBooth app does not provide any control over the camera. An
-exception is to use ffplay for OSX: Download the pre-compiled ffplay binary from the ffmpeg web site at
-https://ffmpeg.org/download.html#build-mac (it is free), and then open a Terminal (in Applications, under Utilities) and
-run:
+Download the pre-compiled ffplay binary from the ffmpeg web site at https://ffmpeg.org/download.html#build-mac (it is
+free), and then open a Terminal (in Applications, under Utilities) and run:
 
 \verbatim
 ~/bin/ffplay -f avfoundation -i "JeVois" -video_size 640x300 -framerate 60 -pixel_format yuyv422

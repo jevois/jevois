@@ -100,7 +100,7 @@ print DOXYFILE 'ALIASES += jvplatform="@htmlonly<strong class=\'jvhostplatform\'
 
 # We here create some custom doxygen tags to allow code writers to input more manifest data in their doc:
 my @dtags = qw/ email mainurl supporturl otherurl address copyright license distribution 
- restrictions videomapping subcomponents depends displayname modulecommand /;
+ restrictions videomapping subcomponents depends displayname modulecommand youtubevideo /;
 #future use?: / recommends suggests conflicts replaces breaks provides /;
 foreach my $kw (@dtags) { print DOXYFILE "ALIASES += \"$kw=\\xrefitem $kw \\\"$kw\\\" \\\"$kw\\\"\"\n"; }
 close DOXYFILE;
@@ -173,6 +173,7 @@ for my $page (@pages)
                 }
             }
             if ($tag eq 'modulecommand') { $tagdata{$tag} = join("|", @data); }
+            if ($tag eq 'youtubevideo') { $tagdata{$tag} = join("|", @data); }
             else { $tagdata{$tag} = join(", ", @data); }
         }
     }
@@ -420,6 +421,9 @@ if ($fullhtml)
     print OF "<META NAME=\"description\" CONTENT=\"JeVois Smart Embedded Machine Vision Toolkit - module $className\">\n";
 
     print OF "<link href='http://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800' rel='stylesheet' type='text/css'>\n";
+
+    print OF "<link rel='stylesheet prefetch' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.4.0/css/font-awesome.min.css'>\n"; # for the youtube button
+        
 #    print OF "<link rel=\"stylesheet\" href=\"/start/assets/plugins/bootstrap/css/bootstrap.min.css\">\n";
 #    print OF "<link rel=\"stylesheet\" href=\"/start/assets/plugins/font-awesome/css/font-awesome.css\">\n";
 #    print OF "<link rel=\"stylesheet\" href=\"/start/assets/plugins/prism/prism.css\">\n";
@@ -481,21 +485,24 @@ foreach $v (@vmap) {
 }
 print OF "</table></td></tr>\n";
 
+# screenshots, local videos, and youtube videos:
+print OF "<tr><td><div class=container>\n";
+my @screenshots = glob("screenshot*.*");
+my @videos = glob("video*.*");
+my @youtube; my $yout = $tagdata{'youtubevideo'}; if ($yout ne "") { @youtube = split(/\|/, $yout); }
+
+if ($#youtube == -1 && $#screenshots == -1 && $#videos == -1) {
+    print OF "<td>This module has no screenshots and no videos</td>\n";
+} else {
+    foreach my $yo (@youtube) { print OF "<div class=galleryItem><a href=\"http://youtube.com/watch?v=$yo\"><div class=videothumb><img src=\"http://img.youtube.com/vi/$yo/0.jpg\"></div></a></div>\n"; }
+    foreach my $sc (@screenshots) { print OF "<div class=galleryItem><a href=\"$sc\"><img src=\"$sc\"></a></div>\n"; }
+    foreach my $vd (@videos) { print OF "<div class=galleryItem><a href=\"$vd\">VIDEO</a></div>\n"; }
+}
+print OF "</div></td></tr>";
+
 # description:
 # note: doxygen opens a div but does not close it?
 print OF "<tr><td class=modinfodesc><h2>Module Documentation</h2>$htmldescription</div></td></tr>\n";
-
-# screenshots and videos:
-print OF "<tr><td><table class=modinfoshots><tr>\n";
-my @screenshots = glob("screenshot*.*");
-my @videos = glob("video*.*");
-if ($#screenshots == -1 && $#videos == -1) {
-    print OF "<td>This module has no screenshots and no videos</td>\n";
-} else {
-    foreach my $sc (@screenshots) { print OF "<td><a href=\"$sc\"><img src=\"$sc\" width=128></a></td>\n"; }
-    foreach my $vd (@videos) { print OF "<td><a href=\"$vd\">VIDEO</a></td>\n"; }
-}
-print OF "</tr></table></td></tr>";
 
 # Custom commands:
 my $cm = $tagdata{'modulecommand'};

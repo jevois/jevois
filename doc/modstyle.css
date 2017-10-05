@@ -46,12 +46,14 @@ table.modinfocfg {
 td.modinfocfg { color: black; background-color: #f0f0ff; line-height: 125%; padding: 10px; }
 
 table.modinfoshots {
+    table-layout: fixed;
     background-color: #f0f0ff;
-    padding: 30px;
+    padding: 20px;
     width: 100%;
 }
 
 td.modinfoshots {
+    text-align: center;
     padding: 30px;
 }
 
@@ -154,4 +156,100 @@ td.modulecommand {
 th.modulecommand {
     text-align: left;
     padding: 5px;
+}
+
+/* use this to show a picture with a play button on top of it:
+   <div class="videothumb">
+     <img src="http://blah.jpg" alt="Video thumbnail" />
+   </div>
+
+  from: https://codepen.io/martinkrulltott/pen/xwrXwR */
+.videothumb {
+    position: relative;
+    display: inline-block;
+    cursor: pointer;
+    margin: 30px;
+}
+.videothumb:before {
+    position:absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    -webkit-transform: translate(-50%, -50%);
+    content: "\f01d";
+    font-family: FontAwesome;
+    font-size: 50px;
+    color: #fff;
+    opacity: .8;
+    text-shadow: 0px 0px 30px rgba(0, 0, 0, 0.5);
+}
+.videothumb:hover:before {
+    color: #eee;
+}
+
+/* a responsive thumbnail gallery, from
+   https://designshack.net/articles/css/how-to-build-a-responsive-thumbnail-gallery/ */
+
+/* responsive gallery: CONTAINER STYLES*/
+.container {
+    background-color: #f0f0ff;
+    width: 100%;
+    margin: 20px auto;
+    overflow: hidden;
+    margin: 0;
+    float: left;
+}
+
+/* responsive gallery: GALLERY STYLES*/
+.galleryItem {
+    color: #797478;
+    font: 10px/1.5 Verdana, Helvetica, sans-serif;
+    width: 16%;
+    margin: 2% 2% 50px 2%;
+    float: left;
+    -webkit-transition: color 0.5s ease;
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+}
+
+.galleryItem h3 {
+    text-transform: uppercase;
+    line-height: 2;
+}
+
+.galleryItem:hover {
+    color: #000;
+}
+
+.galleryItem img {
+    max-width: 100%;
+    -webkit-border-radius: 5px;
+    -moz-border-radius: 5px;
+    border-radius: 5px;
+}
+
+/* responsive gallery: MEDIA QUERIES*/
+@media only screen and (max-width : 940px),
+only screen and (max-device-width : 940px){
+    .galleryItem {width: 21%;}
+}
+
+@media only screen and (max-width : 720px),
+only screen and (max-device-width : 720px){
+    .galleryItem {width: 29.33333%;}
+    .header h1 {font-size: 40px;}
+}
+
+@media only screen and (max-width : 530px),
+only screen and (max-device-width : 530px){
+    .galleryItem {width: 46%;}
+    .header h1 {font-size: 28px;}
+}
+
+@media only screen and (max-width : 320px),
+only screen and (max-device-width : 320px){
+    .galleryItem {width: 96%;}
+    .galleryItem img {width: 96%;}
+    .galleryItem h3 {font-size: 18px;}
+    .galleryItem p, .header p {font-size: 18px;}
+    .header h1 {font-size: 70px;}
 }

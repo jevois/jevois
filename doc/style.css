@@ -110,3 +110,34 @@ strong.jvmod {
     background-color: #f0f0f0;
     border-radius: 4px
 }
+
+
+/* use this to show a picture with a play button on top of it:
+   <div class="videothumb">
+     <img src="http://blah.jpg" alt="Video thumbnail" />
+   </div>
+
+  from: https://codepen.io/martinkrulltott/pen/xwrXwR */
+.videothumb {
+    position: relative;
+    display: inline-block;
+    cursor: pointer;
+    margin: 30px;
+}
+.videothumb:before {
+    position:absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    -webkit-transform: translate(-50%, -50%);
+    content: "\f01d";
+    font-family: FontAwesome;
+    font-size: 50px;
+    color: #fff;
+    opacity: .8;
+    text-shadow: 0px 0px 30px rgba(0, 0, 0, 0.5);
+}
+.videothumb:hover:before {
+    color: #eee;
+}
+
