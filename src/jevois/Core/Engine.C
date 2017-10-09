@@ -1262,8 +1262,11 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
             s->writeString(c.first);
             
             // Print out the parameter details
-            for (auto const & n : c.second) s->writeString(n.first);
-
+            for (auto const & n : c.second)
+            {
+              std::vector tok = jevois::split(n.first, "[\\r\\n]+");
+              for (auto const & t : tok) s->writeString(t);
+            }
             s->writeString("");
           }
         }
@@ -1409,10 +1412,9 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
       }
       else
       {
-        jevois::VideoMapping m;
         try
         {
-          std::istringstream full("NONE 0 0 0.0 " + rem); full >> m;
+          jevois::VideoMapping m; std::istringstream full("NONE 0 0 0.0 " + rem); full >> m;
           setFormatInternal(m);
           return true;
         }

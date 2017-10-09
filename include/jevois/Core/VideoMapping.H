@@ -103,6 +103,12 @@ namespace jevois
       /*! Note that two mappings will be declared to match if their fps values are within 0.01fps, to avoid mismatches
           due to floating point representation and rounding. */
       bool isSameAs(VideoMapping const & other) const;
+
+      //! Determine whether module is C++ or python and set ispython flag accordingly
+      /*! The other fields should have been initialized already. operator>> and loadVideoMappings use this function
+          insternally, so no need to call it after making a VideoMapping from sream. This function throws if neither a
+          .so nor .py file is found in the appropriate place given module vendor and name. */
+      void setModuleType();
   };
 
   //! Stream a VideoMapping out, intended for machines

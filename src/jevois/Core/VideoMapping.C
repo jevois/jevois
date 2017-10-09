@@ -127,6 +127,8 @@ std::istream & jevois::operator>>(std::istream & in, jevois::VideoMapping & m)
   m.ofmt = jevois::strfcc(of);
   m.cfmt = jevois::strfcc(cf);
 
+  m.setModuleType(); // set python vs C++, check that file is here, and throw otherwise
+  
   return in;
 }
 
@@ -172,23 +174,12 @@ std::vector<jevois::VideoMapping> jevois::videoMappingsFromStream(std::istream &
     m.vendor = tok[8];
     m.modulename = tok[9];
 
-    // First assume that it is a C++ compiled module and check for the .so file:
-    m.ispython = false;
-    if (checkso)
+    // Determine C++ vs python, silently skip this module if none of those and checkso was given:
+    try { m.setModuleType(); }
+    catch (...)
     {
-      std::string sopath = m.sopath();
-      std::ifstream testifs(sopath);
-      if (testifs.is_open() == false)
-      {
-        // Could not find the .so, maybe it is a python module:
-        m.ispython = true; sopath = m.sopath();
-        std::ifstream testifs2(sopath);
-        if (testifs2.is_open() == false)
-        {
-          PERROR("Could not open module " << sopath << "|.so -- SKIPPING");
-          continue;
-        }
-      }
+      if (checkso)
+      { PERROR("No .so|.py found for " << m.vendor << '/' << m.modulename << " -- SKIPPING."); continue; }
     }
     
     // Handle optional star for default mapping. We tolerate several and pick the first one:
@@ -315,3 +306,18 @@ bool jevois::VideoMapping::match(unsigned int oformat, unsigned int owidth, unsi
   return false;
 }
 
+// ####################################################################################################
+void jevois::VideoMapping::setModuleType()
+{
+  // First assume that it is a C++ compiled module and check for the .so file:
+  ispython = false;
+  std::string sopa = sopath();
+  std::ifstream testifs(sopa);
+  if (testifs.is_open() == false)
+  {
+    // Could not find the .so, maybe it is a python module:
+    ispython = true; sopa = sopath();
+    std::ifstream testifs2(sopa);
+    if (testifs2.is_open() == false) throw std::runtime_error("Could not open module file " + sopa + "|.so");
+  }
+}

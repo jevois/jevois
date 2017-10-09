@@ -173,7 +173,7 @@ for my $page (@pages)
                 }
             }
             if ($tag eq 'modulecommand') { $tagdata{$tag} = join("|", @data); }
-            if ($tag eq 'youtubevideo') { $tagdata{$tag} = join("|", @data); }
+            elsif ($tag eq 'youtubevideo') { $tagdata{$tag} = join("|", @data); }
             else { $tagdata{$tag} = join(", ", @data); }
         }
     }
