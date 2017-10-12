@@ -939,6 +939,15 @@ namespace
 } // anonymous namespace
 
 // ####################################################################################################
+void jevois::rawimage::convertCvBGRtoCvYUYV(cv::Mat const & src, cv::Mat & dst)
+{
+  if (src.type() != CV_8UC3) LFATAL("src must have type CV_8UC3 and BGR pixels");
+  dst = cv::Mat(src.rows, src.cols, CV_8UC2);
+
+  cv::parallel_for_(cv::Range(0, src.rows), bgrToYUYV(src, dst.data, dst.cols));
+}
+
+// ####################################################################################################
 void jevois::rawimage::pasteBGRtoYUYV(cv::Mat const & src, jevois::RawImage & dst, int x, int y)
 {
   if (src.type() != CV_8UC3) LFATAL("src must have type CV_8UC3 and BGR pixels");
@@ -1013,6 +1022,15 @@ namespace
 } // anonymous namespace
 
 // ####################################################################################################
+void jevois::rawimage::convertCvRGBtoCvYUYV(cv::Mat const & src, cv::Mat & dst)
+{
+  if (src.type() != CV_8UC3) LFATAL("src must have type CV_8UC3 and RGB pixels");
+  dst = cv::Mat(src.rows, src.cols, CV_8UC2);
+  
+  cv::parallel_for_(cv::Range(0, src.rows), rgbToYUYV(src, dst.data, dst.cols));
+}
+
+// ####################################################################################################
 void jevois::rawimage::pasteRGBtoYUYV(cv::Mat const & src, jevois::RawImage & dst, int x, int y)
 {
   if (src.type() != CV_8UC3) LFATAL("src must have type CV_8UC3 and RGB pixels");
@@ -1071,6 +1089,15 @@ namespace
     cv::parallel_for_(cv::Range(0, src.rows), grayToYUYV(src, dst.pixelsw<unsigned char>(), dst.width));
   }
 } // anonymous namespace
+
+// ####################################################################################################
+void jevois::rawimage::convertCvGRAYtoCvYUYV(cv::Mat const & src, cv::Mat & dst)
+{
+  if (src.type() != CV_8UC1) LFATAL("src must have type CV_8UC1 and GRAY pixels");
+  dst = cv::Mat(src.rows, src.cols, CV_8UC2);
+
+  cv::parallel_for_(cv::Range(0, src.rows), grayToYUYV(src, dst.data, dst.cols));
+}
 
 // ####################################################################################################
 namespace
@@ -1132,6 +1159,15 @@ namespace
     cv::parallel_for_(cv::Range(0, src.rows), rgbaToYUYV(src, dst.pixelsw<unsigned char>(), dst.width));
   }
 } // anonymous namespace
+
+// ####################################################################################################
+void jevois::rawimage::convertCvRGBAtoCvYUYV(cv::Mat const & src, cv::Mat & dst)
+{
+  if (src.type() != CV_8UC4) LFATAL("src must have type CV_8UC4 and RGBA pixels");
+  dst = cv::Mat(src.rows, src.cols, CV_8UC2);
+
+  cv::parallel_for_(cv::Range(0, src.rows), rgbaToYUYV(src, dst.data, dst.cols));
+}
 
 // ####################################################################################################
 void jevois::rawimage::convertCvBGRtoRawImage(cv::Mat const & src, RawImage & dst, int quality)

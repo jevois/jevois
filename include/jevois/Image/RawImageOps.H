@@ -243,6 +243,18 @@ namespace jevois
         instead with other pixel types. */
     void hFlipYUYV(RawImage & img);
 
+    //! OpenCV does not provide conversion from RGB to YUYV in cvtColor(), so this function provides it
+    void convertCvRGBtoCvYUYV(cv::Mat const & src, cv::Mat & dst);
+
+    //! OpenCV does not provide conversion from BGR to YUYV in cvtColor(), so this function provides it
+    void convertCvBGRtoCvYUYV(cv::Mat const & src, cv::Mat & dst);
+
+    //! OpenCV does not provide conversion from GRAY to YUYV in cvtColor(), so this function provides it
+    void convertCvGRAYtoCvYUYV(cv::Mat const & src, cv::Mat & dst);
+
+    //! OpenCV does not provide conversion from RGBA to YUYV in cvtColor(), so this function provides it
+    void convertCvRGBAtoCvYUYV(cv::Mat const & src, cv::Mat & dst);
+
   } // namespace rawimage
 } // namespace jevois
 
