@@ -539,6 +539,9 @@ void jevois::rawimage::drawRect(jevois::RawImage & img, int x, int y, unsigned i
     jevois::rawimage::drawRect(img, x, y, w, h, col);
   else
   {
+    // Draw so that the lines are drawn on top of the bottom-right corner at (x+w-1, y+h-1):
+    if (w) --w;
+    if (h) --h;
     jevois::rawimage::drawLine(img, x, y, x+w, y, thick, col);
     jevois::rawimage::drawLine(img, x, y+h, x+w, y+h, thick, col);
     jevois::rawimage::drawLine(img, x, y, x, y+h, thick, col);
@@ -549,6 +552,8 @@ void jevois::rawimage::drawRect(jevois::RawImage & img, int x, int y, unsigned i
 void jevois::rawimage::drawRect(jevois::RawImage & img, int x, int y, unsigned int w, unsigned int h,
                                 unsigned int col)
 {
+  if (w == 0) w = 1;
+  if (h == 0) h = 1;
   if (x > int(img.width)) x = img.width;
   if (y > int(img.height)) y = img.height;
   if (x + w > img.width) w = img.width - x;
@@ -569,6 +574,8 @@ void jevois::rawimage::drawRect(jevois::RawImage & img, int x, int y, unsigned i
 void jevois::rawimage::drawFilledRect(jevois::RawImage & img, int x, int y, unsigned int w, unsigned int h,
                                       unsigned int col)
 {
+  if (w == 0) w = 1;
+  if (h == 0) h = 1;
   if (x > int(img.width)) x = img.width;
   if (y > int(img.height)) y = img.height;
   if (x + w > img.width) w = img.width - x;

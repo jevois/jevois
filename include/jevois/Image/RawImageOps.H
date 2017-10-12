@@ -126,17 +126,20 @@ namespace jevois
     void drawLine(RawImage & img, int x1, int y1, int x2, int y2, unsigned int thick, unsigned int col);
     
     //! Draw a rectangle in a YUYV image
-    /*! \ingroup image */
+    /*! The pixels drawn go from (x,y) included to (x+w-1,y+h-1) included. If w or h is 0, it is replaced by 1.
+        \ingroup image */
     void drawRect(RawImage & img, int x, int y, unsigned int w, unsigned int h, unsigned int thick, unsigned int col);
 
     //! Draw a rectangle in a YUYV image
     /*! This is really not flexible and is optimized for speed only. col will be used for both YU and YV pixels. For
-        more demanding drawings, use openCV functions. \ingroup image */
+        more demanding drawings, use openCV functions. The pixels drawn go from (x,y) included to (x+w-1,y+h-1)
+        included. If w or h is 0, it is replaced by 1. \ingroup image */
     void drawRect(RawImage & img, int x, int y, unsigned int w, unsigned int h, unsigned int col);
 
     //! Draw a filled rectangle in a YUYV image
     /*! This is really not flexible and is optimized for speed only. col will be used for both YU and YV pixels. For
-        more demanding drawings, use openCV functions. \ingroup image */
+        more demanding drawings, use openCV functions. The pixels drawn go from (x,y) included to (x+w-1,y+h-1)
+        included. If w or h is 0, it is replaced by 1. \ingroup image */
     void drawFilledRect(RawImage & img, int x, int y, unsigned int w, unsigned int h, unsigned int col);
 
     //! Available fonts for writeText()
