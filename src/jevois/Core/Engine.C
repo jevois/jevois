@@ -1256,7 +1256,7 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
           s->writeString("None.");
         else
         {
-          for (auto & c : helplist)
+          for (auto const & c : helplist)
           {
             // Print out the category name and description
             s->writeString(c.first);
@@ -1265,11 +1265,39 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
             for (auto const & n : c.second)
             {
               std::vector tok = jevois::split(n.first, "[\\r\\n]+");
-              for (auto const & t : tok) s->writeString(t);
-            }
-            s->writeString("");
-          }
-        }
+	      bool first = true;
+              for (auto const & t : tok)
+	      {
+		// Add current value info to the first thing we write (which is name, default, etc)
+		if (first)
+		{
+		  auto const & v = n.second;
+		  if (v.size() == 1) // only one component using this param
+		  {
+		    if (v[0].second.empty())
+		      s->writeString(t); // only one comp, and using default val
+		    else
+		      s->writeString(t + " current=[" + v[0].second + ']'); // using non-default val
+		  }
+		  else if (v.size() > 1) // several components using this param with possibly different values
+		  {
+		    std::string sss = t + " current=";
+		    for (auto const & pp : v)
+		      if (pp.second.empty() == false) sss += '[' + pp.first + ':' + pp.second + "] ";
+		    s->writeString(sss);
+		  }
+		  else s->writeString(t); // no non-default value(s) to report
+		  
+		  first = false;
+		}
+		
+		else // just write out the other lines (param description)
+		  s->writeString(t);
+	      }
+	    }
+	    s->writeString("");
+	  }
+	}
       }
       else
         s->writeString("No module loaded.");

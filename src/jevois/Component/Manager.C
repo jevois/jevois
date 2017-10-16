@@ -117,7 +117,7 @@ void jevois::Manager::constructHelpMessage(std::ostream & out) const
       for (auto const & cp : n.second)   // pair: <component, value>
       {
         out << cp.first; // component descriptor
-        if (cp.second.empty() == false) out << ' ' << cp.second;  // value
+        if (cp.second.empty() == false) out << " value=[" << cp.second << ']';  // value
         if (cp != *(n.second.end()-1)) out << ", ";
       }
 

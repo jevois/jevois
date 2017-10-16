@@ -539,7 +539,7 @@ void jevois::Component::populateHelpMessage(std::string const & cname,
       std::string const key2 = "  --" + ps.name + " (" + ps.valuetype + ") default=[" + ps.defaultvalue + "]" +
         (ps.validvalues == "None:[]" ? "\n" : " " + ps.validvalues + "\n") + "    " + ps.description;
       std::string val = "";
-      if (ps.value != ps.defaultvalue) val = "value=["+ps.value+']';
+      if (ps.value != ps.defaultvalue) val = ps.value;
       helplist[key1][key2].push_back(std::make_pair(compname, val));
     }
   }
