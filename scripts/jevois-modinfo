@@ -97,6 +97,7 @@ print DOXYFILE 'ALIASES += youtube{1}="@htmlonly<div align=\'center\'><iframe wi
 print DOXYFILE 'ALIASES += jvversion{1}="@htmlonly<strong class=\'jvversion\'>JeVois v\1</strong>@endhtmlonly"' . "\n";
 print DOXYFILE 'ALIASES += jvhost="@htmlonly<strong class=\'jvhostplatform\'>Host Only</strong>@endhtmlonly"' . "\n";
 print DOXYFILE 'ALIASES += jvplatform="@htmlonly<strong class=\'jvhostplatform\'>Platform Only</strong>@endhtmlonly"' . "\n";
+print DOXYFILE 'ALIASES += jvmod{1}="@htmlonly<a href=\'/moddoc/\1/modinfo.html\'><strong class=\'jvmod\'>\1</strong></a>@endhtmlonly"' . "\n";
 
 # We here create some custom doxygen tags to allow code writers to input more manifest data in their doc:
 my @dtags = qw/ email mainurl supporturl otherurl address copyright license distribution 

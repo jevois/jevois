@@ -25,7 +25,7 @@ set(JEVOIS_VENDOR "JeVois")
 # Project version:
 set(JEVOIS_VERSION_MAJOR  1)
 set(JEVOIS_VERSION_MINOR  5)
-set(JEVOIS_VERSION_PATCH  1)
+set(JEVOIS_VERSION_PATCH  2)
 set(JEVOIS_SOVERSION "${JEVOIS_VERSION_MAJOR}.${JEVOIS_VERSION_MINOR}.${JEVOIS_VERSION_PATCH}" )
 
 ########################################################################################################################

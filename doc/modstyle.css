@@ -99,9 +99,9 @@ table.videomapping {
     border-collapse: collapse;
     background-color: #f0f0ff;
     color: black;
-    border-spacing: 2px;
+    border-spacing: 0px;
     width: 100%;
-    line-height: 1em;
+    line-height: 0em;
 }
 
 td.videomapping {
@@ -135,6 +135,13 @@ strong.jvversion {
 strong.jvhostplatform {
     padding: 2px 4px;
     color: MediumBlue;
+    background-color: #f0f0f0;
+    border-radius: 4px
+}
+
+strong.jvmod {
+    padding: 2px 4px;
+    color: Blue;
     background-color: #f0f0f0;
     border-radius: 4px
 }
