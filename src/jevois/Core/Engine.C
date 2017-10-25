@@ -1264,7 +1264,7 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
             // Print out the parameter details
             for (auto const & n : c.second)
             {
-              std::vector tok = jevois::split(n.first, "[\\r\\n]+");
+              std::vector<std::string> tok = jevois::split(n.first, "[\\r\\n]+");
 	      bool first = true;
               for (auto const & t : tok)
 	      {
