@@ -1,0 +1,11 @@
+/*! \page Change16log Changes and new features in JeVois 1.6
+
+JeVois 1.6 brings the following new features:
+
+- Bugfix on Debian package dependencies
+
+- Improved documentation scripts
+
+- Updated to latest darknet-nnpack. New neural networks coming soon!
+
+*/

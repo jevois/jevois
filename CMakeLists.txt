@@ -24,15 +24,15 @@ set(JEVOIS_VENDOR "JeVois")
 ########################################################################################################################
 # Project version:
 set(JEVOIS_VERSION_MAJOR  1)
-set(JEVOIS_VERSION_MINOR  5)
-set(JEVOIS_VERSION_PATCH  2)
+set(JEVOIS_VERSION_MINOR  6)
+set(JEVOIS_VERSION_PATCH  0)
 set(JEVOIS_SOVERSION "${JEVOIS_VERSION_MAJOR}.${JEVOIS_VERSION_MINOR}.${JEVOIS_VERSION_PATCH}" )
 
 ########################################################################################################################
 # Python version to use for python modules:
 
-# FIXME: temporarily (until ubuntu 17.10 is out maybe?) we use python 3.5 on host (max supported by boost 1.62 on Ubuntu
-# 17.04) but python 3.6 on platform (supported by boost 1.64 on platform):
+# FIXME: temporarily we use python 3.5 on host (max supported by boost 1.62 on Ubuntu 17.04) but python 3.6 on platform
+# (supported by boost 1.64 on platform):
 set(JEVOIS_HOST_PYTHON_MAJOR 3)
 set(JEVOIS_HOST_PYTHON_MINOR 5)
 set(JEVOIS_HOST_PYTHON_M "m")
@@ -324,7 +324,7 @@ libavcodec-dev, libavformat-dev, libswscale-dev, libxine2-dev, libgstreamer1.0-d
 libv4l-dev, libtbb2, libtbb-dev, libqt4-dev, libfaac-dev, libmp3lame-dev, libopencore-amrnb-dev, \
 libopencore-amrwb-dev, libtheora-dev, libvorbis-dev, libxvidcore-dev, x264, v4l-utils, unzip, qt5-default, \
 python3-dev, python3-numpy, python3-pip, libgtk-3-dev, libatlas-base-dev, libturbojpeg, libtbb2, \
-python${JEVOIS_PYTHON_MAJOR}.${JEVOIS_PYTHON_MINOR}-dev, python${JEVOIS_PYTHON_MAJOR}-numpy, \
+python${JEVOIS_HOST_PYTHON_MAJOR}.${JEVOIS_HOST_PYTHON_MINOR}-dev, python${JEVOIS_HOST_PYTHON_MAJOR}-numpy, \
 jevois-opencv (>=${JEVOIS_OPENCV_VERSION})")
 
 # Use helper from JeVois.cmake for all other settings:

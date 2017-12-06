@@ -6,13 +6,14 @@
 Features at a glance:
 
 - 1.3MP camera capable of video capture at
-  - SXGA (1280 x 1024): up to 15 fps (frames/second)
-  - VGA (640 x 480): up to 30 fps
-  - CIF (352 x 288): up to 60 fps
-  - QVGA (320 x 240): up to 60 fps
-  - QCIF (176 x 144): up to 120 fps
-  - QQVGA (160 x 120): up to 60 fps
-  - QQCIF (88 x 72): up to 120 fps
+  + SXGA (1280 x 1024): up to 15 fps (frames/second)
+  + VGA (640 x 480): up to 30 fps
+  + CIF (352 x 288): up to 60 fps
+  + QVGA (320 x 240): up to 60 fps
+  + QCIF (176 x 144): up to 120 fps
+  + QQVGA (160 x 120): up to 60 fps
+  + QQCIF (88 x 72): up to 120 fps
+  + Rolling shutter, F2.8, 65deg horizontal field of view.
 
 - Quad-core ARM Cortex A7 processor, default clock 1.35GHz. Supports hard floating-point operations (VFPv4) and NEON
   SIMD multimedia instructions.
@@ -42,6 +43,13 @@ Features at a glance:
   camera is streaming video frames.
 
 - Plastic case included with 4 holes for secure mounting.
+
+\image html weight.jpg
+
+- Only 17 grams, with the following breakdown:
+  + Fan: 4.1 grams
+  + Plastic case: 5.4 grams
+  + Electronics, camera sensor, lens: 7.5 grams
 
 \image html proto-legend.jpg
 

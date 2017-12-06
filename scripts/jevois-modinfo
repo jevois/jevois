@@ -13,6 +13,17 @@ use HTML::Entities;
 
 my $tmpdirname = "/tmp/jevois-modinfotemp$$".time();
 
+# we need JEVOIS_SRC_ROOT to work...
+my $jevoissrcroot = $ENV{'JEVOIS_SRC_ROOT'};
+$jevoissrcroot =~ s/\s+$//; $jevoissrcroot =~ s/\/+$//; 
+if ($jevoissrcroot eq "") { print STDERR "Please set environment variable JEVOIS_SRC_ROOT to the ".
+                                "directory in which jevois and jevoisbase sources are. Skipping module doc ".
+                                "creation because of missing JEVOIS_SRC_ROOT\n"; exit 0; }
+if (! -d "$jevoissrcroot/jevois") { print STDERR "Could not find jevois/ source repository inside ".
+                                        "JEVOIS_SRC_ROOT=$jevoissrcroot - Skipping module doc creation.\n"; exit 0; }
+if (! -d "$jevoissrcroot/jevoisbase") { print STDERR "Could not find jevoisbase/ source repository inside ".
+                                        "JEVOIS_SRC_ROOT=$jevoissrcroot - Skipping module doc creation.\n"; exit 0; }
+
 # Parse out the module header filename from the command line
 my $num_args = $#ARGV + 1;
 if ($num_args != 1) {
@@ -89,9 +100,12 @@ if (!$ispython)
     print DOXYFILE "EXTENSION_MAPPING      = H=C++ C=C++\n";
     print DOXYFILE "BUILTIN_STL_SUPPORT    = YES\n"; # for cross-ref to jevois doc
 }
-#print DOXYFILE "TAGFILES               = $ENV{'JEVOIS_SRC_ROOT'}/jevoisbase/doc/jevoisbase.tag=/basedoc\n";
-#print DOXYFILE "TAGFILES               = $ENV{'JEVOIS_SRC_ROOT'}/jevois/doc/jevois.tag=/doc $ENV{'JEVOIS_SRC_ROOT'}/jevoisbase/doc/jevoisbase.tag=/basedoc\n";
-print DOXYFILE "TAGFILES               = $ENV{'JEVOIS_SRC_ROOT'}/jevois/doc/jevois.tag=/doc\n";
+#print DOXYFILE "TAGFILES               = $jevoissrcroot/jevoisbase/doc/jevoisbase.tag=/basedoc\n";
+#print DOXYFILE "TAGFILES               = $jevoissrcroot/jevois/doc/jevois.tag=/doc $ENV{'JEVOIS_SRC_ROOT'}/jevoisbase/doc/jevoisbase.tag=/basedoc\n";
+
+if ( -f "$jevoissrcroot/jevois/doc/jevois.tag" ) {
+    print DOXYFILE "TAGFILES               = $jevoissrcroot/jevois/doc/jevois.tag=/doc\n";
+}
 
 print DOXYFILE 'ALIASES += youtube{1}="@htmlonly<div align=\'center\'><iframe width=\'560\' height=\'315\' src=\'http://www.youtube.com/embed/\1?rel=0&loop=1\' frameborder=\'0\' allowfullscreen align=\'middle\'></iframe></div>@endhtmlonly"' . "\n";
 print DOXYFILE 'ALIASES += jvversion{1}="@htmlonly<strong class=\'jvversion\'>JeVois v\1</strong>@endhtmlonly"' . "\n";
@@ -305,14 +319,14 @@ if (!$ispython)
         $subcomps{$tmp[1]} = 1;
 
         # Add any subs of that sub:
-        my $subfilename = `find $ENV{'JEVOIS_SRC_ROOT'}/jevoisbase/src/Components/ -name $tmp[1].C`;
+        my $subfilename = `find $jevoissrcroot/jevoisbase/src/Components/ -name $tmp[1].C`;
         my @subsclist = `/bin/grep addSubComponent $subfilename`;
         push(@sclist, @subsclist);
     }
 
     # eliminate duplicates:
     foreach my $comp (keys %subcomps) {
-        my $filename = `find $ENV{'JEVOIS_SRC_ROOT'}/jevoisbase/include/jevoisbase/Components/ -name ${comp}.H`;
+        my $filename = `find $jevoissrcroot/jevoisbase/include/jevoisbase/Components/ -name ${comp}.H`;
         chomp $filename;
         print STEDRR  "INCLUDING $filename\n";
         getParams($filename, $comp);
