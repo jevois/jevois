@@ -75,6 +75,10 @@ namespace
       // --   #define UVC_CT_ROLL_RELATIVE_CONTROL                    0x10
       // --   #define UVC_CT_PRIVACY_CONTROL                          0x11
       // note: UVC 1.5 has a few more...
+      //
+      // Windows 10 insists on doing a GET_DEF on this 10-byte control even though we never said we support it:
+      // --   #define UVC_CT_REGION_OF_INTEREST_CONTROL               0x14
+      // This is now handled by sending a default blank reply to all unsupported controls.
       switch (cs)
       {
       case UVC_CT_AE_MODE_CONTROL: return V4L2_CID_EXPOSURE_AUTO;
@@ -442,6 +446,9 @@ void jevois::Gadget::processEventControl(uint8_t req, uint8_t cs, uint8_t entity
     resp.data[2] = (val >> 16) & 0xff; resp.data[3] = (val >> 24) & 0xff; \
     resp.length = 4; itsErrorCode = 0; }
 
+  // Shortcurt to successfully send a blank N-byte response:
+#define arrayblankresponse(len) { memset(resp.data, 0, len); resp.length = len; itsErrorCode = 0; }
+
   // If anything throws here, we will return failure:
   try
   {
@@ -504,7 +511,8 @@ void jevois::Gadget::processEventControl(uint8_t req, uint8_t cs, uint8_t entity
       case 1: byteresponse(ctrl.value); break;
       case 2: wordresponse(ctrl.value); break;
       case 4: intresponse(ctrl.value); break;
-      default: LFATAL("Unsupported control with length " << len);
+      default: LERROR("Unsupported control with length " << len << " -- SENDING BLANK RESPONSE");
+	arrayblankresponse(len); break;
       }
     }
     else
@@ -556,7 +564,8 @@ void jevois::Gadget::processEventControl(uint8_t req, uint8_t cs, uint8_t entity
       case 1: byteresponse(val); break;
       case 2: wordresponse(val); break;
       case 4: intresponse(val); break;
-      default: LFATAL("Unsupported control with length " << len);
+      default: LERROR("Unsupported control with length " << len << " -- SENDING BLANK RESPONSE");
+	arrayblankresponse(len); break;
       }
     }
   }
