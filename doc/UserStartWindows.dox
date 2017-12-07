@@ -68,6 +68,27 @@ unplug the camera.
 </ul>
 
 // ##############################################################################################################
+\section windows10 Special instructions for Windows 10
+
+Some users (but not all) of Windows 10 have reported issues with using JeVois. The camera is correctly detected and
+setup, but one cannot capture video from it.
+
+Starting with \jvversion{1.6.0}, we have enabled a workaround which should hopefully solve the problem. It had to
+do with Windows 10 sending illegal requests to JeVois, to which JeVois replied with a USB stall (as it whould in such
+case), but Windows 10 got upset with that.
+
+Under Windows 10, you should see the following devices when you plug JeVois in and let Windows configure it:
+- a video camera
+- a storage device (empty by default, you need to tell JeVois to export its microSD card to actually see some files there)
+- a serial port which you can use to send commands to JeVois.
+
+\image html win10-devices.png
+
+If you are using a version of JeVois software older than \jvversion{1.6.0}, the video camera will be named "Video
+Control" instead (it's another bug of Windows; it is using the name of the control unit of the camera instead of the
+manufacturer and product names). This is an indication that you should update to \jvversion{1.6.0} or later.
+
+// ##############################################################################################################
 \section obswindows Using Open Broadcaster Studio for Windows
 
 Open Broadcaster Studio is a great free program that allows you to select different video resolutions, as needed by
@@ -87,15 +108,20 @@ JeVois.
   \image html wobs2.png
 
 - When you double-click on that source, a dialog comes up. In there, select:
-  + Device: Video Control (this is the name Windows assigns to JeVois; it may differ on different Windows versions,
-    just pick the device that you know is not your built-in webcam if you have one).
+  + Device: JeVois-A33 Video Camera (this is the name Windows assigns to JeVois; it may differ on different Windows
+    versions, just pick the device that you know is not your built-in webcam if you have one).
   + Resolution/FPS type: custom
   + Resolution: pick any that you want to try out
   + FPS: Highest FPS
   \image html wobs4.png
 
 - Enjoy! You can drag and resize the video preview for best viewing experience.
-  
+
+
+Here is \jvversion{1.6.0} happily working with Windows 10:
+
+\image html win10-obs.png
+
 // ##############################################################################################################
 \section enablegreywindows Enabling greyscale capture
 
@@ -120,6 +146,7 @@ modules that output greyscale video.
 // ##############################################################################################################
 \section troubleshootwindows Troubleshooting
 
-Nothing here for now.
+If you are having issues and use Windows 10, make sure you update to \jvversion{1.6.0} or later, as we have
+enabled some workarounds in these later versions to deal with some bugs in Windows 10.
 
 */

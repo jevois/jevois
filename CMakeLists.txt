@@ -31,11 +31,18 @@ set(JEVOIS_SOVERSION "${JEVOIS_VERSION_MAJOR}.${JEVOIS_VERSION_MINOR}.${JEVOIS_V
 ########################################################################################################################
 # Python version to use for python modules:
 
-# FIXME: temporarily we use python 3.5 on host (max supported by boost 1.62 on Ubuntu 17.04) but python 3.6 on platform
-# (supported by boost 1.64 on platform):
-set(JEVOIS_HOST_PYTHON_MAJOR 3)
-set(JEVOIS_HOST_PYTHON_MINOR 5)
-set(JEVOIS_HOST_PYTHON_M "m")
+# FIXME: On Ubuntu 16.04 and 17.04, we use python 3.5 on host (max supported by boost 1.62 on Ubuntu 17.04) but python
+# 3.6 on platform (supported by boost 1.64 on platform). On later Ubuntu (if libboost_python-py36.so is found), we use
+# python 3.6 on both host and platform:
+if (EXISTS "/usr/lib/x86_64-linux-gnu/libboost_python-py36.so")
+  set(JEVOIS_HOST_PYTHON_MAJOR 3)
+  set(JEVOIS_HOST_PYTHON_MINOR 6)
+  set(JEVOIS_HOST_PYTHON_M "m")
+else()
+  set(JEVOIS_HOST_PYTHON_MAJOR 3)
+  set(JEVOIS_HOST_PYTHON_MINOR 5)
+  set(JEVOIS_HOST_PYTHON_M "m")
+endif()
 
 set(JEVOIS_PLATFORM_PYTHON_MAJOR 3)
 set(JEVOIS_PLATFORM_PYTHON_MINOR 6)

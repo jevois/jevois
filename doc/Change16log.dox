@@ -2,10 +2,21 @@
 
 JeVois 1.6 brings the following new features:
 
-- Bugfix on Debian package dependencies
+- Bugfix on Debian package dependencies on Ubuntu 16.04.
 
-- Improved documentation scripts
+- Support for JeVois Debian packages for Ubuntu 16.04, 17.04 and (new) 17.10 (all amd64 only).
+
+- Improved documentation scripts.
 
 - Updated to latest darknet-nnpack. New neural networks coming soon!
+
+- Enabled a workaround in the USB protocol which makes JeVois more robust to bogus requests sent out by some Windows 10
+  computers. Hopefully this should help some people who were having issues with Windows 10.
+
+- Changed the name of the UVC Control Unit to "JeVois-A33 Video Camera" so that users of bogus windows versions know
+  it's their JeVois camera (Mac and Linux already were correctly using the manufacturer and product strings, so no
+  change for them).
+
+- Small bugfix on YOLO startup, showing better messages while the deep network is loading.
 
 */
