@@ -33,15 +33,17 @@ set(JEVOIS_SOVERSION "${JEVOIS_VERSION_MAJOR}.${JEVOIS_VERSION_MINOR}.${JEVOIS_V
 
 # FIXME: On Ubuntu 16.04 and 17.04, we use python 3.5 on host (max supported by boost 1.62 on Ubuntu 17.04) but python
 # 3.6 on platform (supported by boost 1.64 on platform). On later Ubuntu (if libboost_python-py36.so is found), we use
-# python 3.6 on both host and platform:
+# python 3.6 on both host and platform. There is also a difference of which package provides turbojpeg.h:
 if (EXISTS "/usr/lib/x86_64-linux-gnu/libboost_python-py36.so")
   set(JEVOIS_HOST_PYTHON_MAJOR 3)
   set(JEVOIS_HOST_PYTHON_MINOR 6)
   set(JEVOIS_HOST_PYTHON_M "m")
+  set(TURBOJPEG_PKG "libjpeg-turbo8-dev, libturbojpeg-dev")
 else()
   set(JEVOIS_HOST_PYTHON_MAJOR 3)
   set(JEVOIS_HOST_PYTHON_MINOR 5)
   set(JEVOIS_HOST_PYTHON_M "m")
+  set(TURBOJPEG_PKG "libjpeg-turbo8-dev")
 endif()
 
 set(JEVOIS_PLATFORM_PYTHON_MAJOR 3)
@@ -325,7 +327,7 @@ set(CPACK_PACKAGE_VERSION_PATCH "${JEVOIS_VERSION_PATCH}")
 set(JEVOIS_PACKAGE_RELEASE "1") # packager revision number
 
 set(CPACK_DEBIAN_PACKAGE_DEPENDS "build-essential, cmake (>= 3.1), gcc (>= 5.2), g++ (>=5.2), gfortran (>= 5.2), \
-guvcview, subversion, cmake, git, mercurial, doxygen-gui, graphviz, libboost-all-dev, libjpeg-turbo8-dev, \
+guvcview, subversion, cmake, git, mercurial, doxygen-gui, graphviz, libboost-all-dev, ${TURBOJPEG_PKG}, \
 autoconf, libeigen3-dev, screen, libgtk2.0-dev, libdc1394-22, libdc1394-22-dev, libjpeg-dev, libpng-dev, libtiff5-dev, \
 libavcodec-dev, libavformat-dev, libswscale-dev, libxine2-dev, libgstreamer1.0-dev, libgstreamer-plugins-base1.0-dev, \
 libv4l-dev, libtbb2, libtbb-dev, libqt4-dev, libfaac-dev, libmp3lame-dev, libopencore-amrnb-dev, \
