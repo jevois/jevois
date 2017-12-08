@@ -18,7 +18,7 @@ Here are summary instructions on how to do this with the free Virtualbox softwar
 
 - Create a new virtual machine: select Linux 64-bit OS, allocate as much RAM and CPU as is reasonable (usually, move the
   sliders to the point where they become red), and create a new virtual hard drive, using the VDI method and selecting
-  at least 30GB size.
+  at least 50GB size.
 
   \image html vbox1.png Above: creating a new virtual machine
 
@@ -28,7 +28,7 @@ Here are summary instructions on how to do this with the free Virtualbox softwar
 
   \image html vbox4.png Above: Selecting VDI hard disk type
 
-  \image html vbox5.png Above: Setting VDI size to at least 30GB
+  \image html vbox5.png Above: We recommend setting VDI size to at least 50GB
  
 
 - Get an Ubuntu Desttop amd64 iso file from https://www.ubuntu.com/download/desktop (as of \jvversion{1.5}, Ubuntu 17.04
