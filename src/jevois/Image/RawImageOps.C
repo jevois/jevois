@@ -496,9 +496,69 @@ void jevois::rawimage::drawCircle(jevois::RawImage & img, int cx, int cy, unsign
 }
 
 // ####################################################################################################
+namespace
+{
+  // Liang-Barsky algo from http://hinjang.com/articles/04.html#eight
+  inline bool isZero(double a)
+  { return (a < 0.0001 && a > -0.0001 ); }
+  
+  bool clipT(double num, double denom, double & tE, double & tL)
+  {
+    if (isZero(denom)) return (num <= 0.0);
+    
+    double t = num / denom;
+    
+    if (denom > 0.0) {
+      if (t > tL) return false;
+      if (t > tE) tE = t;
+    } else {
+      if (t < tE) return false;
+      if (t < tL) tL = t;
+    }
+    return true;
+  }
+}
+
+// ####################################################################################################
+// Liang-Barsky algo from http://hinjang.com/articles/04.html#eight
+bool jevois::rawimage::clipLine(int wxmin, int wymin, int wxmax, int wymax, int & x1, int & y1, int & x2, int & y2)
+{
+  // This algo does not handle lines completely outside the window? quick test here that should work for most lines (but
+  // not all, may need to fix later):
+  if (x1 < wxmin && x2 < wxmin) return false;
+  if (x1 >= wxmax && x2 >= wxmax) return false;
+  if (y1 < wymin && y2 < wymin) return false;
+  if (y1 >= wymax && y2 >= wymax) return false;
+
+  int const toofar = 5000;
+  if (x1 < -toofar || x1 > toofar || y1 < -toofar || y1 > toofar) return false;
+  if (x2 < -toofar || x2 > toofar || y2 < -toofar || y2 > toofar) return false;
+
+  --wxmax; --wymax; // exclude right and bottom edges of the window
+  
+  double dx = x2 - x1, dy = y2 - y1;
+  if (isZero(dx) && isZero(dy)) return true;
+
+  double tE = 0.0, tL = 1.0;
+
+  if (clipT(wxmin - x1, dx, tE, tL) && clipT(x1 - wxmax, -dx, tE, tL) &&
+      clipT(wymin - y1, dy, tE, tL) && clipT(y1 - wymax, -dy, tE, tL))
+  {
+    if (tL < 1) { x2 = x1 + tL * dx; y2 = y1 + tL * dy; }
+    if (tE > 0) { x1 += tE * dx; y1 += tE * dy; }
+  }
+
+  return true;
+}
+
+// ####################################################################################################
 void jevois::rawimage::drawLine(jevois::RawImage & img, int x1, int y1, int x2, int y2, unsigned int thick,
                                 unsigned int col)
 {
+  // First clip the line so we don't waste time trying to sometimes draw very long lines that may result from singular
+  // 3D projections:
+  if (jevois::rawimage::clipLine(0, 0, img.width, img.height, x1, y1, x2, y2) == false) return; // line fully outside
+  
   // From the iLab Neuromorphic Vision C++ Toolkit
   // from Graphics Gems / Paul Heckbert
   int const dx = x2 - x1; int const ax = std::abs(dx) << 1; int const sx = dx < 0 ? -1 : 1;

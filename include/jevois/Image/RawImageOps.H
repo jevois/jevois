@@ -121,6 +121,11 @@ namespace jevois
     /*! \ingroup image */
     void drawCircle(RawImage & img, int x, int y, unsigned int rad, unsigned int thick, unsigned int col);
 
+    //! Clip a line to fit inside a viewport [wxmin...wxmax[ x [wymin...wymax[
+    /*! This uses the Liang-Barsky line clipping algorithm. Returns false if the line is entirely outside the viewport
+        (nothing to draw). \ingroup image */
+    bool clipLine(int wxmin, int wymin, int wxmax, int wymax, int & x1, int & y1, int & x2, int & y2);
+
     //! Draw a line in a YUYV image
     /*! \ingroup image */
     void drawLine(RawImage & img, int x1, int y1, int x2, int y2, unsigned int thick, unsigned int col);
