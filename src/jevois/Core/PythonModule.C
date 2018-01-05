@@ -207,7 +207,7 @@ void jevois::PythonModule::process(InputFrame && inframe, OutputFrame && outfram
 void jevois::PythonModule::process(InputFrame && inframe)
 {
   jevois::InputFramePython inframepy(&inframe);
-  itsInstance.attr("process")(boost::ref(inframepy));
+  itsInstance.attr("processNoUSB")(boost::ref(inframepy));
 }
 
 // ####################################################################################################

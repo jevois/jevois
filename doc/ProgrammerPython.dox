@@ -22,7 +22,10 @@ The basic framework is as follows:
 
 - JeVois modules written in Python should consist of a single Python class that exposes a specific interface, including
   a process() function that will be called by the JeVois engine each time a new video frame is to be processed by the
-  module.
+  module and an output image should be sent over USB to a host computer, and a processNoUSB() function that will be
+  called to process camera frame with no USB video output (both functions have different names because Python does not
+  support member function overloading). Note how this was fixed in \jvversion{1.6.2} thanks to user discussions on [this
+  thread](https://www.chiefdelphi.com/forums/showthread.php?t=159883&page=6).
 
 - So, the Python integration works in a two-way manner:
   + JeVois core provides a \b libjevois Python library that can be used by modules written in Python.
@@ -60,7 +63,7 @@ Python modules should be organized as follow:
 - The module may declare and implememt (all are optional, but most modules should at least implement one of the
   process() functions to be useful):
   + Constructor with no arguments: `__init__(self)`
-  + Process function with no USB output: `process(self, inframe)`
+  + Process function with no USB output: `processNoUSB(self, inframe)`
   + Process function with USB output: `process(self, inframe, outframe)`
   + Function to parse a serial command forwarded to the module by the JeVois Engine, return a string:
     `parseSerial(self, str)`

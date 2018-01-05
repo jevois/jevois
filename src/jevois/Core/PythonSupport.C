@@ -100,7 +100,7 @@ namespace
   void pythonLDEBUG(std::string const & JEVOIS_UNUSED_PARAM(str)) { LDEBUG(str); }
   void pythonLINFO(std::string const & str) { LINFO(str); }
   void pythonLERROR(std::string const & str) { LERROR(str); }
-  void pythonLFATAL(std::string const & JEVOIS_UNUSED_PARAM(str)) { LFATAL(str); }
+  void pythonLFATAL(std::string const & str) { LFATAL(str); }
 
 } // anonymous namespace
 

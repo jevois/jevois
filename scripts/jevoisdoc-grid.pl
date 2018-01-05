@@ -10,6 +10,7 @@ my $mods = [
     [ "DarknetSaliency", "Detect and recognize", "1000 object types" ],
     [ "DarknetSingle", "Recognize 1000", "objects types" ],
     [ "DarknetYOLO", "Locate and identify", "objects in scenes" ],
+    [ "FirstVision", "Vision example for", "FIRST Robotics" ],
     [ "DemoSaliency", "Detect attention-grabbing", "objects" ],
     [ "DemoSalGistFaceObj", "Find faces and", "handwritten digits" ],
     [ "RoadNavigation", "Detect roads", " " ],

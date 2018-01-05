@@ -163,10 +163,12 @@ Explanations:
   port (if `setpar serlog USB`) or both (if `setpar serlog All`). See \ref UserCli for details about \b serlog.
 
 - Lines 34-35: JeVois also supports modules which process video frames from the camera sensor but do not produce any
-  video output. These modules would typically only product text outputs over serial ports. See \ref Concepts. Here we do
-  not implement the \c process() function that only takes a camera image in, but we provide a skeleton for it. Examples
-  of how this function is implemented ate provided in several of the \b jevoisbase C++ modules. Look for modules that
-  claim to <em>support mappings with NO USB output</em> under \ref UserDemos for details (for example, DemoArUco).
+  video output. These modules would typically only product text outputs over serial ports. See \ref Concepts. In C++, we
+  have two overloads of the process() function, but this is not possible in Python, so both functions take different
+  names: process() and processNoUSB(). Here we do not implement the \c processNoUSB() function that only takes a camera
+  image in, but we provide a skeleton for it. Examples of how this function is implemented ate provided in several of
+  the \b jevoisbase C++ modules. Look for modules that claim to <em>support mappings with NO USB output</em> under \ref
+  UserDemos for details (for example, DemoArUco).
 
 - Line 39: Here is our \c process() function with video output to USB.
 
