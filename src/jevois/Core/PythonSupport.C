@@ -97,10 +97,10 @@ namespace
     jevois::python::engineForPythonModule->sendSerial(str);
   }
 
-  void pythonLDEBUG(std::string const & JEVOIS_UNUSED_PARAM(str)) { LDEBUG(str); }
-  void pythonLINFO(std::string const & str) { LINFO(str); }
-  void pythonLERROR(std::string const & str) { LERROR(str); }
-  void pythonLFATAL(std::string const & str) { LFATAL(str); }
+  void pythonLDEBUG(std::string const & JEVOIS_UNUSED_PARAM(logmsg)) { LDEBUG(logmsg); }
+  void pythonLINFO(std::string const & logmsg) { LINFO(logmsg); }
+  void pythonLERROR(std::string const & logmsg) { LERROR(logmsg); }
+  void pythonLFATAL(std::string const & logmsg) { LFATAL(logmsg); }
 
 } // anonymous namespace
 

@@ -718,7 +718,7 @@ void jevois::Engine::mainLoop()
           // Report exceptions to video if desired: We have to be extra careful here because the exception might have
           // been called by the input frame (camera not streaming) or the output frame (gadget not streaming), in
           // addition to exceptions thrown by the module:
-          if (itsVideoErrors.load())
+          if (itsCurrentMapping.ofmt && itsVideoErrors.load())
           {
             try
             {
