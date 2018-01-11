@@ -236,15 +236,19 @@ my @methods = @{$class{public_methods}{members}};
 my $process1 = 0; my $process2 = 0;
 if ($ispython)
 {
-    # For python let's just find member functions named 'process' and count the argsL
+    # For python let's just find member functions named 'process' and count the args:
     foreach my $m (@methods)
     {
         my %hash = %{$m};
         if ($hash{'kind'} eq 'function' && $hash{'name'} eq 'process')
         {
             my @methodparams = @{$hash{parameters}};
+            if ($#methodparams == 2) { $process2 = 1; } # 3 args: self, inframe, outframe
+        }
+        if ($hash{'kind'} eq 'function' && $hash{'name'} eq 'processNoUSB')
+        {
+            my @methodparams = @{$hash{parameters}};
             if ($#methodparams == 1) { $process1 = 1; } # 2 args: self, inframe
-            elsif ($#methodparams == 2) { $process2 = 1; } # 3 args: self, inframe, outframe
         }
     }
 }
