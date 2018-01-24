@@ -69,6 +69,7 @@ Python modules should be organized as follow:
     `parseSerial(self, str)`
   + Function to return a string that describes the custom commands the module supports, for the JeVois help message:
     `supportedCommands(self)`
+  + Function to cleanup just before the module will be unloaded: `uninit()` (in \jvversion{1.7.1} and later)
   + Note that sendSerial() which is provided by the C++ Module base class to allow derived modules to send messages over
     the serial port should not be defined and will not be invoked (since it is implemented by the JeVois core library
     rather than the module); instead, a function `jevois.sendSerial()` is exposed to Python modules by the JeVois core
@@ -111,8 +112,6 @@ will invoke the C++ function fccstr() of JeVois, passing it the contents of vari
 integer number as expected by the C++ function, otherwise the binding engine will throw an exception for incorrect input
 argument type). The C++ string returned by the C++ function will then be copied to Python string \b s and will be
 available for further use in Python, as any Python strings.
-
-
 
 List of bindings
 ----------------

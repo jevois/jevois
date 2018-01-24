@@ -227,6 +227,9 @@ void jevois::Gadget::setFormat(jevois::VideoMapping const & m)
     sparm.parm.output.timeperframe = jevois::VideoMapping::fpsToV4l2(m.ofps);
     XIOCTL_QUIET(itsFd, VIDIOC_S_PARM, &sparm);
   } catch (...) { }
+
+  LINFO("USB Gadget set video format to " << itsFormat.fmt.pix.width << 'x' << itsFormat.fmt.pix.height << ' ' <<
+        jevois::fccstr(itsFormat.fmt.pix.pixelformat));
 }
 
 // ##############################################################################################################
@@ -729,8 +732,9 @@ void jevois::Gadget::streamOn()
     unsigned int framesize = jevois::v4l2ImageSize(itsFormat.fmt.pix.pixelformat, itsFormat.fmt.pix.width,
                                                    itsFormat.fmt.pix.height);
 
-    // Aim for about 4 mbyte when using small images:
+    // Aim for about 4 mbyte when using small images, and no more than 4 buffers in any case:
     nbuf = (4U * 1024U * 1024U) / framesize;
+    if (nbuf > 4) nbuf = 4;
   }
 
   // Force number of buffers to a sane value:

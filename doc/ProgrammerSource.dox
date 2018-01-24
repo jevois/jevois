@@ -24,8 +24,8 @@ Installing Ubuntu packages
 
 The following packages have been made available at http://jevois.usc.edu
 
-- \b jevois-opencv: OpenCV 3.3.0 compiled for host computer with settings that match those used by the JeVois platform
-  hardware. We install this package into /usr/share/jevois-opencv-3.3.0 so that it will not interfere with any other
+- \b jevois-opencv: OpenCV 3.4.0 compiled for host computer with settings that match those used by the JeVois platform
+  hardware. We install this package into /usr/share/jevois-opencv-3.4.0 so that it will not interfere with any other
   OpenCV install you might have on your host system and that might be required by some other software.
 
 - \b jevois-host: JeVois core software compiled for execution on a host computer

@@ -547,7 +547,7 @@ void jevois::Engine::streamOff()
 {
   JEVOIS_TRACE(2);
 
-  // First, tell both ethe camera and gadget to abort streaming, this will make get()/done()/send() to throw:
+  // First, tell both the camera and gadget to abort streaming, this will make get()/done()/send() throw:
   itsGadget->abortStream();
   itsCamera->abortStream();
 
@@ -601,8 +601,7 @@ void jevois::Engine::setFormatInternal(jevois::VideoMapping const & m)
     LFATAL("Cannot setup video streaming while in mass-storage mode. Eject the USB drive on your host computer first.");
 #endif
   
-  // Now that the module is nuked, we won't have any get()/done()/send() requests on the camera or gadget, thus it is
-  // safe to change the formats on both:
+  // Set the format at the camera and gadget levels:
   itsCamera->setFormat(m);
   if (m.ofmt) itsGadget->setFormat(m);
 
@@ -612,8 +611,8 @@ void jevois::Engine::setFormatInternal(jevois::VideoMapping const & m)
   // Nuke the processing module, if any, so we can also safely nuke the loader. We always nuke the module instance so we
   // won't have any issues with latent state even if we re-use the same module but possibly with different input
   // image resolution, etc:
-  if (itsModule) { removeComponent(itsModule); itsModule.reset(); }
-
+  if (itsModule)
+    try { removeComponent(itsModule); itsModule.reset(); } catch (...) { jevois::warnAndIgnoreException(); }
 
   // Instantiate the module. If the constructor throws, code is bogus, for example some syntax error in a python module
   // that is detected at load time. We get the exception's error message for later display into video frames in the main
@@ -624,7 +623,8 @@ void jevois::Engine::setFormatInternal(jevois::VideoMapping const & m)
     std::string const sopath = m.sopath();
     if (m.ispython)
     {
-      // Instantiate the python wrapper. 
+      // Instantiate the python wrapper:
+      itsLoader.reset();
       itsModule.reset(new jevois::PythonModule(m));
     }
     else
@@ -677,7 +677,7 @@ void jevois::Engine::setFormatInternal(jevois::VideoMapping const & m)
   catch (...)
   {
     itsModuleConstructionError = jevois::warnAndIgnoreException();
-    if (itsModule) { removeComponent(itsModule); itsModule.reset(); }
+    if (itsModule) try { removeComponent(itsModule); itsModule.reset(); } catch (...) { }
     LERROR("Module [" << m.modulename << "] startup error and not operational.");
   }
 }
@@ -700,72 +700,75 @@ void jevois::Engine::mainLoop()
 
     if (itsStreaming.load())
     {
+      // Lock up while we use the module:
       JEVOIS_TIMED_LOCK(itsMtx);
 
       if (itsModule)
       {
-        try
-        {
-          if (itsCurrentMapping.ofmt) // Process with USB outputs:
-            itsModule->process(jevois::InputFrame(itsCamera, itsTurbo),
-                               jevois::OutputFrame(itsGadget, itsVideoErrors.load() ? &itsVideoErrorImage : nullptr));
-          else  // Process with no USB outputs:
+	// We have a module ready for action. Call its process function and handle any exceptions:
+	try
+	{
+	  if (itsCurrentMapping.ofmt) // Process with USB outputs:
+	    itsModule->process(jevois::InputFrame(itsCamera, itsTurbo),
+			       jevois::OutputFrame(itsGadget, itsVideoErrors.load() ? &itsVideoErrorImage : nullptr));
+	  else  // Process with no USB outputs:
             itsModule->process(jevois::InputFrame(itsCamera, itsTurbo));
-          dosleep = false;
-        }
-        catch (...)
-        {
-          // Report exceptions to video if desired: We have to be extra careful here because the exception might have
-          // been called by the input frame (camera not streaming) or the output frame (gadget not streaming), in
-          // addition to exceptions thrown by the module:
-          if (itsCurrentMapping.ofmt && itsVideoErrors.load())
-          {
-            try
-            {
-              // If the module threw before get() or after send() on the output frame, get a buffer from the gadget:
-              if (itsVideoErrorImage.valid() == false) itsGadget->get(itsVideoErrorImage); // could throw when streamoff
-              
-              // Report module exception to serlog and get it back as a string:
-              std::string errstr = jevois::warnAndIgnoreException();
-
-              // Draw the error message into our video frame:
-              jevois::drawErrorImage(errstr, itsVideoErrorImage);
-            }
-            catch (...) { jevois::warnAndIgnoreException(); }
-
-            try
-            {
-              // Send the error image over USB:
-              if (itsVideoErrorImage.valid()) itsGadget->send(itsVideoErrorImage); // could throw if gadget stream off
-            }
-            catch (...) { jevois::warnAndIgnoreException(); }
-
-            // Invalidate the error image so it is clean for the next frame:
-            itsVideoErrorImage.invalidate();
-          }
-          else
-          {
-            // Report module exception to serlog, and ignore:
-            jevois::warnAndIgnoreException();
-          }
-        }
+	  dosleep = false;
+	}
+	catch (...)
+	{
+	  // Report exceptions to video if desired: We have to be extra careful here because the exception might have
+	  // been called by the input frame (camera not streaming) or the output frame (gadget not streaming), in
+	  // addition to exceptions thrown by the module:
+	  if (itsCurrentMapping.ofmt && itsVideoErrors.load())
+	  {
+	    try
+	    {
+	      // If the module threw before get() or after send() on the output frame, get a buffer from the gadget:
+	      if (itsVideoErrorImage.valid() == false)
+		itsGadget->get(itsVideoErrorImage); // could throw when streamoff
+	      
+	      // Report module exception to serlog and get it back as a string:
+	      std::string errstr = jevois::warnAndIgnoreException();
+	      
+	      // Draw the error message into our video frame:
+	      jevois::drawErrorImage(errstr, itsVideoErrorImage);
+	    }
+	    catch (...) { jevois::warnAndIgnoreException(); }
+	    
+	    try
+	    {
+	      // Send the error image over USB:
+	      if (itsVideoErrorImage.valid()) itsGadget->send(itsVideoErrorImage); // could throw if gadget stream off
+	    }
+	    catch (...) { jevois::warnAndIgnoreException(); }
+	    
+	    // Invalidate the error image so it is clean for the next frame:
+	    itsVideoErrorImage.invalidate();
+	  }
+	  else
+	  {
+	    // Report module exception to serlog, and ignore:
+	    jevois::warnAndIgnoreException();
+	  }
+	}
       }
       else
       {
-        // No module. If we have a module construction error, render it to an image and stream it over USB now (if we
-        // are doing USB and we want to see errors in the video stream):
-        if (itsCurrentMapping.ofmt && itsVideoErrors.load())
-          try
-          {
-            // Get an output image, draw error message, and send to host:
-            itsGadget->get(itsVideoErrorImage);
-            jevois::drawErrorImage(itsModuleConstructionError, itsVideoErrorImage);
-            itsGadget->send(itsVideoErrorImage);
-
-            // Also get one camera frame to avoid accumulation of stale buffers:
-            (void)jevois::InputFrame(itsCamera, itsTurbo).get();
-          }
-          catch (...) { jevois::warnAndIgnoreException(); }
+	// No module. If we have a module construction error, render it to an image and stream it over USB now (if we
+	// are doing USB and we want to see errors in the video stream):
+	if (itsCurrentMapping.ofmt && itsVideoErrors.load())
+	  try
+	  {
+	    // Get an output image, draw error message, and send to host:
+	    itsGadget->get(itsVideoErrorImage);
+	    jevois::drawErrorImage(itsModuleConstructionError, itsVideoErrorImage);
+	    itsGadget->send(itsVideoErrorImage);
+	    
+	    // Also get one camera frame to avoid accumulation of stale buffers:
+	    (void)jevois::InputFrame(itsCamera, itsTurbo).get();
+	  }
+	  catch (...) { jevois::warnAndIgnoreException(); }
       }
     }
   

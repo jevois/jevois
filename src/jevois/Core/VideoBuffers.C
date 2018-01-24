@@ -41,7 +41,7 @@ jevois::VideoBuffers::VideoBuffers(char const * name, int const fd, v4l2_buf_typ
   // Allocate VideoBuf and MMAP the buffers:
   for (unsigned int i = 0; i < req.count; ++i)
   {
-	struct v4l2_buffer buf = { };
+    struct v4l2_buffer buf = { };
     buf.type = type;
     buf.memory = V4L2_MEMORY_MMAP;
     buf.index = i;

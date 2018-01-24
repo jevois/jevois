@@ -161,6 +161,9 @@ namespace jevois
       //! Human-readable description of this Module's supported custom commands
       virtual void supportedCommands(std::ostream & os) override;
 
+      //! Optionally call uninit() python module function, if implemented
+      void postUninit() override;
+      
     private:
       boost::python::object itsMainModule, itsMainNamespace;
       boost::python::object itsInstance;

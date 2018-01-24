@@ -171,7 +171,7 @@ Getting JeVois to install from scratch for full developer capability requires se
 
 2. Download the JeVois source code from Github.
 
-3. Download and install OpenCV 3.3 specially configured for JeVois.
+3. Download and install OpenCV 3.4 specially configured for JeVois.
 
 4. Setup jevois-sdk, cross-compile all the programs that will run on the camera, cross-compile its kernel.
 
@@ -248,7 +248,7 @@ export JEVOIS_ROOT=/jevois
 # and close all terminals and open a new terminal to make sure the environment is refreshed.
 
 ####################################################################################################
-ADVANCED: Installing OpenCV 3.3.0 on a Linux host system:
+ADVANCED: Installing OpenCV 3.4.0 on a Linux host system:
 ####################################################################################################
 
 SHORTCUT: sudo apt install jevois-opencv
@@ -265,8 +265,8 @@ sudo apt install protobuf-compiler libprotobuf-dev
 
 mkdir opencv
 cd opencv
-export ver="3.3.0"
-export pyver="3.5"
+export ver="3.4.0"
+export pyver="3.5" # or use 3.6 on Ubuntu 17.10 and later
 
 wget https://github.com/opencv/opencv/archive/${ver}.tar.gz
 tar zxvf ${ver}.tar.gz
@@ -299,8 +299,8 @@ make -j 50 # replace 50 by your number of CPU cores
 
 suto make install
 
-# This installs into /usr/share/jevois-opencv-3.3.0
-# The sample programs are in /usr/share/jevois-opencv-3.3.0/share/OpenCV/samples/
+# This installs into /usr/share/jevois-opencv-3.4.0
+# The sample programs are in /usr/share/jevois-opencv-3.4.0/share/OpenCV/samples/
 
 ####################################################################################################
 Compiling JeVois library and base apps

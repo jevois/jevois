@@ -314,8 +314,9 @@ void jevois::Camera::streamOn()
     unsigned int framesize = jevois::v4l2ImageSize(itsFormat.fmt.pix.pixelformat, itsFormat.fmt.pix.width,
                                                    itsFormat.fmt.pix.height);
 
-    // Aim for about 4 mbyte when using small images:
+    // Aim for about 4 mbyte when using small images, and no more than 5 buffers in any case:
     nbuf = (4U * 1024U * 1024U) / framesize;
+    if (nbuf > 5) nbuf = 5;
   }
 
   // Force number of buffers to a sane value:

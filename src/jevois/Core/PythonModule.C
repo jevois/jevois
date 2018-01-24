@@ -192,6 +192,13 @@ jevois::PythonModule::PythonModule(jevois::VideoMapping const & m) :
 }
 
 // ####################################################################################################
+void jevois::PythonModule::postUninit()
+{
+  // Call python module's uninit() function if implemented:
+  if (hasattr(itsInstance, "uninit")) itsInstance.attr("uninit")();
+}
+
+// ####################################################################################################
 jevois::PythonModule::~PythonModule()
 { }
 

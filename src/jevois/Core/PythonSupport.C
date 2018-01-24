@@ -68,6 +68,7 @@ namespace
   void * init_numpy()
   {
     // Initialize Python:
+    Py_SetProgramName(Py_DecodeLocale("", nullptr)); // black magic
     Py_Initialize();
 
     // Initialize numpy array. Use the signal handler hack to prevent numpy from grabbing CTRL-C from
@@ -97,7 +98,11 @@ namespace
     jevois::python::engineForPythonModule->sendSerial(str);
   }
 
-  void pythonLDEBUG(std::string const & JEVOIS_UNUSED_PARAM(logmsg)) { LDEBUG(logmsg); }
+#ifdef JEVOIS_LDEBUG_ENABLE
+  void pythonLDEBUG(std::string const & logmsg) { LDEBUG(logmsg); }
+#else
+  void pythonLDEBUG(std::string const & JEVOIS_UNUSED_PARAM(logmsg)) { }
+#endif
   void pythonLINFO(std::string const & logmsg) { LINFO(logmsg); }
   void pythonLERROR(std::string const & logmsg) { LERROR(logmsg); }
   void pythonLFATAL(std::string const & logmsg) { LFATAL(logmsg); }
