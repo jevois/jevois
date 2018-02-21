@@ -1,0 +1,30 @@
+/*! \page Multicam Streaming video from multiple JeVois cameras connected to one USB bus
+
+By default, JeVois is configured to use all of the USB isochronous bandwidth, so as to minimize latency.
+
+In a nutshell, isochronous transfers are the ones that guarantee real time data delivery, and hence are desirable for
+audio and video. On a 8kHz clock (125us period), each connected device can request some time slots, for example, a
+device may request to transmit 1 kbyte every 8 clock cycles (microframe), another may request 128 bytes every
+microframe, etc. The host then finds a way to accommodate the various requests of all connected devices. JeVois by
+default requests the max, which is 3 kbyte per microframe, with the goal of pushing all the video data as fast as
+possible to the host to minimize delay.
+
+Starting with \jvversion{1.7.2}, a new boot switch is provided: by writing an empty file called \b multicam into the
+<b>BOOT:</b> partition of the microSD card, one can lower the bandwidth request of a JeVois camera to 1 kbyte/microframe
+(8 MByte/s). See \ref Debugging and \ref MicroSD for more information about this special file. Using this new option,
+one can stream from 3 JeVois cameras connected to a same USB bus. Note that all 3 cameras must have the \b multicam boot
+mode enabled for this to work.
+
+\image html multicam.png Above: streaming video from 3 JeVois cameras connected to one USB hub
+
+Because this limits the USB bandwidth to 8 MByte/s for each JeVois camera, it is not enabled by default. Note that it
+may also limit the framerate at which some modules can run. In YUYV, that means only low-resolution will go through at
+full frame rate. Indeed, just 640 x 480 x 2(bytes/pixel) x 30(fps) already is 18 Mbytes/s.
+
+When using PC host hardware, expansion cards are available that provide a dedicated USB controller to each port. For
+example the StarTech PEXUSB400 (4 independent USB 2.0 ports, discontinued but may find on eBay) or PEXUSB3S44V (4
+independent USB 3.0 ports). With such a card, one could stream from 4 JeVois cameras at full frame rate
+(3kb/microframe), or from 12 JeVois cameras at the multicam rate (1kb/microframe; one would need to connect a powered
+3-port USB hub to each of the 4 ports on the expansion card).
+
+*/

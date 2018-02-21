@@ -355,35 +355,54 @@ void jevois::Serial::writeString(std::string const & str)
 // ######################################################################
 void jevois::Serial::write(void const * buffer, const int nbytes)
 {
-  std::lock_guard<std::mutex> _(itsMtx);
-
-  int ndone = 0; char const * b = reinterpret_cast<char const *>(buffer); int iter = 0;
-  while (ndone < nbytes && iter++ < 10)
+  if (drop::get())
   {
-    int n = ::write(itsDev, b + ndone, nbytes - ndone);
-    if (n == -1 && errno != EAGAIN) throw std::runtime_error("Serial: Write error");
+    // Just write and ignore (after a few attempts) if the number of bytes written is not what we wanted to write:
+    std::lock_guard<std::mutex> _(itsMtx);
 
-    // If we did not write the whole thing, the serial port is saturated, we need to wait a bit:
-    ndone += n;
-    if (ndone < nbytes) tcdrain(itsDev);
+    int ndone = 0; char const * b = reinterpret_cast<char const *>(buffer); int iter = 0;
+    while (ndone < nbytes && iter++ < 10)
+    {
+      int n = ::write(itsDev, b + ndone, nbytes - ndone);
+      if (n == -1 && errno != EAGAIN) throw std::runtime_error("Serial: Write error");
+      
+      // If we did not write the whole thing, the serial port is saturated, we need to wait a bit:
+      ndone += n;
+      if (ndone < nbytes) std::this_thread::sleep_for(std::chrono::milliseconds(2));
+    }
   }
-
-  if (ndone < nbytes)
+  else
   {
-    // If we had a serial overflow, we need to let the user know, but how, since the serial is overflowed already? Let's
-    // first throttle down big time, and then we throw once in a while:
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-
-    tcdrain(itsDev);
+    std::lock_guard<std::mutex> _(itsMtx);
     
-    // Report the overflow once in a while:
-    ++itsWriteOverflowCounter; if (itsWriteOverflowCounter > 100) itsWriteOverflowCounter = 0;
-    if (itsWriteOverflowCounter == 1)
-      throw std::overflow_error("Serial write overflow: need to reduce amount ot serial writing");
-
-    // Note how we are otherwise just ignoring the overflow and hence dropping data.
+    int ndone = 0; char const * b = reinterpret_cast<char const *>(buffer); int iter = 0;
+    while (ndone < nbytes && iter++ < 10)
+    {
+      int n = ::write(itsDev, b + ndone, nbytes - ndone);
+      if (n == -1 && errno != EAGAIN) throw std::runtime_error("Serial: Write error");
+      
+      // If we did not write the whole thing, the serial port is saturated, we need to wait a bit:
+      ndone += n;
+      if (ndone < nbytes) tcdrain(itsDev);
+    }
+    
+    if (ndone < nbytes)
+    {
+      // If we had a serial overflow, we need to let the user know, but how, since the serial is overflowed already?
+      // Let's first throttle down big time, and then we throw once in a while:
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+      
+      tcdrain(itsDev);
+      
+      // Report the overflow once in a while:
+      ++itsWriteOverflowCounter; if (itsWriteOverflowCounter > 100) itsWriteOverflowCounter = 0;
+      if (itsWriteOverflowCounter == 1)
+	throw std::overflow_error("Serial write overflow: need to reduce amount ot serial writing");
+      
+      // Note how we are otherwise just ignoring the overflow and hence dropping data.
+    }
+    else itsWriteOverflowCounter = 0;
   }
-  else itsWriteOverflowCounter = 0;
 }
 
 // ######################################################################

@@ -361,6 +361,7 @@ void jevois::Engine::postInit()
   gadgetdev::freeze();
   gadgetnbuf::freeze();
   itsTurbo = camturbo::get();
+  multicam::freeze();
 
   // Grab the log messages, itsSerials is not going to change anymore now that the serial params are frozen:
   jevois::logSetEngine(this);
@@ -433,7 +434,7 @@ void jevois::Engine::postInit()
   {
     LINFO("Loading USB video driver " << gd);
     // USB gadget driver:
-    itsGadget.reset(new jevois::Gadget(gd, itsCamera.get(), this, gadgetnbuf::get()));
+    itsGadget.reset(new jevois::Gadget(gd, itsCamera.get(), this, gadgetnbuf::get(), multicam::get()));
   }
   else if (gd.empty() == false)
   {

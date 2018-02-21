@@ -150,6 +150,14 @@ namespace jevois
                                            1344, { 120, 240, 312, 408, 480, 504, 600, 648, 720, 816, 912, 1008,
                                                1044, 1056, 1080, 1104, 1116, 1152, 1200, 1224, 1248, 1296, 1344 },
                                            ParamCateg);
+
+    //! Parameter \relates jevois::Engine
+    JEVOIS_DECLARE_PARAMETER(multicam, bool, "Allow up to 3 JeVois cameras on one USB bus. Enabling this "
+			     "reduces the amount of USB bandwidth used by each JeVois camera, from 3kb "
+			     "per USB isochronous microframe to 1kb. All 3 JeVois cameras must have this "
+			     "option enabled, and the JeVois linux kernel module should also have "
+			     "been loaded with multicam on.",
+			     false, ParamCateg);
   }
   
   //! JeVois processing engine - gets images from camera sensor, processes them, and sends results over USB
@@ -230,7 +238,7 @@ namespace jevois
                  public Parameter<engine::cameradev, engine::cameranbuf, engine::gadgetdev, engine::gadgetnbuf,
                                   engine::videomapping, engine::serialdev, engine::usbserialdev, engine::camreg,
                                   engine::camturbo, engine::serlog, engine::videoerrors, engine::serout,
-                                  engine::cpumode, engine::cpumax>
+                                  engine::cpumode, engine::cpumax, engine::multicam>
   {
     public:
       //! Constructor

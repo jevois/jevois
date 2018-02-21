@@ -69,7 +69,8 @@ namespace jevois
       /*! A vaid non-null camera is required for this gadget to work. To avoid testing for a non-null camera on each
           operation of the gadget, we only test once at construction and then assume the camera will remain operational
           for the lifetime of the gadget. Use 0 for nbufs to set it automatically. */
-      Gadget(std::string const & devname, VideoInput * camera, Engine * engine, size_t const nbufs = 0);
+      Gadget(std::string const & devname, VideoInput * camera, Engine * engine, size_t const nbufs = 0,
+	     bool multicam = false);
       
       //! Close the device and free all resources
       virtual ~Gadget();
@@ -98,6 +99,7 @@ namespace jevois
 
     private:
       volatile int itsFd;
+      bool const itsMulticam;
       size_t itsNbufs;
       VideoBuffers * itsBuffers;
       VideoInput * itsCamera;

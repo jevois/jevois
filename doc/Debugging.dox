@@ -68,6 +68,11 @@ Then, you can:
   (and it will be read-write from the host computer), i.e., the JeVois processor will not be able to 1) compile python
   modules, 2) write out any video files or other data to microSD.
 
+- \jvversion{1.7.2} create an empty file \b BOOT:multicam to lower the USB bandwidth requested by JeVois. This will
+  allow you to connect up to 3 JeVois cameras to a single USB port (through a hub). By default, JeVois requests all of
+  the available USB isochronous bandwidth, so as to minimize the latency between image capture and image reception at
+  the host. See \ref Multicam for more details.
+
 - edit the file <b>~/jevois/bin/jevois.sh</b>, which gets installed to microSD as <b>LINUX:/usr/bin/jevois.sh</b>, for
   example to start \b jevois-daemon in \b gdb (see \ref JeVoisDaemon).
 

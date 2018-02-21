@@ -1,0 +1,16 @@
+/*! \page Change18log Changes and new features in JeVois 1.8
+
+JeVois 1.8 brings the following new features:
+
+- Bugfix: absolute exposure settings (using `setcam autoexp 1` and then `setcam absexp 123`) can now properly be read
+  back from the sensor (using `getcam absexp`). Note that the value read back may be truncated depending on frame rate
+  which may limit exposure time.
+
+- Added a boot option (disabled by default) to connect stream video from 3 JeVois cameras connected to a single USB
+  bus. See \ref Multicam for details.
+
+- Added an option (enabled by default) to silently drop serial messages when the serial buffer is full. This avoids
+  issues with JeVois appearing to hang when it is actually trying to send serial messages over the USB connection but
+  there is nobody listening to them on the host computer.
+
+*/

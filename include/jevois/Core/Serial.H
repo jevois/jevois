@@ -52,6 +52,12 @@ namespace jevois
     JEVOIS_DECLARE_PARAMETER(flowhard, bool, "Use hard (RTS/CTS) flow control",
                              false, ParamCateg);
 
+    //! Parameter \relates jevois::Serial
+    JEVOIS_DECLARE_PARAMETER(drop, bool, "Silently drop write data when write buffer is full. Useful to "
+			     "avoid blocking when writing messages to serial-over-USB port and the host is "
+			     "not listening to it",
+                             true, ParamCateg);
+
     //! Enum for Parameter \relates jevois::Serial
     JEVOIS_DEFINE_ENUM_CLASS(LineStyle, (LF) (CR) (CRLF) (Zero) (Sloppy) );
 
@@ -75,7 +81,7 @@ namespace jevois
       are serialized through the use of a mutex in the Serial class. \ingroup core */
   class Serial : public UserInterface,
                  public Parameter<serial::devname, serial::baudrate, serial::format, serial::flowsoft,
-                                  serial::flowhard, serial::linestyle, serial::mode>
+                                  serial::flowhard, serial::drop, serial::linestyle, serial::mode>
   {
     public:
       //! Constructor
@@ -145,7 +151,7 @@ namespace jevois
       termios itsSavedState; // saved state to restore in the destructor
       std::string itsPartialString;
       std::mutex itsMtx;
-      int itsWriteOverflowCounter; // counter so we do not send too many write overflow errors
+      int itsWriteOverflowCounter; // counter so we do not send too many write overflow errors, or -1 to drop
       jevois::UserInterface::Type itsType;
   };
 } // namespace jevois

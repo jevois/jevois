@@ -136,9 +136,9 @@ namespace
 
 // ##############################################################################################################
 jevois::Gadget::Gadget(std::string const & devname, jevois::VideoInput * camera, jevois::Engine * engine,
-                       size_t const nbufs) :
-    itsFd(-1), itsNbufs(nbufs), itsBuffers(nullptr), itsCamera(camera), itsEngine(engine), itsRunning(false),
-    itsFormat(), itsFps(0.0F), itsStreaming(false), itsErrorCode(0), itsControl(0), itsEntity(0)
+                       size_t const nbufs, bool multicam) :
+    itsFd(-1), itsMulticam(multicam), itsNbufs(nbufs), itsBuffers(nullptr), itsCamera(camera), itsEngine(engine),
+    itsRunning(false), itsFormat(), itsFps(0.0F), itsStreaming(false), itsErrorCode(0), itsControl(0), itsEntity(0)
 {
   JEVOIS_TRACE(1);
   
@@ -590,7 +590,7 @@ void jevois::Gadget::fillStreamingControl(struct uvc_streaming_control * ctrl, j
   ctrl->bFrameIndex = m.uvcframe;
   ctrl->dwFrameInterval = jevois::VideoMapping::fpsToUvc(m.ofps);
   ctrl->dwMaxVideoFrameSize = m.osize();
-  ctrl->dwMaxPayloadTransferSize = 3072;
+  ctrl->dwMaxPayloadTransferSize = itsMulticam ? 1024 : 3072;
   ctrl->bmFramingInfo = 3;
   ctrl->bPreferedVersion = 1;
   ctrl->bMaxVersion = 1;
