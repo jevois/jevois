@@ -132,7 +132,7 @@ NEON multimedia acceleration | Yes | No unless host has ARM CPU
 Camera sensor controls | All supported by sensor | As supported by your desktop camera driver
 Camera low-level register tweaking | Yes | No
 Camera frame rate 0.1fps increments | Yes | Most likely no
-Camera trubo mode | Yes | No
+Camera turbo mode | Yes | No
 Display output | No | Yes
 USB streaming video output | Yes | No
 Serial-over-USB | Yes | No

@@ -25,7 +25,7 @@ set(JEVOIS_VENDOR "JeVois")
 # Project version:
 set(JEVOIS_VERSION_MAJOR  1)
 set(JEVOIS_VERSION_MINOR  7)
-set(JEVOIS_VERSION_PATCH  2)
+set(JEVOIS_VERSION_PATCH  3)
 set(JEVOIS_SOVERSION "${JEVOIS_VERSION_MAJOR}.${JEVOIS_VERSION_MINOR}.${JEVOIS_VERSION_PATCH}" )
 
 ########################################################################################################################
@@ -332,9 +332,9 @@ autoconf, libeigen3-dev, screen, libgtk2.0-dev, libdc1394-22, libdc1394-22-dev, 
 libavcodec-dev, libavformat-dev, libswscale-dev, libxine2-dev, libgstreamer1.0-dev, libgstreamer-plugins-base1.0-dev, \
 libv4l-dev, libtbb2, libtbb-dev, libqt4-dev, libfaac-dev, libmp3lame-dev, libopencore-amrnb-dev, \
 libopencore-amrwb-dev, libtheora-dev, libvorbis-dev, libxvidcore-dev, x264, v4l-utils, unzip, qt5-default, \
-python3-dev, python3-numpy, python3-pip, libgtk-3-dev, libatlas-base-dev, libturbojpeg, libtbb2, \
+libgtk-3-dev, libatlas-base-dev, libturbojpeg, libtbb2, \
 python${JEVOIS_HOST_PYTHON_MAJOR}.${JEVOIS_HOST_PYTHON_MINOR}-dev, python${JEVOIS_HOST_PYTHON_MAJOR}-numpy, \
-jevois-opencv (>=${JEVOIS_OPENCV_VERSION})")
+python${JEVOIS_HOST_PYTHON_MAJOR}-pip, python-serial, jevois-opencv (>=${JEVOIS_OPENCV_VERSION})")
 
 # Use helper from JeVois.cmake for all other settings:
 jevois_setup_cpack("jevois")

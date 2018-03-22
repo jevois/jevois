@@ -4,21 +4,36 @@
 # Send a command to a connected JeVois camera using the serial-over-USB port
 #
 # Tip: If things appear garbled in some way, maybe your TTY settings got messed up. Run screen /dev/ttyACM0 115200 to
-# reset to th eexpected state.
+# reset to the expected state.
+#
+# You may need to install: sudo apt install python-serial
 
 ttydev="/dev/ttyACM0"
 if [ "X$1" = "X-d" ]; then ttydev=$2; shift 2; fi 
 
 if [ ! -c "$ttydev" ]; then echo "Cannot access $ttydev -- is JeVois plugged in? -- ABORT"; exit 1; fi
 
+# Set the tty flags:
+sudo stty -F "${ttydev}" sane raw igncr clocal cread -echo
+
 # First read any accumulated junk in the serial buffers:
 while true; do
-    sudo bash -c "read -s -t 0.05 -s < \"${ttydev}\""
+    sudo bash -c "read -s -t 0.05 < \"${ttydev}\""
     if [ $? -ne 0 ]; then break; fi
 done
 
-# Send the command:
-sudo bash -c "echo \"$*\" > ${ttydev}"
+# Make a python program:
+prog="import serial
+ser = serial.Serial('$ttydev', 115200, timeout=1)
+ser.write('$*\n')
+nothing=1
+out = ''
+while nothing or ser.inWaiting() > 0:
+    out += ser.read(1)
+    nothing=0
+if out != '':
+    print out,
+"
 
-# Get the reply, which may have multiple lines:
-sudo timeout 0.5 cat ${ttydev}
+# Send the command:
+sudo python2.7 -c "$prog"
