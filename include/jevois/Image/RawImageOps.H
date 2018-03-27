@@ -248,21 +248,30 @@ namespace jevois
     //! Flip a YUYV RawImage horizontally while preserving color information
     /*! This function is to allow one to use JeVois with the PhotoBooth app on a Mac, whih flips the image horizontally
         (about the vertical axis). Only YUYV pixels are supported. You might be able to use cv::flip() from OpenCV
-        instead with other pixel types. */
+        instead with other pixel types. \ingroup image */
     void hFlipYUYV(RawImage & img);
 
     //! OpenCV does not provide conversion from RGB to YUYV in cvtColor(), so this function provides it
+    /*! \ingroup image */
     void convertCvRGBtoCvYUYV(cv::Mat const & src, cv::Mat & dst);
 
     //! OpenCV does not provide conversion from BGR to YUYV in cvtColor(), so this function provides it
+    /*! \ingroup image */
     void convertCvBGRtoCvYUYV(cv::Mat const & src, cv::Mat & dst);
 
     //! OpenCV does not provide conversion from GRAY to YUYV in cvtColor(), so this function provides it
+    /*! \ingroup image */
     void convertCvGRAYtoCvYUYV(cv::Mat const & src, cv::Mat & dst);
 
     //! OpenCV does not provide conversion from RGBA to YUYV in cvtColor(), so this function provides it
+    /*! \ingroup image */
     void convertCvRGBAtoCvYUYV(cv::Mat const & src, cv::Mat & dst);
 
   } // namespace rawimage
+
+  //! Rescale an OpenCV image, choosing the right kind of interpolation
+  /*! \ingroup image */
+  cv::Mat rescaleCv(cv::Mat const & img, cv::Size const & newdims);
+
 } // namespace jevois
 

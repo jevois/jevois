@@ -1384,3 +1384,17 @@ void jevois::rawimage::hFlipYUYV(RawImage & img)
   cv::parallel_for_(cv::Range(0, img.height), hflipYUYV(img.pixelsw<unsigned char>(), img.width));
 }
 
+// ####################################################################################################
+cv::Mat jevois::rescaleCv(cv::Mat const & img, cv::Size const & newdims)
+{
+  cv::Mat scaled;
+
+  if (newdims.width == img.cols && newdims.height == img.rows)
+    scaled = img;
+  else if (newdims.width > img.cols || newdims.height > img.rows)
+    cv::resize(img, scaled, newdims, 0, 0, cv::INTER_LINEAR);
+  else
+    cv::resize(img, scaled, newdims, 0, 0, cv::INTER_AREA);
+
+  return scaled;
+}

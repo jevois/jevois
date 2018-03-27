@@ -2,6 +2,10 @@
 
 JeVois 1.8 brings the following new features:
 
+- Support for the mobile-optimized TensorFlow Lite, which allows one to run TensorFlow deep neural networks on
+  JeVois. See \jvmod{TensorFlowSingle} for an example module using mobilenet and compressed mobilenet pre-trained
+  networks that can recognize 1000 different object categories.
+
 - Bugfix: absolute exposure settings (using `setcam autoexp 1` and then `setcam absexp 123`) can now properly be read
   back from the sensor (using `getcam absexp`). Note that the value read back may be truncated depending on frame rate
   which may limit exposure time.
@@ -12,5 +16,10 @@ JeVois 1.8 brings the following new features:
 - Added an option (enabled by default) to silently drop serial messages when the serial buffer is full. This avoids
   issues with JeVois appearing to hang when it is actually trying to send serial messages over the USB connection but
   there is nobody listening to them on the host computer.
+
+- Changed \c jevois-cmd host script to use python serial port handling instead of simple shell commands. Should improve
+  reliability in some newer host Linux versions.
+
+- Added support for operation with no video streaming over USB in \jvmod{ObjectDetect}
 
 */
