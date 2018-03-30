@@ -7,6 +7,8 @@ my $uroot = "http://jevois.org"; # root url
 my $iconsize = 80; # icon size
 
 my $mods = [
+    [ "TensorFlowSaliency", "Detect and recognize", "1000 object types" ],
+    [ "TensorFlowEasy", "Recognize 1000 objects", "at up to 83 fps" ],
     [ "DarknetSaliency", "Detect and recognize", "1000 object types" ],
     [ "DarknetSingle", "Recognize 1000", "objects types" ],
     [ "DarknetYOLO", "Locate and identify", "objects in scenes" ],
