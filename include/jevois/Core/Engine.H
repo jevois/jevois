@@ -158,6 +158,11 @@ namespace jevois
 			     "option enabled, and the JeVois linux kernel module should also have "
 			     "been loaded with multicam on.",
 			     false, ParamCateg);
+    
+    //! Parameter \relates jevois::Engine
+    JEVOIS_DECLARE_PARAMETER(quietcmd, bool, "When true, do not issue a message 'OK' after every correct command "
+			     "received at the command-line interface. Recommended for advanced users only."
+			     false, ParamCateg);
   }
   
   //! JeVois processing engine - gets images from camera sensor, processes them, and sends results over USB
@@ -238,7 +243,7 @@ namespace jevois
                  public Parameter<engine::cameradev, engine::cameranbuf, engine::gadgetdev, engine::gadgetnbuf,
                                   engine::videomapping, engine::serialdev, engine::usbserialdev, engine::camreg,
                                   engine::camturbo, engine::serlog, engine::videoerrors, engine::serout,
-                                  engine::cpumode, engine::cpumax, engine::multicam>
+                                  engine::cpumode, engine::cpumax, engine::multicam, engine::quietcmd>
   {
     public:
       //! Constructor

@@ -10,10 +10,12 @@ use_usbsd=1        # Allow exposing the JEVOIS partition of the microSD as a USB
 use_serialtty=0    # Use a TTY on the hardware serial and do not use it in jevois-daemon
 use_usbserialtty=0 # Use a TTY on the serial-over-USB and do not use it in jevois-daemon
 use_maxbandwidth=1 # Use 100% of isochronous bandwidth to minimize latency; disable to connect several cameras
+use_quietcmd=0     # Do not say OK after every good command when true
 
 if [ -f /boot/nousbserial ]; then use_usbserial=0; echo "JeVois serial-over-USB disabled"; fi
 if [ -f /boot/nousbsd ]; then use_usbsd=0; echo "JeVois microSD access over USB disabled"; fi
 if [ -f /boot/multicam ]; then use_maxbandwidth=0; echo "JeVois multi-camera mode enabled"; fi
+if [ -f /boot/quietcmd ]; then use_quietcmd=1; echo "JeVois quiet command-line mode enabled"; fi
 
 # Block device we present to the host as a USB drive, or empty to not present it at start:
 usbsdfile=""
@@ -107,6 +109,7 @@ opts=""
 if [ "X${use_usbserial}" != "X1" -o "X${use_usbserialtty}" = "X1" ]; then opts="${opts} --usbserialdev="; fi
 if [ "X${use_serialtty}" = "X1" ]; then opts="${opts} --serialdev="; fi
 if [ "X${use_maxbandwidth}" != "X1" ]; then opts="${opts} --multicam=1"; fi
+if [ "X${use_quietcmd}" = "X1" ]; then opts="${opts} --quietcmd=1"; fi
 
 # Start the jevois daemon:
 if [ "X${use_serialtty}" = "X1" -o "X${use_usbserialtty}" = "X1" ]; then

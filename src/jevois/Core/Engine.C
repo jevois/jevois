@@ -817,7 +817,7 @@ void jevois::Engine::mainLoop()
           }
           
           // If success, let user know:
-          if (success) s->writeString("OK");
+          if (success && quietcmd::get() == false) s->writeString("OK");
         }
       }
       catch (...) { jevois::warnAndIgnoreException(); }

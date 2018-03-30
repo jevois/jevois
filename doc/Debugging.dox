@@ -73,6 +73,9 @@ Then, you can:
   the available USB isochronous bandwidth, so as to minimize the latency between image capture and image reception at
   the host. See \ref Multicam for more details.
 
+- \jvversion{1.8.0} create an empty file \b BOOT:quietcmd to suppress sending 'OK' back to the user after every
+  successful command received at the command line. Recommended for advanced users only.
+
 - edit the file <b>~/jevois/bin/jevois.sh</b>, which gets installed to microSD as <b>LINUX:/usr/bin/jevois.sh</b>, for
   example to start \b jevois-daemon in \b gdb (see \ref JeVoisDaemon).
 
