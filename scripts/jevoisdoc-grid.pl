@@ -36,6 +36,7 @@ my $mods = [
     [ "DemoNeon", "Fast image", "filtering using NEON" ],
     [ "SaveVideo", "Record video", "to microSD" ],
     [ "DenseSift", "Dense", "SIFT keypoints" ],
+    [ "FirstPython", "FIRST Robotics", "object detection" ],
     [ "PythonSandbox", "Your algorithm", "in Python + OpenCV" ],
     ];
 
