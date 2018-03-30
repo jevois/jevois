@@ -370,8 +370,11 @@ void jevois::Engine::postInit()
   // module. This likely has to do with the fact that the python core is not very thread-safe, and setFormatInternal()
   // in Engine, which instantiates python modules, will indeed be invoked from a different thread (the one that receives
   // USB UVC events). Have a look at Python Thread State, Python Gobal Interpreter Lock, etc if interested:
-  LINFO("Initalizing Python...");
-  jevois::pythonModuleSetEngine(this);
+  if (python::get())
+  {
+    LINFO("Initalizing Python...");
+    jevois::pythonModuleSetEngine(this);
+  }
   
   // Instantiate a camera: If device names starts with "/dev/v", assume a hardware camera, otherwise a movie file:
   std::string const camdev = cameradev::get();
@@ -624,6 +627,8 @@ void jevois::Engine::setFormatInternal(jevois::VideoMapping const & m)
     std::string const sopath = m.sopath();
     if (m.ispython)
     {
+      if (python::get() == false) LFATAL("Python disabled, delete BOOT:nopython and restart to enable python");
+      
       // Instantiate the python wrapper:
       itsLoader.reset();
       itsModule.reset(new jevois::PythonModule(m));

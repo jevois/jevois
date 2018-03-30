@@ -161,8 +161,15 @@ namespace jevois
     
     //! Parameter \relates jevois::Engine
     JEVOIS_DECLARE_PARAMETER(quietcmd, bool, "When true, do not issue a message 'OK' after every correct command "
-			     "received at the command-line interface. Recommended for advanced users only."
+			     "received at the command-line interface. Recommended for advanced users only.",
 			     false, ParamCateg);
+
+    //! Parameter \relates jevois::Engine
+    JEVOIS_DECLARE_PARAMETER(python, bool, "When true, enable support for modules written in Python. Otherwise, "
+			     "attempting to load a python module will throw an exception. Disabling python saves "
+			     "a lot of memory and may be useful when using C++ modules that run large deep neural "
+			     "networks.",
+			     true, ParamCateg);
   }
   
   //! JeVois processing engine - gets images from camera sensor, processes them, and sends results over USB
@@ -243,7 +250,8 @@ namespace jevois
                  public Parameter<engine::cameradev, engine::cameranbuf, engine::gadgetdev, engine::gadgetnbuf,
                                   engine::videomapping, engine::serialdev, engine::usbserialdev, engine::camreg,
                                   engine::camturbo, engine::serlog, engine::videoerrors, engine::serout,
-                                  engine::cpumode, engine::cpumax, engine::multicam, engine::quietcmd>
+                                  engine::cpumode, engine::cpumax, engine::multicam, engine::quietcmd,
+				  engine::python>
   {
     public:
       //! Constructor

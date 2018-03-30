@@ -76,6 +76,10 @@ Then, you can:
 - \jvversion{1.8.0} create an empty file \b BOOT:quietcmd to suppress sending 'OK' back to the user after every
   successful command received at the command line. Recommended for advanced users only.
 
+- \jvversion{1.8.0} create an empty file \b BOOT:nopython to disable support for modules written in python. When
+  activated, attempting to load a python module will throw an exception. Disabling python saves a lot of memory and may
+  be useful when using C++ modules that run large deep neural networks.
+
 - edit the file <b>~/jevois/bin/jevois.sh</b>, which gets installed to microSD as <b>LINUX:/usr/bin/jevois.sh</b>, for
   example to start \b jevois-daemon in \b gdb (see \ref JeVoisDaemon).
 
