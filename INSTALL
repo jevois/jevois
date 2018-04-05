@@ -19,7 +19,8 @@
 JeVois embedded machine vision framework INSTALL
 ####################################################################################################
 
-This guide assumes a fresh Ubuntu 17.04 install.
+This guide assumes a fresh Ubuntu 16.04 (xenial) install. For more recent versions of Ubuntu, replace 'xenial' below by
+the code name of your version (e.g., artful for 17.10, bionic for 18.04, etc)
 
 jevois is a C++17 software framework for real-time machine vision running on smart cameras
 
@@ -27,7 +28,7 @@ See http://jevois.org for full documentation.
 
 See https://github.com/jevois for full source code.
 
-On Github, the master branch is for stable releases, minor patch work, or addition of new features that do not break the
+On GitHub, the master branch is for stable releases, minor patch work, or addition of new features that do not break the
 current release version. More disruptive development is in devX.Y branches.
 
 JeVois software is organized into five top-level packages:
@@ -35,7 +36,7 @@ JeVois software is organized into five top-level packages:
    - jevois: The core C++17 JeVois software.
    - jevoisbase: The base collection of 25+ machine vision modules for JeVois.
    - samplemodule: A sample standalone module for JeVois written in C++, to use as a template for new modules.
-   - samplepythonmodule: A sample standalone module for JeVois wrtten in Python, to use as a template for new modules.
+   - samplepythonmodule: A sample standalone module for JeVois written in Python, to use as a template for new modules.
    - jevois-sdk: The framework that provides a Linux kernel and operating system for a JeVois camera, to be flashed
         to a microSD card.
 
@@ -50,12 +51,13 @@ Installation using Ubuntu packages (for most people except Linux kernel hackers)
 JeVois provides Ubuntu packages that will pull in all the dependencies required to run JeVois software and develop for
 JeVois.
 
-See http://jevois.usc.edu for the latest instructions. In summary:
+See http://jevois.usc.edu for the latest instructions as they may be updated more often than this INSTALL file. In
+summary:
 
-You need at least 15GB free space in your root partition.
+You need at least 30GB free space in your root partition.
 
 sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys DD24C027
-sudo add-apt-repository "deb http://jevois.usc.edu/apt zesty main"
+sudo add-apt-repository "deb http://jevois.usc.edu/apt xenial main"  # replace xenial by artful, bionic, etc if needed
 sudo apt update
 sudo apt upgrade
 
@@ -126,7 +128,7 @@ sudo apt upgrade
     	  You need to install jevois-sdk-dev and then rebuild jevois-sdk from source. Follow the instructions in this
     	  INSTALL file.
 
-If you want to recompile jevois and/or jevoisbase, you will also need to get their source code from Github. See
+If you want to recompile jevois and/or jevoisbase, you will also need to get their source code from GitHub. See
 instructions below related to downloading and compiling jevois and jevoisbase.
 
 After you have installed at least jevois-host and jevoisbase-host, just plug in a USB camera and try
@@ -141,7 +143,7 @@ try:
           help
           listmappings
 
-To start jevois-daemon in a specific mode, find its number in the listmapping list, then type 'quit' to quit
+To start jevois-daemon in a specific mode, find its number in the listmappings list, then type 'quit' to quit
 jevois-daemon, and finally:
 
           jevois-daemon --videomapping=19
@@ -169,7 +171,7 @@ Getting JeVois to install from scratch for full developer capability requires se
 
 1. Install some needed utilities and other packages on your Linux computer
 
-2. Download the JeVois source code from Github.
+2. Download the JeVois source code from GitHub.
 
 3. Download and install OpenCV 3.4 specially configured for JeVois.
 
@@ -199,7 +201,7 @@ The jevois-opencv Ubuntu package (which is a dependency of jevois-sdk-dev) will 
 already installed jevois-sdk-dev as explained above, most likely you do not need to follow the instructions in this
 section and you can skip to the next section.
 
-For some Ubuntu 16.04LTS (Xenial) based distros such as Mint18, you need to add:
+For some Ubuntu 16.04LTS (xenial) based distros such as Mint18, you need to add:
 
 deb http://cz.archive.ubuntu.com/ubuntu yakkety main universe
 deb http://ppa.launchpad.net/ubuntu-toolchain-r/test
