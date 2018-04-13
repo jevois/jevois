@@ -213,6 +213,13 @@ void jevois::Module::supportedCommands(std::ostream & os)
 { os << "None" << std::endl; }
 
 // ####################################################################################################
+jevois::Engine* jevois::Module::getEngine()
+{
+  if (!itsParent) return nullptr;
+  return dynamic_cast<jevois::Engine *>(itsParent);
+}
+
+// ####################################################################################################
 // ####################################################################################################
 jevois::StdModule::StdModule(std::string const & instance) :
     jevois::Module(instance)
