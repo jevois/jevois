@@ -1,0 +1,205 @@
+/*! \page Lenses Lens Options
+
+As of April, 2018, several different lens options are available for JeVois:
+
+\image html jevois-lenses-small.png JeVois lens options.
+
+Click <A HREF="/i/jevois-lenses.png">here for a larger version</A> of the above image.
+
+Overview
+--------
+
+Below is a quick comparison:
+
+Lens           | Horizontal field of view   | Infrared-cut (IR) filter | Adjustable focus
+---------------|----------------------------|--------------------------|----------------------------
+Standard       | 60 degrees                 | Yes                      | No (dot of glue on threads)
+NoIR           | 60 degrees                 | No                       | Yes
+90deg          | 90 degrees, no distortion  | Yes                      | Yes
+120deg         | 120 degrees fisheye        | Yes                      | Yes
+
+An <b>infrared-cut (IR-cut) filter</b> blocks infrared light so that the sensor only receives visible light. This ideal
+for daytime use. The \b NoIR lens with no such filter is ideal for nighttime use. You would then need to provide an
+infrared light source (typically, an array of infrared LEDs), which can illuminate your scene using a wavelength of
+light that is invisible to the human eye. In this way, JeVois can still "see", thanks to the reflected IR light, even in
+what appears to humans to be complete darkness. Many security cameras use this feature to provide nighttime monitoring.
+
+A <b>no-distortion lens</b> features a broader field of view, but with very little spatial distortion of the image, so
+that straight lines in the world are seen as straight lines in the video captured by the camera.
+
+In contrast, very wide-angle <b>fisheye lenses</b> suffer from so-called barrel distortion, named because an array of
+vertical lines will be imaged by the camera as curved, as if on the surface of the barrel. This is the flip-side of
+getting a much wider field of view with fisheye compared to conventional lenses. JeVois provides an algorithm for the
+correction of barrel distortion, which runs on the GPU inside JeVois, see JeVois module \jvmod{DemoGPU} for example.
+
+Note that for all except the standard lens, the lens has been adjusted at the factory for a focusing distance of 30cm to
+infinity. In addition, we asked the factory to NOT glue the lens once focused. So, you will be able to easily change
+focus by simply turning the lens. Once you have found your optimal setting, you should fix the lens using a small drop
+of glue, paint, nail polish, etc on the thread (as was done with the standard lens pre-installed in JeVois).
+
+Recommendations and usage scenarios
+-----------------------------------
+
+- <b>Standard lens:</b> most versatile, no distortion, fixed focus of 40cm to infinity. Provides a relatively narrower
+  field of view but this means that objects appear bigger and have more pixels on target, possibly making them easier to
+  understand by JeVois (e.g., decoding of QR-codes or ArUco markers).
+
+- <b>NoIR lens:</b> no distortion, same field of view as the standard lens, adjustable focus, no IR-cut filter. Mostly
+  useful for night-vision applications, using an infrared illuminator as a light source.
+
+- <b>90deg lens</b>: wider field of view than the standard lens, no distortion, adjustable focus. Because there is no
+  distortion, using this lens does not require any barrel correction, as is needed when using lenses with an even wider
+  field of view. Use this lens if you need a wider field of view than the original lens, with no need to correct the
+  image for distortions. Note how objects in front of JeVois will appear smaller with this lens compared to the original
+  lens. But in exchange, you will see more broadly to the sides of the optical axis.
+
+- <b>120deg lens</b>: widest field of view, barrel distortion, adjustable focus. Use this if you want a much wider field
+  of view than the original lens, with the awareness that you will likely need to spend some CPU or GPU resources
+  de-warping the barrel distortions. Note how objects in front of JeVois will appear smaller with this lens compared to
+  the original lens. But in exchange, you will see much more broadly to the sides of the optical axis.
+
+These sensors and lenses are available at https://jevoisinc.com
+
+Installing a new sensor and lens
+--------------------------------
+
+This requires some skills but can be done in less than 5 minutes. See the video below for full details.
+
+\youtube{8rf643fsjSE}
+
+
+Corrective lenses
+-----------------
+
+In some situations, it may also be useful to use corrective lenses placed in front of the standard lens. For example,
+one may want to achieve microscopic accuracy, or one may want to read small text, or one may just need to focus onto
+objects very close to the camera.
+
+\image html corrective-lens.png
+
+Above is an example using a 15x lens taken from a pair of jeweler glasses that had interchangeable lenses. Using this
+corrective lens (which was not very well aligned in this example, hence the distortions), we can focus well on the tiny
+text of that 2.5" hard drive, at a very short distance from JeVois.
+
+Lens shading/uniformity correction
+----------------------------------
+
+Different lenses have different amounts of shading with eccentricity. The JeVois camera sensor chip provides some
+low-level register settings to help improve image uniformity with different lenses. If you are using some of the custom
+lenses in your JeVois camera, read on.
+
+Here is an example of using the 90deg no-distortion lens with the default settings, which are for a 60deg lens. Observe
+how the image gets darker near the corners of the frame:
+
+\image html lens-shading.jpg
+
+Adjustment for lens shading is achieved by applying some positive gain which increases with eccentricity (distance from
+the image center), and which is applied outside a central no-correction disk. The diagram below shows the center of the
+correction zone, and the central no-correction disk (names center area of the image):
+
+\image html lens-diagram.png
+
+Camera registers LCC1 (0x62) and LCC3 (0x63) allow one to adjust the location of the correction disk, by specifying an
+offset (in the direction specified by bit 7 of each register, and with a magnitude specified by the remaining 6 bits)
+from the sensor's center point.
+
+Here are all the relevant registers:
+
+\image html lens-table.png
+
+Notably, register LCC3 (0x64) sets the gain (strength of correction) and LCC4 (0x65) sets the radius of the central
+no-correction disk. Instead of a single gain parameter, one can also instead, through register LCC5 (0x66) specify 3
+different gains for Red, Green, and Blue (then using registers LLC3 (0x64) for green, LCCFB (0x9d) for blue, and LCCFR
+(0x9e) for red).
+
+Below is a simple python program that will allow you to interactively adjust the radius of the no-correction zone, and
+the single gain factor for RGB:
+
+\code{.py}
+#!/usr/bin/python
+
+# Needed packages: sudo apt-get install python python-tk
+
+# This tutorial is a simple program that allows one to play with two low-level camera sensor parameters that relate to
+# correction for lens sensitivity fall-off with eccentricity.
+
+serdev = '/dev/ttyACM0' # serial device of JeVois
+
+from Tkinter import *
+import serial
+import time
+
+####################################################################################################
+# Send a command to JeVois and show response
+def send_command(cmd):
+    print "HOST>> " + cmd
+    ser.write(cmd + '\n')
+    out = ''
+    time.sleep(0.1)
+    while ser.inWaiting() > 0:
+        out += ser.read(1)
+    if out != '':
+        print "JEVOIS>> " + out, # the final comma suppresses extra newline, since JeVois already sends one
+
+####################################################################################################
+# Callback when radius slider is moved
+def update_radius(val):
+    send_command('setcamreg 0x65 {}'.format(val))
+    
+####################################################################################################
+# Callback when factor slider is moved
+def update_factor(val):
+    send_command('setcamreg 0x64 {}'.format(val))
+    
+####################################################################################################
+# Main code
+ser = serial.Serial(serdev, 115200, timeout=1)
+send_command('ping')                   # should return ALIVE
+send_command('setpar camreg true')     # enable low-level access to camera sensor registers
+send_command('setcamreg 0x66 1')       # enable lens correction
+
+master = Tk()
+
+w1l = Label(master, text = "Radius")
+w1l.pack()
+
+w1 = Scale(master, from_=0, to=255, tickinterval=32, length=600, orient=HORIZONTAL, command=update_radius)
+w1.set(0x80)
+w1.pack()
+
+w2l = Label(master, text = "Correction factor")
+w2l.pack()
+
+w2 = Scale(master, from_=0, to=255, tickinterval=32, length=600, orient=HORIZONTAL, command=update_factor)
+w2.set(0x10)
+w2.pack()
+
+mainloop()
+\endcode
+
+Playing with this code you should be able to improve the uniformity of the image, but note the caveats below. Make sure
+that you have write access to the serial-over-USB device before you run this python code (e.g., `sudo chmod 777
+/dev/ttyACM0`, or run the python program as root).
+
+\image html lens-corrected.jpg
+
+You may want to adjust the code to obtain different effects. The key elements here are:
+
+- beware that using this indoors with just pointing JeVois to a blank wall may not work, as the combination of a
+  wide-angle lens, <a href="https://en.wikipedia.org/wiki/Diffuse_reflection">non-Lambertian surface properties of the
+  wall</a>, and non-uniform light source will likely increase the apparent shading. You should try outdoors, or maybe
+  use a small photographic booth like what people do to take uniformly-lit pictures of items they want to sell on eBay.
+
+- start with sending command `setpar camreg true` to JeVois, to enable access to low-level sensor registers.
+
+- then issue commands `setcamreg REG VAL` where \p REG is the register address and \p VAL is the value. The `setcamreg`
+  command can understand decimal, octal (if starting with a leading 0), and hexadecimal (if starting with a leading 0x)
+  register addresses.
+
+Once you have found good settings for your particular lens, you may want to issue these commands at camera start time,
+by placing the commands in \b initscript.cfg on your microSD card.
+
+
+
+
+*/
