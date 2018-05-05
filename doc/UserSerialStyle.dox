@@ -16,7 +16,8 @@ Modules that wish to send standardized messages as defined below should derive f
 jevois::Module. The class jevois::StdModule adds parameters that allow end users to control the formatting of the serial
 messages, and additional member functions that assist programmers in issuing standardized messages.
 
-The parameters \c serstyle and \c serprec of jevois::StdModule define the following standardized serial message styles.
+The parameters \p serstyle and \p serprec of jevois::StdModule define the following standardized serial message
+styles. Parameter \p serstamp allow additional stamping of every message with a frame number, date, and/or time.
 
 Coordinates conventions and precision
 =====================================
@@ -161,6 +162,49 @@ standardized serial messages.
 
 \note If you will use the quaternion data (\b Detail message style), you should probably set the \p serprec parameter to
 something non-zero to get enough accuracy in the quaternion values.
+
+
+Optional stamping of serial messages with frame number, date and time
+=====================================================================
+
+\jvversion{1.8.1}
+
+Parameter \p serstamp allows for optional stamping of standardized serial messages by date, time, or frame number.
+
+Note that JeVois does not have a battery, and hence its internal clock is reset to Jan 1, 1970 UTC upon each power
+up. An external computer can, however, set the date using the JeVois `date` command. See \ref UserCli for more
+information about the `date command` and how to set/retrive the date and time of JeVois.
+
+Stamps are prepended to standardized serial messages, and are followed by a single space. Beware that using stamps will
+hence add one field (for the stamp) to the beginning of each standardized serial message. An Arduino that was programmed
+to respond to T2 messages will likely be confused if receiving messages that start with a date or frame number, and the
+Arduino code should hence be adjusted accordingly.
+
+Stamping modes:
+
+serstamp       | stamp format              | example for frame 769, on Dec 24, 2017 at 15:52:42
+---------------|---------------------------|---------------------------------------------------
+None           | No stamp                  |
+Frame          | FRAME                     | 769
+Time           | hh:mm:ss                  | 15:52:42
+FrameTime      | FRAME/hh:mm:ss            | 769/15:52:42
+FrameDateTime  | FRAME/YYYY-MM-DD/hh:mm:ss | 769/2017-12-24/15:52:42
+
+
+Limiting the number of serial messages per video frame
+======================================================
+
+\jvversion{1.8.1}
+
+Parameter \p serlimit of the JeVois Engine can be set to limit the number of serial messages that are sent on every
+video frame, to avoid overloading the serial link. For example, if a module sends one message for each detected item,
+but many items are present, \p serlimit can be used to limit the number of items that will be reported over serial port.
+
+Note how the limit per frame cannot be strictly enforced if modules send messages using sendSerial() from asynchronous
+threads. The basic way \p serlimit works under the hood is that a (thread-safe) counter is incremented for each message
+sent by sendSerial() or its derivatives like SendSerialImg2D(), etc, and the counter is reset to zero at the completion
+of each call to the module's process() function (be it normal completion or exception).
+
 
 Recommendations for embedded controllers and robots
 ===================================================

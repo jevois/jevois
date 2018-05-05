@@ -170,6 +170,14 @@ namespace jevois
 			     "a lot of memory and may be useful when using C++ modules that run large deep neural "
 			     "networks.",
 			     true, ParamCateg);
+
+    //! Parameter \relates jevois::Engine
+    JEVOIS_DECLARE_PARAMETER(serlimit, size_t, "Maximum number of serial messages that can be sent by a module "
+			     "using sendSerial(), for each video frame, or 0 for no limit. Any message sent by "
+			     "the module beyond the first serlimit ones will be dropped. This is useful to avoid "
+			     "overloading the serial link, for example in case one is running a ArUco detector and "
+			     "a large number of ArUco tags are present in the field of view of JeVois.",
+			     0, ParamCateg);
   }
   
   //! JeVois processing engine - gets images from camera sensor, processes them, and sends results over USB
@@ -251,7 +259,7 @@ namespace jevois
                                   engine::videomapping, engine::serialdev, engine::usbserialdev, engine::camreg,
                                   engine::camturbo, engine::serlog, engine::videoerrors, engine::serout,
                                   engine::cpumode, engine::cpumax, engine::multicam, engine::quietcmd,
-				  engine::python>
+				  engine::python, engine::serlimit>
   {
     public:
       //! Constructor
@@ -304,8 +312,18 @@ namespace jevois
 
       //! Send a string to all serial ports
       /*! \note When islog is true, this is assumes to be a log message, and it will be sent to the port(s) specified by
-          parameter serlog. Otherwise, the message will be sent to the ports specified by parameter serout. */
+          parameter serlog. Otherwise, the message will be sent to the ports specified by parameter serout. Note how the
+          number of messages that can be sent for each video frame may be limited by parameter \p serlimit; only up to
+          \serlimit messages will be sent for a given video frame. This is useful to avoid overloading the serial link,
+          for example in cases one is running a ArUco detector and a large number of ArUco tags are present in the field
+          of view of JeVois. */
       void sendSerial(std::string const & str, bool islog = false);
+
+      //! Get frame number
+      /*! The Engine maintains a master frame counter that is incremented on each call to a Module's process(), whether
+	  or not the call succeeds. The counter is not incremented when a module has not been loaded (e.g., failed to
+	  load). The counter is reset to zero each time a new module is loaded. */
+      size_t frameNum() const;
 
     protected:
       //! Run a script from file
@@ -390,6 +408,9 @@ namespace jevois
       void stopMassStorageMode();
       void reboot();
 #endif
+
+      std::atomic<size_t> itsFrame; // Master frame counter, can be used by modules
+      std::atomic<size_t> itsNumSerialSent; // Number of serial messages sent this frame; see serlimit
   };
 
 } // namespace jevois

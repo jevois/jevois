@@ -345,24 +345,39 @@ namespace jevois
       /*! The format here is free. Just use std::endl to demarcate lines, these will be converted to the appropriate
           line endings by the serial ports. Default implementation writes "None" to os. */
       virtual void supportedCommands(std::ostream & os);
+
+      //! Get frame number from the Engine
+      /*! The Engine maintains a master frame counter that is incremented on each call to process(), whether or not the
+	  call succeeds. The counter is not incremented when a module has not been loaded (e.g., failed to load). The
+	  counter is reset to zero each time a new module is loaded. */
+      size_t frameNum() const;
   };
 
   namespace module
   {
     static ParameterCategory const ParamCateg("Module Serial Message Options");
 
-    //! Enum for Parameter \relates jevois::Module
+    //! Enum for Parameter \relates jevois::StdModule
     JEVOIS_DEFINE_ENUM_CLASS(SerStyle, (Terse) (Normal) (Detail) (Fine) )
     
-    //! Parameter \relates jevois::Module
+    //! Parameter \relates jevois::StdModule
     JEVOIS_DECLARE_PARAMETER(serstyle, SerStyle, "Style for standardized serial messages as defined in "
                              "http://jevois.org/doc/UserSerialStyle.html",
                              SerStyle::Terse, SerStyle_Values, ParamCateg);
 
-    //! Parameter \relates jevois::Module
+    //! Parameter \relates jevois::StdModule
     JEVOIS_DECLARE_PARAMETER(serprec, unsigned int, "Number of decimal points in standardized serial messages as "
                              "defined in http://jevois.org/doc/UserSerialStyle.html",
                              0U, ParamCateg);
+
+    //! Enum for Parameter \relates jevois::StdModule
+    JEVOIS_DEFINE_ENUM_CLASS(SerStamp, (None) (Frame) (Time) (FrameTime) (FrameDateTime) )
+
+    //! Parameter \relates jevois::StdModule
+    JEVOIS_DECLARE_PARAMETER(serstamp, SerStamp, "Prepend standardized serial messages with a frame number, "
+			     "time, frame+time, or frame+date+time. See details in "
+			     "http://jevois.org/doc/UserSerialStyle.html",
+                             SerStamp::None, ParamCateg);
   }
   
   //! Base class for a module that supports standardized serial messages
@@ -371,7 +386,7 @@ namespace jevois
       format, and send standardized serial messages. The process(), sendSerial(), parseSerial(), supportedCommands(),
       etc of StdModule functions are directly inherited from Module. See \ref UserSerialStyle for standardized serial
       messages. \ingoup core */
-  class StdModule : public Module, public Parameter<module::serprec, module::serstyle>
+  class StdModule : public Module, public Parameter<module::serprec, module::serstyle, module::serstamp>
   {
     public:
       //! Constructor
@@ -447,6 +462,9 @@ namespace jevois
           millimeters. */
       void sendSerialStd3D(std::vector<cv::Point3f> points, std::string const & id = "",
                            std::string const & extra = "");
+    protected:
+      //! Get a string with the frame/date/time stamp in it, depending on serstamp parameter
+      std::string getStamp() const;
   };
 }
 

@@ -213,6 +213,15 @@ void jevois::Module::supportedCommands(std::ostream & os)
 { os << "None" << std::endl; }
 
 // ####################################################################################################
+size_t jevois::Module::frameNum() const
+{
+  jevois::Engine * e = dynamic_cast<jevois::Engine *>(itsParent);
+  if (e == nullptr) LFATAL("My parent is not Engine -- CANNOT GET FRAME NUMBER");
+
+  return e->frameNum();
+}
+
+// ####################################################################################################
 // ####################################################################################################
 jevois::StdModule::StdModule(std::string const & instance) :
     jevois::Module(instance)
@@ -222,6 +231,49 @@ jevois::StdModule::StdModule(std::string const & instance) :
 jevois::StdModule::~StdModule()
 { }
 
+// ####################################################################################################
+std::string jevois::StdModule::getStamp() const
+{
+  std::string ret;
+  
+  switch(serstamp::get())
+  {
+  case jevois::module::SerStamp::None:
+    break;
+    
+  case jevois::module::SerStamp::Frame:
+    ret = std::to_string(frameNum());
+    break;
+    
+  case jevois::module::SerStamp::Time:
+  {
+    std::time_t t = std::time(nullptr); char str[100];
+    std::strftime(str, sizeof(str), "%T", std::localtime(&t));
+    ret = std::string(str);
+  }
+  break;
+  
+  case jevois::module::SerStamp::FrameTime:
+  {
+    std::time_t t = std::time(nullptr); char str[100];
+    std::strftime(str, sizeof(str), "%T", std::localtime(&t));
+    ret = std::to_string(frameNum()) + '/' + std::string(str);
+  }
+  break;
+  
+  case jevois::module::SerStamp::FrameDateTime:
+  {
+    std::time_t t = std::time(nullptr); char str[100];
+    std::strftime(str, sizeof(str), "%F/%T", std::localtime(&t));
+    ret = std::to_string(frameNum()) + '/' + std::string(str);
+  }
+  break;
+  }
+
+  if (ret.empty() == false) ret += ' ';
+  return ret;
+}
+  
 // ####################################################################################################
 void jevois::StdModule::sendSerialImg1Dx(unsigned int camw, float x, float size, std::string const & id,
                                       std::string const & extra)
@@ -241,7 +293,11 @@ void jevois::StdModule::sendSerialStd1Dx(float x, float size, std::string const 
 {
   // Build the message depending on desired style:
   std::ostringstream oss; oss << std::fixed << std::setprecision(serprec::get());
-  
+
+  // Prepend frame/date/time as possibly requested by parameter serstamp:
+  oss << getStamp();
+
+  // Format the message depending on parameter serstyle:
   switch (serstyle::get())
   {
   case jevois::module::SerStyle::Terse:
@@ -286,6 +342,10 @@ void jevois::StdModule::sendSerialStd1Dy(float y, float size, std::string const 
   // Build the message depending on desired style:
   std::ostringstream oss; oss << std::fixed << std::setprecision(serprec::get());
   
+  // Prepend frame/date/time as possibly requested by parameter serstamp:
+  oss << getStamp();
+
+  // Format the message depending on parameter serstyle:
   switch (serstyle::get())
   {
   case jevois::module::SerStyle::Terse:
@@ -331,6 +391,10 @@ void jevois::StdModule::sendSerialStd2D(float x, float y, float w, float h, std:
   // Build the message depending on desired style:
   std::ostringstream oss; oss << std::fixed << std::setprecision(serprec::get());
 
+  // Prepend frame/date/time as possibly requested by parameter serstamp:
+  oss << getStamp();
+
+  // Format the message depending on parameter serstyle:
   switch (serstyle::get())
   {
   case jevois::module::SerStyle::Terse:
@@ -374,6 +438,7 @@ template <typename T>
 void jevois::StdModule::sendSerialContour2D(unsigned int camw, unsigned int camh, std::vector<cv::Point_<T> > points,
                                             std::string const & id, std::string const & extra)
 {
+  // Format the message depending on parameter serstyle:
   switch (serstyle::get())
   {
   case jevois::module::SerStyle::Terse:
@@ -402,6 +467,11 @@ void jevois::StdModule::sendSerialContour2D(unsigned int camw, unsigned int camh
     // Build the message:
     unsigned int const prec = serprec::get(); float const eps = std::pow(10.0F, -float(prec));
     std::ostringstream oss; oss << std::fixed << std::setprecision(prec);
+
+    // Prepend frame/date/time as possibly requested by parameter serstamp:
+    oss << getStamp();
+
+    // Now the rest of the message:
     oss << "D2 ";
     if (id.empty()) oss << "unknown "; else oss << jevois::replaceWhitespace(id) << ' ';
     cv::Point2f corners[4];
@@ -427,6 +497,11 @@ void jevois::StdModule::sendSerialContour2D(unsigned int camw, unsigned int camh
     // Build the message:
     unsigned int const prec = serprec::get(); float const eps = std::pow(10.0F, -float(prec));
     std::ostringstream oss; oss << std::fixed << std::setprecision(prec);
+
+    // Prepend frame/date/time as possibly requested by parameter serstamp:
+    oss << getStamp();
+
+    // Now the rest of the message:
     oss << "F2 ";
     if (id.empty()) oss << "unknown "; else oss << jevois::replaceWhitespace(id) << ' ';
     oss << points.size(); // number of vertices
@@ -468,6 +543,10 @@ void jevois::StdModule::sendSerialStd3D(float x, float y, float z, float w, floa
   // Build the message depending on desired style:
   std::ostringstream oss; oss << std::fixed << std::setprecision(serprec::get());
 
+  // Prepend frame/date/time as possibly requested by parameter serstamp:
+  oss << getStamp();
+
+  // Format the message depending on parameter serstyle:
   switch (serstyle::get())
   {
   case jevois::module::SerStyle::Terse:
@@ -512,6 +591,7 @@ void jevois::StdModule::sendSerialStd3D(float x, float y, float z, float w, floa
 void jevois::StdModule::sendSerialStd3D(std::vector<cv::Point3f> points, std::string const & id,
                                         std::string const & extra)
 {
+  // Format the message depending on parameter serstyle:
   switch (serstyle::get())
   {
   case jevois::module::SerStyle::Terse:
@@ -570,6 +650,11 @@ void jevois::StdModule::sendSerialStd3D(std::vector<cv::Point3f> points, std::st
     // Build the message:
     unsigned int const prec = serprec::get();
     std::ostringstream oss; oss << std::fixed << std::setprecision(prec);
+
+    // Prepend frame/date/time as possibly requested by parameter serstamp:
+    oss << getStamp();
+
+    // Now the rest of the message:
     oss << "F3 ";
     if (id.empty()) oss << "unknown "; else oss << jevois::replaceWhitespace(id) << ' ';
     oss << points.size(); // number of vertices

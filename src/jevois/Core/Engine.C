@@ -200,7 +200,7 @@ namespace
 jevois::Engine::Engine(std::string const & instance) :
     jevois::Manager(instance), itsMappings(jevois::loadVideoMappings(itsDefaultMappingIdx)),
     itsRunning(false), itsStreaming(false), itsStopMainLoop(false), itsTurbo(false),
-    itsManualStreamon(false), itsVideoErrors(false)
+    itsManualStreamon(false), itsVideoErrors(false), itsFrame(0), itsNumSerialSent(0)
 {
   JEVOIS_TRACE(1);
 
@@ -218,7 +218,7 @@ jevois::Engine::Engine(std::string const & instance) :
 jevois::Engine::Engine(int argc, char const* argv[], std::string const & instance) :
     jevois::Manager(argc, argv, instance), itsMappings(jevois::loadVideoMappings(itsDefaultMappingIdx)),
     itsRunning(false), itsStreaming(false), itsStopMainLoop(false), itsTurbo(false),
-    itsManualStreamon(false), itsVideoErrors(false)
+    itsManualStreamon(false), itsVideoErrors(false), itsFrame(0), itsNumSerialSent(0)
 {
   JEVOIS_TRACE(1);
 
@@ -618,6 +618,9 @@ void jevois::Engine::setFormatInternal(jevois::VideoMapping const & m)
   if (itsModule)
     try { removeComponent(itsModule); itsModule.reset(); } catch (...) { jevois::warnAndIgnoreException(); }
 
+  // Reset our master frame counter on each module load:
+  itsFrame.store(0);
+  
   // Instantiate the module. If the constructor throws, code is bogus, for example some syntax error in a python module
   // that is detected at load time. We get the exception's error message for later display into video frames in the main
   // loop, and mark itsModuleConstructionError:
@@ -758,6 +761,9 @@ void jevois::Engine::mainLoop()
 	    jevois::warnAndIgnoreException();
 	  }
 	}
+	// Increment our master frame counter
+	++ itsFrame;
+	itsNumSerialSent.store(0);
       }
       else
       {
@@ -833,6 +839,14 @@ void jevois::Engine::mainLoop()
 // ####################################################################################################
 void jevois::Engine::sendSerial(std::string const & str, bool islog)
 {
+  // If not a log message, we may want to limit the number of serout messages that a module sends on each frame:
+  size_t slim = serlimit::get();
+  if (islog == false && slim)
+  {
+    if (itsNumSerialSent.load() >= slim) return; // limit reached, message dropped
+    ++itsNumSerialSent; // increment number of messages sent. It is reset in the main loop on each new frame.
+  }
+  
   // Decide where to send this message based on the value of islog:
   jevois::engine::SerPort p = islog ? serlog::get() : serout::get();
 
@@ -859,6 +873,10 @@ void jevois::Engine::sendSerial(std::string const & str, bool islog)
     break;
   }
 }
+
+// ####################################################################################################
+size_t jevois::Engine::frameNum() const
+{ return itsFrame; }
 
 // ####################################################################################################
 jevois::VideoMapping const & jevois::Engine::getCurrentVideoMapping() const

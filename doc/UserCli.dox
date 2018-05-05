@@ -71,34 +71,95 @@ usbsd - export the JEVOIS partition of the microSD card as a virtual USB drive
 sync - commit any pending data write to microSD
 restart - restart the JeVois smart camera
 
-General Options:
+General Options:  
   --tracelevel (unsigned int) default=[0]
     Set the minimum trace level to display
        Exported By: engine
 
-  --loglevel (jevois::manager::LogLevel) default=[info] List:[fatal|error|info|debug]
+  --nickname (string) default=[jevois]
+    Nickname associated with this camera, useful when multiple JeVois cameras are connected to a same USB bus
+       Exported By: engine
+
+  --help (bool) default=[false]
+    Print this help message
+       Exported By: engine value=[true]
+
+  --loglevel (jevois::manager::LogLevel) default=[info] List:[fatal|error|info]
     Set the minimum log level to display
        Exported By: engine
 
-Engine Options:
-  --serout (jevois::engine::SerPort) default=[None] List:[None|All|Hard|USB]
-    Send module serial messages to selected serial port(s)
+
+Engine Options:  
+  --videoerrors (bool) default=[true]
+    Show any machine vision module errors (exceptions) in the video stream. Only takes effect if streaming video to USB.
        Exported By: engine
 
-  --camreg (bool) default=[false]
-    Enable raw access to camera registers through setcamreg and getcamreg
+  --cpumode (jevois::engine::CPUmode) default=[Performance] List:[PowerSave|Conservative|OnDemand|Interactive|Performance]
+    CPU frequency modulation mode
+       Exported By: engine
+
+  --videomapping (int) default=[-1]
+    Index of Video Mapping to use, or -1 to use the default mapping
        Exported By: engine
 
   --cpumax (unsigned int) default=[1344] List:[120|240|312|408|480|504|600|648|720|816|912|1008|1044|1056|1080|1104|1116|1152|1200|1224|1248|1296|1344]
     CPU maximum frequency in MHz
        Exported By: engine
 
+  --serialdev (string) default=[stdio]
+    Hardware (4-pin connector) serial device name, or 'stdio' to use the console, or empty for no hardware serial port
+       Exported By: engine
+
   --serlog (jevois::engine::SerPort) default=[None] List:[None|All|Hard|USB]
     Show log and debug messages on selected serial port(s)
        Exported By: engine
 
-  --cpumode (jevois::engine::CPUmode) default=[Performance] List:[PowerSave|Conservative|OnDemand|Interactive|Performance]
-    CPU frequency modulation mode
+  --serout (jevois::engine::SerPort) default=[None] List:[None|All|Hard|USB]
+    Send module serial messages to selected serial port(s)
+       Exported By: engine
+
+  --camturbo (bool) default=[false]
+    Enable camera turbo mode by relaxing the need for DMA-coherent video buffer memory. This can accelerate severalfolds access to the captured image data, but it may also yield stripe artifacts with some modules, such as PassThrough. The stripes are pieces of incorrect data in the cache. You should experiment with each particular module. Turbo mode is not recommended for any production-grade application.
+       Exported By: engine value=[true]
+
+  --usbserialdev (string) default=[]
+    Over-the-USB serial device name, or empty
+       Exported By: engine
+
+  --camreg (bool) default=[false]
+    Enable raw access to camera registers through setcamreg and getcamreg
+       Exported By: engine
+
+  --python (bool) default=[true]
+    When true, enable support for modules written in Python. Otherwise, attempting to load a python module will throw an exception. Disabling python saves a lot of memory and may be useful when using C++ modules that run large deep neural networks.
+       Exported By: engine
+
+  --cameradev (string) default=[/dev/video0]
+    Camera device name (if starting with /dev/v...), or movie file name (e.g., movie.mpg) or image sequence (e.g., im%02d.jpg, to read frames im00.jpg, im01.jpg, etc).
+       Exported By: engine
+
+  --cameranbuf (unsigned int) default=[0]
+    Number of video input (camera) buffers, or 0 for automatic.
+       Exported By: engine
+
+  --gadgetdev (string) default=[]
+    Gadget device name. This is used on platform hardware only. On host hardware, a display window will be used unless gadgetdev is None (useful for benchmarking) or is a file stem for a movie file that does not start with /dev/ (and which should contain a printf-style directive for a single int argument, the movie number).
+       Exported By: engine
+
+  --serlimit (unsigned long) default=[0]
+    Maximum number of serial messages that can be sent by a module using sendSerial(), for each video frame, or 0 for no limit. Any message sent by the module beyond the first serlimit ones will be dropped. This is useful to avoid overloading the serial link, for example in case one is running a ArUco detector and a large number of ArUco tags are present in the field of view of JeVois.
+       Exported By: engine
+
+  --gadgetnbuf (unsigned int) default=[0]
+    Number of video output (USB video) buffers, or 0 for auto
+       Exported By: engine
+
+  --multicam (bool) default=[false]
+    Allow up to 3 JeVois cameras on one USB bus. Enabling this reduces the amount of USB bandwidth used by each JeVois camera, from 3kb per USB isochronous microframe to 1kb. All 3 JeVois cameras must have this option enabled, and the JeVois linux kernel module should also have been loaded with multicam on.
+       Exported By: engine
+
+  --quietcmd (bool) default=[false]
+    When true, do not issue a message 'OK' after every correct command received at the command-line interface. Recommended for advanced users only.
        Exported By: engine
 
 AVAILABLE CAMERA CONTROLS:
@@ -176,6 +237,10 @@ The assignment of actual ports, such as hardware 4-pin connector vs serial-over-
 controlled by parameters, detailed below. The assignment is very flexible, for example, you can decide to send \p serlog
 messages to both the 4-pin hardware serial port and to the serial-over-USB port, or or to no port, or to just one port,
 etc while sending \p serout messages to the hardware 4-pin serial port only, or all ports, no ports, etc.
+
+Note how parameter \p serlimit can be set to limit the number of serial messages that are sent on every video frame, to
+avoid overloading the serial link. For example, if a module sends one message for each detected item, but many items are
+present, \p serlimit can be used to limit the number of items that will be reported over serial port.
 
 \subsection cmdbehavior Command-line general behavior
 
@@ -555,10 +620,40 @@ restart or disconnect JeVois.
 \jvversion{1.1}
 
 JeVois platform hardware does not have a battery for a real-time clock. Hence, its time gets reset to The Epoch (January
-1, 1970) on each reboot. Use this command to set the date and time or to get it. Syntax is the same as the Unix \c date
-command. This is useful, for example, to get accurate time stamps when recording videos. Since JeVois does not have a
-battery-powered clock, any date setting will be lost at the next power off.
+1, 1970 UTC) on each reboot. Use this command to set the date and time or to get it. Syntax is the same as the Unix
+`date` command. This is useful, for example, to get accurate time stamps when recording videos. Since JeVois does not
+have a battery-powered clock, any date setting will be lost at the next power off.
 
+See, for example, [here](http://man7.org/linux/man-pages/man1/date.1.html) for the more information about the Unix date
+command. The format to use to set the date is:
+
+\verbatim
+MMDDhhmm[[CC]YY][.ss]]
+\endverbatim
+
+Where square brackets denote optional fields, and \b MM is the month, \b DD is the day, \b hh is the hour, \b mm is the
+minute, \b CC are the first two (century) digits of the year, \b YY are the last two digits of the year, and \b ss is
+the seconds.
+
+For example, issuing the following `date` command to JeVois in a serial terminal connected to JeVois:
+
+\verbatim
+date 0504153018
+\endverbatim
+
+returns
+
+\verbatim
+date now Fri May  4 15:30:00 UTC 2018
+OK
+\endverbatim
+
+On a Linux host computer, to set the date and time on your JeVois camera to the same as your host, you can just forward
+the output of the Linu date command as input to the JeVois date command: in a terminal window of your Linux host, type:
+
+\code{.py}
+jevois-cmd date `date +%m%d%H%M%Y.%S`
+\endcode
 
 \subsubsection cmdrestart restart - restart the JeVois smart camera
 
