@@ -112,6 +112,10 @@ void jevois::Camera::setFormat(jevois::VideoMapping const & m)
 {
   JEVOIS_TRACE(2);
 
+  // We may be streaming, eg, if we were running a mapping with no USB out and then the user starts a video grabber. So
+  // make sure we stream off first:
+  if (itsStreaming.load()) streamOff();
+  
   JEVOIS_TIMED_LOCK(itsMtx);
   
   // Get current format:

@@ -431,7 +431,13 @@ See \ref UserModes for more information about video mappings.
 
 \subsubsection cmdsetmapping setmapping <num> - select video mapping <num>, only possible while not streaming
 
-Usually, video mappings are selected by the host computer, by selecting a given output resolution, frame rate, and pixel
+
+\note \b Beware that this command is only useful in some exceptional cases, and may be confusing. In most cases,
+selection of which machine vision module runs on JeVois is done either 1) by selecting a video resolution on a video
+capture software running on a host computer connected to JeVois (this is operation with streaming video output), or 2)
+using the \c setmapping2 command detailed below (operation with no streaming video output, for embedded robots).
+
+Usually, video mappings are selected by the host computer, by selecting a given video resolution, frame rate, and pixel
 format. In some instances, however, \c setmapping is useful:
 
 1. If the current mapping has a USB output pixel format of `NONE`, i.e., there currently is no video being streamed
@@ -439,7 +445,7 @@ over USB.
 
 2. If the host is currently not streaming from the JeVois camera and one (or an Arduino) wants to select a particular
 mapping (typically, this is useful to select a mapping with NONE usb output, as mappings with streaming video over USB
-will be selected when one starts a video camera software on th ehost computer anyway).
+will be selected when one starts a video camera software on the host computer anyway).
 
 Example:
 

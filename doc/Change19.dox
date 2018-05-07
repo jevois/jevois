@@ -1,0 +1,21 @@
+/*! \page Change19log Changes and new features in JeVois 1.9
+
+
+\warning JeVois 1.9 has not been released yet! These notes reflect work in progress for a future release.
+
+JeVois 1.9 brings the following new features:
+
+- Added a frame counter in the main loop, and access to it using jevois::Module::frameNum(). Modules that need to keep
+  track of frame number do not need to implement their own counter anymore and can use this one.
+
+- Added parameter \p serstamp to jevois::StdModule to optionally prepend all standardized serial messages with frame
+  number, time, frame+time, etc
+
+- Added parameter \p serlimit to jevois::Engine to allow limiting the number of serial messages sent per video frame, to
+  avoid overloading a serial link.
+
+
+
+- Fixed bug in \jvmod{RoadNavigation} which was sending incorrect data when operating with no USB output.
+
+*/
