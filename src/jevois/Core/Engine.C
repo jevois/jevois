@@ -696,6 +696,8 @@ void jevois::Engine::mainLoop()
 {
   JEVOIS_TRACE(2);
 
+  std::string pfx; // optional command prefix
+  
   // Announce that we are ready to the hardware serial port, if any. Do not use sendSerial() here so we always issue
   // this message irrespectively of the user serial preferences:
   for (auto & s : itsSerials)
@@ -809,26 +811,38 @@ void jevois::Engine::mainLoop()
         {
           JEVOIS_TIMED_LOCK(itsMtx);
 
+
+	  // If the command starts with our hidden command prefix, set the prefix, otherwise clear it:
+	  if (jevois::stringStartsWith(str, JEVOIS_JVINV_PREFIX))
+	  {
+	    pfx = JEVOIS_JVINV_PREFIX;
+	    str = str.substr(pfx.length());
+	  }
+	  else pfx.clear();
+	  
           // Try to execute this command. If the command is for us (e.g., set a parameter) and is correct,
           // parseCommand() will return true; if it is for us but buggy, it will throw. If it is not recognized by us,
           // it will return false and we should try sending it to the Module:
-          try { parsed = parseCommand(str, s); success = parsed; }
-          catch (std::exception const & e) { s->writeString(std::string("ERR ") + e.what()); parsed = true; }
-          catch (...) { s->writeString("ERR Unknown error"); parsed = true; }
+          try { parsed = parseCommand(str, s, pfx); success = parsed; }
+          catch (std::exception const & e)
+	  { s->writeString(pfx, std::string("ERR ") + e.what()); parsed = true; }
+          catch (...)
+	  { s->writeString(pfx, "ERR Unknown error"); parsed = true; }
 
           if (parsed == false)
           {
             if (itsModule)
             {
+	      // Note: prefixing is currently not supported for modules, it is for the Engine only
               try { itsModule->parseSerial(str, s); success = true; }
-              catch (std::exception const & me) { s->writeString(std::string("ERR ") + me.what()); }
-              catch (...) { s->writeString("ERR Command [" + str + "] not recognized by Engine or Module"); }
+              catch (std::exception const & me) { s->writeString(pfx, std::string("ERR ") + me.what()); }
+              catch (...) { s->writeString(pfx, "ERR Command [" + str + "] not recognized by Engine or Module"); }
             }
-            else s->writeString("ERR Unsupported command [" + str + "] and no module");
+            else s->writeString(pfx, "ERR Unsupported command [" + str + "] and no module");
           }
           
           // If success, let user know:
-          if (success && quietcmd::get() == false) s->writeString("OK");
+          if (success && quietcmd::get() == false) s->writeString(pfx, "OK");
         }
       }
       catch (...) { jevois::warnAndIgnoreException(); }
@@ -1071,6 +1085,78 @@ std::string jevois::Engine::camCtrlHelp(struct v4l2_queryctrl & qc, std::set<int
   return ss.str();
 }
 
+// ####################################################################################################
+std::string jevois::Engine::camCtrlInfo(struct v4l2_queryctrl & qc, std::set<int> & doneids)
+{
+  // See if we have this control:
+  itsCamera->queryControl(qc);
+  qc.id &= ~V4L2_CTRL_FLAG_NEXT_CTRL;
+
+  // If we have already done this control, just return an empty string:
+  if (doneids.find(qc.id) != doneids.end()) return std::string(); else doneids.insert(qc.id);
+  
+  // Control exists, let's also get its current value:
+  struct v4l2_control ctrl = { }; ctrl.id = qc.id;
+  itsCamera->getControl(ctrl);
+
+  // Print out some description depending on control type:
+  std::ostringstream ss;
+  ss << camctrlname(qc.id, reinterpret_cast<char const *>(qc.name));
+
+  if (qc.flags & V4L2_CTRL_FLAG_DISABLED) ss << " D ";
+
+  switch (qc.type)
+  {
+  case V4L2_CTRL_TYPE_INTEGER:
+    ss << " I " << qc.minimum << ' ' << qc.maximum << ' ' << qc.step
+       << ' ' << qc.default_value << ' ' << ctrl.value;
+    break;
+    
+    //case V4L2_CTRL_TYPE_INTEGER64:
+    //ss << " J " << ctrl.value64;
+    //break;
+    
+    //case V4L2_CTRL_TYPE_STRING:
+    //ss << " S " << qc.minimum << ' ' << qc.maximum << ' ' << qc.step << ' ' << ctrl.string;
+    //break;
+    
+  case V4L2_CTRL_TYPE_BOOLEAN:
+    ss << " B " << qc.default_value << ' ' << ctrl.value;
+    break;
+
+    // This one is not supported by the older kernel on platform:
+    //case V4L2_CTRL_TYPE_INTEGER_MENU:
+    //ss << " N " << qc.minimum << ' ' << qc.maximum << ' ' << qc.default_value << ' ' << ctrl.value;
+    //break;
+    
+  case V4L2_CTRL_TYPE_BUTTON:
+    ss << " U";
+    break;
+    
+  case V4L2_CTRL_TYPE_BITMASK:
+    ss << " K " << qc.maximum << ' ' << qc.default_value << ' ' << ctrl.value;
+    break;
+    
+  case V4L2_CTRL_TYPE_MENU:
+  {
+    struct v4l2_querymenu querymenu = { };
+    querymenu.id = qc.id;
+    ss << " M " << qc.default_value << ' ' << ctrl.value;
+    for (querymenu.index = qc.minimum; querymenu.index <= (unsigned int)qc.maximum; ++querymenu.index)
+    {
+      try { itsCamera->queryMenu(querymenu); } catch (...) { strcpy((char *)(querymenu.name), "fixme"); }
+      ss << ' ' << querymenu.index << ':' << querymenu.name << ' ';
+    }
+  }
+  break;
+  
+  default:
+    ss << 'X';
+  }
+
+  return ss.str();
+}
+
 #ifdef JEVOIS_PLATFORM
 // ####################################################################################################
 void jevois::Engine::startMassStorageMode()
@@ -1120,7 +1206,72 @@ void jevois::Engine::reboot()
 #endif
 
 // ####################################################################################################
-bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserInterface> s)
+void jevois::Engine::cmdInfo(std::shared_ptr<UserInterface> s, std::string const & pfx)
+{
+  s->writeString(pfx, "help - print this help message");
+  s->writeString(pfx, "help2 - print compact help message about current vision module only");
+  s->writeString(pfx, "info - show system information including CPU speed, load and temperature");
+  s->writeString(pfx, "setpar <name> <value> - set a parameter value");
+  s->writeString(pfx, "getpar <name> - get a parameter value(s)");
+  s->writeString(pfx, "runscript <filename> - run script commands in specified file");
+  s->writeString(pfx, "setcam <ctrl> <val> - set camera control <ctrl> to value <val>");
+  s->writeString(pfx, "getcam <ctrl> - get value of camera control <ctrl>");
+
+  if (camreg::get())
+  {
+    s->writeString(pfx, "setcamreg <reg> <val> - set raw camera register <reg> to value <val>");
+    s->writeString(pfx, "getcamreg <reg> - get value of raw camera register <reg>");
+  }
+
+  s->writeString(pfx, "listmappings - list all available video mappings");
+  s->writeString(pfx, "setmapping <num> - select video mapping <num>, only possible while not streaming");
+  s->writeString(pfx, "setmapping2 <CAMmode> <CAMwidth> <CAMheight> <CAMfps> <Vendor> <Module> - set no-USB-out "
+		 "video mapping defined on the fly, while not streaming");
+
+  if (itsCurrentMapping.ofmt == 0 || itsManualStreamon)
+  {
+    s->writeString(pfx, "streamon - start camera video streaming");
+    s->writeString(pfx, "streamoff - stop camera video streaming");
+  }
+
+  s->writeString(pfx, "ping - returns 'ALIVE'");
+  s->writeString(pfx, "serlog <string> - forward string to the serial port(s) specified by the serlog parameter");
+  s->writeString(pfx, "serout <string> - forward string to the serial port(s) specified by the serout parameter");
+  
+  s->writeString(pfx, "caminfo - returns machine-readable info about camera parameters");
+  s->writeString(pfx, "cmdinfo - returns machine-readable info about Engine commands");
+  s->writeString(pfx, "modcmdinfo - returns machine-readable info about Module commands");
+  s->writeString(pfx, "paraminfo - returns machine-readable info about parameters");
+  
+#ifdef JEVOIS_PLATFORM
+  s->writeString(pfx, "usbsd - export the JEVOIS partition of the microSD card as a virtual USB drive");
+#endif
+  s->writeString(pfx, "sync - commit any pending data write to microSD");
+  s->writeString(pfx, "date [date and time] - get or set the system date and time");
+
+  s->writeString(pfx, "shell <string> - execute <string> as a shell command. Use with caution!");
+  s->writeString(pfx, "fileget <filepath> - get a file from JeVois to the host. Use with caution!");
+  s->writeString(pfx, "fileput <filepath> - put a file from the host to JeVois. Use with caution!");
+
+#ifdef JEVOIS_PLATFORM
+  s->writeString(pfx, "restart - restart the JeVois smart camera");
+#else
+  s->writeString(pfx, "quit - quit this program");
+#endif
+}
+
+// ####################################################################################################
+void jevois::Engine::modCmdInfo(std::shared_ptr<UserInterface> s, std::string const & pfx)
+{
+  if (itsModule)
+  {    
+    std::stringstream css; itsModule->supportedCommands(css);
+    for (std::string line; std::getline(css, line); /* */) s->writeString(pfx, line);
+  }
+}
+
+// ####################################################################################################
+bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserInterface> s, std::string const & pfx)
 {
   // itsMtx should be locked by caller
 
@@ -1163,7 +1314,7 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
     // If the string starts with "#", then just print it out on the serlog port(s). We use this to allow debug messages
     // in the arduino to be printed out to the user:
     if (str[0] == '#') { sendSerial(str, true); return true; }
-    
+
     // Get the first word, i.e., the command:
     size_t const idx = str.find(' '); std::string cmd, rem;
     if (idx == str.npos) cmd = str; else { cmd = str.substr(0, idx); if (idx < str.length()) rem = str.substr(idx+1); }
@@ -1172,64 +1323,27 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
     if (cmd == "help")
     {
       // Show all commands, first ours, as supported below:
-      s->writeString("GENERAL COMMANDS:");
-      s->writeString("");
-      s->writeString("help - print this help message");
-      s->writeString("help2 - print compact help message about current vision module only");
-      s->writeString("info - show system information including CPU speed, load and temperature");
-      s->writeString("setpar <name> <value> - set a parameter value");
-      s->writeString("getpar <name> - get a parameter value(s)");
-      s->writeString("runscript <filename> - run script commands in specified file");
-      s->writeString("setcam <ctrl> <val> - set camera control <ctrl> to value <val>");
-      s->writeString("getcam <ctrl> - get value of camera control <ctrl>");
-      if (camreg::get())
-      {
-        s->writeString("setcamreg <reg> <val> - set raw camera register <reg> to value <val>");
-        s->writeString("getcamreg <reg> - get value of raw camera register <reg>");
-      }
-      s->writeString("listmappings - list all available video mappings");
-      s->writeString("setmapping <num> - select video mapping <num>, only possible while not streaming");
-      s->writeString("setmapping2 <CAMmode> <CAMwidth> <CAMheight> <CAMfps> <Vendor> <Module> - set no-USB-out "
-                     "video mapping defined on the fly, while not streaming");
-      if (itsCurrentMapping.ofmt == 0 || itsManualStreamon)
-      {
-        s->writeString("streamon - start camera video streaming");
-        s->writeString("streamoff - stop camera video streaming");
-      }
-      s->writeString("ping - returns 'ALIVE'");
-      s->writeString("serlog <string> - forward string to the serial port(s) specified by the serlog parameter");
-      s->writeString("serout <string> - forward string to the serial port(s) specified by the serout parameter");
-
-#ifdef JEVOIS_PLATFORM
-      s->writeString("usbsd - export the JEVOIS partition of the microSD card as a virtual USB drive");
-#endif
-      s->writeString("sync - commit any pending data write to microSD");
-      s->writeString("date [date and time] - get or set the system date and time");
-
-#ifdef JEVOIS_PLATFORM
-      s->writeString("restart - restart the JeVois smart camera");
-#else
-      s->writeString("quit - quit this program");
-#endif
-      s->writeString("");
+      s->writeString(pfx, "GENERAL COMMANDS:");
+      s->writeString(pfx, "");
+      cmdInfo(s, pfx);
+      s->writeString(pfx, "");
 
       // Then the module's custom commands, if any:
       if (itsModule)
       {
-        std::stringstream css; itsModule->supportedCommands(css);
-        s->writeString("MODULE-SPECIFIC COMMANDS:");
-        s->writeString("");
-        for (std::string line; std::getline(css, line); /* */) s->writeString(line);
-        s->writeString("");
+        s->writeString(pfx, "MODULE-SPECIFIC COMMANDS:");
+        s->writeString(pfx, "");
+	modCmdInfo(s, pfx);
+        s->writeString(pfx, "");
       }
       
       // Get the help message for our parameters and write it out line by line so the serial fixes the line endings:
       std::stringstream pss; constructHelpMessage(pss);
-      for (std::string line; std::getline(pss, line); /* */) s->writeString(line);
+      for (std::string line; std::getline(pss, line); /* */) s->writeString(pfx, line);
 
       // Show all camera controls
-      s->writeString("AVAILABLE CAMERA CONTROLS:");
-      s->writeString("");
+      s->writeString(pfx, "AVAILABLE CAMERA CONTROLS:");
+      s->writeString(pfx, "");
 
       struct v4l2_queryctrl qc = { }; std::set<int> doneids;
       for (int cls = V4L2_CTRL_CLASS_USER; cls <= V4L2_CTRL_CLASS_DETECT; cls += 0x10000)
@@ -1241,7 +1355,7 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
         while (true)
         {
           qc.id |= V4L2_CTRL_FLAG_NEXT_CTRL; old_id = qc.id; bool failed = false;
-          try { std::string hlp = camCtrlHelp(qc, doneids); if (hlp.empty() == false) s->writeString(hlp); }
+          try { std::string hlp = camCtrlHelp(qc, doneids); if (hlp.empty() == false) s->writeString(pfx, hlp); }
           catch (...) { failed = true; }
 
           // The camera kernel driver is supposed to pass down the next valid control if the requested one is not
@@ -1256,20 +1370,70 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
     }
 
     // ----------------------------------------------------------------------------------------------------
+    if (cmd == "caminfo")
+    {
+      // Machine-readable list of camera parameters:
+      struct v4l2_queryctrl qc = { }; std::set<int> doneids;
+      for (int cls = V4L2_CTRL_CLASS_USER; cls <= V4L2_CTRL_CLASS_DETECT; cls += 0x10000)
+      {
+        // Enumerate all controls in this class. Looks like there is some spillover between V4L2 classes in the V4L2
+        // enumeration process, we end up with duplicate controls if we try to enumerate all the classes. Hence the
+        // doneids set to keep track of the ones already reported:
+        qc.id = cls | 0x900; unsigned int old_id;
+        while (true)
+        {
+          qc.id |= V4L2_CTRL_FLAG_NEXT_CTRL; old_id = qc.id; bool failed = false;
+          try { std::string hlp = camCtrlInfo(qc, doneids); if (hlp.empty() == false) s->writeString(pfx, hlp); }
+          catch (...) { failed = true; }
+
+          // The camera kernel driver is supposed to pass down the next valid control if the requested one is not
+          // found, but some drivers do not honor that, so let's move on to the next control manually if needed:
+          qc.id |= V4L2_CTRL_FLAG_NEXT_CTRL;
+          if (qc.id == old_id) { ++qc.id; if (qc.id > 100 + (cls | 0x900 | V4L2_CTRL_FLAG_NEXT_CTRL)) break; }
+          else if (failed) break;
+        }
+      }
+
+      return true;
+    }
+
+    // ----------------------------------------------------------------------------------------------------
+    if (cmd == "cmdinfo")
+    {
+      cmdInfo(s, pfx);
+      return true;
+    }
+    
+    // ----------------------------------------------------------------------------------------------------
+    if (cmd == "modcmdinfo")
+    {
+      modCmdInfo(s, pfx);
+      return true;
+    }
+
+    // ----------------------------------------------------------------------------------------------------
+    if (cmd == "paraminfo")
+    {
+      std::map<std::string, std::string> categs;
+      paramInfo(s, categs, pfx);
+      return true;
+    }
+    
+    // ----------------------------------------------------------------------------------------------------
     if (cmd == "help2")
     {
       if (itsModule)
       {
         // Start with the module's commands:
         std::stringstream css; itsModule->supportedCommands(css);
-        s->writeString("MODULE-SPECIFIC COMMANDS:");
-        s->writeString("");
-        for (std::string line; std::getline(css, line); /* */) s->writeString(line);
-        s->writeString("");
+        s->writeString(pfx, "MODULE-SPECIFIC COMMANDS:");
+        s->writeString(pfx, "");
+        for (std::string line; std::getline(css, line); /* */) s->writeString(pfx, line);
+        s->writeString(pfx, "");
 
         // Now the parameters for that module (and its subs) only:
-        s->writeString("MODULE PARAMETERS:");
-        s->writeString("");
+        s->writeString(pfx, "MODULE PARAMETERS:");
+        s->writeString(pfx, "");
         
         // Keep this in sync with Manager::constructHelpMessage():
         std::unordered_map<std::string, // category:description
@@ -1280,13 +1444,13 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
         itsModule->populateHelpMessage("", helplist);
         
         if (helplist.empty())
-          s->writeString("None.");
+          s->writeString(pfx, "None.");
         else
         {
           for (auto const & c : helplist)
           {
             // Print out the category name and description
-            s->writeString(c.first);
+            s->writeString(pfx, c.first);
             
             // Print out the parameter details
             for (auto const & n : c.second)
@@ -1302,32 +1466,32 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
 		  if (v.size() == 1) // only one component using this param
 		  {
 		    if (v[0].second.empty())
-		      s->writeString(t); // only one comp, and using default val
+		      s->writeString(pfx, t); // only one comp, and using default val
 		    else
-		      s->writeString(t + " current=[" + v[0].second + ']'); // using non-default val
+		      s->writeString(pfx, t + " current=[" + v[0].second + ']'); // using non-default val
 		  }
 		  else if (v.size() > 1) // several components using this param with possibly different values
 		  {
 		    std::string sss = t + " current=";
 		    for (auto const & pp : v)
 		      if (pp.second.empty() == false) sss += '[' + pp.first + ':' + pp.second + "] ";
-		    s->writeString(sss);
+		    s->writeString(pfx, sss);
 		  }
-		  else s->writeString(t); // no non-default value(s) to report
+		  else s->writeString(pfx, t); // no non-default value(s) to report
 		  
 		  first = false;
 		}
 		
 		else // just write out the other lines (param description)
-		  s->writeString(t);
+		  s->writeString(pfx, t);
 	      }
 	    }
-	    s->writeString("");
+	    s->writeString(pfx, "");
 	  }
 	}
       }
       else
-        s->writeString("No module loaded.");
+        s->writeString(pfx, "No module loaded.");
       
       return true;
     }
@@ -1335,12 +1499,12 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
     // ----------------------------------------------------------------------------------------------------
     if (cmd == "info")
     {
-      s->writeString("INFO: JeVois " JEVOIS_VERSION_STRING);
-      s->writeString("INFO: " + jevois::getSysInfoVersion());
-      s->writeString("INFO: " + jevois::getSysInfoCPU());
-      s->writeString("INFO: " + jevois::getSysInfoMem());
-      if (itsModule) s->writeString("INFO: " + itsCurrentMapping.str());
-      else s->writeString("INFO: " + jevois::VideoMapping().str());
+      s->writeString(pfx, "INFO: JeVois " JEVOIS_VERSION_STRING);
+      s->writeString(pfx, "INFO: " + jevois::getSysInfoVersion());
+      s->writeString(pfx, "INFO: " + jevois::getSysInfoCPU());
+      s->writeString(pfx, "INFO: " + jevois::getSysInfoMem());
+      if (itsModule) s->writeString(pfx, "INFO: " + itsCurrentMapping.str());
+      else s->writeString(pfx, "INFO: " + jevois::VideoMapping().str());
       return true;
     }
     
@@ -1365,7 +1529,7 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
     if (cmd == "getpar")
     {
       auto vec = getParamString(rem);
-      for (auto const & p : vec) s->writeString(p.first + ' ' + p.second);
+      for (auto const & p : vec) s->writeString(pfx, p.first + ' ' + p.second);
       return true;
     }
 
@@ -1383,7 +1547,7 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
     {
       struct v4l2_control c = { }; c.id = camctrlid(rem);
       itsCamera->getControl(c);
-      s->writeString(rem + ' ' + std::to_string(c.value));
+      s->writeString(pfx, rem + ' ' + std::to_string(c.value));
       return true;
     }
 
@@ -1407,7 +1571,7 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
       {
         unsigned int val = itsCamera->readRegister(std::stoi(rem, nullptr, 0));
         std::ostringstream os; os << std::hex << val;
-        s->writeString(os.str());
+        s->writeString(pfx, os.str());
         return true;
       }
       errmsg = "Access to camera registers is disabled, enable with: setpar camreg true";
@@ -1416,13 +1580,13 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
     // ----------------------------------------------------------------------------------------------------
     if (cmd == "listmappings")
     {
-      s->writeString("AVAILABLE VIDEO MAPPINGS:");
-      s->writeString("");
+      s->writeString(pfx, "AVAILABLE VIDEO MAPPINGS:");
+      s->writeString(pfx, "");
       for (size_t idx = 0; idx < itsMappings.size(); ++idx)
       {
         std::string idxstr = std::to_string(idx);
         if (idxstr.length() < 5) idxstr = std::string(5 - idxstr.length(), ' ') + idxstr; // pad to 5-char long
-        s->writeString(idxstr + " - " + itsMappings[idx].str());
+        s->writeString(pfx, idxstr + " - " + itsMappings[idx].str());
       }
       return true;
     }
@@ -1507,7 +1671,7 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
     // ----------------------------------------------------------------------------------------------------
     if (cmd == "ping")
     {
-      s->writeString("ALIVE");
+      s->writeString(pfx, "ALIVE");
       return true;
     }
 
@@ -1554,32 +1718,68 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
     if (cmd == "date")
     {
       std::string dat = jevois::system("/bin/date " + rem);
-      s->writeString("date now " + dat.substr(0, dat.size()-1)); // skip trailing newline
+      s->writeString(pfx, "date now " + dat.substr(0, dat.size()-1)); // skip trailing newline
       return true;
     }
 
     // ----------------------------------------------------------------------------------------------------
     if (cmd == "runscript")
     {
-      std::string fname;
-      if (itsModule) fname = itsModule->absolutePath(rem); else fname = rem;
+      std::string const fname = itsModule ? itsModule->absolutePath(rem) : rem;
       
       try { runScriptFromFile(fname, s, true); return true; }
-      catch (...) { errmsg = "Script execution failed"; }
+      catch (...) { errmsg = "Script " + fname + " execution failed"; }
     }
- 
+
+    // ----------------------------------------------------------------------------------------------------
+    if (cmd == "shell")
+    {
+      std::string ret = jevois::system(rem, true);
+      std::vector<std::string> rvec = jevois::split(ret, "\n");
+      for (std::string const & r : rvec) s->writeString(pfx, r);
+      return true;
+    }
+
+    // ----------------------------------------------------------------------------------------------------
+    if (cmd == "fileget")
+    {
+      std::shared_ptr<jevois::Serial> ser = std::dynamic_pointer_cast<jevois::Serial>(s);
+      if (!ser)
+	errmsg = "File transfer only supported over USB or Hard serial ports";
+      else
+      {
+	std::string const abspath = itsModule ? itsModule->absolutePath(rem) : rem;
+	ser->fileGet(abspath);
+	return true;
+      }
+    }
+
+    // ----------------------------------------------------------------------------------------------------
+    if (cmd == "fileput")
+    {
+      std::shared_ptr<jevois::Serial> ser = std::dynamic_pointer_cast<jevois::Serial>(s);
+      if (!ser)
+	errmsg = "File transfer only supported over USB or Hard serial ports";
+      else
+      {
+	std::string const abspath = itsModule ? itsModule->absolutePath(rem) : rem;
+	ser->filePut(abspath);
+	return true;
+      }
+    }
+     
 #ifdef JEVOIS_PLATFORM
     // ----------------------------------------------------------------------------------------------------
     if (cmd == "restart")
     {
-      s->writeString("Restart command received - bye-bye!");
+      s->writeString(pfx, "Restart command received - bye-bye!");
 
       if (itsStreaming.load())
-        s->writeString("ERR Video streaming is on - you should quit your video viewer before rebooting");
+        s->writeString(pfx, "ERR Video streaming is on - you should quit your video viewer before rebooting");
       
       // Turn off the SD storage if it is there:
       std::ofstream(JEVOIS_USBSD_SYS).put('\n'); // ignore errors
-      if (std::system("sync")) s->writeString("ERR Disk sync failed -- IGNORED");
+      if (std::system("sync")) s->writeString(pfx, "ERR Disk sync failed -- IGNORED");
 
       // Hard reboot:
       this->reboot();
@@ -1590,7 +1790,7 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
     // ----------------------------------------------------------------------------------------------------
     if (cmd == "quit")
     {
-      s->writeString("Quit command received - bye-bye!");
+      s->writeString(pfx, "Quit command received - bye-bye!");
       itsGadget->abortStream();
       itsCamera->abortStream();
       itsStreaming.store(false);

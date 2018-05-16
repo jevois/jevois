@@ -208,11 +208,13 @@ void jevois::flushcache()
 // ####################################################################################################
 // This code modified from here: https://stackoverflow.com/questions/478898/how-to-execute-a-command-and-get-
 // output-of-command-within-c-using-posix
-std::string jevois::system(std::string const & cmd)
+std::string jevois::system(std::string const & cmd, bool errtoo)
 {
   std::array<char, 128> buffer; std::string result;
-  std::shared_ptr<FILE> pipe(popen(cmd.c_str(), "r"), pclose);
-  if (!pipe) LFATAL("popen() failed for command [" << cmd << ']');
-  while (!feof(pipe.get())) if (fgets(buffer.data(), 128, pipe.get()) != NULL) result += buffer.data();
+  std::shared_ptr<FILE> pip;
+  if (errtoo) pip.reset(popen((cmd + " 2>&1").c_str(), "r"), pclose);
+  else pip.reset(popen(cmd.c_str(), "r"), pclose);
+  if (!pip) LFATAL("popen() failed for command [" << cmd << ']');
+  while (!feof(pip.get())) if (fgets(buffer.data(), 128, pip.get()) != NULL) result += buffer.data();
   return result;
 }

@@ -25,3 +25,10 @@ jevois::UserInterface::UserInterface(std::string const & instance) :
 // ####################################################################################################
 jevois::UserInterface::~UserInterface()
 { }
+
+// ####################################################################################################
+void jevois::UserInterface::writeString(std::string const & prefix, std::string const & str)
+{
+  if (prefix.empty()) writeString(str);
+  else writeString(prefix + str);
+}

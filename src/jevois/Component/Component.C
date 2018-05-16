@@ -22,6 +22,7 @@
 #include <jevois/Component/Manager.H>
 #include <jevois/Component/Parameter.H>
 #include <jevois/Util/Utils.H>
+#include <jevois/Core/UserInterface.H>
 
 #include <fstream>
 #include <algorithm> // for std::all_of
@@ -516,11 +517,56 @@ std::string jevois::Component::absolutePath(std::string const & path)
 }
 
 // ######################################################################
+void jevois::Component::paramInfo(std::shared_ptr<UserInterface> s, std::map<std::string, std::string> & categs,
+				  std::string const & cname, std::string const & pfx)
+{
+  JEVOIS_TRACE(9);
+
+  std::string const compname = cname.empty() ? itsInstanceName : cname + ':' + itsInstanceName;
+
+  // First add our own params:
+  {
+    boost::shared_lock<boost::shared_mutex> lck(itsParamMtx);
+    for (auto const & p : itsParameterList)
+    {
+      jevois::ParameterSummary const ps = p.second->summary();
+
+      categs[ps.category] = ps.categorydescription;
+
+      if (ps.frozen) s->writeString(pfx, "F"); else s->writeString(pfx, "N");
+      s->writeString(pfx, compname);
+      s->writeString(pfx, ps.category);
+      s->writeString(pfx, ps.name);
+      s->writeString(pfx, ps.valuetype);
+      s->writeString(pfx, ps.value);
+      s->writeString(pfx, ps.defaultvalue);
+      s->writeString(pfx, ps.validvalues);
+      s->writeString(pfx, ps.description);
+    }
+  }
+
+  // Then recurse through our subcomponents:
+  boost::shared_lock<boost::shared_mutex> lck(itsSubMtx);
+  for (std::shared_ptr<jevois::Component> c : itsSubComponents) c->paramInfo(s, categs, compname, pfx);
+
+  // At the root only, dump the list of categories:
+  if (cname.empty())
+  {
+    s->writeString(pfx, "C");
+    for (auto const & c : categs)
+    {
+      s->writeString(pfx, c.first);
+      s->writeString(pfx, c.second);
+    }
+  }
+}
+
+// ######################################################################
 void jevois::Component::populateHelpMessage(std::string const & cname,
-                                         std::unordered_map<std::string,
-                                         std::unordered_map<std::string,
-                                         std::vector<std::pair<std::string, std::string> > > > & helplist,
-                                         bool recurse) const
+					    std::unordered_map<std::string,
+					    std::unordered_map<std::string,
+					    std::vector<std::pair<std::string, std::string> > > > & helplist,
+					    bool recurse) const
 {
   JEVOIS_TRACE(9);
 

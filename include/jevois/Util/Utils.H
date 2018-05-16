@@ -111,7 +111,8 @@ namespace jevois
   void flushcache();
 
   //! Execute a command and grab stdout output to a string
-  std::string system(std::string const & cmd);
+  /*! If errtoo is true, we also grab errors by appending a 2>&1 to the command. */
+  std::string system(std::string const & cmd, bool errtoo = true);
   
   /*! @} */ // **********************************************************************
 

@@ -374,8 +374,9 @@ namespace jevois
 
       //! Parse a user command received over serial port
       /*! Throw upon receiving an incorrect command (eg, bad parameter value), return true if success, return false if
-          command was not recognized and should be tried by Module. */
-      bool parseCommand(std::string const & str, std::shared_ptr<UserInterface> s);
+          command was not recognized and should be tried by Module. pfx is an optional prefix which will be added to all
+          produced messages or errors. */
+      bool parseCommand(std::string const & str, std::shared_ptr<UserInterface> s, std::string const & pfx = "");
       
     private:
       std::list<std::shared_ptr<UserInterface> > itsSerials;
@@ -385,7 +386,16 @@ namespace jevois
       
       // Return help string for a camera control or throw
       std::string camCtrlHelp(struct v4l2_queryctrl & qc, std::set<int> & doneids);
+
+      // Return machine-oriented string for a camera control or throw
+      std::string camCtrlInfo(struct v4l2_queryctrl & qc, std::set<int> & doneids);
+
+      // Send info about built-in engine commands
+      void cmdInfo(std::shared_ptr<UserInterface> s, std::string const & pfx = "");
       
+      // Send info about module commands
+      void modCmdInfo(std::shared_ptr<UserInterface> s, std::string const & pfx = "");
+
       // Get short name from V4L2 ID, long name is a backup in case we don't find the control in our list
       std::string camctrlname(int id, char const * longname) const;
       

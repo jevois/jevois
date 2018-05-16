@@ -49,6 +49,12 @@ namespace jevois
           LF, etc). */
       virtual void writeString(std::string const & str) = 0;
 
+      //! Write a string, with a prefix prepended
+      /*! No line terminator should be included in the string, writeString() will add one. In the Serial derived class,
+          this will be using the line termination convention of serial::linestyle to support different styles (CR, CRLF,
+          LF, etc). */
+      virtual void writeString(std::string const & prefix, std::string const & str);
+
       //! Enum for the interface type
       enum class Type { Hard, USB, Stdio };
 

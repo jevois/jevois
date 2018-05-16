@@ -30,7 +30,8 @@
 namespace jevois
 {
   class Manager;
-
+  class UserInterface;
+  
   /*! \defgroup component Model components, parameters, manager, and associated classes
 
       These classes define how a complex model or vision processing pipeline with user-tunable parameters can be built
@@ -425,6 +426,10 @@ namespace jevois
           relative to this component. absfile is only used for error messages and should be the absolute path of the
           file opened in 'is', or some other text for error messages. */
       std::istream & setParamsFromStream(std::istream & is, std::string const & absfile);
+
+      //! Get machine-oriented descriptions of all parameters
+      virtual void paramInfo(std::shared_ptr<UserInterface> s, std::map<std::string, std::string> & categs,
+			     std::string const & cname = "", std::string const & pfx = "");
 
       //! @}
 

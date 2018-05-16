@@ -135,6 +135,16 @@ namespace jevois
       /*! @param buffer begin writing from the location buffer.
           @param nbytes number of bytes to write */
       void writeNoCheck(void const * buffer, const int nbytes);
+
+      //! Send a file from the local microSD to the host computer
+      /*! abspath should be the full absolute path of the file. The port will be locked during the entire
+          transaction. */
+      void fileGet(std::string const & abspath);
+
+      //! Receive a file from the host and write it to the local microSD
+      /*! abspath should be the full absolute path of the file. The port will be locked during the entire
+          transaction. */
+      void filePut(std::string const & abspath);
       
       //! Flush all inputs
       void flush(void);
@@ -147,6 +157,8 @@ namespace jevois
       void postUninit() override;
 
     private:
+      void writeInternal(void const * buffer, const int nbytes); // Like write() but already locked
+      std::string readStringInternal(); // Like readString(0 but already locked
       int itsDev; // descriptor associated with the device file
       termios itsSavedState; // saved state to restore in the destructor
       std::string itsPartialString;

@@ -107,4 +107,7 @@
 #  define JEVOIS_UNUSED_FUNC(x) JEVOIS_UNUSED_ ## x
 #endif
 
+//! Prefix used for some CLI commands whose outputs will also get the prefix
+#define JEVOIS_JVINV_PREFIX "JVINV"
+
 #endif

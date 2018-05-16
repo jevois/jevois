@@ -17,6 +17,8 @@
 
 #include <jevois/Core/Serial.H>
 
+#include <fstream>
+
 #include <fcntl.h>
 #include <stdio.h>
 #include <sys/stat.h>
@@ -300,7 +302,12 @@ bool jevois::Serial::readSome(std::string & str)
 std::string jevois::Serial::readString()
 {
   std::lock_guard<std::mutex> _(itsMtx);
+  return readStringInternal();
+}
 
+// ######################################################################
+std::string jevois::Serial::readStringInternal()
+{
   std::string str; unsigned char c;
   
   while (true)
@@ -355,11 +362,16 @@ void jevois::Serial::writeString(std::string const & str)
 // ######################################################################
 void jevois::Serial::write(void const * buffer, const int nbytes)
 {
+  std::lock_guard<std::mutex> _(itsMtx);
+  writeInternal(buffer, nbytes);
+}
+
+// ######################################################################
+void jevois::Serial::writeInternal(void const * buffer, const int nbytes)
+{
   if (drop::get())
   {
     // Just write and ignore (after a few attempts) if the number of bytes written is not what we wanted to write:
-    std::lock_guard<std::mutex> _(itsMtx);
-
     int ndone = 0; char const * b = reinterpret_cast<char const *>(buffer); int iter = 0;
     while (ndone < nbytes && iter++ < 10)
     {
@@ -373,8 +385,6 @@ void jevois::Serial::write(void const * buffer, const int nbytes)
   }
   else
   {
-    std::lock_guard<std::mutex> _(itsMtx);
-    
     int ndone = 0; char const * b = reinterpret_cast<char const *>(buffer); int iter = 0;
     while (ndone < nbytes && iter++ < 10)
     {
@@ -422,7 +432,6 @@ void jevois::Serial::writeNoCheck(void const * buffer, const int nbytes)
     {
       // If after a number of iterations there are still unbuffered bytes, flush the output buffer
       if (tcflush(itsDev, TCOFLUSH) != 0) LDEBUG("Serial flushOut error -- IGNORED");
-
     }
 }
 
@@ -444,3 +453,60 @@ jevois::Serial::~Serial(void)
 jevois::UserInterface::Type jevois::Serial::type() const
 { return itsType; }
 
+// ####################################################################################################
+void jevois::Serial::fileGet(std::string const & abspath)
+{
+  std::lock_guard<std::mutex> _(itsMtx);
+
+  std::ifstream fil(abspath, std::ios::in | std::ios::binary);
+  if (fil.is_open() == false) throw std::runtime_error("Could not read file " + abspath);
+
+  // Get file length and send it out in ASCII:
+  fil.seekg(0, fil.end); size_t num = fil.tellg(); fil.seekg(0, fil.beg);
+
+  std::string startstr = "JEVOIS_FILEGET " + std::to_string(num) + '\n';
+  writeInternal(startstr.c_str(), startstr.length());
+  
+  // Read blocks and send them to serial:
+  size_t const bufsiz = std::min(num, size_t(1024 * 1024)); char buffer[1024 * 1024];
+  while (num)
+  {
+    size_t got = std::min(bufsiz, num); fil.read(buffer, got); if (!fil) got = fil.gcount();
+    writeInternal(buffer, got);
+    num -= got;
+  }
+}
+
+// ####################################################################################################
+void jevois::Serial::filePut(std::string const & abspath)
+{
+    std::lock_guard<std::mutex> _(itsMtx);
+
+    std::ofstream fil(abspath, std::ios::out | std::ios::binary);
+    if (fil.is_open() == false)  throw std::runtime_error("Could not write file " + abspath);
+
+    // Get file length as ASCII:
+    std::string const lenstr = readStringInternal();
+    if (jevois::stringStartsWith(lenstr, "JEVOIS_FILEPUT ") == false)
+      throw std::runtime_error("Incorrect header while receiving file " + abspath);
+
+    auto vec = jevois::split(lenstr);
+    if (vec.size() != 2) throw std::runtime_error("Incorrect header fields while receiving file " + abspath);
+
+    size_t num = std::stoul(vec[1]);
+    
+    // Read blocks from serial and write them to file:
+    size_t const bufsiz = std::min(num, size_t(1024 * 1024)); char buffer[1024 * 1024];
+    while (num)
+    {
+      int got = ::read(itsDev, buffer, bufsiz);
+      if (got == -1 && errno != EAGAIN) throw std::runtime_error("Serial: Read error");
+      
+      if (got > 0)
+      {
+	fil.write(buffer, got);
+	num -= got;
+      }
+      else std::this_thread::sleep_for(std::chrono::milliseconds(2));
+    }
+}
