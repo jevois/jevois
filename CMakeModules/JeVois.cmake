@@ -213,10 +213,10 @@ macro(jevois_setup_modules basedir deps)
     
     # Install everything that is in that directory except for the source file:
     install(DIRECTORY ${basedir}/${JV_MODULE} DESTINATION "${DESTDIR}"
-      PATTERN "*.[hHcC]" EXCLUDE
-      PATTERN "*.hpp" EXCLUDE
-      PATTERN "*.cpp" EXCLUDE
-      PATTERN "modinfo.*" EXCLUDE
+      #PATTERN "*.[hHcC]" EXCLUDE
+      #PATTERN "*.hpp" EXCLUDE
+      #PATTERN "*.cpp" EXCLUDE
+      PATTERN "modinfo.yaml" EXCLUDE
       PATTERN "*~" EXCLUDE
       PATTERN "*ubyte" EXCLUDE # tiny-dnn training data
       PATTERN "*.bin" EXCLUDE # tiny-dnn training data

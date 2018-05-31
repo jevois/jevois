@@ -518,7 +518,7 @@ std::string jevois::Component::absolutePath(std::string const & path)
 
 // ######################################################################
 void jevois::Component::paramInfo(std::shared_ptr<UserInterface> s, std::map<std::string, std::string> & categs,
-				  std::string const & cname, std::string const & pfx)
+				  bool skipFrozen, std::string const & cname, std::string const & pfx)
 {
   JEVOIS_TRACE(9);
 
@@ -531,6 +531,8 @@ void jevois::Component::paramInfo(std::shared_ptr<UserInterface> s, std::map<std
     {
       jevois::ParameterSummary const ps = p.second->summary();
 
+      if (skipFrozen && ps.frozen) continue;
+      
       categs[ps.category] = ps.categorydescription;
 
       if (ps.frozen) s->writeString(pfx, "F"); else s->writeString(pfx, "N");
@@ -547,7 +549,7 @@ void jevois::Component::paramInfo(std::shared_ptr<UserInterface> s, std::map<std
 
   // Then recurse through our subcomponents:
   boost::shared_lock<boost::shared_mutex> lck(itsSubMtx);
-  for (std::shared_ptr<jevois::Component> c : itsSubComponents) c->paramInfo(s, categs, compname, pfx);
+  for (std::shared_ptr<jevois::Component> c : itsSubComponents) c->paramInfo(s, categs, skipFrozen, compname, pfx);
 
   // At the root only, dump the list of categories:
   if (cname.empty())

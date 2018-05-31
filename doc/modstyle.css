@@ -105,8 +105,22 @@ table.videomapping {
 }
 
 td.videomapping {
-    text-align: left;
     padding: 0px;
+}
+
+table.moduledata {
+    border-collapse: collapse;
+    background-color: #f0f0ff;
+    border-spacing: 0px;
+    width: 100%;
+    line-height: 0em;
+}
+
+td.moduledata {
+    padding: 0px;
+    border-spacing: 0px;
+    color: navy;
+    font-weight: 600;
 }
 
 em {

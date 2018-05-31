@@ -382,7 +382,7 @@ namespace jevois
       std::list<std::shared_ptr<UserInterface> > itsSerials;
       
       void setFormatInternal(size_t idx); // itsMtx should be locked by caller
-      void setFormatInternal(jevois::VideoMapping const & m); // itsMtx should be locked by caller
+      void setFormatInternal(jevois::VideoMapping const & m, bool reload = false); // itsMtx should be locked by caller
       
       // Return help string for a camera control or throw
       std::string camCtrlHelp(struct v4l2_queryctrl & qc, std::set<int> & doneids);

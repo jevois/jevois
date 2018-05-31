@@ -348,61 +348,64 @@ my $osver = $ostmp[1];
 ##############################################################################################################
 # Dump out information in YAML format
 ##############################################################################################################
-open OF, ">modinfo.yaml" || die "oops";
-print OF "general: \n";
-print OF "  displayname: $displayName \n";
-print OF "  synopsis: $synopsis \n";
-print OF "  description: > \n";
-print OF "    " . wrap("","      ", $description). "\n";
-print OF "\n";
-#print OF "  keywords: \n";
-#print OF join("\n", map {$_ = "    - $_"} (split(/\s*,\s*/, $tagdata{'keywords'}))) . "\n";
-#print OF "\n";
-#print OF "  jevoispkg: $tagdata{'jevoispkg'}\n";
-#print OF "\n";
-
-print OF "  parameters: \n";
-foreach my $p (@modparams)
+if (0)
 {
-    my %paramHash = %$p;
-    print OF "    - name: " .        $paramHash{name} .        "\n";
-    print OF "      type: " .        $paramHash{type} .        "\n";
-    print OF "      description: " . $paramHash{description} . "\n";
-    print OF "      defval: "      . $paramHash{defval} . "\n";
-    print OF "      validvals: "   . $paramHash{vvals} . "\n";
+    open OF, ">modinfo.yaml" || die "oops";
+    print OF "general: \n";
+    print OF "  displayname: $displayName \n";
+    print OF "  synopsis: $synopsis \n";
+    print OF "  description: > \n";
+    print OF "    " . wrap("","      ", $description). "\n";
+    print OF "\n";
+    #print OF "  keywords: \n";
+    #print OF join("\n", map {$_ = "    - $_"} (split(/\s*,\s*/, $tagdata{'keywords'}))) . "\n";
+    #print OF "\n";
+    #print OF "  jevoispkg: $tagdata{'jevoispkg'}\n";
+    #print OF "\n";
+    
+    print OF "  parameters: \n";
+    foreach my $p (@modparams)
+    {
+        my %paramHash = %$p;
+        print OF "    - name: " .        $paramHash{name} .        "\n";
+        print OF "      type: " .        $paramHash{type} .        "\n";
+        print OF "      description: " . $paramHash{description} . "\n";
+        print OF "      defval: "      . $paramHash{defval} . "\n";
+        print OF "      validvals: "   . $paramHash{vvals} . "\n";
+    }
+    print OF "\n";
+    
+    print OF "\n";
+    print OF "authorship: " .                     "\n";
+    print OF "  author: " . join(", ", @authors) . "\n";
+    print OF "  email: $tagdata{'email'}\n";
+    print OF "  mainurl: $tagdata{'mainurl'}\n";
+    print OF "  supporturl: $tagdata{'supporturl'}\n";
+    print OF "  otherurl: $tagdata{'otherurl'}\n";
+    print OF "  address: $tagdata{'address'}\n";
+    print OF "\n";
+    print OF "licensing: " .                      "\n";
+    print OF "  copyright: $tagdata{'copyright'}\n";
+    print OF "  license: $tagdata{'license'}\n";
+    print OF "  distribution: $tagdata{'distribution'}\n";
+    print OF "  restrictions: $tagdata{'restrictions'}\n";
+    print OF "\n";
+    print OF "os: " .                             "\n";
+    print OF "  name: $osname" .                  "\n";
+    print OF "  version: $osver" .                "\n";
+    print OF "  depends: $tagdata{'depends'}\n";
+    #print OF "  recommends: $tagdata{'recommends'}\n";
+    #print OF "  suggests: $tagdata{'suggests'}\n";
+    #print OF "  conflicts: $tagdata{'conflicts'}\n";
+    #print OF "  replaces: $tagdata{'replaces'}\n";
+    #print OF "  breaks: $tagdata{'breaks'}\n";
+    #print OF "  provides: $tagdata{'provides'}\n";
+    print OF "\n";
+    #print OF "package: " .                        "\n";
+    #print OF "  signature: " .                    "\n";
+    #print OF "  md5: " .                          "\n";
+    close OF;
 }
-print OF "\n";
-
-print OF "\n";
-print OF "authorship: " .                     "\n";
-print OF "  author: " . join(", ", @authors) . "\n";
-print OF "  email: $tagdata{'email'}\n";
-print OF "  mainurl: $tagdata{'mainurl'}\n";
-print OF "  supporturl: $tagdata{'supporturl'}\n";
-print OF "  otherurl: $tagdata{'otherurl'}\n";
-print OF "  address: $tagdata{'address'}\n";
-print OF "\n";
-print OF "licensing: " .                      "\n";
-print OF "  copyright: $tagdata{'copyright'}\n";
-print OF "  license: $tagdata{'license'}\n";
-print OF "  distribution: $tagdata{'distribution'}\n";
-print OF "  restrictions: $tagdata{'restrictions'}\n";
-print OF "\n";
-print OF "os: " .                             "\n";
-print OF "  name: $osname" .                  "\n";
-print OF "  version: $osver" .                "\n";
-print OF "  depends: $tagdata{'depends'}\n";
-#print OF "  recommends: $tagdata{'recommends'}\n";
-#print OF "  suggests: $tagdata{'suggests'}\n";
-#print OF "  conflicts: $tagdata{'conflicts'}\n";
-#print OF "  replaces: $tagdata{'replaces'}\n";
-#print OF "  breaks: $tagdata{'breaks'}\n";
-#print OF "  provides: $tagdata{'provides'}\n";
-print OF "\n";
-#print OF "package: " .                        "\n";
-#print OF "  signature: " .                    "\n";
-#print OF "  md5: " .                          "\n";
-close OF;
 
 ##############################################################################################################
 # Dump out information in HTML format
@@ -465,22 +468,21 @@ print OF "<table class=modinfo><tr><td>\n";
 print OF "<table class=modinfotop><tr><td><a href=\"/moddoc/$className/modinfo.html\"><img src=\"/moddoc/$className/$iconFile\" width=48></a></td>\n";
 print OF "<td valign=middle><table><tr><td class=modinfoname>$displayName</td></tr>\n";
 print OF "<tr><td class=modinfosynopsis>$synopsis</td></tr></table></td></tr></table></td></tr>\n";
-print OF "<tr><td><table class=modinfoauth width=100%><tr><td>By ". join(", ", @authors) . "</td><td>$tagdata{'email'}</td><td>$tagdata{'mainurl'}</td>";
-print OF "<td>$tagdata{'license'}</td></tr></table></td></tr>\n";
+print OF "<tr><td width=100%><table class=modinfoauth width=100%><tr><td>By ". join(", ", @authors) . "</td><td align=center>$tagdata{'email'}</td><td align=center>$tagdata{'mainurl'}</td>";
+print OF "<td align=right>$tagdata{'license'}</td></tr></table></td></tr>\n";
 
 # Video mappings and language:
-print OF "<tr><td><table class=videomapping>\n";
+print OF "<tr><td><table class=videomapping><tr><td class=videomapping>\n";
 
-print OF "<tr><td class=videomapping><small><font color=navy>\n";
-print OF "<b>&nbsp;Language: &nbsp; </b>";
+print OF "<table class=moduledata><tr><td class=moduledata>&nbsp;Language:&nbsp;";
 if ($ispython) { print OF "Python"; } else { print OF "C++"; }
-print OF "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
-print OF "<b>Supports mappings with USB output: &nbsp; </b>";
+print OF "</td><td class=moduledata align=center>Supports mappings with USB output:&nbsp;";
 if ($process2) { print OF "Yes"; } else { print OF "No"; }
-print OF "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
-print OF "<b>Supports mappings with NO USB output: &nbsp; </b>";
-if ($process1) { print OF "Yes"; } else { print OF "No"; }
-print OF "</font></small></td></tr>\n";
+print OF "</td><td class=moduledata align=right>Supports mappings with NO USB output:&nbsp;";
+if ($process1) { print OF "Yes&nbsp;"; } else { print OF "No&nbsp;"; }
+print OF "</td></tr></table>\n";
+
+print OF "</td></tr>\n";
 
 my $vm = $tagdata{'videomapping'};
 my @vm2 = split(/,/, $vm);

@@ -90,7 +90,7 @@ std::string jevois::VideoMapping::str() const
 
   ss << "OUT: " << this->ostr() << " CAM: " << this->cstr();
   //ss << " (uvc " << uvcformat << '/' << uvcframe << '/' << jevois::VideoMapping::fpsToUvc(ofps) << ')';
-  ss << " MOD: " << this->vendor << ':' << this->modulename;
+  ss << " MOD: " << this->vendor << ':' << this->modulename << ' ' << (ispython ? "Python" : "C++");
   //ss << ' ' << this->sopath();
   return ss.str();
 }

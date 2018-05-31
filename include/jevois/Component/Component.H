@@ -429,7 +429,7 @@ namespace jevois
 
       //! Get machine-oriented descriptions of all parameters
       virtual void paramInfo(std::shared_ptr<UserInterface> s, std::map<std::string, std::string> & categs,
-			     std::string const & cname = "", std::string const & pfx = "");
+			     bool skipFrozen, std::string const & cname = "", std::string const & pfx = "");
 
       //! @}
 

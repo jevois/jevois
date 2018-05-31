@@ -362,7 +362,9 @@ void jevois::Engine::postInit()
   gadgetnbuf::freeze();
   itsTurbo = camturbo::get();
   multicam::freeze();
-
+  quietcmd::freeze();
+  python::freeze();
+  
   // Grab the log messages, itsSerials is not going to change anymore now that the serial params are frozen:
   jevois::logSetEngine(this);
 
@@ -593,7 +595,7 @@ void jevois::Engine::setFormatInternal(size_t idx)
 }
 
 // ####################################################################################################
-void jevois::Engine::setFormatInternal(jevois::VideoMapping const & m)
+void jevois::Engine::setFormatInternal(jevois::VideoMapping const & m, bool reload)
 {
   // itsMtx should be locked by caller, idx should be valid:
   JEVOIS_TRACE(2);
@@ -605,10 +607,13 @@ void jevois::Engine::setFormatInternal(jevois::VideoMapping const & m)
     LFATAL("Cannot setup video streaming while in mass-storage mode. Eject the USB drive on your host computer first.");
 #endif
   
-  // Set the format at the camera and gadget levels:
-  itsCamera->setFormat(m);
-  if (m.ofmt) itsGadget->setFormat(m);
-
+  // Set the format at the camera and gadget levels, unless we are just reloading:
+  if (reload == false)
+  {
+    itsCamera->setFormat(m);
+    if (m.ofmt) itsGadget->setFormat(m);
+  }
+  
   // Keep track of our current mapping:
   itsCurrentMapping = m;
   
@@ -1227,6 +1232,7 @@ void jevois::Engine::cmdInfo(std::shared_ptr<UserInterface> s, std::string const
   s->writeString(pfx, "setmapping <num> - select video mapping <num>, only possible while not streaming");
   s->writeString(pfx, "setmapping2 <CAMmode> <CAMwidth> <CAMheight> <CAMfps> <Vendor> <Module> - set no-USB-out "
 		 "video mapping defined on the fly, while not streaming");
+  s->writeString(pfx, "reload - reload and reset the current module");
 
   if (itsCurrentMapping.ofmt == 0 || itsManualStreamon)
   {
@@ -1241,7 +1247,8 @@ void jevois::Engine::cmdInfo(std::shared_ptr<UserInterface> s, std::string const
   s->writeString(pfx, "caminfo - returns machine-readable info about camera parameters");
   s->writeString(pfx, "cmdinfo - returns machine-readable info about Engine commands");
   s->writeString(pfx, "modcmdinfo - returns machine-readable info about Module commands");
-  s->writeString(pfx, "paraminfo - returns machine-readable info about parameters");
+  s->writeString(pfx, "paraminfo [hot|mod|modhot] - returns machine-readable info about parameters");
+  s->writeString(pfx, "serinfo - returns machine-readable info about serial settings (serout serlog serstyle serprec serstamp)");
   
 #ifdef JEVOIS_PLATFORM
   s->writeString(pfx, "usbsd - export the JEVOIS partition of the microSD card as a virtual USB drive");
@@ -1415,7 +1422,38 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
     if (cmd == "paraminfo")
     {
       std::map<std::string, std::string> categs;
-      paramInfo(s, categs, pfx);
+      bool skipFrozen = (rem == "hot" || rem == "modhot") ? true : false;
+
+      if (rem == "mod" || rem == "modhot")
+      {
+	// Report only on our module's parameter, if any:
+	if (itsModule) itsModule->paramInfo(s, categs, skipFrozen, instanceName(), pfx);
+      }	  
+      else
+      {
+	// Report on all parameters:
+	paramInfo(s, categs, skipFrozen, "", pfx);
+      }
+      
+      return true;
+    }
+
+    // ----------------------------------------------------------------------------------------------------
+    if (cmd == "serinfo")
+    {
+      std::string info = getParamStringUnique("serout") + ' ' + getParamStringUnique("serlog");
+      if (itsModule)
+      {
+	auto mod = dynamic_cast<jevois::StdModule *>(itsModule.get());
+	if (mod) info += ' ' + mod->getParamStringUnique("serstyle") + ' ' + mod->getParamStringUnique("serprec");
+	else info += " - -";
+	
+	info += ' ' + mod->getParamStringUnique("serstamp");
+      }
+      else info += " - - -";
+      
+      s->writeString(pfx, info);
+
       return true;
     }
     
@@ -1643,6 +1681,13 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
     }
 
     // ----------------------------------------------------------------------------------------------------
+    if (cmd == "reload")
+    {
+      setFormatInternal(itsCurrentMapping, true);
+      return true;
+    }
+
+    // ----------------------------------------------------------------------------------------------------
     if (itsCurrentMapping.ofmt == 0 || itsManualStreamon)
     {
       if (cmd == "streamon")
@@ -1764,6 +1809,7 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
       {
 	std::string const abspath = itsModule ? itsModule->absolutePath(rem) : rem;
 	ser->filePut(abspath);
+	if (std::system("sync")) { } // quietly ignore any errors
 	return true;
       }
     }

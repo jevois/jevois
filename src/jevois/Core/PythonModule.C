@@ -184,11 +184,15 @@ jevois::PythonModule::PythonModule(jevois::VideoMapping const & m) :
     "sys.path.append(\"/usr/lib\")\n" // To find libjevois module in /usr/lib
     "sys.path.append(\"" JEVOIS_OPENCV_PYTHON_PATH "\")\n" // To find cv2 module
     "sys.path.append(\"" + pydir + "\")\n" +
-    "from " + m.modulename + " import " + m.modulename + "\n";
+    "import " + m.modulename + "\n" +
+    "import importlib\n" +
+    "importlib.reload(" + m.modulename + ")\n"; // reload so we are always fresh if file changed on SD card
+
   boost::python::exec(execstr.c_str(), itsMainNamespace, itsMainNamespace);
 
   // Create an instance of the python class defined in the module:
-  itsInstance = boost::python::eval((m.modulename + "()").c_str(), itsMainNamespace, itsMainNamespace);
+  itsInstance = boost::python::eval((m.modulename + "." + m.modulename + "()").c_str(),
+				    itsMainNamespace, itsMainNamespace);
 }
 
 // ####################################################################################################
