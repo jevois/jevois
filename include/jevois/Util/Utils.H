@@ -32,6 +32,9 @@ namespace jevois
   //! Convert a V4L2 four-cc code (V4L2_PIX_FMT_...) to a 4-char string
   std::string fccstr(unsigned int fcc);
 
+  //! Convert cv::Mat::type() code to to a string (e.g., CV_8UC1, CV_32SC3, etc)
+  std::string cvtypestr(unsigned int cvtype);
+
   //! Convert a JeVois video format string to V4L2 four-cc code (V4L2_PIX_FMT_...)
   /*! Throws a runtime_error if str is not one of: BAYER, YUYV, GREY, GRAY, MJPG, RGB565, BGR24 or NONE. */
   unsigned int strfcc(std::string const & str);

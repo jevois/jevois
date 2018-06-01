@@ -33,6 +33,8 @@
 #include <array>
 #include <cctype> // for std::isspace()
 
+#include <opencv2/core/hal/interface.h> // for CV_MAT_DEPTH_MASK
+
 // ####################################################################################################
 std::string jevois::fccstr(unsigned int fcc)
 {
@@ -44,6 +46,32 @@ std::string jevois::fccstr(unsigned int fcc)
   ret[2] = static_cast<char>((fcc >> 16) & 0xff);
   ret[3] = static_cast<char>((fcc >> 24) & 0xff);
   return ret;
+}
+
+// ####################################################################################################
+std::string jevois::cvtypestr(unsigned int cvtype)
+{
+  // From: https://gist.github.com/rummanwaqar/cdaddd5a175f617c0b107d353fd33695
+  std::string r;
+
+  uchar depth = cvtype & CV_MAT_DEPTH_MASK;
+  uchar chans = 1 + (cvtype >> CV_CN_SHIFT);
+
+  switch (depth)
+  {
+  case CV_8U:  r = "8U"; break;
+  case CV_8S:  r = "8S"; break;
+  case CV_16U: r = "16U"; break;
+  case CV_16S: r = "16S"; break;
+  case CV_32S: r = "32S"; break;
+  case CV_32F: r = "32F"; break;
+  case CV_64F: r = "64F"; break;
+  default:     r = "User"; break;
+  }
+
+  r += 'C' + (chans + '0');
+
+  return r;
 }
 
 // ####################################################################################################

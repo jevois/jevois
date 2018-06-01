@@ -797,7 +797,8 @@ namespace
   // ####################################################################################################
   void convertCvBGRtoBayer(cv::Mat const & src, jevois::RawImage & dst)
   {
-    if (src.type() != CV_8UC3) LFATAL("src must have type CV_8UC3 and BGR pixels");
+    if (src.type() != CV_8UC3)
+      LFATAL("src must have type CV_8UC3 and BGR pixels; your image has " << jevois::cvtypestr(src.type()));
     if (dst.fmt != V4L2_PIX_FMT_SRGGB8) LFATAL("dst format must be V4L2_PIX_FMT_SRGGB8");
     if (int(dst.width) != src.cols || int(dst.height) != src.rows) LFATAL("src and dst dims must match");
     
@@ -845,7 +846,8 @@ namespace
   // ####################################################################################################
   void convertCvRGBtoBayer(cv::Mat const & src, jevois::RawImage & dst)
   {
-    if (src.type() != CV_8UC3) LFATAL("src must have type CV_8UC3 and RGB pixels");
+    if (src.type() != CV_8UC3)
+      LFATAL("src must have type CV_8UC3 and RGB pixels; your image has " << jevois::cvtypestr(src.type()));
     if (dst.fmt != V4L2_PIX_FMT_SRGGB8) LFATAL("dst format must be V4L2_PIX_FMT_SRGGB8");
     if (int(dst.width) != src.cols || int(dst.height) != src.rows) LFATAL("src and dst dims must match");
     
@@ -886,7 +888,8 @@ namespace
   // ####################################################################################################
   void convertCvGRAYtoBayer(cv::Mat const & src, jevois::RawImage & dst)
   {
-    if (src.type() != CV_8UC1) LFATAL("src must have type CV_8UC1 and GRAY pixels");
+    if (src.type() != CV_8UC1)
+      LFATAL("src must have type CV_8UC1 and GRAY pixels; your image has " << jevois::cvtypestr(src.type()));
     if (dst.fmt != V4L2_PIX_FMT_SRGGB8) LFATAL("dst format must be V4L2_PIX_FMT_SRGGB8");
     if (int(dst.width) != src.cols || int(dst.height) != src.rows) LFATAL("src and dst dims must match");
     
@@ -934,7 +937,8 @@ namespace
   // ####################################################################################################
   void convertCvRGBAtoBayer(cv::Mat const & src, jevois::RawImage & dst)
   {
-    if (src.type() != CV_8UC4) LFATAL("src must have type CV_8UC4 and RGBA pixels");
+    if (src.type() != CV_8UC4)
+      LFATAL("src must have type CV_8UC4 and RGBA pixels; your image has " << jevois::cvtypestr(src.type()));
     if (dst.fmt != V4L2_PIX_FMT_SRGGB8) LFATAL("dst format must be V4L2_PIX_FMT_SRGGB8");
     if (int(dst.width) != src.cols || int(dst.height) != src.rows) LFATAL("src and dst dims must match");
     
@@ -997,7 +1001,8 @@ namespace
   // ####################################################################################################
   void convertCvBGRtoYUYV(cv::Mat const & src, jevois::RawImage & dst)
   {
-    if (src.type() != CV_8UC3) LFATAL("src must have type CV_8UC3 and BGR pixels");
+    if (src.type() != CV_8UC3)
+      LFATAL("src must have type CV_8UC3 and BGR pixels; your image has " << jevois::cvtypestr(src.type()));
     if (dst.fmt != V4L2_PIX_FMT_YUYV) LFATAL("dst format must be V4L2_PIX_FMT_YUYV");
     if (int(dst.width) != src.cols || int(dst.height) < src.rows) LFATAL("src and dst dims must match");
 
@@ -1008,7 +1013,8 @@ namespace
 // ####################################################################################################
 void jevois::rawimage::convertCvBGRtoCvYUYV(cv::Mat const & src, cv::Mat & dst)
 {
-  if (src.type() != CV_8UC3) LFATAL("src must have type CV_8UC3 and BGR pixels");
+  if (src.type() != CV_8UC3)
+    LFATAL("src must have type CV_8UC3 and BGR pixels; your image has " << jevois::cvtypestr(src.type()));
   dst = cv::Mat(src.rows, src.cols, CV_8UC2);
 
   cv::parallel_for_(cv::Range(0, src.rows), bgrToYUYV(src, dst.data, dst.cols));
@@ -1017,7 +1023,8 @@ void jevois::rawimage::convertCvBGRtoCvYUYV(cv::Mat const & src, cv::Mat & dst)
 // ####################################################################################################
 void jevois::rawimage::pasteBGRtoYUYV(cv::Mat const & src, jevois::RawImage & dst, int x, int y)
 {
-  if (src.type() != CV_8UC3) LFATAL("src must have type CV_8UC3 and BGR pixels");
+  if (src.type() != CV_8UC3)
+    LFATAL("src must have type CV_8UC3 and BGR pixels; your image has " << jevois::cvtypestr(src.type()));
   if (dst.fmt != V4L2_PIX_FMT_YUYV) LFATAL("dst format must be V4L2_PIX_FMT_YUYV");
   if (x + src.cols > int(dst.width) || y + src.rows > int(dst.height)) LFATAL("src does not fit within dst");
 
@@ -1080,7 +1087,8 @@ namespace
   // ####################################################################################################
   void convertCvRGBtoYUYV(cv::Mat const & src, jevois::RawImage & dst)
   {
-    if (src.type() != CV_8UC3) LFATAL("src must have type CV_8UC3 and RGB pixels");
+    if (src.type() != CV_8UC3)
+      LFATAL("src must have type CV_8UC3 and RGB pixels; your image has " << jevois::cvtypestr(src.type()));
     if (dst.fmt != V4L2_PIX_FMT_YUYV) LFATAL("dst format must be V4L2_PIX_FMT_YUYV");
     if (int(dst.width) != src.cols || int(dst.height) < src.rows) LFATAL("src and dst dims must match");
 
@@ -1091,7 +1099,8 @@ namespace
 // ####################################################################################################
 void jevois::rawimage::convertCvRGBtoCvYUYV(cv::Mat const & src, cv::Mat & dst)
 {
-  if (src.type() != CV_8UC3) LFATAL("src must have type CV_8UC3 and RGB pixels");
+  if (src.type() != CV_8UC3)
+    LFATAL("src must have type CV_8UC3 and RGB pixels; your image has " << jevois::cvtypestr(src.type()));
   dst = cv::Mat(src.rows, src.cols, CV_8UC2);
   
   cv::parallel_for_(cv::Range(0, src.rows), rgbToYUYV(src, dst.data, dst.cols));
@@ -1100,7 +1109,8 @@ void jevois::rawimage::convertCvRGBtoCvYUYV(cv::Mat const & src, cv::Mat & dst)
 // ####################################################################################################
 void jevois::rawimage::pasteRGBtoYUYV(cv::Mat const & src, jevois::RawImage & dst, int x, int y)
 {
-  if (src.type() != CV_8UC3) LFATAL("src must have type CV_8UC3 and RGB pixels");
+  if (src.type() != CV_8UC3)
+    LFATAL("src must have type CV_8UC3 and RGB pixels; your image has " << jevois::cvtypestr(src.type()));
   if (dst.fmt != V4L2_PIX_FMT_YUYV) LFATAL("dst format must be V4L2_PIX_FMT_YUYV");
   if (x + src.cols > int(dst.width) || y + src.rows > int(dst.height)) LFATAL("src does not fit within dst");
 
@@ -1149,7 +1159,8 @@ namespace
   // ####################################################################################################
   void convertCvGRAYtoYUYV(cv::Mat const & src, jevois::RawImage & dst)
   {
-    if (src.type() != CV_8UC1) LFATAL("src must have type CV_8UC1 and GRAY pixels");
+    if (src.type() != CV_8UC1)
+      LFATAL("src must have type CV_8UC1 and GRAY pixels; your image has " << jevois::cvtypestr(src.type()));
     if (dst.fmt != V4L2_PIX_FMT_YUYV) LFATAL("dst format must be V4L2_PIX_FMT_YUYV");
     if (int(dst.width) != src.cols || int(dst.height) < src.rows) LFATAL("src and dst dims must match");
 
@@ -1160,7 +1171,8 @@ namespace
 // ####################################################################################################
 void jevois::rawimage::convertCvGRAYtoCvYUYV(cv::Mat const & src, cv::Mat & dst)
 {
-  if (src.type() != CV_8UC1) LFATAL("src must have type CV_8UC1 and GRAY pixels");
+  if (src.type() != CV_8UC1)
+    LFATAL("src must have type CV_8UC1 and GRAY pixels; your image has " << jevois::cvtypestr(src.type()));
   dst = cv::Mat(src.rows, src.cols, CV_8UC2);
 
   cv::parallel_for_(cv::Range(0, src.rows), grayToYUYV(src, dst.data, dst.cols));
@@ -1219,7 +1231,8 @@ namespace
   // ####################################################################################################
   void convertCvRGBAtoYUYV(cv::Mat const & src, jevois::RawImage & dst)
   {
-    if (src.type() != CV_8UC4) LFATAL("src must have type CV_8UC4 and RGBA pixels");
+    if (src.type() != CV_8UC4)
+      LFATAL("src must have type CV_8UC4 and RGBA pixels; your image has " << jevois::cvtypestr(src.type()));
     if (dst.fmt != V4L2_PIX_FMT_YUYV) LFATAL("dst format must be V4L2_PIX_FMT_YUYV");
     if (int(dst.width) != src.cols || int(dst.height) != src.rows) LFATAL("src and dst dims must match");
 
@@ -1230,7 +1243,8 @@ namespace
 // ####################################################################################################
 void jevois::rawimage::convertCvRGBAtoCvYUYV(cv::Mat const & src, cv::Mat & dst)
 {
-  if (src.type() != CV_8UC4) LFATAL("src must have type CV_8UC4 and RGBA pixels");
+  if (src.type() != CV_8UC4)
+    LFATAL("src must have type CV_8UC4 and RGBA pixels; your image has " << jevois::cvtypestr(src.type()));
   dst = cv::Mat(src.rows, src.cols, CV_8UC2);
 
   cv::parallel_for_(cv::Range(0, src.rows), rgbaToYUYV(src, dst.data, dst.cols));
@@ -1239,7 +1253,8 @@ void jevois::rawimage::convertCvRGBAtoCvYUYV(cv::Mat const & src, cv::Mat & dst)
 // ####################################################################################################
 void jevois::rawimage::convertCvBGRtoRawImage(cv::Mat const & src, RawImage & dst, int quality)
 {
-  if (src.type() != CV_8UC3) LFATAL("src must have type CV_8UC3 and BGR pixels");
+  if (src.type() != CV_8UC3)
+    LFATAL("src must have type CV_8UC3 and BGR pixels; your image has " << jevois::cvtypestr(src.type()));
   if (int(dst.width) != src.cols || int(dst.height) < src.rows) LFATAL("src and dst dims must match");
 
   // Note how the destination opencv image dstcv here is just a shell, the actual pixel data is in dst:
@@ -1260,7 +1275,8 @@ void jevois::rawimage::convertCvBGRtoRawImage(cv::Mat const & src, RawImage & ds
 // ####################################################################################################
 void jevois::rawimage::convertCvRGBtoRawImage(cv::Mat const & src, RawImage & dst, int quality)
 {
-  if (src.type() != CV_8UC3) LFATAL("src must have type CV_8UC3 and RGB pixels");
+  if (src.type() != CV_8UC3)
+    LFATAL("src must have type CV_8UC3 and RGB pixels; your image has " << jevois::cvtypestr(src.type()));
   if (int(dst.width) != src.cols || int(dst.height) < src.rows) LFATAL("src and dst dims must match");
 
   // Note how the destination opencv image dstcv here is just a shell, the actual pixel data is in dst:
@@ -1281,7 +1297,8 @@ void jevois::rawimage::convertCvRGBtoRawImage(cv::Mat const & src, RawImage & ds
 // ####################################################################################################
 void jevois::rawimage::unpackCvRGBAtoGrayRawImage(cv::Mat const & src, RawImage & dst)
 {
-  if (src.type() != CV_8UC4) LFATAL("src must have type CV_8UC4 and RGBA pixels");
+  if (src.type() != CV_8UC4)
+    LFATAL("src must have type CV_8UC4 and RGBA pixels; your image has " << jevois::cvtypestr(src.type()));
   if (dst.fmt != V4L2_PIX_FMT_GREY) LFATAL("dst must have pixel type V4L2_PIX_FMT_GREY");
   int const w = src.cols, h = src.rows;
   if (int(dst.width) < w || int(dst.height) < 4 * h) LFATAL("dst must be at least as wide and 4x as tall as src");
@@ -1305,7 +1322,8 @@ void jevois::rawimage::unpackCvRGBAtoGrayRawImage(cv::Mat const & src, RawImage 
 // ####################################################################################################
 void jevois::rawimage::convertCvRGBAtoRawImage(cv::Mat const & src, RawImage & dst, int quality)
 {
-  if (src.type() != CV_8UC4) LFATAL("src must have type CV_8UC4 and RGBA pixels");
+  if (src.type() != CV_8UC4)
+    LFATAL("src must have type CV_8UC4 and RGBA pixels; your image has " << jevois::cvtypestr(src.type()));
   if (int(dst.width) != src.cols || int(dst.height) != src.rows) LFATAL("src and dst dims must match");
 
   cv::Mat dstcv = jevois::rawimage::cvImage(dst);
@@ -1325,7 +1343,8 @@ void jevois::rawimage::convertCvRGBAtoRawImage(cv::Mat const & src, RawImage & d
 // ####################################################################################################
 void jevois::rawimage::convertCvGRAYtoRawImage(cv::Mat const & src, RawImage & dst, int quality)
 {
-  if (src.type() != CV_8UC1) LFATAL("src must have type CV_8UC1 and Gray pixels");
+  if (src.type() != CV_8UC1)
+    LFATAL("src must have type CV_8UC1 and GRAY pixels; your image has " << jevois::cvtypestr(src.type()));
   if (int(dst.width) != src.cols || int(dst.height) != src.rows) LFATAL("src and dst dims must match");
 
   cv::Mat dstcv = jevois::rawimage::cvImage(dst);
