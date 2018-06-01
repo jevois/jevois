@@ -367,39 +367,55 @@ void jevois::Serial::write(void const * buffer, const int nbytes)
 }
 
 // ######################################################################
-void jevois::Serial::writeInternal(void const * buffer, const int nbytes)
+void jevois::Serial::writeInternal(void const * buffer, const int nbytes, bool nodrop)
 {
-  if (drop::get())
+  // Nodrop is used to prevent dropping even if the user wants it, e.g., during fileGet().
+  if (nodrop)
   {
-    // Just write and ignore (after a few attempts) if the number of bytes written is not what we wanted to write:
-    int ndone = 0; char const * b = reinterpret_cast<char const *>(buffer); int iter = 0;
-    while (ndone < nbytes && iter++ < 10)
+    // Just write it all, never quit, never drop:
+    int ndone = 0; char const * b = reinterpret_cast<char const *>(buffer);
+    while (ndone < nbytes)
     {
       int n = ::write(itsDev, b + ndone, nbytes - ndone);
       if (n == -1 && errno != EAGAIN) throw std::runtime_error("Serial: Write error");
       
       // If we did not write the whole thing, the serial port is saturated, we need to wait a bit:
-      ndone += n;
+      if (n > 0) ndone += n;
+      if (ndone < nbytes) tcdrain(itsDev);
+    }
+  }
+  else if (drop::get())
+  {
+    // Just write and silently drop (after a few attempts) if we could not write everything:
+    int ndone = 0; char const * b = reinterpret_cast<char const *>(buffer); int iter = 0;
+    while (ndone < nbytes && iter++ < 20)
+    {
+      int n = ::write(itsDev, b + ndone, nbytes - ndone);
+      if (n == -1 && errno != EAGAIN) throw std::runtime_error("Serial: Write error");
+      
+      // If we did not write the whole thing, the serial port is saturated, we need to wait a bit:
+      if (n > 0) ndone += n;
       if (ndone < nbytes) std::this_thread::sleep_for(std::chrono::milliseconds(2));
     }
   }
   else
   {
+    // Try to write a few times, then, if not done, report overflow and drop what remains:
     int ndone = 0; char const * b = reinterpret_cast<char const *>(buffer); int iter = 0;
-    while (ndone < nbytes && iter++ < 10)
+    while (ndone < nbytes && iter++ < 50)
     {
       int n = ::write(itsDev, b + ndone, nbytes - ndone);
       if (n == -1 && errno != EAGAIN) throw std::runtime_error("Serial: Write error");
       
       // If we did not write the whole thing, the serial port is saturated, we need to wait a bit:
-      ndone += n;
+      if (n > 0) ndone += n;
       if (ndone < nbytes) tcdrain(itsDev);
     }
     
     if (ndone < nbytes)
     {
       // If we had a serial overflow, we need to let the user know, but how, since the serial is overflowed already?
-      // Let's first throttle down big time, and then we throw once in a while:
+      // Let's first throttle down big time, and then we throw:
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
       
       tcdrain(itsDev);
@@ -425,7 +441,7 @@ void jevois::Serial::writeNoCheck(void const * buffer, const int nbytes)
     {
         int n = ::write(itsDev, b + ndone, nbytes - ndone);
         if (n == -1 && errno != EAGAIN) throw std::runtime_error("Serial: Write error");
-        ndone += n;
+        if (n > 0) ndone += n;
     }
 
     if (ndone < nbytes)
@@ -465,14 +481,14 @@ void jevois::Serial::fileGet(std::string const & abspath)
   fil.seekg(0, fil.end); size_t num = fil.tellg(); fil.seekg(0, fil.beg);
 
   std::string startstr = "JEVOIS_FILEGET " + std::to_string(num) + '\n';
-  writeInternal(startstr.c_str(), startstr.length());
+  writeInternal(startstr.c_str(), startstr.length(), true);
   
   // Read blocks and send them to serial:
   size_t const bufsiz = std::min(num, size_t(1024 * 1024)); char buffer[1024 * 1024];
   while (num)
   {
     size_t got = std::min(bufsiz, num); fil.read(buffer, got); if (!fil) got = fil.gcount();
-    writeInternal(buffer, got);
+    writeInternal(buffer, got, true);
     num -= got;
   }
 }

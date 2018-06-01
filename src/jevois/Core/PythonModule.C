@@ -157,6 +157,55 @@ void jevois::OutputFramePython::sendCvRGBA(cv::Mat const & img) const
   itsOutputFrame->sendCvRGBA(img);
 }
 
+void jevois::OutputFramePython::sendScaledCvGRAY1(cv::Mat const & img, int quality) const
+{
+  if (itsOutputFrame == nullptr) LFATAL("Internal error");
+  itsOutputFrame->sendScaledCvGRAY(img, quality);
+}
+
+void jevois::OutputFramePython::sendScaledCvGRAY(cv::Mat const & img) const
+{
+  if (itsOutputFrame == nullptr) LFATAL("Internal error");
+  itsOutputFrame->sendScaledCvGRAY(img);
+}
+
+void jevois::OutputFramePython::sendScaledCvBGR1(cv::Mat const & img, int quality) const
+{
+  if (itsOutputFrame == nullptr) LFATAL("Internal error");
+  itsOutputFrame->sendScaledCvBGR(img, quality);
+}
+
+void jevois::OutputFramePython::sendScaledCvBGR(cv::Mat const & img) const
+{
+  if (itsOutputFrame == nullptr) LFATAL("Internal error");
+  itsOutputFrame->sendScaledCvBGR(img);
+}
+
+void jevois::OutputFramePython::sendScaledCvRGB1(cv::Mat const & img, int quality) const
+{
+  if (itsOutputFrame == nullptr) LFATAL("Internal error");
+  itsOutputFrame->sendScaledCvRGB(img, quality);
+}
+
+void jevois::OutputFramePython::sendScaledCvRGB(cv::Mat const & img) const
+{
+  if (itsOutputFrame == nullptr) LFATAL("Internal error");
+  itsOutputFrame->sendScaledCvRGB(img);
+}
+
+void jevois::OutputFramePython::sendScaledCvRGBA1(cv::Mat const & img, int quality) const
+{
+  if (itsOutputFrame == nullptr) LFATAL("Internal error");
+  itsOutputFrame->sendScaledCvRGBA(img, quality);
+}
+
+void jevois::OutputFramePython::sendScaledCvRGBA(cv::Mat const & img) const
+{
+  if (itsOutputFrame == nullptr) LFATAL("Internal error");
+  itsOutputFrame->sendScaledCvRGBA(img);
+}
+
+
 // ####################################################################################################
 namespace
 {

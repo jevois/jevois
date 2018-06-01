@@ -133,6 +133,30 @@ namespace jevois
       //! Shorthand to send a RGBA cv::Mat after converting it to the current output format
       void sendCvRGBA(cv::Mat const & img) const;
 
+      //! Shorthand to send a GRAY cv::Mat after scaling/converting it to the current output format
+      void sendScaledCvGRAY1(cv::Mat const & img, int quality) const;
+
+      //! Shorthand to send a GRAY cv::Mat after scaling/converting it to the current output format
+      void sendScaledCvGRAY(cv::Mat const & img) const;
+
+      //! Shorthand to send a BGR cv::Mat after scaling/converting it to the current output format
+      void sendScaledCvBGR1(cv::Mat const & img, int quality) const;
+
+      //! Shorthand to send a BGR cv::Mat after scaling/converting it to the current output format
+      void sendScaledCvBGR(cv::Mat const & img) const;
+
+      //! Shorthand to send a RGB cv::Mat after scaling/converting it to the current output format
+      void sendScaledCvRGB1(cv::Mat const & img, int quality) const;
+
+      //! Shorthand to send a RGB cv::Mat after scaling/converting it to the current output format
+      void sendScaledCvRGB(cv::Mat const & img) const;
+
+      //! Shorthand to send a RGBA cv::Mat after scaling/converting it to the current output format
+      void sendScaledCvRGBA1(cv::Mat const & img, int quality) const;
+
+      //! Shorthand to send a RGBA cv::Mat after scaling/converting it to the current output format
+      void sendScaledCvRGBA(cv::Mat const & img) const;
+      
     private:
       OutputFrame * itsOutputFrame;
   };

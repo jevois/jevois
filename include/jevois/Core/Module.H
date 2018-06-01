@@ -196,6 +196,46 @@ namespace jevois
           the output format is MJPEG and should be between 1 and 100.*/
       void sendCvRGBA(cv::Mat const & img, int quality = 75) const;
 
+      //! Shorthand to send a GRAY cv::Mat after converting it to the current output format
+      /*! This is mostly intended for Python module writers, as they will likely use OpenCV for all their image
+          processing. The cv::Mat will be rescaled to the same dims as the output frame. C++ module writers should stick
+          to the get()/send() pair as this provides better fine-grained control. Note that the cv::Mat image will always
+          be copied or converted to the destination RawImage and will then be sent out immediately by calling send(), so
+          users should not call send() after using this function. This function is basically equivalent to calling
+          get(), converting the given cv::Mat to the proper output format, and calling send(). quality is used only if
+          the output format is MJPEG and should be between 1 and 100. */
+      void sendScaledCvGRAY(cv::Mat const & img, int quality = 75) const;
+
+      //! Shorthand to send a BGR cv::Mat after converting it to the current output format
+      /*! This is mostly intended for Python module writers, as they will likely use OpenCV for all their image
+          processing. The cv::Mat will be rescaled to the same dims as the output frame. C++ module writers should stick
+          to the get()/send() pair as this provides better fine-grained control. Note that the cv::Mat image will always
+          be copied or converted to the destination RawImage and will then be sent out immediately by calling send(), so
+          users should not call send() after using this function. This function is basically equivalent to calling
+          get(), converting the given cv::Mat to the proper output format, and calling send(). quality is used only if
+          the output format is MJPEG and should be between 1 and 100.*/
+      void sendScaledCvBGR(cv::Mat const & img, int quality = 75) const;
+
+      //! Shorthand to send a RGB cv::Mat after converting it to the current output format
+      /*! This is mostly intended for Python module writers, as they will likely use OpenCV for all their image
+          processing. The cv::Mat will be rescaled to the same dims as the output frame. C++ module writers should stick
+          to the get()/send() pair as this provides better fine-grained control. Note that the cv::Mat image will always
+          be copied or converted to the destination RawImage and will then be sent out immediately by calling send(), so
+          users should not call send() after using this function. This function is basically equivalent to calling
+          get(), converting the given cv::Mat to the proper output format, and calling send(). quality is used only if
+          the output format is MJPEG and should be between 1 and 100.*/
+      void sendScaledCvRGB(cv::Mat const & img, int quality = 75) const;
+
+      //! Shorthand to send a RGBA cv::Mat after converting it to the current output format
+      /*! This is mostly intended for Python module writers, as they will likely use OpenCV for all their image
+          processing. The cv::Mat will be rescaled to the same dims as the output frame. C++ module writers should stick
+          to the get()/send() pair as this provides better fine-grained control. Note that the cv::Mat image will always
+          be copied or converted to the destination RawImage and will then be sent out immediately by calling send(), so
+          users should not call send() after using this function. This function is basically equivalent to calling
+          get(), converting the given cv::Mat to the proper output format, and calling send(). quality is used only if
+          the output format is MJPEG and should be between 1 and 100.*/
+      void sendScaledCvRGBA(cv::Mat const & img, int quality = 75) const;
+      
       //! Destructor, returns the buffers to the driver as needed
       ~OutputFrame();
       

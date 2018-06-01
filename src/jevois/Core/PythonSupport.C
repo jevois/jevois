@@ -243,6 +243,15 @@ BOOST_PYTHON_MODULE(libjevois)
     .def("sendCvRGB",  &jevois::OutputFramePython::sendCvRGB)
     .def("sendCvRGBA",  &jevois::OutputFramePython::sendCvRGBA1)
     .def("sendCvRGBA",  &jevois::OutputFramePython::sendCvRGBA)
+
+    .def("sendScaledCvGRAY",  &jevois::OutputFramePython::sendScaledCvGRAY1)
+    .def("sendScaledCvGRAY",  &jevois::OutputFramePython::sendScaledCvGRAY)
+    .def("sendScaledCvBGR",  &jevois::OutputFramePython::sendScaledCvBGR1)
+    .def("sendScaledCvBGR",  &jevois::OutputFramePython::sendScaledCvBGR)
+    .def("sendScaledCvRGB",  &jevois::OutputFramePython::sendScaledCvRGB1)
+    .def("sendScaledCvRGB",  &jevois::OutputFramePython::sendScaledCvRGB)
+    .def("sendScaledCvRGBA",  &jevois::OutputFramePython::sendScaledCvRGBA1)
+    .def("sendScaledCvRGBA",  &jevois::OutputFramePython::sendScaledCvRGBA)
     ;
 
   // #################### RawImageOps.H

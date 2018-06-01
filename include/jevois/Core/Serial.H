@@ -55,7 +55,9 @@ namespace jevois
     //! Parameter \relates jevois::Serial
     JEVOIS_DECLARE_PARAMETER(drop, bool, "Silently drop write data when write buffer is full. Useful to "
 			     "avoid blocking when writing messages to serial-over-USB port and the host is "
-			     "not listening to it",
+			     "not listening to it. Note that even when drop is false, we will still drop "
+			     "data after repeated attempts to send it, and will report an error (as opposed to "
+			     "silently dropping when drop is true).",
                              true, ParamCateg);
 
     //! Enum for Parameter \relates jevois::Serial
@@ -157,13 +159,13 @@ namespace jevois
       void postUninit() override;
 
     private:
-      void writeInternal(void const * buffer, const int nbytes); // Like write() but already locked
+      void writeInternal(void const * buffer, const int nbytes, bool nodrop = false); // Like write() but already locked
       std::string readStringInternal(); // Like readString(0 but already locked
       int itsDev; // descriptor associated with the device file
       termios itsSavedState; // saved state to restore in the destructor
       std::string itsPartialString;
       std::mutex itsMtx;
-      int itsWriteOverflowCounter; // counter so we do not send too many write overflow errors, or -1 to drop
+      int itsWriteOverflowCounter; // counter so we do not send too many write overflow errors
       jevois::UserInterface::Type itsType;
   };
 } // namespace jevois

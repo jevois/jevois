@@ -159,7 +159,8 @@ functions and classes listed here have an exact binding to Python, except that y
   
 - Output frame wrappers around the OutputFrame class from \ref Module.H
   + class OutputFrame
-  + member functions: get(), send(), sendCvGRAY(), sendCvBGR(), sendCvRGB(), sendCvRGBA()
+  + member functions: get(), send(), sendCvGRAY(), sendCvBGR(), sendCvRGB(), sendCvRGBA(),
+    sendScaledCvGRAY(), sendScaledCvBGR(), sendScaledCvRGB(), sendScaledCvRGBA()
 
 - Operations on raw images as declared in \ref RawImageOps.H
   + cvImage()

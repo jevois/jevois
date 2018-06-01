@@ -176,6 +176,45 @@ void jevois::OutputFrame::sendCvRGBA(cv::Mat const & img, int quality) const
   send();
 }
 
+
+
+
+
+// ####################################################################################################
+void jevois::OutputFrame::sendScaledCvGRAY(cv::Mat const & img, int quality) const
+{
+  jevois::RawImage rawimg = get();
+  jevois::rawimage::convertCvGRAYtoRawImage(jevois::rescaleCv(img, cv::Size(rawimg.width, rawimg.height)),
+							      rawimg, quality);
+  send();
+}
+
+// ####################################################################################################
+void jevois::OutputFrame::sendScaledCvBGR(cv::Mat const & img, int quality) const
+{
+  jevois::RawImage rawimg = get();
+  jevois::rawimage::convertCvBGRtoRawImage(jevois::rescaleCv(img, cv::Size(rawimg.width, rawimg.height)),
+					   rawimg, quality);
+  send();
+}
+// ####################################################################################################
+void jevois::OutputFrame::sendScaledCvRGB(cv::Mat const & img, int quality) const
+{
+  jevois::RawImage rawimg = get();
+  jevois::rawimage::convertCvRGBtoRawImage(jevois::rescaleCv(img, cv::Size(rawimg.width, rawimg.height)),
+					   rawimg, quality);
+  send();
+}
+
+// ####################################################################################################
+void jevois::OutputFrame::sendScaledCvRGBA(cv::Mat const & img, int quality) const
+{
+  jevois::RawImage rawimg = get();
+  jevois::rawimage::convertCvRGBAtoRawImage(jevois::rescaleCv(img, cv::Size(rawimg.width, rawimg.height)),
+					    rawimg, quality);
+  send();
+}
+
 // ####################################################################################################
 // ####################################################################################################
 jevois::Module::Module(std::string const & instance) :
