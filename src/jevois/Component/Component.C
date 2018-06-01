@@ -394,6 +394,8 @@ std::string jevois::Component::getParamStringUnique(std::string const & descript
   std::vector<std::pair<std::string, std::string> > ret = getParamString(descriptor);
   if (ret.size() > 1)
     throw std::range_error("Multiple matches for descriptor [" + descriptor + "] while only one is allowed");
+
+  // We know that ret is not empty because getParamString() throws if the param is not found:
   return ret[0].second;
 }
 

@@ -462,6 +462,7 @@ namespace jevois
           millimeters. */
       void sendSerialStd3D(std::vector<cv::Point3f> points, std::string const & id = "",
                            std::string const & extra = "");
+
     protected:
       //! Get a string with the frame/date/time stamp in it, depending on serstamp parameter
       std::string getStamp() const;

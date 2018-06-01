@@ -1445,10 +1445,10 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
       if (itsModule)
       {
 	auto mod = dynamic_cast<jevois::StdModule *>(itsModule.get());
-	if (mod) info += ' ' + mod->getParamStringUnique("serstyle") + ' ' + mod->getParamStringUnique("serprec");
-	else info += " - -";
+	if (mod) info += ' ' + mod->getParamStringUnique("serstyle") + ' ' + mod->getParamStringUnique("serprec") +
+		   ' ' + mod->getParamStringUnique("serstamp");
+	else info += " - - -";
 	
-	info += ' ' + mod->getParamStringUnique("serstamp");
       }
       else info += " - - -";
       
@@ -1809,7 +1809,7 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
       {
 	std::string const abspath = itsModule ? itsModule->absolutePath(rem) : rem;
 	ser->filePut(abspath);
-	if (std::system("sync")) { } // quietly ignore any errors
+	if (std::system("sync")) { } // quietly ignore any errors on sync
 	return true;
       }
     }
