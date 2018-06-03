@@ -417,7 +417,7 @@ namespace jevois
     JEVOIS_DECLARE_PARAMETER(serstamp, SerStamp, "Prepend standardized serial messages with a frame number, "
 			     "time, frame+time, or frame+date+time. See details in "
 			     "http://jevois.org/doc/UserSerialStyle.html",
-                             SerStamp::None, ParamCateg);
+                             SerStamp::None, SerStamp_Values, ParamCateg);
   }
   
   //! Base class for a module that supports standardized serial messages
