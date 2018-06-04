@@ -146,6 +146,18 @@ void jevois::OutputFrame::send() const
 }
 
 // ####################################################################################################
+void jevois::OutputFrame::sendCv(cv::Mat const & img, int quality) const
+{
+  switch(img.type())
+  {
+  case CV_8UC3: sendScaledCvBGR(img, quality); break;
+  case CV_8UC1: sendScaledCvGRAY(img, quality); break;
+  case CV_8UC4: sendScaledCvRGBA(img, quality); break;
+  default: LFATAL("cv::Mat of type " << cvtypestr(img.type()) << " not supported.");
+  }
+}
+
+// ####################################################################################################
 void jevois::OutputFrame::sendCvGRAY(cv::Mat const & img, int quality) const
 {
   jevois::RawImage rawimg = get();

@@ -109,6 +109,28 @@ namespace jevois
       //! Indicate that user processing is done with the image previously obtained via get()
       void send() const;
 
+      //! Shorthand to send a cv::Mat after scaling/converting it to the current output format
+      /* The pixel format of the given cv::Mat is guessed as follows:
+
+	  - if img.type() == CV_8UC3, assume BGR pixels
+	  - if img.type() == CV_8UC1, assume GRAY pixels
+	  - if img.type() == CV_8UC4, assume RGBA pixels
+
+	  If this is not what you want (e.g., you have CV_8UC3 but RGB pixels instead of BGR, then  use the 
+	  other, more specialized sendScaledCv...() functions. */
+      void sendCv1(cv::Mat const & img, int quality) const;
+
+      //! Shorthand to send a cv::Mat after scaling/converting it to the current output format
+      /* The pixel format of the given cv::Mat is guessed as follows:
+
+	  - if img.type() == CV_8UC3, assume BGR pixels
+	  - if img.type() == CV_8UC1, assume GRAY pixels
+	  - if img.type() == CV_8UC4, assume RGBA pixels
+
+	  If this is not what you want (e.g., you have CV_8UC3 but RGB pixels instead of BGR, then  use the 
+	  other, more specialized sendScaledCv...() functions. */
+      void sendCv(cv::Mat const & img) const;
+
       //! Shorthand to send a GRAY cv::Mat after converting it to the current output format
       void sendCvGRAY1(cv::Mat const & img, int quality) const;
 

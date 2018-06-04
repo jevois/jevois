@@ -235,6 +235,10 @@ BOOST_PYTHON_MODULE(libjevois)
     .def("get", &jevois::OutputFramePython::get,
          boost::python::return_value_policy<boost::python::reference_existing_object>())
     .def("send", &jevois::OutputFramePython::send)
+
+    .def("sendCv",  &jevois::OutputFramePython::sendCv1)
+    .def("sendCv",  &jevois::OutputFramePython::sendCv)
+
     .def("sendCvGRAY",  &jevois::OutputFramePython::sendCvGRAY1)
     .def("sendCvGRAY",  &jevois::OutputFramePython::sendCvGRAY)
     .def("sendCvBGR",  &jevois::OutputFramePython::sendCvBGR1)

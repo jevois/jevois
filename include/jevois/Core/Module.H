@@ -156,6 +156,22 @@ namespace jevois
       /*! May throw if the format is incorrect or std::overflow_error if we have not yet consumed the previous image. */
       void send() const;
 
+      //! Shorthand to send a cv::Mat after converting / scaling it to the current output format
+      /*! This is mostly intended for Python module writers, as they will likely use OpenCV for all their image
+          processing. The cv::Mat will be rescaled to the same dims as the output frame.
+
+	  The pixel format of the given cv::Mat is guessed as follows:
+	  - if img.type() == CV_8UC3, assume BGR pixels
+	  - if img.type() == CV_8UC1, assume GRAY pixels
+	  - if img.type() == CV_8UC4, assume RGBA pixels
+
+	  C++ module writers should stick to the get()/send() pair as this provides better fine-grained control. Note
+          that the cv::Mat image will always be copied or converted to the destination RawImage and will then be sent
+          out immediately by calling send(), so users should not call send() after using this function. This function is
+          basically equivalent to calling get(), converting the given cv::Mat to the proper output format, and calling
+          send(). quality is used only if the output format is MJPEG and should be between 1 and 100.*/
+      void sendCv(cv::Mat const & img, int quality = 75) const;
+
       //! Shorthand to send a GRAY cv::Mat after converting it to the current output format
       /*! This is mostly intended for Python module writers, as they will likely use OpenCV for all their image
           processing. The cv::Mat must have same dims as the output frame. C++ module writers should stick to the

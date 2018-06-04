@@ -109,6 +109,18 @@ void jevois::OutputFramePython::send() const
   itsOutputFrame->send();
 }
 
+void jevois::OutputFramePython::sendCv1(cv::Mat const & img, int quality) const
+{
+  if (itsOutputFrame == nullptr) LFATAL("Internal error");
+  itsOutputFrame->sendCv(img, quality);
+}
+
+void jevois::OutputFramePython::sendCv(cv::Mat const & img) const
+{
+  if (itsOutputFrame == nullptr) LFATAL("Internal error");
+  itsOutputFrame->sendCv(img);
+}
+
 void jevois::OutputFramePython::sendCvGRAY1(cv::Mat const & img, int quality) const
 {
   if (itsOutputFrame == nullptr) LFATAL("Internal error");
