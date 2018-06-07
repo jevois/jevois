@@ -655,7 +655,7 @@ OK
 \endverbatim
 
 On a Linux host computer, to set the date and time on your JeVois camera to the same as your host, you can just forward
-the output of the Linu date command as input to the JeVois date command: in a terminal window of your Linux host, type:
+the output of the Linux date command as input to the JeVois date command: in a terminal window of your Linux host, type:
 
 \code{.py}
 jevois-cmd date `date +%m%d%H%M%Y.%S`

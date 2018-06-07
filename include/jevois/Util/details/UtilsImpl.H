@@ -21,6 +21,7 @@
 #include <jevois/Util/Demangle.H>
 #include <errno.h>
 #include <sys/ioctl.h>
+#include <type_traits>
 
 // ####################################################################################################
 template <typename T> inline
@@ -38,6 +39,12 @@ typename std::enable_if< ! std::is_integral<T>::value, T>::type jevois::from_str
 template <typename T> inline
 typename std::enable_if<std::is_integral<T>::value, T>::type jevois::from_string(std::string const & str)
 {
+  // We need to be careful with unsigned parameters to throw if the string value is negative:
+  if (std::is_unsigned<T>::value)
+    if (str.find('-') != str.npos)
+      throw std::range_error("Cannot assign negative value [" + str +
+			     "] to unsigned type " + jevois::demangledName<T>());
+
   // Make sure people are aware of the octal conversion if it will trigger here:
   if (str.length() > 1 && str[0] == '0' && str[1] >= '0' && str[1] <= '9')
     LINFO("Value [" << str << "] interpreted as Octal (base 8) because of leading 0");

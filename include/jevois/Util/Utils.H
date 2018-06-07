@@ -67,6 +67,9 @@ namespace jevois
   //! Replace white space characters in a string with underscore (default) or another characters
   std::string replaceWhitespace(std::string const & str, char rep = '_');
 
+  //! Strip white space (including CR, LF, tabs, etc) from the end of a string
+  std::string strip(std::string const & str);
+  
   //! Create a string using printf style arguments
   /*! Example:
       @code

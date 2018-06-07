@@ -1211,7 +1211,7 @@ void jevois::Engine::reboot()
 #endif
 
 // ####################################################################################################
-void jevois::Engine::cmdInfo(std::shared_ptr<UserInterface> s, std::string const & pfx)
+void jevois::Engine::cmdInfo(std::shared_ptr<UserInterface> s, bool showAll, std::string const & pfx)
 {
   s->writeString(pfx, "help - print this help message");
   s->writeString(pfx, "help2 - print compact help message about current vision module only");
@@ -1222,7 +1222,7 @@ void jevois::Engine::cmdInfo(std::shared_ptr<UserInterface> s, std::string const
   s->writeString(pfx, "setcam <ctrl> <val> - set camera control <ctrl> to value <val>");
   s->writeString(pfx, "getcam <ctrl> - get value of camera control <ctrl>");
 
-  if (camreg::get())
+  if (showAll || camreg::get())
   {
     s->writeString(pfx, "setcamreg <reg> <val> - set raw camera register <reg> to value <val>");
     s->writeString(pfx, "getcamreg <reg> - get value of raw camera register <reg>");
@@ -1234,7 +1234,7 @@ void jevois::Engine::cmdInfo(std::shared_ptr<UserInterface> s, std::string const
 		 "video mapping defined on the fly, while not streaming");
   s->writeString(pfx, "reload - reload and reset the current module");
 
-  if (itsCurrentMapping.ofmt == 0 || itsManualStreamon)
+  if (showAll || itsCurrentMapping.ofmt == 0 || itsManualStreamon)
   {
     s->writeString(pfx, "streamon - start camera video streaming");
     s->writeString(pfx, "streamoff - stop camera video streaming");
@@ -1245,7 +1245,7 @@ void jevois::Engine::cmdInfo(std::shared_ptr<UserInterface> s, std::string const
   s->writeString(pfx, "serout <string> - forward string to the serial port(s) specified by the serout parameter");
   
   s->writeString(pfx, "caminfo - returns machine-readable info about camera parameters");
-  s->writeString(pfx, "cmdinfo - returns machine-readable info about Engine commands");
+  s->writeString(pfx, "cmdinfo [all] - returns machine-readable info about Engine commands");
   s->writeString(pfx, "modcmdinfo - returns machine-readable info about Module commands");
   s->writeString(pfx, "paraminfo [hot|mod|modhot] - returns machine-readable info about parameters");
   s->writeString(pfx, "serinfo - returns machine-readable info about serial settings (serout serlog serstyle serprec serstamp)");
@@ -1332,7 +1332,7 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
       // Show all commands, first ours, as supported below:
       s->writeString(pfx, "GENERAL COMMANDS:");
       s->writeString(pfx, "");
-      cmdInfo(s, pfx);
+      cmdInfo(s, false, pfx);
       s->writeString(pfx, "");
 
       // Then the module's custom commands, if any:
@@ -1407,7 +1407,8 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
     // ----------------------------------------------------------------------------------------------------
     if (cmd == "cmdinfo")
     {
-      cmdInfo(s, pfx);
+      bool showAll = (rem == "all") ? true : false;
+      cmdInfo(s, showAll, pfx);
       return true;
     }
     
@@ -1442,14 +1443,9 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
     if (cmd == "serinfo")
     {
       std::string info = getParamStringUnique("serout") + ' ' + getParamStringUnique("serlog");
-      if (itsModule)
-      {
-	auto mod = dynamic_cast<jevois::StdModule *>(itsModule.get());
-	if (mod) info += ' ' + mod->getParamStringUnique("serstyle") + ' ' + mod->getParamStringUnique("serprec") +
-		   ' ' + mod->getParamStringUnique("serstamp");
-	else info += " - - -";
-	
-      }
+      if (auto mod = dynamic_cast<jevois::StdModule *>(itsModule.get()))
+	info += ' ' + mod->getParamStringUnique("serstyle") + ' ' + mod->getParamStringUnique("serprec") +
+	  ' ' + mod->getParamStringUnique("serstamp");
       else info += " - - -";
       
       s->writeString(pfx, info);
@@ -1890,6 +1886,9 @@ void jevois::Engine::runScriptFromFile(std::string const & filename, std::shared
   size_t linenum = 1;
   for (std::string line; std::getline(ifs, line); /* */)
   {
+    // Strip any extra whitespace at end, which could be a CR if the file was edited in Windows:
+    line = jevois::strip(line);
+
     // Skip comments and empty lines:
     if (line.length() == 0 || line[0] == '#') continue;
 

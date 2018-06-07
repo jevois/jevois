@@ -176,6 +176,14 @@ std::string jevois::replaceWhitespace(std::string const & str, char rep)
 }
 
 // ####################################################################################################
+std::string jevois::strip(std::string const & str)
+{
+  int idx = str.length() - 1;
+  while (idx >= 0 && std::isspace(str[idx])) --idx;
+  return str.substr(0, idx + 1);
+}
+
+// ####################################################################################################
 namespace
 {
   // This code is from NRT, and before that from the iLab C++ neuromorphic vision toolkit

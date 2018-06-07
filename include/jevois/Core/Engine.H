@@ -391,7 +391,7 @@ namespace jevois
       std::string camCtrlInfo(struct v4l2_queryctrl & qc, std::set<int> & doneids);
 
       // Send info about built-in engine commands
-      void cmdInfo(std::shared_ptr<UserInterface> s, std::string const & pfx = "");
+      void cmdInfo(std::shared_ptr<UserInterface> s, bool showAll, std::string const & pfx = "");
       
       // Send info about module commands
       void modCmdInfo(std::shared_ptr<UserInterface> s, std::string const & pfx = "");
