@@ -388,14 +388,14 @@ void jevois::Serial::writeInternal(void const * buffer, const int nbytes, bool n
   {
     // Just write and silently drop (after a few attempts) if we could not write everything:
     int ndone = 0; char const * b = reinterpret_cast<char const *>(buffer); int iter = 0;
-    while (ndone < nbytes && iter++ < 20)
+    while (ndone < nbytes && iter++ < 50)
     {
       int n = ::write(itsDev, b + ndone, nbytes - ndone);
       if (n == -1 && errno != EAGAIN) throw std::runtime_error("Serial: Write error");
       
       // If we did not write the whole thing, the serial port is saturated, we need to wait a bit:
       if (n > 0) ndone += n;
-      if (ndone < nbytes) std::this_thread::sleep_for(std::chrono::milliseconds(2));
+      if (ndone < nbytes) std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
   }
   else

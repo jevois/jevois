@@ -10,21 +10,26 @@ versions, however, it may be necessary to install an `inf` file.
   ready to proceed to the next section.
   \image html windows-cdc-error.png
 
-- If you see the error device, download this file using right-click and <b>Save Target as ...</b>:
-  http://jevois.org/data/linux-cdc-acm.inf
+- If you see the error device, download this file using right-click and <b>Save Target as ...</b> on this link:
+  http://jevois.org/data/jevois-serial.inf
+  \note Make sure the file is indeed saved with file extension \b .inf, otherwise Windows will not detect it in the next
+  step. In some versions of Windows, the file ends up being saved as \b jevois-serial.inf.txt and you should then rename
+  it as \b jevois-serial.inf
 
 - In the device manager, right click on the CDC serial which has the error, and select \b Properties.
 
 - Click <b>Update driver</b> then <b>Browse my computer for driver software</b>.
 
-- Select the folder where you saved the <b>linux-cdc-acm.inf</b> file (likely, your Downloads folder, make sure you do
-  not have any other .inf files in there). When Windows complains about this driver not being trusted, select to install
-  anyway.
+- Select the folder where you saved the <b>jevois-serial.inf</b> file (likely, your \b Downloads folder, make sure you
+  do not have any other \b .inf files in there). When Windows complains about this driver not being trusted, select to
+  install anyway.
 
-- Your device manager should update from showing a <b>CDC serial</b> device to <b>Gadget serial</b> and Windows should
-  tell you that the driver was installed successfully. In the example below, the JeVois serial-over-USB port is
-  configured as \b COM6 - this is the port you should use with a serial terminal program.
-  \image html windows-cdc-installed.png
+- Your device manager should update from showing a <b>CDC serial</b> device to <b>JeVois-A33 Serial-over-USB</b> or
+  <b>Gadget Serial</b>, and Windows should tell you that the driver was installed successfully. In the example below,
+  the JeVois serial-over-USB port is configured as \b COM6 - this is the port you should use with a serial terminal
+  program.
+
+\image html windows-cdc-installed.png
 
 
 \section serusbwinusing Connecting to JeVois

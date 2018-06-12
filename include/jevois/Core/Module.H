@@ -424,7 +424,7 @@ namespace jevois
     //! Parameter \relates jevois::StdModule
     JEVOIS_DECLARE_PARAMETER(serprec, unsigned int, "Number of decimal points in standardized serial messages as "
                              "defined in http://jevois.org/doc/UserSerialStyle.html",
-                             0U, ParamCateg);
+                             0U, jevois::Range<unsigned int>(0U, 10U), ParamCateg);
 
     //! Enum for Parameter \relates jevois::StdModule
     JEVOIS_DEFINE_ENUM_CLASS(SerStamp, (None) (Frame) (Time) (FrameTime) (FrameDateTime) )
