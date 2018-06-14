@@ -73,34 +73,34 @@ void jevois::Serial::postInit()
   // Set the baudrate:
   unsigned int rate;
   switch (jevois::serial::baudrate::get())
-	{
-    case 4000000: rate = B4000000; break;
-    case 3500000: rate = B3500000; break;
-    case 3000000: rate = B3000000; break;
-    case 2500000: rate = B2500000; break;
-    case 2000000: rate = B2000000; break;
-    case 1500000: rate = B1500000; break;
-    case 1152000: rate = B1152000; break;
-    case 1000000: rate = B1000000; break;
-    case 921600: rate = B921600; break;
-    case 576000: rate = B576000; break;
-    case 500000: rate = B500000; break;
-    case 460800: rate = B460800; break;
-    case 230400: rate = B230400; break;
-    case 115200: rate = B115200; break;
-    case 57600: rate = B57600; break;
-    case 38400: rate = B38400; break;
-    case 19200: rate = B19200; break;
-    case 9600: rate = B9600; break;
-    case 4800: rate = B4800; break;
-    case 2400: rate = B2400; break;
-    case 1200: rate = B1200; break;
-    case 600: rate = B600; break;
-    case 300: rate = B300; break;
-    case 110: rate = B110; break;
-    case 0: rate = B0; break;
-    default: LFATAL("Invalid baud rate " <<jevois::serial::baudrate::get());
-    }
+  {
+  case 4000000: rate = B4000000; break;
+  case 3500000: rate = B3500000; break;
+  case 3000000: rate = B3000000; break;
+  case 2500000: rate = B2500000; break;
+  case 2000000: rate = B2000000; break;
+  case 1500000: rate = B1500000; break;
+  case 1152000: rate = B1152000; break;
+  case 1000000: rate = B1000000; break;
+  case 921600: rate = B921600; break;
+  case 576000: rate = B576000; break;
+  case 500000: rate = B500000; break;
+  case 460800: rate = B460800; break;
+  case 230400: rate = B230400; break;
+  case 115200: rate = B115200; break;
+  case 57600: rate = B57600; break;
+  case 38400: rate = B38400; break;
+  case 19200: rate = B19200; break;
+  case 9600: rate = B9600; break;
+  case 4800: rate = B4800; break;
+  case 2400: rate = B2400; break;
+  case 1200: rate = B1200; break;
+  case 600: rate = B600; break;
+  case 300: rate = B300; break;
+  case 110: rate = B110; break;
+  case 0: rate = B0; break;
+  default: LFATAL("Invalid baud rate " <<jevois::serial::baudrate::get());
+  }
 
   cfsetispeed(&options, rate);
   cfsetospeed(&options, rate);
@@ -395,7 +395,7 @@ void jevois::Serial::writeInternal(void const * buffer, const int nbytes, bool n
       
       // If we did not write the whole thing, the serial port is saturated, we need to wait a bit:
       if (n > 0) ndone += n;
-      if (ndone < nbytes) std::this_thread::sleep_for(std::chrono::milliseconds(5));
+      if (ndone < nbytes) { tcdrain(itsDev); std::this_thread::sleep_for(std::chrono::milliseconds(5)); }
     }
   }
   else
@@ -409,7 +409,7 @@ void jevois::Serial::writeInternal(void const * buffer, const int nbytes, bool n
       
       // If we did not write the whole thing, the serial port is saturated, we need to wait a bit:
       if (n > 0) ndone += n;
-      if (ndone < nbytes) tcdrain(itsDev);
+      if (ndone < nbytes) { tcdrain(itsDev); std::this_thread::sleep_for(std::chrono::milliseconds(2)); }
     }
     
     if (ndone < nbytes)

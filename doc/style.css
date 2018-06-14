@@ -111,6 +111,13 @@ strong.jvmod {
     border-radius: 4px
 }
 
+strong.jvinv {
+    padding: 2px 4px;
+    color: Blue;
+    background-color: #f0f0f0;
+    border-radius: 4px
+}
+
 
 /* use this to show a picture with a play button on top of it:
    <div class="videothumb">

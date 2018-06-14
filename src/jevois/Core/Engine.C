@@ -1243,12 +1243,18 @@ void jevois::Engine::cmdInfo(std::shared_ptr<UserInterface> s, bool showAll, std
   s->writeString(pfx, "ping - returns 'ALIVE'");
   s->writeString(pfx, "serlog <string> - forward string to the serial port(s) specified by the serlog parameter");
   s->writeString(pfx, "serout <string> - forward string to the serial port(s) specified by the serout parameter");
-  
-  s->writeString(pfx, "caminfo - returns machine-readable info about camera parameters");
-  s->writeString(pfx, "cmdinfo [all] - returns machine-readable info about Engine commands");
-  s->writeString(pfx, "modcmdinfo - returns machine-readable info about Module commands");
-  s->writeString(pfx, "paraminfo [hot|mod|modhot] - returns machine-readable info about parameters");
-  s->writeString(pfx, "serinfo - returns machine-readable info about serial settings (serout serlog serstyle serprec serstamp)");
+
+  if (showAll)
+  {
+    // Hide machine-oriented commands by default
+    s->writeString(pfx, "caminfo - returns machine-readable info about camera parameters");
+    s->writeString(pfx, "cmdinfo [all] - returns machine-readable info about Engine commands");
+    s->writeString(pfx, "modcmdinfo - returns machine-readable info about Module commands");
+    s->writeString(pfx, "paraminfo [hot|mod|modhot] - returns machine-readable info about parameters");
+    s->writeString(pfx, "serinfo - returns machine-readable info about serial settings (serout serlog serstyle serprec serstamp)");
+    s->writeString(pfx, "fileget <filepath> - get a file from JeVois to the host. Use with caution!");
+    s->writeString(pfx, "fileput <filepath> - put a file from the host to JeVois. Use with caution!");
+  }
   
 #ifdef JEVOIS_PLATFORM
   s->writeString(pfx, "usbsd - export the JEVOIS partition of the microSD card as a virtual USB drive");
@@ -1257,8 +1263,6 @@ void jevois::Engine::cmdInfo(std::shared_ptr<UserInterface> s, bool showAll, std
   s->writeString(pfx, "date [date and time] - get or set the system date and time");
 
   s->writeString(pfx, "shell <string> - execute <string> as a shell command. Use with caution!");
-  s->writeString(pfx, "fileget <filepath> - get a file from JeVois to the host. Use with caution!");
-  s->writeString(pfx, "fileput <filepath> - put a file from the host to JeVois. Use with caution!");
 
 #ifdef JEVOIS_PLATFORM
   s->writeString(pfx, "restart - restart the JeVois smart camera");
