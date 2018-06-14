@@ -2,6 +2,9 @@
 
 \section serusbwingen Finding the serial-over-USB device on Windows host
 
+<b>This should only affect some Windows 7 and Windows 8 users. If you do not see the failed CDC Serial device shown
+below, then you do not need to do anything.</b>
+
 On some versions of Windows, the serial-over-USB port of JeVois will be detected and configured automatically. On other
 versions, however, it may be necessary to install an `inf` file.
 
