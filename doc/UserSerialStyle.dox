@@ -47,7 +47,7 @@ One-dimensional (1D) location messages
 ======================================
 
 1D location messages are used to communicate the location of something on a 1D axis (usually, the horizontal axis). For
-example, the \a x coordinate of the vanishing point in the \ref RoadNavigation module.
+example, the \a x coordinate of the vanishing point in the \jvmod{RoadNavigation} module.
 
 Inputs from machine vision module:
 
@@ -77,7 +77,7 @@ Two-dimensional (2D) location messages
 ======================================
 
 2D location messages are used to communicate the location of something in 2D space (usually, the plane of the camera
-image). For example, the \a x,y standardized coordinates of an object detected by the \ref ObjectDetect module.
+image). For example, the \a x,y standardized coordinates of an object detected by the \jvmod{ObjectDetect} module.
 
 Inputs from machine vision module:
 

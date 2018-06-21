@@ -1,0 +1,266 @@
+/*! \page JeVoisInventor JeVois Inventor graphical user interface
+\tableofcontents
+
+JeVois Inventor is a graphical frontend for JeVois Smart Cameras. It makes programming new computer vision pipelines
+that run on JeVois very easy, using full Python 3.6 + OpenCV 3.4.
+
+This frontend was created for people who do not read user manuals, so feel free to explore around!
+
+\youtube{XVMk8lRvm8k}
+
+Nevertheless, here are a few tips.
+
+\note JeVois Inventor is currently in beta. Please help us refine this software by emailing comments and bug reports to
+jevois.org@gmail.com
+
+Installing JeVois Inventor
+--------------------------
+
+- Windows:
+  + download <b>jevois-inventor_XXX.zip</b> from http://jevois.org/start (XXX will vary depending on version)
+  + windows 7 (not 8 or 10) users need to install a driver, see http://jevois.org/doc/USBserialWindows.html
+  + extract zip contents
+  + double-click on `jevois-inventor.exe`
+
+- Linux:
+  + download <b>jevois-inventor_XXX.deb</b> from http://jevois.org/start (XXX will vary depending on version)
+  + `sudo dpkg -i jevois-inventor_XXX.deb`  # (XXX will vary depending on version)
+  + `sudo killall ModemManager`  # (ModemManager interferes with JeVois)
+  + `jevois-inventor`
+
+- MacOS:
+  + download <b>jevois-inventor_XXX.dmg</b> from http://jevois.org/start (XXX will vary depending on version)
+  + double-click on the DMG file to open it
+  + drag jevois-inventor to your desktop or Applications folder
+  + double-click on jevois-inventor
+
+Your JeVois Smart Camera
+-----------------------
+
+\jvimg{proto-legend.jpg, 60%}
+
+See also:
+- \ref Hardware
+- \ref Handling
+- \ref UserConnect
+
+Detecting your JeVois Smart Camera
+----------------------------------
+
+Detection is fully automatic. No device to specify, no port to look for.
+
+Just start JeVois Inventor, insert a microSD card with the latest JeVois software into your camera, and connect the
+camera to your host computer.
+
+As soon as the camera is detected, the \jvmod{DemoSaliency} machine vision module will start automatically.
+
+\jvimg{jvinv0001.png, 70%}
+
+You can disconnect JeVois at any time, and JeVois Inventor should detect that. Next time you connect JeVois, JeVois
+Inventor should also detect it again.
+
+Troubleshooting:
+
+- Linux: you may have permissions issues. Try `sudo chmod 777 /dev/video0 /dev/ttyACM0` each time after JeVois has
+  started (solid orange LED).
+- See more detailed instructions for how to get started with JeVois using a plain video capture device:
+  + \ref UserStartWindows
+  + \ref UserStartLinux
+  + \ref UserStartMac
+
+Trying out various machine vision modules
+-----------------------------------------
+
+Use the <b>Vision Module</b> menu to select a given machine vision module.
+
+\jvimg{jvinv0002.png, 70%}
+
+Modules written in Python are highlighted in bold font. You can edit the code for these modules directly in JeVois
+Inventor (see below).
+
+Under the \b Info tab you can browse the module's documentation. You can zoom in/out by pressing `CTRL` + mouse wheel.
+
+\note Currently, only YUYV capture is supported by JeVois Inventor, which we believe is a limitation of the QCamera
+class of Qt (the widget toolkit we used to develop JeVois Inventor). We are looking into fixing this, likely by fixing
+Qt at its core.
+
+For more information: Now may be a good time to familiarize yourself with a few key concepts: \ref Concepts
+
+Adjusting parameters
+--------------------
+
+Many machine vision modules expose parameters that can be tuned by the user.
+
+Click on the \b Parameters tab to see the current module's parameter.
+
+\jvimg{jvinv0004.png, 70%}
+
+- Hover over a parameter's widget to see the description of what this parameter does
+
+- Hover over a parameter's name to see its full machine-oriented name and data type
+
+- Click the \b Reset button to reset a parameter to its default value
+
+- Toggle <b>Show Frozen Parameters</b> to show parameters which cannot be changed at runtime (those usually can only be
+  set once, when the module is loaded, through config files).
+
+- Toggle <b>Show System Parameters</b> to show parameters which relate to the JeVois core system, as opposed to the
+  current machine vision module.
+
+Communicating with JeVois through its command-line console
+----------------------------------------------------------
+
+JeVois provides a simple command-line interface to allow one to run commands, set parameters, etc over the 4-pin serial
+port of JeVois, or over the Serial-over-USB port (which JeVois Inventor uses).
+
+Mainly, this interface is intended to allow micro-controllers or host computers to configure JeVois. In fact, each time
+you click a button in JeVois Inventor, a command is sent to JeVois using this command-line interface.
+
+\jvimg{jvinv0005.png, 70%}
+
+- Click on the input line at the bottom to enter a command. The command input line has full history, so you can use the
+  up/down cursor keys to re-enter previously entered commands.
+
+- Hover your mouse over the `?` next to the \b Enter button to see a list of currently available commands.
+
+- At the top left, choose where to send log messages (nowhere, to USB, to 4-pin serial port, or both). Log messages are
+  emitted by some modules to let you know details of how they are running, or to let you know about any error condition.
+
+- At the top right, choose where to send module output messages (nowhere, to USB, to 4-pin serial port, or both). Module
+  output messages contain results of what the current machine vision pipeline has found in the input video. For example,
+  it may stream the names of recognized objects, or the coordinates and sizes of detected marker tags or color
+  blobs.
+
+  \jvimg{jvinv0006.png, 70%}
+
+  In the example above, JeVois has detected ArUco marker tags (with IDs U42, U27, U18, and U43), two blue color blobs
+  (detected by color detector named \b blob0), and one yellow blob (detected by \b blob1). For each detected object,
+  JeVois also sends the 4 normalized (between -1000 and 1000, with 0 at the center) 2D coordinates of their 4 corners
+  (Detail message format).
+
+  For more information about these messages and about their level of detail (Terse, Normal, Detail, or Fine), see
+  \ref UserSerialStyle
+
+  For more information about the JeVois command-line interface, see \ref UserCli
+  
+Changing camera settings
+------------------------
+
+It is sometimes useful to play with low-level camera sensor controls, such as white balance, gain, and exposure, to
+optimize the performance of a machine vision algorithm. Select the \b Camera tab to access these sensor controls.
+
+\jvimg{jvinv0007.png, 70%}
+
+- Note how some controls are dependent upon others (e.g., gain is disabled and cannot be changed when autogain is
+  active).
+
+- Click \b Reset next to each control to revert to its default value.
+
+Config files
+------------
+
+Config files allow one to set some parameters for JeVois or for a given module, to be used every time JeVois starts or
+every time that module is invoked. You can think of this as setting default preferences for JeVois or for a given
+module.
+
+Click on the \b Config tab, and then you can select one of 4 config files:
+
+- <b>JeVois initscript.cfg:</b> a global config file that is run once when JeVois starts up. This file is useful if you
+  want JeVois to automatically launch one particular machine vision module without any user intervention (headless
+  mode), for example when JeVois is used in a robot that only has an Arduino controller an no host computer to run
+  JeVois Inventor.
+
+- <b>JeVois videomappings.cfg:</b> This is a list of mappings between video resolutions streamed by JeVois over USB and
+  the corresponding camera sensor resolutions, and which machine vision module to run. This file is how one decides
+  which machine vision module will run on JeVois when a host computer requests a given video format from JeVois.
+
+  For more information, see \ref UserModes
+
+- <b>Module's params.cfg:</b> This contains parameters for the current module that should be set each time that module
+  is loaded, and before it is started. For example, the deep neural network modules like \jvmod{TensorFlowEasy} use this
+  file to configure which neural network will be used.
+
+- <b>Module's script.cfg:</b> This is a script file for the current module that is run after the module is loaded and
+  initialized. One can put additional parameter or camera control settings in this file. For example, \jvmod{ArUcoBlob}
+  uses this file to configure the four colors of its four color blob detectors that run in parallel.
+
+\jvimg{jvinv0008.png, 70%}
+
+
+Note the two middle buttons at the bottom:
+
+- \b C: paste current camera controls (as were adjusted by hand using the \b Camera tab) to the currently shown file
+  (only script files can accept this)
+  
+- \b P: paste the current module parameters (as were adjusted by hand using the \b Parameters tab) to the currently
+  shown file (both params and script files can accept this)
+
+Editing machine vision code
+---------------------------
+
+\note Currently, this is only supported for Python modules. It is unclear whether we will be able to support this for
+C++ modules as well. So you should select a Python module (in bold in the <b>Vision Module</b> pull-down menu). Source
+code for C++ modules can be seen, but currently is read-only in JeVois Inventor.
+
+Select the \b Code tab to access an editor to the source code of the currently running module.
+
+\jvimg{jvinv0009.png, 70%}
+
+Edit the code, press `CTRL`-S to save to JeVois, and you will see results immediately.
+
+Don't be shy, just try some OpenCV code and see what happens. The basic idea is that you are given an image \b inimg
+from the camera sensor, and your task is to create an output image \b outimg that will be sent to the host computer over
+USB.
+
+A few notes about the editor:
+
+- it features syntax highlighting (different colors for keywords, comments, etc)
+- automatic indent (indent increases if you press `RETURN` after a `:`)
+- use `TAB` to add indent, and `Shift+TAB` to reduce indent
+- indent (leading spaces) shown with gray dots
+
+Creating a new machine vision module
+------------------------------------
+
+Select <b>New Python Module...</b> from the <b>Vision Module</b> pull-down menu.
+
+\jvimg{jvinv0010.png, 70%}
+
+Enter the data. All fields are required.
+
+For simple modules, you would typically select the same resolution for USB output and camera sensor. For more complex
+modules, for example showing a side-by-side output with the original video frame at left and the machine vision results
+at right, they could differ (e.g., in the side-by-side example, camera sensor resolution might be 320x240 and USB output
+would then be 640x240). It is the responsibility of the module writer to create the output image with correct
+resolution, which the JeVois core will then send over USB to the host computer.
+
+To get started with writing your new modules, check out \ref ModulePythonTutorial, \ref ProgrammerPython, and \ref
+ProgrammerTutos
+
+System settings
+---------------
+
+If you want to stop the video stream, use the \b System tab. This is needed before you start a module in headless mode
+using the `setmapping2` command. See, for example, [the tutorial on making a pan/tilt head for
+JeVois](http://jevois.org/tutorials/UserPanTilt.html), section on Running with no USB output.
+
+\jvimg{jvinv0011.png, 70%}
+
+You can also export the microSD inside JeVois as a virtual flash drive to your host computer. Once enabled, a new flash
+drive should appear on your desktop and you can browse the files on the microSD of JeVois. Very useful to backup your
+custom modules, or to load your newly trained deep neural networks.
+
+\jvimg{jvinv0012.png, 70%}
+
+While you are browsing the microSD inside JeVois, you cannot change or use machine vision modules. When you are done,
+properly eject the virtual USB drive from your host (safely remove, drag to trash, eject button, etc) and JeVois will
+restart to take into account the changes you have made to its microSD card.
+
+Going deeper
+------------
+
+JeVois Inventor is just a simple front-end to the core of JeVois. You can do more with JeVois that what JeVois Inventor
+supports. See http://jevois.org/doc/ for more comprehensive documentation.
+
+*/
+

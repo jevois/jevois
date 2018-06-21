@@ -441,7 +441,7 @@ namespace jevois
       brings in extra parameters to set serial message style and precision, and extra member functions to assemble,
       format, and send standardized serial messages. The process(), sendSerial(), parseSerial(), supportedCommands(),
       etc of StdModule functions are directly inherited from Module. See \ref UserSerialStyle for standardized serial
-      messages. \ingoup core */
+      messages. \ingroup core */
   class StdModule : public Module, public Parameter<module::serprec, module::serstyle, module::serstamp>
   {
     public:

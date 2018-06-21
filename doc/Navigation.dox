@@ -1,9 +1,10 @@
 /*! \page Navigation How to navigate this documentation
 \tableofcontents
 
+- You may want to first explore what JeVois can do using JeVois Inventor:
+  + \ref JeVoisInventor
 
-
-- Start with understanding the following user-level concepts:
+- Then, start with understanding the following user-level concepts:
   + \ref Concepts
   + \ref PixelFormats
   + \ref VideoMapping

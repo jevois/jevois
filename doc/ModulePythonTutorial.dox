@@ -186,9 +186,9 @@ Explanations:
 
 - Line 51: In this tutorial module, we start by copying the pixels from the camera sensor into our output raw buffer, so
   that users can see what the camera sees. In more complex scenarios, the input buffer could be copied to a small window
-  within the output buffer (e.g., as in \ref DemoSaliency), or may not be copied at all, just processed in some way to
-  yield a computed output image that will be sent out (e.g., computing an edge map from the input image).  Thus, we here
-  just paste \b inimg into \b outimg starting at location (0,0), which is the top-left corner, in \b outimg.
+  within the output buffer (e.g., as in \jvmod{DemoSaliency}), or may not be copied at all, just processed in some way
+  to yield a computed output image that will be sent out (e.g., computing an edge map from the input image).  Thus, we
+  here just paste \b inimg into \b outimg starting at location (0,0), which is the top-left corner, in \b outimg.
 
 - Line 54: From this point on, we will work with the output image only, so we can release the input image, so that its
   buffer will be recycled to the camera sensor kernel driver, to be used for subsequent frame capture. It is generally a

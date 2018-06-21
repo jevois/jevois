@@ -314,9 +314,9 @@ namespace jevois
       /*! \note When islog is true, this is assumes to be a log message, and it will be sent to the port(s) specified by
           parameter serlog. Otherwise, the message will be sent to the ports specified by parameter serout. Note how the
           number of messages that can be sent for each video frame may be limited by parameter \p serlimit; only up to
-          \serlimit messages will be sent for a given video frame. This is useful to avoid overloading the serial link,
-          for example in cases one is running a ArUco detector and a large number of ArUco tags are present in the field
-          of view of JeVois. */
+          \p serlimit messages will be sent for a given video frame. This is useful to avoid overloading the serial
+          link, for example in cases one is running a ArUco detector and a large number of ArUco tags are present in the
+          field of view of JeVois. */
       void sendSerial(std::string const & str, bool islog = false);
 
       //! Get frame number

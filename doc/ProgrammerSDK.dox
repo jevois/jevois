@@ -226,7 +226,7 @@ Writing new modules: A collection with shared components
 In this more complex scenario, you wish to create a collection of modules, and some component algorithms will be shared
 by several modules.
 
-The preferred approach is then to write the shared algorithms as jevois \ref Component objects, and to compile them all
+The preferred approach is then to write the shared algorithms as jevois Component objects, and to compile them all
 into a shared library (.so). Each module that uses some of the components will then automatically trigger the loading of
 the shared library. This is the approach taken in \b jevoisbase
 

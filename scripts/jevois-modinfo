@@ -14,11 +14,12 @@ use HTML::Entities;
 my $tmpdirname = "/tmp/jevois-modinfotemp$$".time();
 
 # we need JEVOIS_SRC_ROOT to work...
+# just quietly exit if it is not there, this happens during sudo make install
 my $jevoissrcroot = $ENV{'JEVOIS_SRC_ROOT'};
 $jevoissrcroot =~ s/\s+$//; $jevoissrcroot =~ s/\/+$//; 
-if ($jevoissrcroot eq "") { print STDERR "Please set environment variable JEVOIS_SRC_ROOT to the ".
-                                "directory in which jevois and jevoisbase sources are. Skipping module doc ".
-                                "creation because of missing JEVOIS_SRC_ROOT\n"; exit 0; }
+
+if ($jevoissrcroot eq "") { exit 0; }
+
 if (! -d "$jevoissrcroot/jevois") { print STDERR "Could not find jevois/ source repository inside ".
                                         "JEVOIS_SRC_ROOT=$jevoissrcroot - Skipping module doc creation.\n"; exit 0; }
 if (! -d "$jevoissrcroot/jevoisbase") { print STDERR "Could not find jevoisbase/ source repository inside ".
