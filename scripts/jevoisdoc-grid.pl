@@ -37,6 +37,7 @@ my $mods = [
     [ "SaveVideo", "Record video", "to microSD" ],
     [ "DenseSift", "Dense", "SIFT keypoints" ],
     [ "FirstPython", "FIRST Robotics", "object detection" ],
+    [ "ArUcoBlob", "ArUco tag +", "color blob tracking" ],
     [ "PythonSandbox", "Your algorithm", "in Python + OpenCV" ],
     ];
 

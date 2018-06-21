@@ -17,22 +17,27 @@ Installing JeVois Inventor
 --------------------------
 
 - Windows:
-  + download <b>jevois-inventor_XXX.zip</b> from http://jevois.org/start (XXX will vary depending on version)
-  + windows 7 (not 8 or 10) users need to install a driver, see http://jevois.org/doc/USBserialWindows.html
-  + extract zip contents
-  + double-click on `jevois-inventor.exe`
+  + Tested on Windows 7 and Windows 10.
+  + Download <b>jevois-inventor_XXX.zip</b> from http://jevois.org/start (XXX will vary depending on version)
+  + Windows 7 (not 8 or 10) users need to install a driver, see http://jevois.org/doc/USBserialWindows.html
+  + Extract zip contents
+  + Double-click on `jevois-inventor.exe`
 
 - Linux:
-  + download <b>jevois-inventor_XXX.deb</b> from http://jevois.org/start (XXX will vary depending on version)
+  + Available for 18.04 amd64 (bionic) and 16.04 amd64 (xenial)
+  + Download <b>jevois-inventor_XXX.deb</b> from http://jevois.org/start (XXX will vary depending on version)
   + `sudo dpkg -i jevois-inventor_XXX.deb`  # (XXX will vary depending on version)
   + `sudo killall ModemManager`  # (ModemManager interferes with JeVois)
   + `jevois-inventor`
 
 - MacOS:
-  + download <b>jevois-inventor_XXX.dmg</b> from http://jevois.org/start (XXX will vary depending on version)
-  + double-click on the DMG file to open it
-  + drag jevois-inventor to your desktop or Applications folder
-  + double-click on jevois-inventor
+  + Tested on High Sierra. Does not work on Snow Leopard, which is too old. Sorry we do not have versions in
+    between to test...
+  + Download <b>jevois-inventor_XXX.dmg</b> from http://jevois.org/start (XXX will vary depending on version)
+  + Double-click on the DMG file to open it
+  + Drag jevois-inventor to your desktop or Applications folder
+  + Double-click on jevois-inventor. If your mac refuses to open it, `CTRL`+click on the JeVois Inventor icon
+    and select \b Open from the pull-down menu. This should now open it.
 
 Your JeVois Smart Camera
 -----------------------
