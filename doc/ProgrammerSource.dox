@@ -48,7 +48,7 @@ For more details about file organization across these different packages, see \r
 Source download and install
 ---------------------------
 
-This only recommended for advanced programmers who wnat to modify the Linux kernel or operating system of JeVois.
+This only recommended for advanced programmers who want to modify the Linux kernel or operating system of JeVois.
 
 Download and installation instructions are in the [INSTALL file of the jevois
 repository](https://github.com/jevois/jevois/blob/master/INSTALL).

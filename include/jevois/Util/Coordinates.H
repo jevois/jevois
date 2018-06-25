@@ -31,8 +31,8 @@ namespace jevois
         image coordinates of the item out, which is that now the receiver (e.g., an Arduino) needs to know which camera
         image resolution was used, so that it can properly interpret these coordinates. For example, if the visual
         attention (saliency) algorithm is running with 640x480 camera input, then a salient object at the center of the
-        camera's field of view would have coordinates 320,240. But if the same saliency algorithm is configures to
-        process 320x240 input ideo (so that it can run at a higher framerate), now an object at the center of the field
+        camera's field of view would have coordinates 320,240. But if the same saliency algorithm is configured to
+        process 320x240 input video (so that it can run at a higher framerate), now an object at the center of the field
         of view would have coordinates 160,120. If one connects an Arduino that controls, for example, a pan/tilt head
         to JeVois, we need a way to communicate coordinates of target objects in the world independently of the video
         resolution used by the camera.
@@ -42,11 +42,12 @@ namespace jevois
         - center fo the camera's field of view is at x=0, y=0
         - left edge of the camera image is always at x=-1000
         - right edge of the camera image is always at x=1000
-        - top edge of the camera image is always at y=-750
-        - bottom edge of the camera image is always at y=750
+        - top edge of the camera image is usually at y=-750
+        - bottom edge of the camera image is usually at y=750
         
         Note that the value of 750 here comes from the assumption of a 4:3 aspect ratio for the camera sensor, and is
-        actually defined in JEVOIS_CAMERA_ASPECT.
+        actually defined in JEVOIS_CAMERA_ASPECT. All camera sensor resolutions use 4:3 aspect ratio and hence have y
+        values between -750 and 750, except for 1280x1024, which has y values between -800 and 800.
         
         When writing a machine vision algorithm that sends over serial the coordinates of things detected in the camera
         frames, be sure to first transform those coordinates from image to standardized space.
