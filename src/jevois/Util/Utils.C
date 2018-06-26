@@ -69,7 +69,8 @@ std::string jevois::cvtypestr(unsigned int cvtype)
   default:     r = "User"; break;
   }
 
-  r += 'C' + (chans + '0');
+  r += 'C';
+  r += (chans + '0');
 
   return r;
 }
