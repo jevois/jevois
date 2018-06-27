@@ -24,11 +24,20 @@ Installing JeVois Inventor
   + Double-click on `jevois-inventor.exe`
 
 - Linux:
-  + Available for 18.04 amd64 (bionic) and 16.04 amd64 (xenial)
+  + Available and tested for 18.04 amd64 (bionic) and 16.04 amd64 (xenial)
   + Download <b>jevois-inventor_XXX.deb</b> from http://jevois.org/start (XXX will vary depending on version)
   + `sudo dpkg -i jevois-inventor_XXX.deb`  # (XXX will vary depending on version)
   + `sudo killall ModemManager`  # (ModemManager interferes with JeVois)
   + `jevois-inventor`
+  + If you want to avoid having to change permissions for the video and serial ports of JeVois each time you connect it,
+    you need to add your user to the \b video and \b dialout groups, as follows:
+    \verbatim
+    sudo apt purge modemmanager
+    sudo usermod -aG dialout $USER
+    sudo usermod -aG video $USER
+    \endverbatim
+    and reboot your computer for the settings to take effect.
+
 
 - MacOS:
   + Tested on High Sierra. Does not work on Snow Leopard, which is too old. Sorry we do not have versions in
@@ -266,6 +275,15 @@ Going deeper
 
 JeVois Inventor is just a simple front-end to the core of JeVois. You can do more with JeVois that what JeVois Inventor
 supports. See http://jevois.org/doc/ for more comprehensive documentation.
+
+In particular, check out:
+
+- [User tutorials](/tutorials)
+
+- [Programmer tutorials](/tutorials) which show you simple example of Python + OpenCv programming on JeVois using the
+  Inventor.
+
+
 
 */
 
