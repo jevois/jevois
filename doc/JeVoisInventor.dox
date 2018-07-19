@@ -274,7 +274,7 @@ restart to take into account the changes you have made to its microSD card.
 Going deeper
 ------------
 
-JeVois Inventor is just a simple front-end to the core of JeVois. You can do more with JeVois that what JeVois Inventor
+JeVois Inventor is just a simple front-end to the core of JeVois. You can do more with JeVois than what JeVois Inventor
 supports. See http://jevois.org/doc/ for more comprehensive documentation.
 
 In particular, check out:
