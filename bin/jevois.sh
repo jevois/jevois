@@ -5,6 +5,8 @@
 ##############################################################################################################
 
 CAMERA=ov9650
+if [ -f /boot/sensor ]; then CAMERA=`tail -1 /boot/sensor`; fi
+
 use_usbserial=1    # Allow using a serial-over-USB to communicate with JeVois command-line interface
 use_usbsd=1        # Allow exposing the JEVOIS partition of the microSD as a USB drive
 use_serialtty=0    # Use a TTY on the hardware serial and do not use it in jevois-daemon
@@ -36,8 +38,13 @@ cd /lib/modules/3.4.39
 
 for m in videobuf-core videobuf-dma-contig videodev vfe_os vfe_subdev v4l2-common v4l2-int-device \
 		       cci ${CAMERA} vfe_v4l2 ump disp mali ; do
-    echo "### insmod ${m}.ko ###"
-    insmod ${m}.ko
+    if [ $m = "vfe_v4l2" ]; then
+	echo "### insmod ${m}.ko sensor=${CAMERA} ###"
+	insmod ${m}.ko sensor="${CAMERA}"
+    else
+	echo "### insmod ${m}.ko ###"
+	insmod ${m}.ko
+    fi
 done
 
 ##############################################################################################################

@@ -22,7 +22,8 @@ Installing JeVois Inventor
   + Windows 7 (not 8 or 10) users need to install a driver, see http://jevois.org/doc/USBserialWindows.html
   + Extract zip contents
   + Double-click on `jevois-inventor.exe`
-
+  + If the JeVois camera is not detected, see below, under "Troubleshooting"
+      
 - Linux:
   + Available and tested for 18.04 amd64 (bionic) and 16.04 amd64 (xenial)
   + Download <b>jevois-inventor_XXX.deb</b> from http://jevois.org/start (XXX will vary depending on version)
@@ -283,7 +284,85 @@ In particular, check out:
 - [Programmer tutorials](/tutorials) which show you simple example of Python + OpenCv programming on JeVois using the
   Inventor.
 
+Release notes
+-------------
 
+JeVois Inventor 0.1.0
+- Initial release
+
+JeVois Inventor 0.2.0
+- Better device detection on Windows platforms
+- Attached spinboxes to all sliders
+- Added line numbers and highlighting of current line to all editors
+- Added links to various doc pages from File menu.
+
+Troubleshooting for Windows
+---------------------------
+
+JeVois Inventor tries to detect the JeVois camera automatically, so that you do not have to select its device each time
+you start the inventor or restart the camera.
+
+The JeVois Smart Camera is a composite USB device with three sub-devices:
+- a USB Video Class (UVC) video camera, used to stream video over USB;
+- a CDC-ACM Serial-over-USB port, used to send commands to JeVois;
+- a mass-storage device, used to access the microSD card inside JeVois as a virtual flash drive.
+
+To work, JeVois Inventor needs to detect at least the first two sub-devices. On Linux and MacOS, this works well by
+enumerating all connected cameras and serial ports, and finding the one that has the word \a JeVois in its Manufacturer
+or Product descriptions.
+
+However, this functionality (provided by the [Qt](http://qt.io) toolkit of widgets which JeVois Inventor is programmed
+with) does not seem to work well on Windows platforms. Even though the JeVois camera sends manufacturer and product
+descriptions to the host computer when it is connected, those just seem to be ignored by Windows. Windows instead
+assigns names to JeVois that appear to be whatever names are present in driver (.inf) files previously loaded on your
+computer.
+
+Try the following if your JeVois camera is not detected by the Inventor:
+
+- Disconnect the camera and open your <b>Control Panel</b> and then <b>Device Manager</b>.
+
+- Expand the entries for <b>Imaging devices</b> (or <b>Cameras</b> on Windows 10), and for <b>Ports (COM & LPT)</b>.
+
+- Connect JeVois and wait for Windows to detect it.
+
+- One new imaging device and one new port should appear; write down their names. In the example below, JeVois was
+  assigned the name <em>UVC Camera</em> for the camera sub-device, and <em>Gadget Serial</em> for the serial-over-USB
+  sub-device. Depending on your Windows version and history of installed drivers, these names will vary widely.  They
+  will correctly contain the word \a JeVois if you have not previously used USB cameras or serial-over-USB adapters on
+  your computer (i.e., JeVois is the first such device detected, and Windows will then fetch and use the correct name
+  advertized by the device).
+
+  \image html jvinv-devices.png
+
+- Starting with JeVois Inventor 0.2.0, if JeVois is not automatically detected, you will be invited to manually select
+  the camera, or serial-over-USB, or both sub-devices. Use the names you noted in the <b>Device Manager</b> when you
+  first connected your JeVois camera:
+
+  \image html jvinv-devsel.png
+
+- To avoid the need to select device names each time you restart the Inventor, you can try to uninstall existing
+  drivers, so that the correct name will be pulled next time Windows detects JeVois and re-installs the drivers:
+
+  + Connect JeVois and wait for Windows to detect it.
+  + In the <b>Device Manager</b>, right-click on the device and select <b>Uninstall</b>. Accept to uninstall. Do this
+    both for the camera device and (Windows 7 only) serial port device (you cannot uninstall the Microsoft serial
+    port device on Windows 10).
+  + Disconnect JeVois.
+  + After a minute, connect JeVois again. You should see some messages about a new device being detected. Do not touch
+    anything and let Windows install the drivers. After a minute or two, the drivers should have installed and be
+    ready to use.
+  + For the serial-over-USB port, on Windows 10 it is built-in and you cannot change it, its name is fixed to "USB
+    Serial Device". For this reason, JeVois Inventor also accepts this name in addition to a name containing the word
+    JeVois. On Windows 7, use `jevois-serial.inf` as explained in \ref USBserialWindows to install the correct driver.
+  + Under <b>Imaging Devices</b> (or <b>Cameras</b>) in the <b>Device Manager</b>, confirm that the name now is
+    "JeVois-A33 Video Camera" for the camera sub-device of JeVois.
+  + Under <b>Ports (COM & LPT)</b>, the name should now be "JeVois-A33 Serial-over-USB" (Windows 7),
+    or "USB Serial Port" (Windows 10).
+  + The inventor should now detect your camera automatically with no need for manual device selection.
+
+\image html jvinv-gooddev.png Above: Windows 7 devices after un-installing camera driver and updating serial driver
+
+\image html jvinv-gooddev10.png Above: Windows 10 devices after un-installing camera driver (serial driver cannot be changed)
 
 */
 
