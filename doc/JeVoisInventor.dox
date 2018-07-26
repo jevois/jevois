@@ -327,10 +327,11 @@ Try the following if your JeVois camera is not detected by the Inventor:
 
 - One new imaging device and one new port should appear; write down their names. In the example below, JeVois was
   assigned the name <em>UVC Camera</em> for the camera sub-device, and <em>Gadget Serial</em> for the serial-over-USB
-  sub-device. Depending on your Windows version and history of installed drivers, these names will vary widely.  They
-  will correctly contain the word \a JeVois if you have not previously used USB cameras or serial-over-USB adapters on
-  your computer (i.e., JeVois is the first such device detected, and Windows will then fetch and use the correct name
-  advertized by the device).
+  sub-device.  On Windows 7, you will likely need to use `jevois-serial.inf` as explained in \ref USBserialWindows to
+  install the correct USB-serial driver. Depending on your Windows version and history of installed drivers, these names
+  will vary widely.  They will correctly contain the word \a JeVois if you have not previously used USB cameras or
+  serial-over-USB adapters on your computer (i.e., JeVois is the first such device detected, and Windows will then fetch
+  and use the correct name advertized by the device).
 
   \image html jvinv-devices.png
 

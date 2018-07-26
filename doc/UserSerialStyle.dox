@@ -167,6 +167,54 @@ standardized serial messages.
 \note If you will use the quaternion data (\b Detail message style), you should probably set the \p serprec parameter to
 something non-zero to get enough accuracy in the quaternion values.
 
+Object recognition messages
+===========================
+
+\jvversion{1.8.2}
+
+Several modules, such as \jvmod{TensorFlowEasy}, \jvmod{DarknetSingle}, etc recognize objects that may belong to a given
+set of categories. These modules send an object recognition message for each detected object.
+
+A recognition consists of a number of category:score pairs, where \a category is the name of the object category (type
+of object), and \a score is the recognition score for this category, in the range 0.0 ... 100.0
+
+Note that many algorithms provide a list of such pairs as their results, to cover possible ambiguous recognition. For
+example, <b>cat:77.2 dog:27.3</b> indicates that the algorithm is quite confident it is lookign at a cat, but, with a
+lower confidence, it thinks it could also be looking at a dog.
+
+serstyle | message
+---------|---------------------------------------------------------------------------------------------------------
+Terse    | <tt>TO topcateg</tt>
+Normal   | <tt>NO topcateg:topscore</tt>
+Detail   | <tt>DO topcateg:topscore categ2:score2 ... categN:scoreN</tt>
+Fine     | <tt>FO topcateg:topscore categ2:score2 ... categN:scoreN</tt>
+
+where \a topcateg is the category name of the top-scoring category, and \a topscore its score, whereas \a categ2 is the
+second-to-top scoring category, and so on. The number 2...N of secondary recognitions may vary from one message to the
+next and could be zero, but \a topcateg and \a topscore are always guaranteed to be present (if there are no results, no
+message will be sent).
+
+Note that some object category names may contain spaces, e.g., <b>dining table</b>; when the message is constructed,
+any white space is replaced by underscores to make parsing of messages by Arduino and similar easier.
+
+Object detection + recognition messages
+=======================================
+
+Some modules, like \jvmod{DarknetYOLO}, \jvmod{TensorFlowSaliency}, and \jvmod{DarknetSaliency} first detect one or more
+bounding boxes that may contain an object, and then recognize which object might be in each box.
+
+These modules send Two-dimensional (2D) location messages as detailed below, with the following information in the
+\a id and \a extra fields:
+
+serstyle | id                         | extra
+---------|----------------------------|---------------------------------------------------------------
+Terse    | <tt>topcateg</tt>          | (no extra)
+Normal   | <tt>topcateg:topscore</tt> | (no extra)
+Detail   | <tt>topcateg:topscore</tt> | <tt>categ2:score2 ... categN:scoreN</tt>
+Fine     | <tt>topcateg:topscore</tt> | <tt>categ2:score2 ... categN:scoreN</tt>
+
+where \a topcateg is the category name of the top-scoring category, and \a topscore its score, whereas \a categ2 is the
+second-to-top scoring category, and so on. The same notes as for object recognition messages apply.
 
 Optional stamping of serial messages with frame number, date and time
 =====================================================================
@@ -206,6 +254,23 @@ to, with \p serstamp of \b FrameDateTime:
 \verbatim
 769/2017-12-24/15:52:42 T2 123 456
 \endverbatim
+
+Optional frame markers
+======================
+
+\jvversion{1.8.2}
+
+Parameter \p sermark allows one to possibly send the following messages, either just before a video frame from the
+camera sensor is processed (start mark message), just after (stop mark message), or both:
+
+|sermark    | start mark message | stop mark message |
+|-----------|--------------------|-------------------|
+|None       | (no message)       | (no message)      |
+|Start      | MARK START         | (no message)      |
+|Stop       | (no message)       | MARK STOP         |
+|Both       | MARK START         | MARK STOP         |
+
+Note that a stamp may be sent just before the mark, depending on the value of parameter \p serstamp.
 
 
 Limiting the number of serial messages per video frame

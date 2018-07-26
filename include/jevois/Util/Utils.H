@@ -73,7 +73,7 @@ namespace jevois
   //! Create a string using printf style arguments
   /*! Example:
       @code
-      std::string s = nrt::sformat("MyString_%f_%d", 1.0, 2);
+      std::string s = jevois::sformat("MyString_%f_%d", 1.0, 2);
       @endcode 
 
       One should normally refrain from using sformat(), and instead use streaming operators of C++, one exception is

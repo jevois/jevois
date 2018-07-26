@@ -719,3 +719,87 @@ void jevois::StdModule::sendSerialStd3D(std::vector<cv::Point3f> points, std::st
   break;
   }
 }
+
+// ####################################################################################################
+void jevois::StdModule::sendSerialMarkStart()
+{
+  jevois::module::SerMark const m = sermark::get();
+  if (m == jevois::module::SerMark::None || m == jevois::module::SerMark::Stop) return;
+  sendSerial(getStamp() + "MARK START");
+}
+
+// ####################################################################################################
+void jevois::StdModule::sendSerialMarkStop()
+{
+  jevois::module::SerMark const m = sermark::get();
+  if (m == jevois::module::SerMark::None || m == jevois::module::SerMark::Start) return;
+  sendSerial(getStamp() + "MARK STOP");
+}
+
+// ####################################################################################################
+void jevois::StdModule::sendSerialObjReco(std::vector<jevois::ObjReco> const & res)
+{
+  if (res.empty()) return;
+
+  // Build the message depending on desired style:
+  std::ostringstream oss; oss << std::fixed << std::setprecision(serprec::get());
+
+  // Prepend frame/date/time as possibly requested by parameter serstamp:
+  oss << getStamp();
+
+  // Format the message depending on parameter serstyle:
+  switch (serstyle::get())
+  {
+  case jevois::module::SerStyle::Terse:
+    oss << "TO " << jevois::replaceWhitespace(res[0].category);
+    break;
+    
+  case jevois::module::SerStyle::Normal:
+    oss << "NO " << jevois::replaceWhitespace(res[0].category) << ':' << res[0].score;
+    break;
+    
+  case jevois::module::SerStyle::Detail:
+    oss << "DO";
+    for (auto const & r : res) oss << ' ' << jevois::replaceWhitespace(r.category) << ':' << r.score;
+    break;
+
+  case jevois::module::SerStyle::Fine:
+    oss << "FO";
+    for (auto const & r : res) oss << ' ' << jevois::replaceWhitespace(r.category) << ':' << r.score;
+    break;
+  }
+  
+  // Send the message:
+  sendSerial(oss.str());
+}
+
+// ####################################################################################################
+void jevois::StdModule::sendSerialObjDetImg2D(unsigned int camw, unsigned int camh, float x, float y, float w, float h,
+					      std::vector<ObjReco> const & res)
+{
+  if (res.empty()) return;
+
+  std::string best, extra; std::string * ptr = &best;
+  std::string fmt = "%s:%." + std::to_string(serprec::get()) + "f";
+  
+  for (auto const & r : res)
+  {
+    switch (serstyle::get())
+    {
+    case jevois::module::SerStyle::Terse:
+      (*ptr) += jevois::replaceWhitespace(r.category);
+      break;
+      
+    default:
+      (*ptr) += jevois::sformat(fmt.c_str(), jevois::replaceWhitespace(r.category).c_str(), r.score);
+    }
+    if (ptr == &extra) (*ptr) += ' ';
+    ptr = &extra;
+  }
+
+  // Remove last space:
+  if (extra.empty() == false) extra = extra.substr(0, extra.length() - 1);
+  
+  sendSerialImg2D(camw, camh, x, y, w, h, best, extra);
+}
+

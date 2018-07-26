@@ -22,6 +22,7 @@
 #include <jevois/Core/VideoBuf.H>
 #include <jevois/Core/UserInterface.H> // not strictly needed but derived classes will want to use it
 #include <jevois/Component/Component.H>
+#include <jevois/Types/ObjReco.H>
 #include <jevois/Types/Enum.H>
 #include <opencv2/core/core.hpp>
 #include <ostream>
@@ -434,6 +435,16 @@ namespace jevois
 			     "time, frame+time, or frame+date+time. See details in "
 			     "http://jevois.org/doc/UserSerialStyle.html",
                              SerStamp::None, SerStamp_Values, ParamCateg);
+
+    //! Enum for Parameter \relates jevois::StdModule
+    JEVOIS_DEFINE_ENUM_CLASS(SerMark, (None) (Start) (Stop) (Both) )
+
+    //! Parameter \relates jevois::StdModule
+    JEVOIS_DECLARE_PARAMETER(sermark, SerMark, "Send serial message to mark the beginning (MARK START) of the "
+			     "processing of a video frame from the camera sensor, the end (MARK STOP), or both. "
+			     "Useful, among others, if one needs to know when no results were sent over serial "
+			     "on a given frame. Combine with parameter serstamp if you need to know the frame number.",
+                             SerMark::None, SerMark_Values, ParamCateg);
   }
   
   //! Base class for a module that supports standardized serial messages
@@ -442,7 +453,8 @@ namespace jevois
       format, and send standardized serial messages. The process(), sendSerial(), parseSerial(), supportedCommands(),
       etc of StdModule functions are directly inherited from Module. See \ref UserSerialStyle for standardized serial
       messages. \ingroup core */
-  class StdModule : public Module, public Parameter<module::serprec, module::serstyle, module::serstamp>
+  class StdModule : public Module,
+		    public Parameter<module::serprec, module::serstyle, module::serstamp, module::sermark>
   {
     public:
       //! Constructor
@@ -519,7 +531,32 @@ namespace jevois
       void sendSerialStd3D(std::vector<cv::Point3f> points, std::string const & id = "",
                            std::string const & extra = "");
 
+      //! Send a standardized object recognition message
+      /*! \param res should be a list of scores and category names, in descending order of scores. Note that no message
+          is sent if the vector is empty. */
+      void sendSerialObjReco(std::vector<ObjReco> const & res);
+
+      //! Send a standardized object detection + recognition message
+      /*! \param res should be a list of scores and category names, in descending order of scores. Note that no message
+          is sent if the vector is empty. See sendSerialImg2D() for info about the object box. */
+      void sendSerialObjDetImg2D(unsigned int camw, unsigned int camh, float x, float y, float w, float h,
+				 std::vector<ObjReco> const & res);
+      
     protected:
+      friend class jevois::Engine;
+      
+      //! Send a message <b>MARK START</b> to indicate the beginning of processing
+      /*! A stamp may be prepended depending on param \p serstamp. Engine calls this automatically so users would
+	  normally not use this function. Note that this function may not send anything depending on the current
+	  value of parameter \p sermark. */
+      void sendSerialMarkStart();
+
+      //! Send a message <b>MARK STOP</b> to indicate the end of processing
+      /*! A stamp may be prepended depending on param \p serstamp. Engine calls this automatically so users would
+	  normally not use this function. Note that this function may not send anything depending on the current
+	  value of parameter \p sermark. */
+      void sendSerialMarkStop();
+      
       //! Get a string with the frame/date/time stamp in it, depending on serstamp parameter
       std::string getStamp() const;
   };

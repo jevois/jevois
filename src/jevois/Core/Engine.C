@@ -721,6 +721,10 @@ void jevois::Engine::mainLoop()
 
       if (itsModule)
       {
+	// For standard modules, indicate frame start mark if user wants it:
+	jevois::StdModule * stdmod = dynamic_cast<jevois::StdModule *>(itsModule.get());
+	if (stdmod) stdmod->sendSerialMarkStart();
+	
 	// We have a module ready for action. Call its process function and handle any exceptions:
 	try
 	{
@@ -768,6 +772,10 @@ void jevois::Engine::mainLoop()
 	    jevois::warnAndIgnoreException();
 	  }
 	}
+
+	// For standard modules, indicate frame start stop if user wants it:
+	if (stdmod) stdmod->sendSerialMarkStop();
+
 	// Increment our master frame counter
 	++ itsFrame;
 	itsNumSerialSent.store(0);

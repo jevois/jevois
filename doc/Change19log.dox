@@ -7,6 +7,8 @@ JeVois 1.9 brings the following new features:
 
 - Introduced the new \ref JeVoisInventor
 
+- YOLO v3 is now supported by \jvmod{DarknetYOLO}, faster, more accurate, less memory, and 80 object classes.
+
 - Added a frame counter in the main loop, and access to it using jevois::Module::frameNum(). Modules that need to keep
   track of frame number do not need to implement their own counter anymore and can use this one.
 
@@ -15,6 +17,11 @@ JeVois 1.9 brings the following new features:
 
 - Added parameter \p serlimit to jevois::Engine to allow limiting the number of serial messages sent per video frame, to
   avoid overloading a serial link.
+
+- Added parameter \p sermark to optionally mark start and end of each frame. Useful if one needs to know when a frame
+  has been processed but no results were found and hence no other serial messages were sent.
+
+- Added standardized messages for object recognition and using them in the neural network modules (TensorFlow, Darknet)
 
 - new command-line interface command: shell (allows to run Unix commands on JeVois)
 
