@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include <jevois/Core/CameraSensor.H>
+
 #include <iosfwd>
 #include <vector>
 #include <string>
@@ -85,6 +87,9 @@ namespace jevois
       //! Return true if this VideoMapping's output format is a match to the given output parameters
       bool match(unsigned int oformat, unsigned int owidth, unsigned int oheight, float oframespersec) const;
 
+      //! Return true if camera sensor can support this mapping
+      bool sensorOk(CameraSensor s);
+      
       //! Convenience function to print out FCC WxH @ fps, for the output (UVC) format
       std::string ostr() const;
       
@@ -123,7 +128,7 @@ namespace jevois
 
   //! Load all the video mappings from the default config file
   /*! \relates VideoMapping */
-  std::vector<VideoMapping> loadVideoMappings(size_t & defidx, bool checkso = true);
+  std::vector<VideoMapping> loadVideoMappings(CameraSensor s, size_t & defidx, bool checkso = true);
   
   //! Parse all the mappings in a config file and also indicate which one is the default
   /*! The contents of the file are sorted so that the resulting vector is ordered by increasing 1) format fcc, then 2)
@@ -158,6 +163,7 @@ namespace jevois
 
       See \ref UserModes for explanations about how to organize \b videomappings.cfg
       \relates VideoMapping */
-  std::vector<VideoMapping> videoMappingsFromStream(std::istream & is, size_t & defidx, bool checkso = true);
+  std::vector<VideoMapping> videoMappingsFromStream(CameraSensor s, std::istream & is, size_t & defidx,
+                                                    bool checkso = true);
 }
 

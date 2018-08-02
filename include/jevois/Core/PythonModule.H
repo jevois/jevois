@@ -40,7 +40,7 @@ namespace jevois
   /*! This wrapper is to work around the lack of move semantics in our Python support. This class is not intended for
       general use, but only for use by PythonModule. Users of this class must ensure that the original InputFrame will
       outlive any and all InputFramePython instances, since InputFramePython just references to the source InputFrame by
-      unprotected raw pointer. Although the C++ object is called InputFramePythjon, we will expose it to python under
+      unprotected raw pointer. Although the C++ object is called InputFramePython, we will expose it to python under
       the name InputFrame (see PythonSupport.C). \ingroup python */
   class InputFramePython
   {
@@ -92,7 +92,7 @@ namespace jevois
   /*! This wrapper is to work around the lack of move semantics in our Python support. This class is not intended for
       general use, but only for use by PythonModule. Users of this class must ensure that the original OutputFrame will
       outlive any and all OutputFramePython instances, since OutputFramePython just references to the source OutputFrame
-      by unprotected raw pointer. Although the C++ object is called OutputFramePythjon, we will expose it to python
+      by unprotected raw pointer. Although the C++ object is called OutputFramePython, we will expose it to python
       under the name OutputFrame (see PythonSupport.C). \ingroup python */
   class OutputFramePython
   {
@@ -190,6 +190,10 @@ namespace jevois
   {
     public:
       //! Constructor needs the full path to a Python source code file
+      /*! Note that, contrary to C++ modules, construction will not throw. This is so that the module is always valid
+	  and initialized, and its module path can be set by Engine, which is necessary to allow saving the source code
+	  from JeVois Inventor. Instead, any construction error is stored internally in this class and will be re-thrown
+	  at any access to process(), parfseSerial(), etc. */
       PythonModule(VideoMapping const & m);
 
       //! Virtual destructor for safe inheritance
@@ -213,6 +217,7 @@ namespace jevois
     private:
       boost::python::object itsMainModule, itsMainNamespace;
       boost::python::object itsInstance;
+      std::string itsConstructionError;
   };
 
 } // namespace jevois

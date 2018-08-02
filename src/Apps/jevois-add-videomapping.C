@@ -57,7 +57,8 @@ int main(int argc, char const* argv[])
   size_t defidx;
   std::ifstream ifs(JEVOIS_ENGINE_CONFIG_FILE);
   if (ifs.is_open() == false) LFATAL("Could not open [" << JEVOIS_ENGINE_CONFIG_FILE << ']');
-  std::vector<jevois::VideoMapping> mappings = jevois::videoMappingsFromStream(ifs, defidx, false);
+  std::vector<jevois::VideoMapping> mappings =
+    jevois::videoMappingsFromStream(jevois::CameraSensor::any, ifs, defidx, false);
   ifs.close();
   
   // Check for match, ignoring the python field since we did not set it:

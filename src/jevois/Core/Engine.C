@@ -123,7 +123,7 @@ namespace
 
     // definition for this one seems to be in the kernel but missing somehow here:
 #ifndef V4L2_CID_AUTO_N_PRESET_WHITE_BALANCE
-#define V4L2_CID_AUTO_N_PRESET_WHITE_BALANCE	(V4L2_CID_CAMERA_CLASS_BASE+20)
+#define V4L2_CID_AUTO_N_PRESET_WHITE_BALANCE    (V4L2_CID_CAMERA_CLASS_BASE+20)
 #endif
     { V4L2_CID_AUTO_N_PRESET_WHITE_BALANCE, "presetwb" },
 
@@ -198,13 +198,10 @@ namespace
 
 // ####################################################################################################
 jevois::Engine::Engine(std::string const & instance) :
-    jevois::Manager(instance), itsMappings(jevois::loadVideoMappings(itsDefaultMappingIdx)),
-    itsRunning(false), itsStreaming(false), itsStopMainLoop(false), itsTurbo(false),
-    itsManualStreamon(false), itsVideoErrors(false), itsFrame(0), itsNumSerialSent(0)
+    jevois::Manager(instance), itsMappings(), itsRunning(false), itsStreaming(false), itsStopMainLoop(false),
+    itsTurbo(false), itsManualStreamon(false), itsVideoErrors(false), itsFrame(0), itsNumSerialSent(0)
 {
   JEVOIS_TRACE(1);
-
-  LINFO("Loaded " << itsMappings.size() << " vision processing modes.");
 
 #ifdef JEVOIS_PLATFORM
   // Start mass storage thread:
@@ -216,14 +213,12 @@ jevois::Engine::Engine(std::string const & instance) :
 
 // ####################################################################################################
 jevois::Engine::Engine(int argc, char const* argv[], std::string const & instance) :
-    jevois::Manager(argc, argv, instance), itsMappings(jevois::loadVideoMappings(itsDefaultMappingIdx)),
-    itsRunning(false), itsStreaming(false), itsStopMainLoop(false), itsTurbo(false),
-    itsManualStreamon(false), itsVideoErrors(false), itsFrame(0), itsNumSerialSent(0)
+    jevois::Manager(argc, argv, instance), itsMappings(), itsRunning(false), itsStreaming(false),
+    itsStopMainLoop(false), itsTurbo(false), itsManualStreamon(false), itsVideoErrors(false), itsFrame(0),
+    itsNumSerialSent(0)
 {
   JEVOIS_TRACE(1);
-
-  LINFO("Loaded " << itsMappings.size() << " vision processing modes.");
-
+  
 #ifdef JEVOIS_PLATFORM
   // Start mass storage thread:
   itsCheckingMassStorage.store(false); itsMassStorageMode.store(false);
@@ -273,7 +268,7 @@ void jevois::Engine::onParamChange(jevois::engine::usbserialdev const & JEVOIS_U
   for (std::list<std::shared_ptr<UserInterface> >::iterator itr = itsSerials.begin(); itr != itsSerials.end(); ++itr)
     if ((*itr)->instanceName() == "usbserial") itr = itsSerials.erase(itr);
   removeComponent("usbserial", false);
-
+  
   // Open the USB serial port, if any:
   if (newval.empty() == false)
     try
@@ -356,6 +351,7 @@ void jevois::Engine::postInit()
   usbserialdev::freeze();
   for (auto & s : itsSerials) s->freezeAllParams();
   cameradev::freeze();
+  camerasens::freeze();
   cameranbuf::freeze();
   camturbo::freeze();
   gadgetdev::freeze();
@@ -367,6 +363,10 @@ void jevois::Engine::postInit()
   
   // Grab the log messages, itsSerials is not going to change anymore now that the serial params are frozen:
   jevois::logSetEngine(this);
+
+  // Load our video mappings:
+  itsMappings = jevois::loadVideoMappings(camerasens::get(), itsDefaultMappingIdx);
+  LINFO("Loaded " << itsMappings.size() << " vision processing modes.");
 
   // Get python going, we need to do this here to avoid segfaults on platform when instantiating our first python
   // module. This likely has to do with the fact that the python core is not very thread-safe, and setFormatInternal()
@@ -397,7 +397,7 @@ void jevois::Engine::postInit()
     
     // Now instantiate the camera:
     itsCamera.reset(new jevois::Camera(camdev, cameranbuf::get()));
-
+    
 #ifndef JEVOIS_PLATFORM
     // No need to confuse people with a non-working camreg param:
     camreg::set(false);
@@ -408,7 +408,7 @@ void jevois::Engine::postInit()
   {
     LINFO("Using movie input " << camdev << " -- issue a 'streamon' to start processing.");
     itsCamera.reset(new jevois::MovieInput(camdev, cameranbuf::get()));
-
+    
     // No need to confuse people with a non-working camreg param:
     camreg::set(false);
     camreg::freeze();
@@ -417,13 +417,13 @@ void jevois::Engine::postInit()
   // Instantiate a USB gadget: Note: it will want to access the mappings. If the user-selected video mapping has no usb
   // out, do not instantiate a gadget:
   int midx = videomapping::get();
-
+  
   // The videomapping parameter is now disabled, users should use the 'setmapping' command once running:
   videomapping::freeze();
   
   if (midx >= int(itsMappings.size()))
   { LERROR("Mapping index " << midx << " out of range -- USING DEFAULT"); midx = -1; }
-
+  
   if (midx < 0) midx = itsDefaultMappingIdx;
 
   // Always instantiate a gadget even if not used right now, may be used later:
@@ -522,15 +522,15 @@ void jevois::Engine::checkMassStorage()
     std::ifstream ifs("/sys/devices/platform/sunxi_usb_udc/gadget/lun0/mass_storage_in_use");
     if (ifs.is_open())
     {
-        int inuse; ifs >> inuse;
-        if (itsMassStorageMode.load())
-        {
-          if (inuse == 0) stopMassStorageMode();
-        }
-        else
-        {
-          if (inuse) { JEVOIS_TIMED_LOCK(itsMtx); startMassStorageMode(); }
-        }
+      int inuse; ifs >> inuse;
+      if (itsMassStorageMode.load())
+      {
+        if (inuse == 0) stopMassStorageMode();
+      }
+      else
+      {
+        if (inuse) { JEVOIS_TIMED_LOCK(itsMtx); startMassStorageMode(); }
+      }
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
   }
@@ -721,81 +721,81 @@ void jevois::Engine::mainLoop()
 
       if (itsModule)
       {
-	// For standard modules, indicate frame start mark if user wants it:
-	jevois::StdModule * stdmod = dynamic_cast<jevois::StdModule *>(itsModule.get());
-	if (stdmod) stdmod->sendSerialMarkStart();
-	
-	// We have a module ready for action. Call its process function and handle any exceptions:
-	try
-	{
-	  if (itsCurrentMapping.ofmt) // Process with USB outputs:
-	    itsModule->process(jevois::InputFrame(itsCamera, itsTurbo),
-			       jevois::OutputFrame(itsGadget, itsVideoErrors.load() ? &itsVideoErrorImage : nullptr));
-	  else  // Process with no USB outputs:
+        // For standard modules, indicate frame start mark if user wants it:
+        jevois::StdModule * stdmod = dynamic_cast<jevois::StdModule *>(itsModule.get());
+        if (stdmod) stdmod->sendSerialMarkStart();
+    
+        // We have a module ready for action. Call its process function and handle any exceptions:
+        try
+        {
+          if (itsCurrentMapping.ofmt) // Process with USB outputs:
+            itsModule->process(jevois::InputFrame(itsCamera, itsTurbo),
+                               jevois::OutputFrame(itsGadget, itsVideoErrors.load() ? &itsVideoErrorImage : nullptr));
+          else  // Process with no USB outputs:
             itsModule->process(jevois::InputFrame(itsCamera, itsTurbo));
-	  dosleep = false;
-	}
-	catch (...)
-	{
-	  // Report exceptions to video if desired: We have to be extra careful here because the exception might have
-	  // been called by the input frame (camera not streaming) or the output frame (gadget not streaming), in
-	  // addition to exceptions thrown by the module:
-	  if (itsCurrentMapping.ofmt && itsVideoErrors.load())
-	  {
-	    try
-	    {
-	      // If the module threw before get() or after send() on the output frame, get a buffer from the gadget:
-	      if (itsVideoErrorImage.valid() == false)
-		itsGadget->get(itsVideoErrorImage); // could throw when streamoff
-	      
-	      // Report module exception to serlog and get it back as a string:
-	      std::string errstr = jevois::warnAndIgnoreException();
-	      
-	      // Draw the error message into our video frame:
-	      jevois::drawErrorImage(errstr, itsVideoErrorImage);
-	    }
-	    catch (...) { jevois::warnAndIgnoreException(); }
-	    
-	    try
-	    {
-	      // Send the error image over USB:
-	      if (itsVideoErrorImage.valid()) itsGadget->send(itsVideoErrorImage); // could throw if gadget stream off
-	    }
-	    catch (...) { jevois::warnAndIgnoreException(); }
-	    
-	    // Invalidate the error image so it is clean for the next frame:
-	    itsVideoErrorImage.invalidate();
-	  }
-	  else
-	  {
-	    // Report module exception to serlog, and ignore:
-	    jevois::warnAndIgnoreException();
-	  }
-	}
+          dosleep = false;
+        }
+        catch (...)
+        {
+          // Report exceptions to video if desired: We have to be extra careful here because the exception might have
+          // been called by the input frame (camera not streaming) or the output frame (gadget not streaming), in
+          // addition to exceptions thrown by the module:
+          if (itsCurrentMapping.ofmt && itsVideoErrors.load())
+          {
+            try
+            {
+              // If the module threw before get() or after send() on the output frame, get a buffer from the gadget:
+              if (itsVideoErrorImage.valid() == false)
+                itsGadget->get(itsVideoErrorImage); // could throw when streamoff
+          
+              // Report module exception to serlog and get it back as a string:
+              std::string errstr = jevois::warnAndIgnoreException();
+          
+              // Draw the error message into our video frame:
+              jevois::drawErrorImage(errstr, itsVideoErrorImage);
+            }
+            catch (...) { jevois::warnAndIgnoreException(); }
+        
+            try
+            {
+              // Send the error image over USB:
+              if (itsVideoErrorImage.valid()) itsGadget->send(itsVideoErrorImage); // could throw if gadget stream off
+            }
+            catch (...) { jevois::warnAndIgnoreException(); }
+        
+            // Invalidate the error image so it is clean for the next frame:
+            itsVideoErrorImage.invalidate();
+          }
+          else
+          {
+            // Report module exception to serlog, and ignore:
+            jevois::warnAndIgnoreException();
+          }
+        }
 
-	// For standard modules, indicate frame start stop if user wants it:
-	if (stdmod) stdmod->sendSerialMarkStop();
+        // For standard modules, indicate frame start stop if user wants it:
+        if (stdmod) stdmod->sendSerialMarkStop();
 
-	// Increment our master frame counter
-	++ itsFrame;
-	itsNumSerialSent.store(0);
+        // Increment our master frame counter
+        ++ itsFrame;
+        itsNumSerialSent.store(0);
       }
       else
       {
-	// No module. If we have a module construction error, render it to an image and stream it over USB now (if we
-	// are doing USB and we want to see errors in the video stream):
-	if (itsCurrentMapping.ofmt && itsVideoErrors.load())
-	  try
-	  {
-	    // Get an output image, draw error message, and send to host:
-	    itsGadget->get(itsVideoErrorImage);
-	    jevois::drawErrorImage(itsModuleConstructionError, itsVideoErrorImage);
-	    itsGadget->send(itsVideoErrorImage);
-	    
-	    // Also get one camera frame to avoid accumulation of stale buffers:
-	    (void)jevois::InputFrame(itsCamera, itsTurbo).get();
-	  }
-	  catch (...) { jevois::warnAndIgnoreException(); }
+        // No module. If we have a module construction error, render it to an image and stream it over USB now (if we
+        // are doing USB and we want to see errors in the video stream):
+        if (itsCurrentMapping.ofmt && itsVideoErrors.load())
+          try
+          {
+            // Get an output image, draw error message, and send to host:
+            itsGadget->get(itsVideoErrorImage);
+            jevois::drawErrorImage(itsModuleConstructionError, itsVideoErrorImage);
+            itsGadget->send(itsVideoErrorImage);
+        
+            // Also get one camera frame to avoid accumulation of stale buffers:
+            (void)jevois::InputFrame(itsCamera, itsTurbo).get();
+          }
+          catch (...) { jevois::warnAndIgnoreException(); }
       }
     }
   
@@ -825,28 +825,28 @@ void jevois::Engine::mainLoop()
           JEVOIS_TIMED_LOCK(itsMtx);
 
 
-	  // If the command starts with our hidden command prefix, set the prefix, otherwise clear it:
-	  if (jevois::stringStartsWith(str, JEVOIS_JVINV_PREFIX))
-	  {
-	    pfx = JEVOIS_JVINV_PREFIX;
-	    str = str.substr(pfx.length());
-	  }
-	  else pfx.clear();
-	  
+          // If the command starts with our hidden command prefix, set the prefix, otherwise clear it:
+          if (jevois::stringStartsWith(str, JEVOIS_JVINV_PREFIX))
+          {
+            pfx = JEVOIS_JVINV_PREFIX;
+            str = str.substr(pfx.length());
+          }
+          else pfx.clear();
+      
           // Try to execute this command. If the command is for us (e.g., set a parameter) and is correct,
           // parseCommand() will return true; if it is for us but buggy, it will throw. If it is not recognized by us,
           // it will return false and we should try sending it to the Module:
           try { parsed = parseCommand(str, s, pfx); success = parsed; }
           catch (std::exception const & e)
-	  { s->writeString(pfx, std::string("ERR ") + e.what()); parsed = true; }
+          { s->writeString(pfx, std::string("ERR ") + e.what()); parsed = true; }
           catch (...)
-	  { s->writeString(pfx, "ERR Unknown error"); parsed = true; }
+          { s->writeString(pfx, "ERR Unknown error"); parsed = true; }
 
           if (parsed == false)
           {
             if (itsModule)
             {
-	      // Note: prefixing is currently not supported for modules, it is for the Engine only
+              // Note: prefixing is currently not supported for modules, it is for the Engine only
               try { itsModule->parseSerial(str, s); success = true; }
               catch (std::exception const & me) { s->writeString(pfx, std::string("ERR ") + me.what()); }
               catch (...) { s->writeString(pfx, "ERR Command [" + str + "] not recognized by Engine or Module"); }
@@ -1239,7 +1239,7 @@ void jevois::Engine::cmdInfo(std::shared_ptr<UserInterface> s, bool showAll, std
   s->writeString(pfx, "listmappings - list all available video mappings");
   s->writeString(pfx, "setmapping <num> - select video mapping <num>, only possible while not streaming");
   s->writeString(pfx, "setmapping2 <CAMmode> <CAMwidth> <CAMheight> <CAMfps> <Vendor> <Module> - set no-USB-out "
-		 "video mapping defined on the fly, while not streaming");
+                 "video mapping defined on the fly, while not streaming");
   s->writeString(pfx, "reload - reload and reset the current module");
 
   if (showAll || itsCurrentMapping.ofmt == 0 || itsManualStreamon)
@@ -1352,7 +1352,7 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
       {
         s->writeString(pfx, "MODULE-SPECIFIC COMMANDS:");
         s->writeString(pfx, "");
-	modCmdInfo(s, pfx);
+        modCmdInfo(s, pfx);
         s->writeString(pfx, "");
       }
       
@@ -1436,16 +1436,16 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
     {
       std::map<std::string, std::string> categs;
       bool skipFrozen = (rem == "hot" || rem == "modhot") ? true : false;
-
+      
       if (rem == "mod" || rem == "modhot")
       {
-	// Report only on our module's parameter, if any:
-	if (itsModule) itsModule->paramInfo(s, categs, skipFrozen, instanceName(), pfx);
-      }	  
+        // Report only on our module's parameter, if any:
+        if (itsModule) itsModule->paramInfo(s, categs, skipFrozen, instanceName(), pfx);
+      }   
       else
       {
-	// Report on all parameters:
-	paramInfo(s, categs, skipFrozen, "", pfx);
+        // Report on all parameters:
+        paramInfo(s, categs, skipFrozen, "", pfx);
       }
       
       return true;
@@ -1456,8 +1456,8 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
     {
       std::string info = getParamStringUnique("serout") + ' ' + getParamStringUnique("serlog");
       if (auto mod = dynamic_cast<jevois::StdModule *>(itsModule.get()))
-	info += ' ' + mod->getParamStringUnique("serstyle") + ' ' + mod->getParamStringUnique("serprec") +
-	  ' ' + mod->getParamStringUnique("serstamp");
+        info += ' ' + mod->getParamStringUnique("serstyle") + ' ' + mod->getParamStringUnique("serprec") +
+          ' ' + mod->getParamStringUnique("serstamp");
       else info += " - - -";
       
       s->writeString(pfx, info);
@@ -1502,39 +1502,39 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
             for (auto const & n : c.second)
             {
               std::vector<std::string> tok = jevois::split(n.first, "[\\r\\n]+");
-	      bool first = true;
+              bool first = true;
               for (auto const & t : tok)
-	      {
-		// Add current value info to the first thing we write (which is name, default, etc)
-		if (first)
-		{
-		  auto const & v = n.second;
-		  if (v.size() == 1) // only one component using this param
-		  {
-		    if (v[0].second.empty())
-		      s->writeString(pfx, t); // only one comp, and using default val
-		    else
-		      s->writeString(pfx, t + " current=[" + v[0].second + ']'); // using non-default val
-		  }
-		  else if (v.size() > 1) // several components using this param with possibly different values
-		  {
-		    std::string sss = t + " current=";
-		    for (auto const & pp : v)
-		      if (pp.second.empty() == false) sss += '[' + pp.first + ':' + pp.second + "] ";
-		    s->writeString(pfx, sss);
-		  }
-		  else s->writeString(pfx, t); // no non-default value(s) to report
-		  
-		  first = false;
-		}
-		
-		else // just write out the other lines (param description)
-		  s->writeString(pfx, t);
-	      }
-	    }
-	    s->writeString(pfx, "");
-	  }
-	}
+              {
+                // Add current value info to the first thing we write (which is name, default, etc)
+                if (first)
+                {
+                  auto const & v = n.second;
+                  if (v.size() == 1) // only one component using this param
+                  {
+                    if (v[0].second.empty())
+                      s->writeString(pfx, t); // only one comp, and using default val
+                    else
+                      s->writeString(pfx, t + " current=[" + v[0].second + ']'); // using non-default val
+                  }
+                  else if (v.size() > 1) // several components using this param with possibly different values
+                  {
+                    std::string sss = t + " current=";
+                    for (auto const & pp : v)
+                      if (pp.second.empty() == false) sss += '[' + pp.first + ':' + pp.second + "] ";
+                    s->writeString(pfx, sss);
+                  }
+                  else s->writeString(pfx, t); // no non-default value(s) to report
+                  
+                  first = false;
+                }
+                
+                else // just write out the other lines (param description)
+                  s->writeString(pfx, t);
+              }
+            }
+            s->writeString(pfx, "");
+          }
+        }
       }
       else
         s->writeString(pfx, "No module loaded.");
@@ -1798,43 +1798,43 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
     {
       std::shared_ptr<jevois::Serial> ser = std::dynamic_pointer_cast<jevois::Serial>(s);
       if (!ser)
-	errmsg = "File transfer only supported over USB or Hard serial ports";
+        errmsg = "File transfer only supported over USB or Hard serial ports";
       else
       {
-	std::string const abspath = itsModule ? itsModule->absolutePath(rem) : rem;
-	ser->fileGet(abspath);
-	return true;
+        std::string const abspath = itsModule ? itsModule->absolutePath(rem) : rem;
+        ser->fileGet(abspath);
+        return true;
       }
     }
-
+    
     // ----------------------------------------------------------------------------------------------------
     if (cmd == "fileput")
     {
       std::shared_ptr<jevois::Serial> ser = std::dynamic_pointer_cast<jevois::Serial>(s);
       if (!ser)
-	errmsg = "File transfer only supported over USB or Hard serial ports";
+        errmsg = "File transfer only supported over USB or Hard serial ports";
       else
       {
-	std::string const abspath = itsModule ? itsModule->absolutePath(rem) : rem;
-	ser->filePut(abspath);
-	if (std::system("sync")) { } // quietly ignore any errors on sync
-	return true;
+        std::string const abspath = itsModule ? itsModule->absolutePath(rem) : rem;
+        ser->filePut(abspath);
+        if (std::system("sync")) { } // quietly ignore any errors on sync
+        return true;
       }
     }
-     
+    
 #ifdef JEVOIS_PLATFORM
     // ----------------------------------------------------------------------------------------------------
     if (cmd == "restart")
     {
       s->writeString(pfx, "Restart command received - bye-bye!");
-
+      
       if (itsStreaming.load())
         s->writeString(pfx, "ERR Video streaming is on - you should quit your video viewer before rebooting");
       
       // Turn off the SD storage if it is there:
       std::ofstream(JEVOIS_USBSD_SYS).put('\n'); // ignore errors
       if (std::system("sync")) s->writeString(pfx, "ERR Disk sync failed -- IGNORED");
-
+      
       // Hard reboot:
       this->reboot();
       return true;

@@ -133,15 +133,16 @@ std::istream & jevois::operator>>(std::istream & in, jevois::VideoMapping & m)
 }
 
 // ####################################################################################################
-std::vector<jevois::VideoMapping> jevois::loadVideoMappings(size_t & defidx, bool checkso)
+std::vector<jevois::VideoMapping> jevois::loadVideoMappings(jevois::CameraSensor s, size_t & defidx, bool checkso)
 {
   std::ifstream ifs(JEVOIS_ENGINE_CONFIG_FILE);
   if (ifs.is_open() == false) LFATAL("Could not open [" << JEVOIS_ENGINE_CONFIG_FILE << ']');
-  return jevois::videoMappingsFromStream(ifs, defidx, checkso);
+  return jevois::videoMappingsFromStream(s, ifs, defidx, checkso);
 }
 
 // ####################################################################################################
-std::vector<jevois::VideoMapping> jevois::videoMappingsFromStream(std::istream & is, size_t & defidx, bool checkso)
+std::vector<jevois::VideoMapping> jevois::videoMappingsFromStream(jevois::CameraSensor s, std::istream & is,
+                                                                  size_t & defidx, bool checkso)
 {
   size_t linenum = 1;
   std::vector<jevois::VideoMapping> mappings;
@@ -181,7 +182,10 @@ std::vector<jevois::VideoMapping> jevois::videoMappingsFromStream(std::istream &
       if (checkso)
       { PERROR("No .so|.py found for " << m.vendor << '/' << m.modulename << " -- SKIPPING."); continue; }
     }
-    
+
+    // Skip if the sensor cannot support this mapping:
+    if (m.sensorOk(s) == false) { PERROR("Camera video format not supported by sensor -- SKIPPING."); continue; }
+
     // Handle optional star for default mapping. We tolerate several and pick the first one:
     if (tok.size() > 10)
     {
@@ -304,6 +308,12 @@ bool jevois::VideoMapping::match(unsigned int oformat, unsigned int owidth, unsi
 {
   if (ofmt == oformat && ow == owidth && oh == oheight && (std::abs(ofps - oframespersec) < 0.1F)) return true;
   return false;
+}
+
+// ####################################################################################################
+bool jevois::VideoMapping::sensorOk(jevois::CameraSensor s)
+{
+  return jevois::sensorSupportsFormat(s, cfmt, cw, ch, cfps);
 }
 
 // ####################################################################################################

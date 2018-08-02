@@ -423,7 +423,7 @@ void jevois::Serial::writeInternal(void const * buffer, const int nbytes, bool n
       // Report the overflow once in a while:
       ++itsWriteOverflowCounter; if (itsWriteOverflowCounter > 100) itsWriteOverflowCounter = 0;
       if (itsWriteOverflowCounter == 1)
-	throw std::overflow_error("Serial write overflow: need to reduce amount ot serial writing");
+        throw std::overflow_error("Serial write overflow: need to reduce amount ot serial writing");
       
       // Note how we are otherwise just ignoring the overflow and hence dropping data.
     }
@@ -434,21 +434,21 @@ void jevois::Serial::writeInternal(void const * buffer, const int nbytes, bool n
 // ######################################################################
 void jevois::Serial::writeNoCheck(void const * buffer, const int nbytes)
 {
-    std::lock_guard<std::mutex> _(itsMtx);
+  std::lock_guard<std::mutex> _(itsMtx);
 
-    int ndone = 0; char const * b = reinterpret_cast<char const *>(buffer); int iter = 0;
-    while (ndone < nbytes && iter++ < 50)
-    {
-        int n = ::write(itsDev, b + ndone, nbytes - ndone);
-        if (n == -1 && errno != EAGAIN) throw std::runtime_error("Serial: Write error");
-        if (n > 0) ndone += n;
-    }
+  int ndone = 0; char const * b = reinterpret_cast<char const *>(buffer); int iter = 0;
+  while (ndone < nbytes && iter++ < 50)
+  {
+    int n = ::write(itsDev, b + ndone, nbytes - ndone);
+    if (n == -1 && errno != EAGAIN) throw std::runtime_error("Serial: Write error");
+    if (n > 0) ndone += n;
+  }
 
-    if (ndone < nbytes)
-    {
-      // If after a number of iterations there are still unbuffered bytes, flush the output buffer
-      if (tcflush(itsDev, TCOFLUSH) != 0) LDEBUG("Serial flushOut error -- IGNORED");
-    }
+  if (ndone < nbytes)
+  {
+    // If after a number of iterations there are still unbuffered bytes, flush the output buffer
+    if (tcflush(itsDev, TCOFLUSH) != 0) LDEBUG("Serial flushOut error -- IGNORED");
+  }
 }
 
 // ######################################################################
@@ -496,34 +496,34 @@ void jevois::Serial::fileGet(std::string const & abspath)
 // ####################################################################################################
 void jevois::Serial::filePut(std::string const & abspath)
 {
-    std::lock_guard<std::mutex> _(itsMtx);
+  std::lock_guard<std::mutex> _(itsMtx);
 
-    std::ofstream fil(abspath, std::ios::out | std::ios::binary);
-    if (fil.is_open() == false)  throw std::runtime_error("Could not write file " + abspath);
+  std::ofstream fil(abspath, std::ios::out | std::ios::binary);
+  if (fil.is_open() == false)  throw std::runtime_error("Could not write file " + abspath);
 
-    // Get file length as ASCII:
-    std::string const lenstr = readStringInternal();
-    if (jevois::stringStartsWith(lenstr, "JEVOIS_FILEPUT ") == false)
-      throw std::runtime_error("Incorrect header while receiving file " + abspath);
+  // Get file length as ASCII:
+  std::string const lenstr = readStringInternal();
+  if (jevois::stringStartsWith(lenstr, "JEVOIS_FILEPUT ") == false)
+    throw std::runtime_error("Incorrect header while receiving file " + abspath);
 
-    auto vec = jevois::split(lenstr);
-    if (vec.size() != 2) throw std::runtime_error("Incorrect header fields while receiving file " + abspath);
+  auto vec = jevois::split(lenstr);
+  if (vec.size() != 2) throw std::runtime_error("Incorrect header fields while receiving file " + abspath);
 
-    size_t num = std::stoul(vec[1]);
+  size_t num = std::stoul(vec[1]);
     
-    // Read blocks from serial and write them to file:
-    size_t const bufsiz = std::min(num, size_t(1024 * 1024)); char buffer[1024 * 1024];
-    while (num)
-    {
-      int got = ::read(itsDev, buffer, bufsiz);
-      if (got == -1 && errno != EAGAIN) throw std::runtime_error("Serial: Read error");
+  // Read blocks from serial and write them to file:
+  size_t const bufsiz = std::min(num, size_t(1024 * 1024)); char buffer[1024 * 1024];
+  while (num)
+  {
+    int got = ::read(itsDev, buffer, bufsiz);
+    if (got == -1 && errno != EAGAIN) throw std::runtime_error("Serial: Read error");
       
-      if (got > 0)
-      {
-	fil.write(buffer, got);
-	num -= got;
-      }
-      else std::this_thread::sleep_for(std::chrono::milliseconds(2));
+    if (got > 0)
+    {
+      fil.write(buffer, got);
+      num -= got;
     }
-    fil.close();
+    else std::this_thread::sleep_for(std::chrono::milliseconds(2));
+  }
+  fil.close();
 }

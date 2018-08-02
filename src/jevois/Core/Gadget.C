@@ -515,7 +515,7 @@ void jevois::Gadget::processEventControl(uint8_t req, uint8_t cs, uint8_t entity
       case 2: wordresponse(ctrl.value); break;
       case 4: intresponse(ctrl.value); break;
       default: LERROR("Unsupported control with length " << len << " -- SENDING BLANK RESPONSE");
-	arrayblankresponse(len); break;
+        arrayblankresponse(len); break;
       }
     }
     else
@@ -568,7 +568,7 @@ void jevois::Gadget::processEventControl(uint8_t req, uint8_t cs, uint8_t entity
       case 2: wordresponse(val); break;
       case 4: intresponse(val); break;
       default: LERROR("Unsupported control with length " << len << " -- SENDING BLANK RESPONSE");
-	arrayblankresponse(len); break;
+        arrayblankresponse(len); break;
       }
     }
   }

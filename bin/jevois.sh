@@ -39,11 +39,21 @@ cd /lib/modules/3.4.39
 for m in videobuf-core videobuf-dma-contig videodev vfe_os vfe_subdev v4l2-common v4l2-int-device \
 		       cci ${CAMERA} vfe_v4l2 ump disp mali ; do
     if [ $m = "vfe_v4l2" ]; then
-	echo "### insmod ${m}.ko sensor=${CAMERA} ###"
-	insmod ${m}.ko sensor="${CAMERA}"
+	    echo "### insmod ${m}.ko sensor=${CAMERA} ###"
+	    insmod ${m}.ko sensor="${CAMERA}"
+
+        # If we failed to load the requested sensor, try a few known ones:
+        if [ $? -ne 0 ]; then
+            echo "### Could not detect ${CAMERA} ..."
+            for cam in ov9650 ov7725 ov2640; do
+	            echo "### insmod ${m}.ko sensor=${cam} ###"
+                insmod ${m}.ko sensor="${cam}"
+                if [ $? -eq 0 ]; then CAMERA=${cam}; break; fi
+            done
+        fi
     else
-	echo "### insmod ${m}.ko ###"
-	insmod ${m}.ko
+	    echo "### insmod ${m}.ko ###"
+	    insmod ${m}.ko
     fi
 done
 
@@ -101,7 +111,7 @@ export LD_LIBRARY_PATH=${LIBPATH}
 ##############################################################################################################
 
 echo "### Insert gadget driver ###"
-MODES=`/usr/bin/jevois-module-param`
+MODES=`/usr/bin/jevois-module-param ${CAMERA}`
 
 insmodopts=""
 if [ "X${use_usbsd}" = "X1" ]; then insmodopts="${insmodopts} file=${usbsdfile}"; fi
@@ -120,6 +130,7 @@ if [ "X${use_serialtty}" = "X1" ]; then opts="${opts} --serialdev="; fi
 if [ "X${use_maxbandwidth}" != "X1" ]; then opts="${opts} --multicam=1"; fi
 if [ "X${use_quietcmd}" = "X1" ]; then opts="${opts} --quietcmd=1"; fi
 if [ "X${use_nopython}" = "X1" ]; then opts="${opts} --python=0"; fi
+if [ "X${CAMERA}" != "X" ]; then opts="${opts} --camerasens=${CAMERA}"; fi
 
 # Start the jevois daemon:
 if [ "X${use_serialtty}" = "X1" -o "X${use_usbserialtty}" = "X1" ]; then
@@ -140,9 +151,9 @@ fi
 if [ "X${use_usbserialtty}" = "X1" ]; then
     while [ ! -c /dev/ttyGS0 ]; do sleep 1; done # wait until gadget is operational
     if [ "X${use_serialtty}" = "X1" ]; then
-	/sbin/getty -L ttyGS0 115200 vt100 &
+	    /sbin/getty -L ttyGS0 115200 vt100 &
     else
-	/sbin/getty -L ttyGS0 115200 vt100
+	    /sbin/getty -L ttyGS0 115200 vt100
     fi
 fi
 

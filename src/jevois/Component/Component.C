@@ -520,7 +520,7 @@ std::string jevois::Component::absolutePath(std::string const & path)
 
 // ######################################################################
 void jevois::Component::paramInfo(std::shared_ptr<UserInterface> s, std::map<std::string, std::string> & categs,
-				  bool skipFrozen, std::string const & cname, std::string const & pfx)
+                                  bool skipFrozen, std::string const & cname, std::string const & pfx)
 {
   JEVOIS_TRACE(9);
 
@@ -567,10 +567,10 @@ void jevois::Component::paramInfo(std::shared_ptr<UserInterface> s, std::map<std
 
 // ######################################################################
 void jevois::Component::populateHelpMessage(std::string const & cname,
-					    std::unordered_map<std::string,
-					    std::unordered_map<std::string,
-					    std::vector<std::pair<std::string, std::string> > > > & helplist,
-					    bool recurse) const
+                                            std::unordered_map<std::string,
+                                            std::unordered_map<std::string,
+                                            std::vector<std::pair<std::string, std::string> > > > & helplist,
+                                            bool recurse) const
 {
   JEVOIS_TRACE(9);
 

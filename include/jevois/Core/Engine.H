@@ -21,6 +21,7 @@
 #include <jevois/Component/Manager.H>
 #include <jevois/Types/Enum.H>
 #include <jevois/Image/RawImage.H>
+#include <jevois/Core/CameraSensor.H>
 
 #include <memory>
 #include <mutex>
@@ -79,6 +80,11 @@ namespace jevois
                              "file name (e.g., movie.mpg) or image sequence (e.g., im%02d.jpg, to read frames "
                              "im00.jpg, im01.jpg, etc).",
                              JEVOIS_CAMERA_DEFAULT, ParamCateg);
+
+    //! Parameter \relates jevois::Engine
+    JEVOIS_DECLARE_PARAMETER(camerasens, CameraSensor, "Camera sensor. Users would usually not set this parameter "
+                             "manually, it is set through boot-time configuration.",
+                             CameraSensor::ov9650, CameraSensor_Values, ParamCateg);
 
     //! Parameter \relates jevois::Engine
     JEVOIS_DECLARE_PARAMETER(cameranbuf, unsigned int, "Number of video input (camera) buffers, or 0 for automatic.",
@@ -255,11 +261,11 @@ namespace jevois
 
      \ingroup core */
   class Engine : public Manager,
-                 public Parameter<engine::cameradev, engine::cameranbuf, engine::gadgetdev, engine::gadgetnbuf,
-                                  engine::videomapping, engine::serialdev, engine::usbserialdev, engine::camreg,
-                                  engine::camturbo, engine::serlog, engine::videoerrors, engine::serout,
+                 public Parameter<engine::cameradev, engine::camerasens, engine::cameranbuf, engine::gadgetdev,
+                                  engine::gadgetnbuf, engine::videomapping, engine::serialdev, engine::usbserialdev,
+                                  engine::camreg, engine::camturbo, engine::serlog, engine::videoerrors, engine::serout,
                                   engine::cpumode, engine::cpumax, engine::multicam, engine::quietcmd,
-				  engine::python, engine::serlimit>
+                                  engine::python, engine::serlimit>
   {
     public:
       //! Constructor
@@ -354,7 +360,7 @@ namespace jevois
       void onParamChange(engine::videoerrors const & param, bool const & newval);
 
       size_t itsDefaultMappingIdx; //!< Index of default mapping
-      std::vector<VideoMapping> const itsMappings; //!< All our mappings from videomappings.cfg
+      std::vector<VideoMapping> itsMappings; //!< All our mappings from videomappings.cfg
       VideoMapping itsCurrentMapping; //!< Current video mapping, may not match any in itsMappings if setmapping2 used
 
       std::shared_ptr<VideoInput> itsCamera; //!< Our camera

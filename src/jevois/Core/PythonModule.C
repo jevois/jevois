@@ -17,6 +17,7 @@
 
 #include <jevois/Core/PythonModule.H>
 #include <jevois/Core/UserInterface.H>
+#include <jevois/Debug/PythonException.H>
 
 // ####################################################################################################
 // ####################################################################################################
@@ -229,31 +230,41 @@ namespace
 // ####################################################################################################
 // ####################################################################################################
 jevois::PythonModule::PythonModule(jevois::VideoMapping const & m) :
-    jevois::Module(m.modulename)
+    jevois::Module(m.modulename), itsMainModule(), itsMainNamespace(), itsInstance(), itsConstructionError()
 {
   if (m.ispython == false) LFATAL("Passed video mapping is not for a python module");
 
-  // Get the python interpreter going:
-  itsMainModule = boost::python::import("__main__");
-  itsMainNamespace = itsMainModule.attr("__dict__");
-
-  // Import the module. Note that we import the whole directory:
-  std::string const pypath = m.sopath();
-  std::string const pydir = pypath.substr(0, pypath.rfind('/'));
-  std::string const execstr =
-    "import sys\n"
-    "sys.path.append(\"/usr/lib\")\n" // To find libjevois module in /usr/lib
-    "sys.path.append(\"" JEVOIS_OPENCV_PYTHON_PATH "\")\n" // To find cv2 module
-    "sys.path.append(\"" + pydir + "\")\n" +
-    "import " + m.modulename + "\n" +
-    "import importlib\n" +
-    "importlib.reload(" + m.modulename + ")\n"; // reload so we are always fresh if file changed on SD card
-
-  boost::python::exec(execstr.c_str(), itsMainNamespace, itsMainNamespace);
-
-  // Create an instance of the python class defined in the module:
-  itsInstance = boost::python::eval((m.modulename + "." + m.modulename + "()").c_str(),
-				    itsMainNamespace, itsMainNamespace);
+  // Do not throw during construction because we need users to be able to save modified code from JeVois Inventor, which
+  // requires a valid module with a valid path being set by Engine:
+  try
+  {
+    // Get the python interpreter going:
+    itsMainModule = boost::python::import("__main__");
+    itsMainNamespace = itsMainModule.attr("__dict__");
+    
+    // Import the module. Note that we import the whole directory:
+    std::string const pypath = m.sopath();
+    std::string const pydir = pypath.substr(0, pypath.rfind('/'));
+    std::string const execstr =
+      "import sys\n"
+      "sys.path.append(\"/usr/lib\")\n" // To find libjevois module in /usr/lib
+      "sys.path.append(\"" JEVOIS_OPENCV_PYTHON_PATH "\")\n" // To find cv2 module
+      "sys.path.append(\"" + pydir + "\")\n" +
+      "import " + m.modulename + "\n" +
+      "import importlib\n" +
+      "importlib.reload(" + m.modulename + ")\n"; // reload so we are always fresh if file changed on SD card
+    
+    boost::python::exec(execstr.c_str(), itsMainNamespace, itsMainNamespace);
+    
+    // Create an instance of the python class defined in the module:
+    itsInstance = boost::python::eval((m.modulename + "." + m.modulename + "()").c_str(),
+                                      itsMainNamespace, itsMainNamespace);
+  }
+  catch (boost::python::error_already_set & e)
+  {
+    itsConstructionError = "Initialization of Module " + m.modulename + " failed:\n\n" +
+      jevois::getPythonExceptionString(e);
+  }
 }
 
 // ####################################################################################################
@@ -270,6 +281,8 @@ jevois::PythonModule::~PythonModule()
 // ####################################################################################################
 void jevois::PythonModule::process(InputFrame && inframe, OutputFrame && outframe)
 {
+  if (itsInstance.is_none()) throw std::runtime_error(itsConstructionError);
+  
   jevois::InputFramePython inframepy(&inframe);
   jevois::OutputFramePython outframepy(&outframe);
   itsInstance.attr("process")(boost::ref(inframepy), boost::ref(outframepy));
@@ -278,6 +291,8 @@ void jevois::PythonModule::process(InputFrame && inframe, OutputFrame && outfram
 // ####################################################################################################
 void jevois::PythonModule::process(InputFrame && inframe)
 {
+  if (itsInstance.is_none()) throw std::runtime_error(itsConstructionError);
+  
   jevois::InputFramePython inframepy(&inframe);
   itsInstance.attr("processNoUSB")(boost::ref(inframepy));
 }
@@ -304,3 +319,5 @@ void jevois::PythonModule::supportedCommands(std::ostream & os)
     if (retstr.empty() == false) os << retstr;
   } else jevois::Module::supportedCommands(os);
 }
+
+ 

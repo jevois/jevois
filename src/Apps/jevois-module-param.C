@@ -18,20 +18,27 @@
 #include <jevois/Debug/Log.H>
 #include <jevois/Core/VideoMapping.H>
 #include <fstream>
+#include <sstream>
 #include <iostream>
+#include <memory>
 
 //! Parse videomappings.cfg and output a string to be passed to the jevois kernel module
 /*! This little app was created so that we ensure perfect consistency between the kernel driver and the user code by
     using exactly the same config file parsing and sorting code (in VideoMapping). */
-int main()
+int main(int argc, char const * argv[])
 {
   jevois::logLevel = LOG_CRIT;
+
+  if (argc != 2) LFATAL("USAGE: " << argv[0] << " <sensor>");
+  
+  std::unique_ptr<std::istream> iss(new std::istringstream(std::string(argv[1])));
+  jevois::CameraSensor sens; (*iss) >> sens;
   
   // Parse the videomappings.cfg file and create the mappings:
   size_t defidx;
   std::ifstream ifs(JEVOIS_ENGINE_CONFIG_FILE);
   if (ifs.is_open() == false) LFATAL("Could not open [" << JEVOIS_ENGINE_CONFIG_FILE << ']');
-  std::vector<jevois::VideoMapping> mappings = jevois::videoMappingsFromStream(ifs, defidx);
+  std::vector<jevois::VideoMapping> mappings = jevois::videoMappingsFromStream(sens, ifs, defidx);
 
   // First, the default index (0-based), but we need to skip over the no-usb mappings:
   size_t uvcdefidx = 0;
