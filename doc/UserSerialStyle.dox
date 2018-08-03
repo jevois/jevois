@@ -179,7 +179,7 @@ A recognition consists of a number of category:score pairs, where \a category is
 of object), and \a score is the recognition score for this category, in the range 0.0 ... 100.0
 
 Note that many algorithms provide a list of such pairs as their results, to cover possible ambiguous recognition. For
-example, <b>cat:77.2 dog:27.3</b> indicates that the algorithm is quite confident it is lookign at a cat, but, with a
+example, <b>cat:77.2 dog:27.3</b> indicates that the algorithm is quite confident it is looking at a cat, but, with a
 lower confidence, it thinks it could also be looking at a dog.
 
 serstyle | message
@@ -194,8 +194,9 @@ second-to-top scoring category, and so on. The number 2...N of secondary recogni
 next and could be zero, but \a topcateg and \a topscore are always guaranteed to be present (if there are no results, no
 message will be sent).
 
-Note that some object category names may contain spaces, e.g., <b>dining table</b>; when the message is constructed,
-any white space is replaced by underscores to make parsing of messages by Arduino and similar easier.
+Note that some object category names may contain spaces, e.g., <b>dining table</b>; when the message is constructed, any
+white space is replaced by underscores (e.g., <b>dining_table</b>) to make parsing of messages by Arduino and similar
+easier.
 
 Object detection + recognition messages
 =======================================
