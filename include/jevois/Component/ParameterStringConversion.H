@@ -86,7 +86,15 @@ namespace jevois
   template <typename T>
   void paramStringToVal(std::string const & valstring, cv::Size_<T> & result);
 
-   //! Machine-readable output to a string, for use in jevois::Parameter: outputs [\c Key1:Value1, \c Key2:Value2, ...]
+  //! Machine-readable output to a string, for use in jevois::Parameter: outputs \c r \c g \c b \c a
+  template <typename T>
+  void paramValToString(cv::Scalar_<T> const & val, std::string & result);
+
+  //! Machine-readable input from a string, for use in jevois::Parameter: reads \c r \c g \c b \c a or subsets
+  template <typename T>
+  void paramStringToVal(std::string const & valstring, cv::Scalar_<T> & result);
+
+  //! Machine-readable output to a string, for use in jevois::Parameter: outputs [\c Key1:Value1, \c Key2:Value2, ...]
    /*! Specialization for std::map which supports nesting of other maps/vectors */
   template <typename K, typename V>
   void paramValToString(std::map<K,V> const & val, std::string & result);

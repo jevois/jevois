@@ -41,16 +41,6 @@ for m in videobuf-core videobuf-dma-contig videodev vfe_os vfe_subdev v4l2-commo
     if [ $m = "vfe_v4l2" ]; then
 	    echo "### insmod ${m}.ko sensor=${CAMERA} ###"
 	    insmod ${m}.ko sensor="${CAMERA}"
-
-        # If we failed to load the requested sensor, try a few known ones:
-        if [ $? -ne 0 ]; then
-            echo "### Could not detect ${CAMERA} ..."
-            for cam in ov9650 ov7725 ov2640; do
-	            echo "### insmod ${m}.ko sensor=${cam} ###"
-                insmod ${m}.ko sensor="${cam}"
-                if [ $? -eq 0 ]; then CAMERA=${cam}; break; fi
-            done
-        fi
     else
 	    echo "### insmod ${m}.ko ###"
 	    insmod ${m}.ko

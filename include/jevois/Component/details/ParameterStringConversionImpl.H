@@ -101,6 +101,22 @@ void jevois::paramStringToVal(std::string const & valstring, cv::Size_<T> & resu
 }
 
 // ######################################################################
+template <typename T> inline
+void jevois::paramValToString(cv::Scalar_<T> const & val, std::string & result)
+{
+  std::stringstream s; s << val[0] << ' ' << val[1] << ' ' << val[2] << ' ' << val[3]; result = s.str();
+}
+
+// ######################################################################
+template <typename T> inline
+void jevois::paramStringToVal(std::string const & valstring, cv::Scalar_<T> & result)
+{
+  result = cv::Scalar_<T>();
+  std::stringstream s(valstring);
+  s >> result[0] >> std::skipws >> result[1] >> std::skipws >> result[2] >> std::skipws >> result[3];
+}
+
+// ######################################################################
 template <typename K, typename V> inline
 void jevois::paramValToString(std::map<K,V> const & val, std::string & result) 
 {  

@@ -29,6 +29,8 @@ Features at a glance:
   processing load (system chip typically runs at less than 50C under full load for days or weeks, whereas the first
   threshold to start reducting clock speed to avoid processor overheating is at 75C).
 
+- Mini-USB 2.0 type-B 5-pin port, for power and video data.
+
 - USB Video Class (UVC) compliant interface to a host computer, JeVois platform shows up as a standard USB webcam with
   no need to install drivers on Windows, MacOS, Android, and Linux (iOS detects the device but does not seem to support
   webcam class devices as of iOS 9, either from JeVois or from other manufacturers we tested).

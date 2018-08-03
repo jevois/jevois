@@ -6,8 +6,8 @@ Basics
 
 The JeVois-A33 smart camera only has two connectors:
 
-- One mini-USB type B 5-pin connector for power (required) and for transmission of video to a host computer (optional,
-  depends on which machine vision module runs inside JeVois);
+- One mini-USB 2.0 type B 5-pin connector for power (required) and for transmission of video to a host computer
+  (optional, depends on which machine vision module runs inside JeVois);
 
 - One 4-pin JST-SH 1.0mm connector (referred to as <em>micro-serial</em> connector) for optional TTL-level serial (UART)
   connection to a microcontroller, such as an Arduino.
@@ -51,7 +51,7 @@ The wiring is as follows:
 - The USB-A connector (big USB connector) that is connected to one wire (red large connector in the picture above,
   and P3 in the diagram below) will carry only power to JeVois.
   
-- The mini-USB connector (small black above, P2 below) connects to JeVois and provides power and data to it.
+- The mini-USB 2.0 5-pin connector (small black above, P2 below) connects to JeVois and provides power and data to it.
 
 
 \image html UserConnectY2.png
@@ -76,9 +76,9 @@ Here is an example of connecting JeVois to two USB ports of a host computer usin
 USB cable types
 ===============
 
-Many USB cable types exist. The cheapest ones usually use the thinnest possible wires which can carry the data. These
-cables may not be appropriate to carry enough power to JeVois, as the very thin wires will not be able to carry enough
-current to JeVois.
+Many mini-USB 2.0 cable types exist. The cheapest ones usually use the thinnest possible wires which can carry the
+data. These cables may not be appropriate to carry enough power to JeVois, as the very thin wires will not be able to
+carry enough current to JeVois.
 
 In the USA, copper wire diameter is measured using the [American Wire
 Gauge](https://en.wikipedia.org/wiki/American_wire_gauge) or AWG for short. Smaller AWG values mean thicker wires that
