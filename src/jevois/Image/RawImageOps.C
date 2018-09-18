@@ -1404,6 +1404,193 @@ void jevois::rawimage::hFlipYUYV(RawImage & img)
 }
 
 // ####################################################################################################
+#ifdef __ARM_NEON__
+namespace
+{
+  class bayerToYUYV : public cv::ParallelLoopBody
+  {
+    public:
+      bayerToYUYV(cv::Mat const & inputImage, unsigned char * outImage, size_t outw) :
+          inImg(inputImage), outImg(outImage)
+      {
+        inlinesize = inputImage.cols; // 1 bytes/pix for bayer
+        outlinesize = outw * 2; // 2 bytes/pix for YUYV
+      }
+      
+      virtual void operator()(const cv::Range & range) const
+      {
+        uint16x8_t const masklo = vdupq_n_u16(255);
+        uint8x16x3_t pix;
+        const uint8x8_t u8_zero = vdup_n_u8(0);
+        const uint16x8_t u16_rounding = vdupq_n_u16(128);
+        const int16x8_t s16_rounding = vdupq_n_s16(128);
+        const int8x16_t s8_rounding = vdupq_n_s8(128);
+
+        for (int j = range.start; j < range.end; ++j)
+        {
+          int const inoff = j * inlinesize;
+          int const outoff = j * outlinesize;
+          
+          unsigned char const * bayer = inImg.data + inoff;
+          unsigned char const * bayer_end = bayer + inlinesize;
+          int const bayer_step = inlinesize;
+          unsigned char * dst = outImg + outoff;
+
+          /* This code from opencv demosaicing:
+            B G B G | B G B G | B G B G | B G B G
+            G R G R | G R G R | G R G R | G R G R
+            B G B G | B G B G | B G B G | B G B G */
+
+          for( ; bayer <= bayer_end - 18; bayer += 14, dst += 28 )
+          {
+            uint16x8_t r0 = vld1q_u16((const ushort*)bayer);
+            uint16x8_t r1 = vld1q_u16((const ushort*)(bayer + bayer_step));
+            uint16x8_t r2 = vld1q_u16((const ushort*)(bayer + bayer_step*2));
+            
+            uint16x8_t b1 = vaddq_u16(vandq_u16(r0, masklo), vandq_u16(r2, masklo));
+            uint16x8_t nextb1 = vextq_u16(b1, b1, 1);
+            uint16x8_t b0 = vaddq_u16(b1, nextb1);
+            // b0 b1 b2 ...
+            uint8x8x2_t bb = vzip_u8(vrshrn_n_u16(b0, 2), vrshrn_n_u16(nextb1, 1));
+            pix.val[2] = vcombine_u8(bb.val[0], bb.val[1]);
+            
+            uint16x8_t g0 = vaddq_u16(vshrq_n_u16(r0, 8), vshrq_n_u16(r2, 8));
+            uint16x8_t g1 = vandq_u16(r1, masklo);
+            g0 = vaddq_u16(g0, vaddq_u16(g1, vextq_u16(g1, g1, 1)));
+            g1 = vextq_u16(g1, g1, 1);
+            // g0 g1 g2 ...
+            uint8x8x2_t gg = vzip_u8(vrshrn_n_u16(g0, 2), vmovn_u16(g1));
+            pix.val[1] = vcombine_u8(gg.val[0], gg.val[1]);
+            
+            r0 = vshrq_n_u16(r1, 8);
+            r1 = vaddq_u16(r0, vextq_u16(r0, r0, 1));
+            // r0 r1 r2 ...
+            uint8x8x2_t rr = vzip_u8(vmovn_u16(r0), vrshrn_n_u16(r1, 1));
+            pix.val[0] = vcombine_u8(rr.val[0], rr.val[1]);
+
+
+            // Ok, we have rgb values in pix, now convert to YUV:
+            // code from: https://github.com/yszheda/rgb2yuv-neon/blob/master/yuv444.cpp
+            uint8x8_t high_r = vget_high_u8(pix.val[2]);
+            uint8x8_t low_r = vget_low_u8(pix.val[2]);
+            uint8x8_t high_g = vget_high_u8(pix.val[1]);
+            uint8x8_t low_g = vget_low_u8(pix.val[1]);
+            uint8x8_t high_b = vget_high_u8(pix.val[0]);
+            uint8x8_t low_b = vget_low_u8(pix.val[0]);
+            int16x8_t signed_high_r = vreinterpretq_s16_u16(vaddl_u8(high_r, u8_zero));
+            int16x8_t signed_low_r = vreinterpretq_s16_u16(vaddl_u8(low_r, u8_zero));
+            int16x8_t signed_high_g = vreinterpretq_s16_u16(vaddl_u8(high_g, u8_zero));
+            int16x8_t signed_low_g = vreinterpretq_s16_u16(vaddl_u8(low_g, u8_zero));
+            int16x8_t signed_high_b = vreinterpretq_s16_u16(vaddl_u8(high_b, u8_zero));
+            int16x8_t signed_low_b = vreinterpretq_s16_u16(vaddl_u8(low_b, u8_zero));
+            
+            // NOTE:
+            // declaration may not appear after executable statement in block
+            uint16x8_t high_y;
+            uint16x8_t low_y;
+            uint8x8_t scalar = vdup_n_u8(76);
+            int16x8_t high_u;
+            int16x8_t low_u;
+            int16x8_t signed_scalar = vdupq_n_s16(-43);
+            int16x8_t high_v;
+            int16x8_t low_v;
+            uint8x16x3_t pixel_yuv;
+            int8x16_t u;
+            int8x16_t v;
+            
+            // 1. Multiply transform matrix (Y′: unsigned, U/V: signed)
+            high_y = vmull_u8(high_r, scalar);
+            low_y = vmull_u8(low_r, scalar);
+            
+            high_u = vmulq_s16(signed_high_r, signed_scalar);
+            low_u = vmulq_s16(signed_low_r, signed_scalar);
+            
+            signed_scalar = vdupq_n_s16(127);
+            high_v = vmulq_s16(signed_high_r, signed_scalar);
+            low_v = vmulq_s16(signed_low_r, signed_scalar);
+            
+            scalar = vdup_n_u8(150);
+            high_y = vmlal_u8(high_y, high_g, scalar);
+            low_y = vmlal_u8(low_y, low_g, scalar);
+            
+            signed_scalar = vdupq_n_s16(-84);
+            high_u = vmlaq_s16(high_u, signed_high_g, signed_scalar);
+            low_u = vmlaq_s16(low_u, signed_low_g, signed_scalar);
+            
+            signed_scalar = vdupq_n_s16(-106);
+            high_v = vmlaq_s16(high_v, signed_high_g, signed_scalar);
+            low_v = vmlaq_s16(low_v, signed_low_g, signed_scalar);
+            
+            scalar = vdup_n_u8(29);
+            high_y = vmlal_u8(high_y, high_b, scalar);
+            low_y = vmlal_u8(low_y, low_b, scalar);
+            
+            signed_scalar = vdupq_n_s16(127);
+            high_u = vmlaq_s16(high_u, signed_high_b, signed_scalar);
+            low_u = vmlaq_s16(low_u, signed_low_b, signed_scalar);
+            
+            signed_scalar = vdupq_n_s16(-21);
+            high_v = vmlaq_s16(high_v, signed_high_b, signed_scalar);
+            low_v = vmlaq_s16(low_v, signed_low_b, signed_scalar);
+            // 2. Scale down (">>8") to 8-bit values with rounding ("+128") (Y′: unsigned, U/V: signed)
+            // 3. Add an offset to the values to eliminate any negative values (all results are 8-bit unsigned)
+            
+            high_y = vaddq_u16(high_y, u16_rounding);
+            low_y = vaddq_u16(low_y, u16_rounding);
+            
+            high_u = vaddq_s16(high_u, s16_rounding);
+            low_u = vaddq_s16(low_u, s16_rounding);
+            
+            high_v = vaddq_s16(high_v, s16_rounding);
+            low_v = vaddq_s16(low_v, s16_rounding);
+            
+            pixel_yuv.val[0] = vcombine_u8(vqshrn_n_u16(low_y, 8), vqshrn_n_u16(high_y, 8));
+            
+            u = vcombine_s8(vqshrn_n_s16(low_u, 8), vqshrn_n_s16(high_u, 8));
+            
+            v = vcombine_s8(vqshrn_n_s16(low_v, 8), vqshrn_n_s16(high_v, 8));
+            
+            u = vaddq_s8(u, s8_rounding);
+            pixel_yuv.val[1] = vreinterpretq_u8_s8(u);
+            
+            v = vaddq_s8(v, s8_rounding);
+            pixel_yuv.val[2] = vreinterpretq_u8_s8(v);
+            
+            // Store
+            vst3q_u8(dst, pixel_yuv);
+          }
+        }
+      }
+      
+    private:
+      cv::Mat const & inImg;
+      unsigned char * outImg;
+      int inlinesize, outlinesize;
+  };
+} // anonymous namespace
+#endif
+
+
+void jevois::rawimage::convertBayerToYUYV(RawImage const & src, RawImage & dst)
+{
+  if (src.fmt != V4L2_PIX_FMT_SRGGB8) LFATAL("src format must be V4L2_PIX_FMT_SRGGB8");
+  if (dst.fmt != V4L2_PIX_FMT_YUYV) LFATAL("dst format must be V4L2_PIX_FMT_YUYV");
+  if (dst.width != src.width || dst.height < src.height) LFATAL("src and dst dims must match");
+
+  auto cvsrc = jevois::rawimage::cvImage(src);
+  
+#ifdef FIXME__ARM_NEON__
+  // FIXME: Neon code not working yet, needs more work...
+  cv::parallel_for_(cv::Range(0, cvsrc.rows), bayerToYUYV(cvsrc, dst.pixelsw<unsigned char>(), dst.width));
+#else
+  auto cvdst = jevois::rawimage::cvImage(dst);
+  cv::Mat xx;
+  cv::cvtColor(cvsrc, xx, CV_BayerBG2BGR);
+  cv::parallel_for_(cv::Range(0, xx.rows), bgrToYUYV(xx, cvdst.data, cvdst.cols));
+#endif
+}
+
+// ####################################################################################################
 cv::Mat jevois::rescaleCv(cv::Mat const & img, cv::Size const & newdims)
 {
   cv::Mat scaled;

@@ -121,12 +121,12 @@ namespace jevois
       //! Write a value to one of the camera's registers
       /*! This very low-level access is for development of optimal camera settings only and should not be used in normal
           operation, it can crash your system. */
-      void writeRegister(unsigned char reg, unsigned char val) override;
+      void writeRegister(unsigned short reg, unsigned short val) override;
 
       //! Read a value from one of the camera's registers
       /*! This very low-level access is for development of optimal camera settings only and should not be used in normal
           operation, it can crash your system. */
-      unsigned char readRegister(unsigned char reg) override;
+      unsigned short readRegister(unsigned short reg) override;
     
     private:
       int itsFd;
@@ -138,6 +138,7 @@ namespace jevois
       mutable std::condition_variable itsOutputCondVar;
       mutable std::mutex itsOutputMtx;
       RawImage itsOutputImage;
+      RawImage itsConvertedOutputImage;
       std::vector<size_t> itsDoneIdx;
       
       void run();

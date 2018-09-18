@@ -82,11 +82,11 @@ namespace jevois
 
       //! Write a value of one of the camera's registers
       /*! In MovieInput, this just throws an std::runtime_error */
-      virtual void writeRegister(unsigned char reg, unsigned char val) override;
+      virtual void writeRegister(unsigned short reg, unsigned short val) override;
 
       //! Read a value from one of the camera's registers
       /*! In MovieInput, this just throws an std::runtime_error */
-      virtual unsigned char readRegister(unsigned char reg) override;
+      virtual unsigned short readRegister(unsigned short reg) override;
 
     protected:
       cv::VideoCapture itsCap; //!< Our OpenCV video capture, works on movie and image files too

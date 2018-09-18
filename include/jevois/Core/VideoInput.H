@@ -85,12 +85,12 @@ namespace jevois
       //! Write a value of one of the camera's registers
       /*! This very low-level access is for development of optimal camera settings only and should not be used in normal
           operation, it can crash your system. */
-      virtual void writeRegister(unsigned char reg, unsigned char val) = 0;
+      virtual void writeRegister(unsigned short reg, unsigned short val) = 0;
 
       //! Read a value from one of the camera's registers
       /*! This very low-level access is for development of optimal camera settings only and should not be used in normal
           operation, it can crash your system. */
-      virtual unsigned char readRegister(unsigned char reg) = 0;
+      virtual unsigned short readRegister(unsigned short reg) = 0;
 
     protected:
       std::string const itsDevName; //!< Our device or movie file name

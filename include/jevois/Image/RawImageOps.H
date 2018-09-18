@@ -267,6 +267,10 @@ namespace jevois
     /*! \ingroup image */
     void convertCvRGBAtoCvYUYV(cv::Mat const & src, cv::Mat & dst);
 
+    //! Convert from Bayer to YUYV, only used internally by Camera class
+    /*! Both src and dst should already have allocated buffers of correct sizes. */
+    void convertBayerToYUYV(RawImage const & src, RawImage & dst);
+    
   } // namespace rawimage
 
   //! Rescale an OpenCV image, choosing the right kind of interpolation

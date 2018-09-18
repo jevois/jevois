@@ -101,6 +101,35 @@ bool jevois::sensorSupportsFormat(jevois::CameraSensor s, unsigned int fmt, unsi
     if (w ==   88 && h ==   72) { if (fps <=  60.0F) return true; else return false; }
 
     return false;
+    // ----------------------------------------------------------------------------------------------------
+
+  case jevois::CameraSensor::ar0135:
+    // This sensor supports: BAYER
+    //  SXGA (1280 x  960): up to 54 fps
+    //  720p (1280 x  720): up to 60 fps
+    //   VGA ( 640 x  480): up to 54 fps (binned version of SXGA)
+    //  360p ( 640 x  360): up to 60 fps
+    //  QVGA ( 320 x  240): up to 54 fps (central crop of binned version of SXGA)
+    //  180p ( 320 x  180): up to 60 fps
+    // QQVGA ( 160 x  120): up to 54 fps (central crop of binned version of SXGA)
+    //   90p ( 160 x   90): up to 60 fps
+
+    // We support native Bayer, and YUYV through Bayer to YUYV conversion in the Camera class:
+    if (fmt != V4L2_PIX_FMT_SRGGB8 && fmt != V4L2_PIX_FMT_YUYV) return false;
+
+    if (w == 1280 && h ==  960) { if (fps <=  54.0F) return true; else return false; }
+    if (w == 1280 && h ==  720) { if (fps <=  60.0F) return true; else return false; }
+
+    if (w == 640 && h ==  480) { if (fps <=  54.0F) return true; else return false; }
+    if (w == 640 && h ==  360) { if (fps <=  60.0F) return true; else return false; }
+
+    if (w == 320 && h ==  240) { if (fps <=  60.0F) return true; else return false; }
+    if (w == 320 && h ==  180) { if (fps <=  60.0F) return true; else return false; }
+
+    if (w == 160 && h ==  120) { if (fps <=  60.0F) return true; else return false; }
+    if (w == 160 && h ==  90) { if (fps <=  60.0F) return true; else return false; }
+
+    return false;
   }
 
   return false;

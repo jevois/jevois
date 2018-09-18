@@ -171,6 +171,13 @@ optimize the performance of a machine vision algorithm. Select the \b Camera tab
 
 - Click \b Reset next to each control to revert to its default value.
 
+- Special note about absolute exposure control: To enable absolute exposure, select \b manual for the \b autoexp
+  parameter first. This will activate the \b absexp and \b gain sliders and will also turn off \b autogain. Note that
+  the usable range for \b absexp depends on current camera sensor resolution and frame rate, as we cannot expose the
+  image for longer than roughly one frame period (inverse of the frame rate). So it is normal that, in most cases, when
+  you drag the slider all the way to the maximum, it will snap back to the allowed maximum for the current video
+  resolution and frame rate.
+
 Config files
 ------------
 

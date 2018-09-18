@@ -119,9 +119,9 @@ void jevois::MovieInput::setFormat(VideoMapping const & m)
 }
 
 // ##############################################################################################################
-void jevois::MovieInput::writeRegister(unsigned char JEVOIS_UNUSED_PARAM(reg), unsigned char JEVOIS_UNUSED_PARAM(val))
+void jevois::MovieInput::writeRegister(unsigned short JEVOIS_UNUSED_PARAM(reg), unsigned short JEVOIS_UNUSED_PARAM(val))
 { LFATAL("Operation not supported by MovieInput"); }
 
 // ##############################################################################################################
-unsigned char jevois::MovieInput::readRegister(unsigned char JEVOIS_UNUSED_PARAM(reg))
+unsigned short jevois::MovieInput::readRegister(unsigned short JEVOIS_UNUSED_PARAM(reg))
 { LFATAL("Operation not supported by MovieInput"); }

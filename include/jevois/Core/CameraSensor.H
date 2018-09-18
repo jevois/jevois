@@ -28,7 +28,7 @@ namespace jevois
 
   //! Enum for different sensor models
   /*! Note that the value 'any' should not be used, it is only so that jevois-add-videomapping will always succeed. */
-  JEVOIS_DEFINE_ENUM_CLASS(CameraSensor, (any) (ov9650) (ov2640) (ov7725) );
+  JEVOIS_DEFINE_ENUM_CLASS(CameraSensor, (any) (ov9650) (ov2640) (ov7725) (ar0135) );
 
   //! Check whether a given resolution and frame rate is supported by a sensor
   /*! Returns true if the sensor is capable of capturing video at the given format, resolution, and frame rate.*/

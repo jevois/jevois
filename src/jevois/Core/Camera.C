@@ -19,6 +19,7 @@
 #include <jevois/Debug/Log.H>
 #include <jevois/Util/Utils.H>
 #include <jevois/Core/VideoMapping.H>
+#include <jevois/Image/RawImageOps.H>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -128,11 +129,19 @@ void jevois::Camera::setFormat(jevois::VideoMapping const & m)
   itsFormat.fmt.pix.pixelformat = m.cfmt;
   itsFormat.fmt.pix.field = V4L2_FIELD_NONE;
   itsFps = m.cfps;
-  
+
   LDEBUG("Requesting video format " << itsFormat.fmt.pix.width << 'x' << itsFormat.fmt.pix.height << ' ' <<
          jevois::fccstr(itsFormat.fmt.pix.pixelformat));
-  
-  XIOCTL(itsFd, VIDIOC_S_FMT, &itsFormat);
+  try
+  {
+    XIOCTL(itsFd, VIDIOC_S_FMT, &itsFormat);
+  }
+  catch (...)
+  {
+    // Oops, maybe this sensor only supports raw bayer:
+    itsFormat.fmt.pix.pixelformat = V4L2_PIX_FMT_SRGGB8;
+    XIOCTL(itsFd, VIDIOC_S_FMT, &itsFormat);
+  }
   
   // Get the format back as the driver may have adjusted some sizes, etc:
   XIOCTL(itsFd, VIDIOC_G_FMT, &itsFormat);
@@ -144,9 +153,25 @@ void jevois::Camera::setFormat(jevois::VideoMapping const & m)
         jevois::fccstr(itsFormat.fmt.pix.pixelformat));
   
   // Because modules may rely on the exact format that they request, throw if the camera modified it:
-  if (itsFormat.fmt.pix.width != m.cw || itsFormat.fmt.pix.height != m.ch || itsFormat.fmt.pix.pixelformat != m.cfmt)
+  if (itsFormat.fmt.pix.width != m.cw ||
+      itsFormat.fmt.pix.height != m.ch ||
+      (itsFormat.fmt.pix.pixelformat != m.cfmt &&
+       (m.cfmt != V4L2_PIX_FMT_YUYV || itsFormat.fmt.pix.pixelformat != V4L2_PIX_FMT_SRGGB8)))
     LFATAL("Camera did not accept the requested video format as specified");
   
+  // Allocate a RawImage for conversion from Bayer to YUYV if needed:
+  if (m.cfmt == V4L2_PIX_FMT_YUYV && itsFormat.fmt.pix.pixelformat == V4L2_PIX_FMT_SRGGB8)
+  {
+    // We will grab raw Bayer and store that into itsOutputImage, finally converting to YUYV in get():
+    itsConvertedOutputImage.width = itsFormat.fmt.pix.width;
+    itsConvertedOutputImage.height = itsFormat.fmt.pix.height;
+    itsConvertedOutputImage.fmt = V4L2_PIX_FMT_YUYV;
+    itsConvertedOutputImage.fps = itsFps;
+    itsConvertedOutputImage.buf = std::make_shared<jevois::VideoBuf>(-1, itsConvertedOutputImage.bytesize(), 0);
+  }
+  else
+    itsConvertedOutputImage.invalidate();
+      
   // Reset cropping parameters. NOTE: just open()'ing the device does not reset it, according to the unix toolchain
   // philosophy. Hence, although here we do not provide support for cropping, we still need to ensure that it is
   // properly reset. Note that some cameras do not support this so here we swallow that exception:
@@ -403,7 +428,20 @@ void jevois::Camera::get(jevois::RawImage & img)
 {
   JEVOIS_TRACE(4);
 
+  if (itsConvertedOutputImage.valid())
   {
+    // We need to convert from Bayer to YUYV:
+    std::unique_lock<std::mutex> ulck(itsOutputMtx);
+    itsOutputCondVar.wait(ulck, [&]() { return itsOutputImage.valid() || itsStreaming.load() == false; });
+    if (itsStreaming.load() == false) { LDEBUG("Not streaming"); throw std::runtime_error("Camera not streaming"); }
+    jevois::rawimage::convertBayerToYUYV(itsOutputImage, itsConvertedOutputImage);
+    img = itsConvertedOutputImage;
+    img.bufindex = itsOutputImage.bufindex;
+    itsOutputImage.invalidate();
+  }
+  else
+  {
+    // Regular get() with no conversion:
     std::unique_lock<std::mutex> ulck(itsOutputMtx);
     itsOutputCondVar.wait(ulck, [&]() { return itsOutputImage.valid() || itsStreaming.load() == false; });
     if (itsStreaming.load() == false) { LDEBUG("Not streaming"); throw std::runtime_error("Camera not streaming"); }
@@ -463,20 +501,20 @@ void jevois::Camera::setControl(struct v4l2_control const & ctrl)
 }
 
 // ##############################################################################################################
-void jevois::Camera::writeRegister(unsigned char reg, unsigned char val)
+void jevois::Camera::writeRegister(unsigned short reg, unsigned short val)
 {
-  unsigned char data[2] = { reg, val };
+  unsigned short data[2] = { reg, val };
 
   LINFO("Writing 0x" << std::hex << val << " to 0x" << reg);
-  XIOCTL(itsFd, _IOW('V', 192, short), data);
+  XIOCTL(itsFd, _IOW('V', 192, int), data);
 }
 
 // ##############################################################################################################
-unsigned char jevois::Camera::readRegister(unsigned char reg)
+unsigned short jevois::Camera::readRegister(unsigned short reg)
 {
-  unsigned char data[2] = { reg, 0 };
+  unsigned short data[2] = { reg, 0 };
 
-  XIOCTL(itsFd, _IOWR('V', 193, short), data);
+  XIOCTL(itsFd, _IOWR('V', 193, int), data);
   LINFO("Register 0x" << std::hex << reg << " has value 0x" << data[1]);
   return data[1];
 }
