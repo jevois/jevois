@@ -255,13 +255,13 @@ cv::Mat jevois::rawimage::convertToCvGray(jevois::RawImage const & src)
     result = cv::Mat(cv::Size(src.width, src.height), CV_8UC1);
     cv::parallel_for_(cv::Range(0, src.height), yuyvToGrayNEON(rawimgcv, result.data, result.cols));
 #else
-    cv::cvtColor(rawimgcv, result, CV_YUV2GRAY_YUYV);
+    cv::cvtColor(rawimgcv, result, cv::COLOR_YUV2GRAY_YUYV);
 #endif
     return result;
 
   case V4L2_PIX_FMT_GREY: return rawimgcv;
 
-  case V4L2_PIX_FMT_SRGGB8: cv::cvtColor(rawimgcv, result, CV_BayerBG2GRAY); return result;
+  case V4L2_PIX_FMT_SRGGB8: cv::cvtColor(rawimgcv, result, cv::COLOR_BayerBG2GRAY); return result;
 
   case V4L2_PIX_FMT_RGB565: // camera outputs big-endian pixels, cv::cvtColor() assumes little-endian
     result = cv::Mat(cv::Size(src.width, src.height), CV_8UC1);
@@ -270,7 +270,7 @@ cv::Mat jevois::rawimage::convertToCvGray(jevois::RawImage const & src)
 
   case V4L2_PIX_FMT_MJPEG: LFATAL("MJPEG not supported");
 
-  case V4L2_PIX_FMT_BGR24: cv::cvtColor(rawimgcv, result, CV_BGR2GRAY); return result;
+  case V4L2_PIX_FMT_BGR24: cv::cvtColor(rawimgcv, result, cv::COLOR_BGR2GRAY); return result;
   }
    LFATAL("Unknown RawImage pixel format");
 }
@@ -283,9 +283,9 @@ cv::Mat jevois::rawimage::convertToCvBGR(jevois::RawImage const & src)
   
   switch (src.fmt)
   {
-  case V4L2_PIX_FMT_YUYV: cv::cvtColor(rawimgcv, result, CV_YUV2BGR_YUYV); return result;
-  case V4L2_PIX_FMT_GREY: cv::cvtColor(rawimgcv, result, CV_GRAY2BGR); return result;
-  case V4L2_PIX_FMT_SRGGB8: cv::cvtColor(rawimgcv, result, CV_BayerBG2BGR); return result;
+  case V4L2_PIX_FMT_YUYV: cv::cvtColor(rawimgcv, result, cv::COLOR_YUV2BGR_YUYV); return result;
+  case V4L2_PIX_FMT_GREY: cv::cvtColor(rawimgcv, result, cv::COLOR_GRAY2BGR); return result;
+  case V4L2_PIX_FMT_SRGGB8: cv::cvtColor(rawimgcv, result, cv::COLOR_BayerBG2BGR); return result;
 
   case V4L2_PIX_FMT_RGB565: // camera outputs big-endian pixels, cv::cvtColor() assumes little-endian
     result = cv::Mat(cv::Size(src.width, src.height), CV_8UC3);
@@ -306,9 +306,9 @@ cv::Mat jevois::rawimage::convertToCvRGB(jevois::RawImage const & src)
   
   switch (src.fmt)
   {
-  case V4L2_PIX_FMT_YUYV: cv::cvtColor(rawimgcv, result, CV_YUV2RGB_YUYV); return result;
-  case V4L2_PIX_FMT_GREY: cv::cvtColor(rawimgcv, result, CV_GRAY2RGB); return result;
-  case V4L2_PIX_FMT_SRGGB8: cv::cvtColor(rawimgcv, result, CV_BayerBG2RGB); return result;
+  case V4L2_PIX_FMT_YUYV: cv::cvtColor(rawimgcv, result, cv::COLOR_YUV2RGB_YUYV); return result;
+  case V4L2_PIX_FMT_GREY: cv::cvtColor(rawimgcv, result, cv::COLOR_GRAY2RGB); return result;
+  case V4L2_PIX_FMT_SRGGB8: cv::cvtColor(rawimgcv, result, cv::COLOR_BayerBG2RGB); return result;
 
   case V4L2_PIX_FMT_RGB565: // camera outputs big-endian pixels, cv::cvtColor() assumes little-endian
     result = cv::Mat(cv::Size(src.width, src.height), CV_8UC3);
@@ -316,7 +316,7 @@ cv::Mat jevois::rawimage::convertToCvRGB(jevois::RawImage const & src)
     return result;
 
   case V4L2_PIX_FMT_MJPEG: LFATAL("MJPEG not supported");
-  case V4L2_PIX_FMT_BGR24: cv::cvtColor(rawimgcv, result, CV_BGR2RGB); return result;
+  case V4L2_PIX_FMT_BGR24: cv::cvtColor(rawimgcv, result, cv::COLOR_BGR2RGB); return result;
   }
   LFATAL("Unknown RawImage pixel format");
 }
@@ -329,17 +329,17 @@ cv::Mat jevois::rawimage::convertToCvRGBA(jevois::RawImage const & src)
   
   switch (src.fmt)
   {
-  case V4L2_PIX_FMT_YUYV: cv::cvtColor(rawimgcv, result, CV_YUV2RGBA_YUYV); return result;
+  case V4L2_PIX_FMT_YUYV: cv::cvtColor(rawimgcv, result, cv::COLOR_YUV2RGBA_YUYV); return result;
 
-  case V4L2_PIX_FMT_GREY: cv::cvtColor(rawimgcv, result, CV_GRAY2RGBA); return result;
+  case V4L2_PIX_FMT_GREY: cv::cvtColor(rawimgcv, result, cv::COLOR_GRAY2RGBA); return result;
 
   case V4L2_PIX_FMT_SRGGB8:
   {
     // FIXME: we do two conversions, should get a hold of the opencv source for bayer conversions and make an RGBA
     // version of it:
     cv::Mat fixme;
-    cv::cvtColor(rawimgcv, fixme, CV_BayerBG2RGB);
-    cv::cvtColor(fixme, result, CV_RGB2RGBA);
+    cv::cvtColor(rawimgcv, fixme, cv::COLOR_BayerBG2RGB);
+    cv::cvtColor(fixme, result, cv::COLOR_RGB2RGBA);
     return result;
   }
   
@@ -350,7 +350,7 @@ cv::Mat jevois::rawimage::convertToCvRGBA(jevois::RawImage const & src)
 
   case V4L2_PIX_FMT_MJPEG: LFATAL("MJPEG not supported");
 
-  case V4L2_PIX_FMT_BGR24: cv::cvtColor(rawimgcv, result, CV_BGR2RGBA); return result;
+  case V4L2_PIX_FMT_BGR24: cv::cvtColor(rawimgcv, result, cv::COLOR_BGR2RGBA); return result;
   }
   LFATAL("Unknown RawImage pixel format");
 }
@@ -1264,8 +1264,8 @@ void jevois::rawimage::convertCvBGRtoRawImage(cv::Mat const & src, RawImage & ds
   {
   case V4L2_PIX_FMT_SRGGB8: convertCvBGRtoBayer(src, dst); break;
   case V4L2_PIX_FMT_YUYV: convertCvBGRtoYUYV(src, dst); break;
-  case V4L2_PIX_FMT_GREY: cv::cvtColor(src, dstcv, CV_BGR2GRAY); break;
-  case V4L2_PIX_FMT_RGB565: cv::cvtColor(src, dstcv, CV_BGR2BGR565); break;
+  case V4L2_PIX_FMT_GREY: cv::cvtColor(src, dstcv, cv::COLOR_BGR2GRAY); break;
+  case V4L2_PIX_FMT_RGB565: cv::cvtColor(src, dstcv, cv::COLOR_BGR2BGR565); break;
   case V4L2_PIX_FMT_MJPEG: jevois::compressBGRtoJpeg(src, dst, quality); break;
   case V4L2_PIX_FMT_BGR24: memcpy(dst.pixelsw<void>(), src.data, dst.width * dst.height * dst.bytesperpix()); break;
   default: LFATAL("Unsupported output pixel format " << jevois::fccstr(dst.fmt) << std::hex <<' '<< dst.fmt);
@@ -1286,10 +1286,10 @@ void jevois::rawimage::convertCvRGBtoRawImage(cv::Mat const & src, RawImage & ds
   {
   case V4L2_PIX_FMT_SRGGB8: convertCvRGBtoBayer(src, dst); break;
   case V4L2_PIX_FMT_YUYV: convertCvRGBtoYUYV(src, dst); break;
-  case V4L2_PIX_FMT_GREY: cv::cvtColor(src, dstcv, CV_RGB2GRAY); break;
-  case V4L2_PIX_FMT_RGB565: cv::cvtColor(src, dstcv, CV_RGB2BGR565); break;
+  case V4L2_PIX_FMT_GREY: cv::cvtColor(src, dstcv, cv::COLOR_RGB2GRAY); break;
+  case V4L2_PIX_FMT_RGB565: cv::cvtColor(src, dstcv, cv::COLOR_RGB2BGR565); break;
   case V4L2_PIX_FMT_MJPEG: jevois::compressRGBtoJpeg(src, dst, quality); break;
-  case V4L2_PIX_FMT_BGR24:  cv::cvtColor(src, dstcv, CV_RGB2BGR); break;
+  case V4L2_PIX_FMT_BGR24:  cv::cvtColor(src, dstcv, cv::COLOR_RGB2BGR); break;
   default: LFATAL("Unsupported output pixel format " << jevois::fccstr(dst.fmt) << std::hex <<' '<< dst.fmt);
   }
 }
@@ -1332,10 +1332,10 @@ void jevois::rawimage::convertCvRGBAtoRawImage(cv::Mat const & src, RawImage & d
   {
   case V4L2_PIX_FMT_SRGGB8: convertCvRGBAtoBayer(src, dst); break;
   case V4L2_PIX_FMT_YUYV: convertCvRGBAtoYUYV(src, dst); break;
-  case V4L2_PIX_FMT_GREY: cv::cvtColor(src, dstcv, CV_RGBA2GRAY); break;
-  case V4L2_PIX_FMT_RGB565: cv::cvtColor(src, dstcv, CV_BGRA2BGR565); break;
+  case V4L2_PIX_FMT_GREY: cv::cvtColor(src, dstcv, cv::COLOR_RGBA2GRAY); break;
+  case V4L2_PIX_FMT_RGB565: cv::cvtColor(src, dstcv, cv::COLOR_BGRA2BGR565); break;
   case V4L2_PIX_FMT_MJPEG: jevois::compressRGBAtoJpeg(src, dst, quality); break;
-  case V4L2_PIX_FMT_BGR24: cv::cvtColor(src, dstcv, CV_RGBA2BGR); break;
+  case V4L2_PIX_FMT_BGR24: cv::cvtColor(src, dstcv, cv::COLOR_RGBA2BGR); break;
   default: LFATAL("Unsupported output pixel format " << jevois::fccstr(dst.fmt) << std::hex <<' '<< dst.fmt);
   }
 }
@@ -1354,9 +1354,9 @@ void jevois::rawimage::convertCvGRAYtoRawImage(cv::Mat const & src, RawImage & d
   case V4L2_PIX_FMT_SRGGB8: convertCvGRAYtoBayer(src, dst); break;
   case V4L2_PIX_FMT_YUYV: convertCvGRAYtoYUYV(src, dst); break;
   case V4L2_PIX_FMT_GREY: memcpy(dst.pixelsw<void>(), src.data, dst.width * dst.height * dst.bytesperpix()); break;
-  case V4L2_PIX_FMT_RGB565: cv::cvtColor(src, dstcv, CV_GRAY2BGR565); break;
+  case V4L2_PIX_FMT_RGB565: cv::cvtColor(src, dstcv, cv::COLOR_GRAY2BGR565); break;
   case V4L2_PIX_FMT_MJPEG: jevois::compressGRAYtoJpeg(src, dst, quality); break;
-  case V4L2_PIX_FMT_BGR24: cv::cvtColor(src, dstcv, CV_GRAY2BGR); break;
+  case V4L2_PIX_FMT_BGR24: cv::cvtColor(src, dstcv, cv::COLOR_GRAY2BGR); break;
   default: LFATAL("Unsupported output pixel format " << jevois::fccstr(dst.fmt) << std::hex <<' '<< dst.fmt);
   }
 }
@@ -1557,6 +1557,8 @@ namespace
             pixel_yuv.val[2] = vreinterpretq_u8_s8(v);
             
             // Store
+
+            //FIXME: instead of storing all 3x16 YUV values, we need to interleave into YUYV...
             vst3q_u8(dst, pixel_yuv);
           }
         }
@@ -1585,7 +1587,7 @@ void jevois::rawimage::convertBayerToYUYV(RawImage const & src, RawImage & dst)
 #else
   auto cvdst = jevois::rawimage::cvImage(dst);
   cv::Mat xx;
-  cv::cvtColor(cvsrc, xx, CV_BayerBG2BGR);
+  cv::cvtColor(cvsrc, xx, cv::COLOR_BayerBG2BGR);
   cv::parallel_for_(cv::Range(0, xx.rows), bgrToYUYV(xx, cvdst.data, cvdst.cols));
 #endif
 }

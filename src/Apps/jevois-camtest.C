@@ -141,7 +141,7 @@ int main(int argc, char const* argv[])
       // FIXME we only support YUYV here for now
       cv::Mat imgbgr;
       cv::Mat imgcv(m.ch, m.cw, CV_8UC2, mem[buf.index]);
-      cv::cvtColor(imgcv, imgbgr, CV_YUV2BGR_YUYV);
+      cv::cvtColor(imgcv, imgbgr, cv::COLOR_YUV2BGR_YUYV);
       cv::imwrite(std::string("camtest") + std::to_string(i-30) + ".png", imgbgr);
     }
 
@@ -174,21 +174,21 @@ int main(int argc, char const* argv[])
     case V4L2_PIX_FMT_SRGGB8:
     {
       cv::Mat imgcv(img.height, img.width, CV_8UC1, img.buf->data());
-      cv::cvtColor(imgcv, imgbgr, CV_BayerBG2BGR);
+      cv::cvtColor(imgcv, imgbgr, cv::COLOR_BayerBG2BGR);
     }
     break;
 
     case V4L2_PIX_FMT_YUYV:
     {
       cv::Mat imgcv(img.height, img.width, CV_8UC2, img.buf->data());
-      cv::cvtColor(imgcv, imgbgr, CV_YUV2BGR_YUYV);
+      cv::cvtColor(imgcv, imgbgr, cv::COLOR_YUV2BGR_YUYV);
     }
     break;
 
     case V4L2_PIX_FMT_RGB565:
     {
       cv::Mat imgcv(img.height, img.width, CV_8UC2, img.buf->data());
-      cv::cvtColor(imgcv, imgbgr, CV_BGR5652BGR);
+      cv::cvtColor(imgcv, imgbgr, cv::COLOR_BGR5652BGR);
     }
     break;
     }

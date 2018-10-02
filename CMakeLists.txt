@@ -24,7 +24,7 @@ set(JEVOIS_VENDOR "JeVois")
 ########################################################################################################################
 # Project version:
 set(JEVOIS_VERSION_MAJOR  1)
-set(JEVOIS_VERSION_MINOR  9)
+set(JEVOIS_VERSION_MINOR  10)
 set(JEVOIS_VERSION_PATCH  0)
 set(JEVOIS_SOVERSION "${JEVOIS_VERSION_MAJOR}.${JEVOIS_VERSION_MINOR}.${JEVOIS_VERSION_PATCH}" )
 
@@ -52,9 +52,9 @@ set(JEVOIS_PLATFORM_PYTHON_M "m")
 
 ########################################################################################################################
 # OpenCV version to use with JeVois:
-set(JEVOIS_OPENCV_MAJOR 3)
-set(JEVOIS_OPENCV_MINOR 4)
-set(JEVOIS_OPENCV_PATCH 2)
+set(JEVOIS_OPENCV_MAJOR 4)
+set(JEVOIS_OPENCV_MINOR 0)
+set(JEVOIS_OPENCV_PATCH 0-alpha)
 set(JEVOIS_OPENCV_VERSION "${JEVOIS_OPENCV_MAJOR}.${JEVOIS_OPENCV_MINOR}.${JEVOIS_OPENCV_PATCH}")
 
 ########################################################################################################################
@@ -140,10 +140,8 @@ set(JEVOIS_PLATFORM_CXX_COMPILER "${CROSS_COMPILE}g++")
 ########################################################################################################################
 # Libraries and helpers needed to compile and run:
 
-# Config for opencv libs.  note: videoio is for video capture, movies, etc and we may want to not use it on platform if
-# we define it out in VideoInput.  In opencv3.1, imread() is in libopencv_imgcodecs.  On the host, we also link against
-# opencv highgui to enable display windows.
-# Note: On host, get opencv from jevois-opencv package, in /usr/share/jevois-opencv-3.4.2, on platform it is in /usr
+# Config for opencv libs.
+# Note: On host, get opencv from jevois-opencv package, in /usr/share/jevois-opencv-4.x.x, on platform it is in /usr
 set(OPENCV_LIBS_FOR_JEVOIS "-lopencv_core -lopencv_imgproc -lopencv_features2d -lopencv_flann -lopencv_ml \
 -lopencv_objdetect -lopencv_imgcodecs -lopencv_tracking -lopencv_video -lopencv_videoio")
 
@@ -171,8 +169,8 @@ set(JEVOIS_HOST_PYTHON_LIBS "-lpython${JEVOIS_HOST_PYTHON_MAJOR}.${JEVOIS_HOST_P
   
 ########################################################################################################################
 # Include path:
-set(JEVOIS_PLATFORM_INCLUDE "${JEVOIS_KERNEL_INCLUDE} ${JEVOIS_TBB_INCLUDE} ${JEVOIS_PLATFORM_PYTHON_INCLUDE}")
-set(JEVOIS_HOST_INCLUDE "-I${JEVOIS_HOST_OPENCV_PREFIX}/include ${JEVOIS_HOST_PYTHON_INCLUDE}")
+set(JEVOIS_PLATFORM_INCLUDE "-I${JEVOIS_BUILDROOT_BASE}/host/arm-buildroot-linux-gnueabihf/sysroot/usr/include/opencv4 ${JEVOIS_KERNEL_INCLUDE} ${JEVOIS_TBB_INCLUDE} ${JEVOIS_PLATFORM_PYTHON_INCLUDE}")
+set(JEVOIS_HOST_INCLUDE "-I${JEVOIS_HOST_OPENCV_PREFIX}/include/opencv4 ${JEVOIS_HOST_PYTHON_INCLUDE}")
 
 ########################################################################################################################
 # Root path to install modules:

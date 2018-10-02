@@ -32,8 +32,8 @@ jevois::VideoDisplay::VideoDisplay(char const * displayname, size_t nbufs) :
     jevois::VideoOutput(), itsImageQueue(std::max(size_t(2), nbufs)), itsName(displayname)
 {
   // Open an openCV window:
-  cv::namedWindow(itsName, CV_WINDOW_AUTOSIZE); // autosize keeps the original size
-  //cv::namedWindow(itsName, CV_WINDOW_NORMAL | CV_WINDOW_KEEPRATIO); // normal can be resized
+  cv::namedWindow(itsName, cv::WINDOW_AUTOSIZE); // autosize keeps the original size
+  //cv::namedWindow(itsName, cv::WINDOW_NORMAL | cv::WINDOW_KEEPRATIO); // normal can be resized
 }
 
 // ##############################################################################################################
@@ -66,7 +66,7 @@ void jevois::VideoDisplay::setFormat(jevois::VideoMapping const & m)
   LDEBUG("Allocated " << nbufs << " buffers");
 
   // Open an openCV window:
-  cv::namedWindow(itsName, CV_WINDOW_AUTOSIZE);
+  cv::namedWindow(itsName, cv::WINDOW_AUTOSIZE);
 }
 
 // ##############################################################################################################
@@ -108,28 +108,28 @@ void jevois::VideoDisplay::send(jevois::RawImage const & img)
   case V4L2_PIX_FMT_YUYV:
   {
     cv::Mat imgcv(img.height, img.width, CV_8UC2, img.buf->data());
-    cv::cvtColor(imgcv, imgbgr, CV_YUV2BGR_YUYV);
+    cv::cvtColor(imgcv, imgbgr, cv::COLOR_YUV2BGR_YUYV);
   }
   break;
 
   case V4L2_PIX_FMT_GREY:
   {
     cv::Mat imgcv(img.height, img.width, CV_8UC1, img.buf->data());
-    cv::cvtColor(imgcv, imgbgr, CV_GRAY2BGR);
+    cv::cvtColor(imgcv, imgbgr, cv::COLOR_GRAY2BGR);
   }
   break;
 
   case V4L2_PIX_FMT_SRGGB8:
   {
     cv::Mat imgcv(img.height, img.width, CV_8UC1, img.buf->data());
-    cv::cvtColor(imgcv, imgbgr, CV_BayerBG2BGR);
+    cv::cvtColor(imgcv, imgbgr, cv::COLOR_BayerBG2BGR);
   }
   break;
 
   case V4L2_PIX_FMT_RGB565:
   {
     cv::Mat imgcv(img.height, img.width, CV_8UC2, img.buf->data());
-    cv::cvtColor(imgcv, imgbgr, CV_BGR5652BGR);
+    cv::cvtColor(imgcv, imgbgr, cv::COLOR_BGR5652BGR);
   }
   break;
 
