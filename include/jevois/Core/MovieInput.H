@@ -38,56 +38,66 @@ namespace jevois
       //! Constructor, opens the movie file
       MovieInput(std::string const & filename, unsigned int const nbufs = 3);
 
-      //! Virtual destructor for save inheritance
+      //! Virtual destructor for safe inheritance
       virtual ~MovieInput();
 
       //! Start streaming
-      virtual void streamOn() override;
+      void streamOn() override;
 
       //! Abort streaming
       /*! This only cancels future get() and done() calls, one should still call streamOff() to turn off streaming. */
-      virtual void abortStream() override;
+      void abortStream() override;
       
       //! Stop streaming
-      virtual void streamOff() override;
+      void streamOff() override;
 
       //! Get the next frame from the video file, possibly looping back to start if end is reached
-      virtual void get(RawImage & img) override;
+      void get(RawImage & img) override;
 
       //! Indicate that user processing is done with an image previously obtained via get()
       /*! You should call this as soon after get() as possible, once you are finished with the RawImage data so that it
           can be recycled. This also invalidates the image and in particular its pixel buffer. */
-      virtual void done(RawImage & img) override;;
+      void done(RawImage & img) override;;
 
       //! Get information about a control, throw if unsupported by hardware
       /*! In MovieInput, this just throws an std::runtime_error */
-      virtual void queryControl(struct v4l2_queryctrl & qc) const override;
+      void queryControl(struct v4l2_queryctrl & qc) const override;
 
       //! Get the available menu entry names for a menu-type control, throw if unsupported by hardware
       /*! In MovieInput, this just throws an std::runtime_error */
-      virtual void queryMenu(struct v4l2_querymenu & qm) const override;
+      void queryMenu(struct v4l2_querymenu & qm) const override;
      
       //! Get a control's current value, throw if unsupported by hardware
       /*! In MovieInput, this just throws an std::runtime_error */
-      virtual void getControl(struct v4l2_control & ctrl) const override;
+      void getControl(struct v4l2_control & ctrl) const override;
       
       //! Set a control, throw if the hardware rejects the value
       /*! In MovieInput, this just throws an std::runtime_error */
-      virtual void setControl(struct v4l2_control const & ctrl) override;
+      void setControl(struct v4l2_control const & ctrl) override;
 
       //! Set the video format and frame rate
       /*! Video frames read from the input movie file will be rescaled (if necessary) to that format's resolution, and
           will be converted (if necessary) to that format's pixel type. */
-      virtual void setFormat(VideoMapping const & m) override;
+      void setFormat(VideoMapping const & m) override;
 
       //! Write a value of one of the camera's registers
       /*! In MovieInput, this just throws an std::runtime_error */
-      virtual void writeRegister(unsigned short reg, unsigned short val) override;
+      void writeRegister(unsigned short reg, unsigned short val) override;
 
       //! Read a value from one of the camera's registers
       /*! In MovieInput, this just throws an std::runtime_error */
-      virtual unsigned short readRegister(unsigned short reg) override;
+      unsigned short readRegister(unsigned short reg) override;
 
+      //! Write a value to one of the camera's IMU registers
+      /*! This very low-level access is for development of optimal IMU settings only and should not be used in normal
+          operation, it can crash your system. */
+      void writeIMUregister(unsigned short reg, unsigned short val) override;
+
+      //! Read a value from one of the camera's IMU registers
+      /*! This very low-level access is for development of optimal IMU settings only and should not be used in normal
+          operation, it can crash your system. */
+      unsigned short readIMUregister(unsigned short reg) override;
+ 
     protected:
       cv::VideoCapture itsCap; //!< Our OpenCV video capture, works on movie and image files too
       std::shared_ptr<VideoBuf> itsBuf; //!< Our single video buffer

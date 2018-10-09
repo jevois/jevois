@@ -505,7 +505,7 @@ void jevois::Camera::writeRegister(unsigned short reg, unsigned short val)
 {
   unsigned short data[2] = { reg, val };
 
-  LINFO("Writing 0x" << std::hex << val << " to 0x" << reg);
+  LDEBUG("Writing 0x" << std::hex << val << " to 0x" << reg);
   XIOCTL(itsFd, _IOW('V', 192, int), data);
 }
 
@@ -515,6 +515,25 @@ unsigned short jevois::Camera::readRegister(unsigned short reg)
   unsigned short data[2] = { reg, 0 };
 
   XIOCTL(itsFd, _IOWR('V', 193, int), data);
-  LINFO("Register 0x" << std::hex << reg << " has value 0x" << data[1]);
+  LDEBUG("Register 0x" << std::hex << reg << " has value 0x" << data[1]);
+  return data[1];
+}
+
+// ##############################################################################################################
+void jevois::Camera::writeIMUregister(unsigned short reg, unsigned short val)
+{
+  unsigned short data[2] = { reg, val };
+
+  LDEBUG("Writing 0x" << std::hex << val << " to 0x" << reg);
+  XIOCTL(itsFd, _IOW('V', 194, int), data);
+}
+
+// ##############################################################################################################
+unsigned short jevois::Camera::readIMUregister(unsigned short reg)
+{
+  unsigned short data[2] = { reg, 0 };
+
+  XIOCTL(itsFd, _IOWR('V', 195, int), data);
+  LDEBUG("Register 0x" << std::hex << reg << " has value 0x" << data[1]);
   return data[1];
 }

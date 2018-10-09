@@ -906,6 +906,29 @@ size_t jevois::Engine::frameNum() const
 { return itsFrame; }
 
 // ####################################################################################################
+void jevois::Engine::writeCamRegister(unsigned short reg, unsigned short val)
+{
+  itsCamera->writeRegister(reg, val);
+}
+// ####################################################################################################
+unsigned short jevois::Engine::readCamRegister(unsigned short reg)
+{
+  return itsCamera->readRegister(reg);
+}
+
+// ####################################################################################################
+void jevois::Engine::writeIMUregister(unsigned short reg, unsigned short val)
+{
+  itsCamera->writeIMUregister(reg, val);
+}
+
+// ####################################################################################################
+unsigned short jevois::Engine::readIMUregister(unsigned short reg)
+{
+  return itsCamera->readIMUregister(reg);
+}
+
+// ####################################################################################################
 jevois::VideoMapping const & jevois::Engine::getCurrentVideoMapping() const
 {
   return itsCurrentMapping;
@@ -1234,6 +1257,8 @@ void jevois::Engine::cmdInfo(std::shared_ptr<UserInterface> s, bool showAll, std
   {
     s->writeString(pfx, "setcamreg <reg> <val> - set raw camera register <reg> to value <val>");
     s->writeString(pfx, "getcamreg <reg> - get value of raw camera register <reg>");
+    s->writeString(pfx, "setimureg <reg> <val> - set raw IMU register <reg> to value <val>");
+    s->writeString(pfx, "getimureg <reg> - get value of raw IMU register <reg>");
   }
 
   s->writeString(pfx, "listmappings - list all available video mappings");
@@ -1624,6 +1649,32 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
     }
 
     // ----------------------------------------------------------------------------------------------------
+    if (cmd == "setimureg")
+    {
+      if (camreg::get())
+      {
+        // Read register and value as strings, then std::stoi to convert to int, supports 0x (and 0 for octal, caution)
+        std::istringstream ss(rem); std::string reg, val; ss >> reg >> val;
+        itsCamera->writeIMUregister(std::stoi(reg, nullptr, 0), std::stoi(val, nullptr, 0));
+        return true;
+      }
+      errmsg = "Access to camera's IMU registers is disabled, enable with: setpar camreg true";
+    }
+
+    // ----------------------------------------------------------------------------------------------------
+    if (cmd == "getimureg")
+    {
+      if (camreg::get())
+      {
+        unsigned int val = itsCamera->readIMUregister(std::stoi(rem, nullptr, 0));
+        std::ostringstream os; os << std::hex << val;
+        s->writeString(pfx, os.str());
+        return true;
+      }
+      errmsg = "Access to camera's IMU registers is disabled, enable with: setpar camreg true";
+    }
+
+    // ----------------------------------------------------------------------------------------------------
     if (cmd == "listmappings")
     {
       s->writeString(pfx, "AVAILABLE VIDEO MAPPINGS:");
@@ -1830,9 +1881,12 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
       
       if (itsStreaming.load())
         s->writeString(pfx, "ERR Video streaming is on - you should quit your video viewer before rebooting");
+
+      if (std::system("sync")) s->writeString(pfx, "ERR Disk sync failed -- IGNORED");
       
       // Turn off the SD storage if it is there:
       std::ofstream(JEVOIS_USBSD_SYS).put('\n'); // ignore errors
+
       if (std::system("sync")) s->writeString(pfx, "ERR Disk sync failed -- IGNORED");
       
       // Hard reboot:

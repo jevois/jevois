@@ -92,6 +92,16 @@ namespace jevois
           operation, it can crash your system. */
       virtual unsigned short readRegister(unsigned short reg) = 0;
 
+      //! Write a value to one of the camera's IMU registers
+      /*! This very low-level access is for development of optimal IMU settings only and should not be used in normal
+          operation, it can crash your system. */
+      virtual void writeIMUregister(unsigned short reg, unsigned short val) = 0;
+
+      //! Read a value from one of the camera's IMU registers
+      /*! This very low-level access is for development of optimal IMU settings only and should not be used in normal
+          operation, it can crash your system. */
+      virtual unsigned short readIMUregister(unsigned short reg) = 0;
+ 
     protected:
       std::string const itsDevName; //!< Our device or movie file name
       unsigned int const itsNbufs;  //!< Our number of buffers

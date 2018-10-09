@@ -128,6 +128,16 @@ namespace jevois
           operation, it can crash your system. */
       unsigned short readRegister(unsigned short reg) override;
     
+      //! Write a value to one of the camera's IMU registers
+      /*! This very low-level access is for development of optimal IMU settings only and should not be used in normal
+          operation, it can crash your system. */
+      void writeIMUregister(unsigned short reg, unsigned short val) override;
+
+      //! Read a value from one of the camera's IMU registers
+      /*! This very low-level access is for development of optimal IMU settings only and should not be used in normal
+          operation, it can crash your system. */
+      unsigned short readIMUregister(unsigned short reg) override;
+    
     private:
       int itsFd;
       VideoBuffers * itsBuffers;

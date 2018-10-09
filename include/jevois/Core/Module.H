@@ -408,6 +408,26 @@ namespace jevois
 	  call succeeds. The counter is not incremented when a module has not been loaded (e.g., failed to load). The
 	  counter is reset to zero each time a new module is loaded. */
       size_t frameNum() const;
+
+      //! Write a value of one of the camera's registers
+      /*! This very low-level access is for development of optimal camera settings only and should not be used in normal
+          operation, it can crash your system. */
+      void writeCamRegister(unsigned short reg, unsigned short val);
+
+      //! Read a value from one of the camera's registers
+      /*! This very low-level access is for development of optimal camera settings only and should not be used in normal
+          operation, it can crash your system. */
+      unsigned short readCamRegister(unsigned short reg);
+
+      //! Write a value to one of the camera's IMU registers
+      /*! This very low-level access is for development of optimal IMU settings only and should not be used in normal
+          operation, it can crash your system. */
+      void writeIMUregister(unsigned short reg, unsigned short val);
+
+      //! Read a value from one of the camera's IMU registers
+      /*! This very low-level access is for development of optimal IMU settings only and should not be used in normal
+          operation, it can crash your system. */
+      unsigned short readIMUregister(unsigned short reg);
   };
 
   namespace module
