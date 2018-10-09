@@ -63,6 +63,7 @@ namespace jevois
     Engine * engineForPythonModule = nullptr;
   }
 }
+
 namespace
 {
   void * init_numpy()
@@ -97,7 +98,37 @@ namespace
     if (jevois::python::engineForPythonModule == nullptr) LFATAL("internal error");
     jevois::python::engineForPythonModule->sendSerial(str);
   }
+  
+  size_t pythonFrameNum()
+  {
+    if (jevois::python::engineForPythonModule == nullptr) LFATAL("internal error");
+    return jevois::python::engineForPythonModule->frameNum();
+  }
 
+  void pythonWriteCamRegister(unsigned short reg, unsigned short val)
+  {
+    if (jevois::python::engineForPythonModule == nullptr) LFATAL("internal error");
+    jevois::python::engineForPythonModule->writeCamRegister(reg, val);
+  }
+
+  unsigned short pythonReadCamRegister(unsigned short reg)
+  {
+    if (jevois::python::engineForPythonModule == nullptr) LFATAL("internal error");
+    return jevois::python::engineForPythonModule->readCamRegister(reg);
+  }
+
+  void pythonWriteIMUregister(unsigned short reg, unsigned short val)
+  {
+    if (jevois::python::engineForPythonModule == nullptr) LFATAL("internal error");
+    jevois::python::engineForPythonModule->writeIMUregister(reg, val);
+  }
+  
+  unsigned short pythonReadIMUregister(unsigned short reg)
+  {
+    if (jevois::python::engineForPythonModule == nullptr) LFATAL("internal error");
+    return jevois::python::engineForPythonModule->readIMUregister(reg);
+  }
+  
 #ifdef JEVOIS_LDEBUG_ENABLE
   void pythonLDEBUG(std::string const & logmsg) { LDEBUG(logmsg); }
 #else
@@ -128,8 +159,13 @@ BOOST_PYTHON_MODULE(libjevois)
   boost::python::to_python_converter<cv::Mat, pbcvt::matToNDArrayBoostConverter>();
   pbcvt::matFromNDArrayBoostConverter();
   
-  // #################### module sendSerial() emulation:
+  // #################### module sendSerial() and other functions emulation:
   boost::python::def("sendSerial", pythonSendSerial);
+  boost::python::def("frameNum", pythonFrameNum);
+  boost::python::def("writeCamRegister", pythonWriteCamRegister);
+  boost::python::def("readCamRegister", pythonReadCamRegister);
+  boost::python::def("writeIMUregister", pythonWriteIMUregister);
+  boost::python::def("readIMUregister", pythonReadIMUregister);
   
   // #################### Log.H
   JEVOIS_PYTHON_CONSTANT(LOG_DEBUG);

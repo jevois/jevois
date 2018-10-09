@@ -73,7 +73,12 @@ Python modules should be organized as follow:
   + Note that sendSerial() which is provided by the C++ Module base class to allow derived modules to send messages over
     the serial port should not be defined and will not be invoked (since it is implemented by the JeVois core library
     rather than the module); instead, a function `jevois.sendSerial()` is exposed to Python modules by the JeVois core
-    library which achieves the same result.
+    library which achieves the same result. Likewise for the functions that access raw camera or IMU registers:
+    - jevois.writeCamRegister()
+    - jevois.readCamRegister()
+    - jevois.writeIMUregister()
+    - jevois.readIMUregister()
+    - jevois.frameNum()
 
 Python bindings provided by JeVois core
 =======================================
