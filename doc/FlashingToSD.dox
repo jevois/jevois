@@ -31,6 +31,11 @@ jevois-flash-card -y /dev/sdX
 where you replace \b /dev/sdX by the device that gets assigned to your microSD card. On some laptops, the device is
 called \b /dev/mmcblkX instead.
 
+\note If you do a lot of development that requires re-flashing (e.g., developing kernel code for JeVois), it may be
+worth investing in a super-fast microSD card. While it can take about 5 minutes to run jevois-flash-card with a regular
+class 10 microSD card, we have been able to get this time down to less than 40 seconds using a Lexar 1800x UHS-II 32GB
+microSD card.
+
 Re-flashing after some code update - full recompilation
 =======================================================
 

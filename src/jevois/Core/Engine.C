@@ -601,6 +601,7 @@ void jevois::Engine::setFormatInternal(jevois::VideoMapping const & m, bool relo
   JEVOIS_TRACE(2);
 
   LINFO(m.str());
+  itsModuleConstructionError = "Unknown error while starting module " + m.modulename + " ...";
 
 #ifdef JEVOIS_PLATFORM
   if (itsMassStorageMode.load())
@@ -682,16 +683,18 @@ void jevois::Engine::setFormatInternal(jevois::VideoMapping const & m, bool relo
     
     if (itsInitialized) { itsModule->setInitialized(); itsModule->runPostInit(); }
 
-    // And finally run any config script:
-    runScriptFromFile(itsModule->absolutePath(JEVOIS_MODULE_SCRIPT_FILENAME), nullptr, false);
+    // And finally run any config script, sending any errors to USB (likely JeVois Inventor):
+    std::shared_ptr<jevois::UserInterface> ser;
+    for (auto & s : itsSerials) if (s->type() == jevois::UserInterface::Type::USB) { ser = s; break; }
+    runScriptFromFile(itsModule->absolutePath(JEVOIS_MODULE_SCRIPT_FILENAME), ser, false);
     
     LINFO("Module [" << m.modulename << "] loaded, initialized, and ready.");
     itsModuleConstructionError.clear();
   }
   catch (...)
   {
+    // Note: we do not nuke the module here, as the Inventor may need its path to fix some config files.
     itsModuleConstructionError = jevois::warnAndIgnoreException();
-    if (itsModule) try { removeComponent(itsModule); itsModule.reset(); } catch (...) { }
     LERROR("Module [" << m.modulename << "] startup error and not operational.");
   }
 }
@@ -719,7 +722,24 @@ void jevois::Engine::mainLoop()
       // Lock up while we use the module:
       JEVOIS_TIMED_LOCK(itsMtx);
 
-      if (itsModule)
+      if (itsModuleConstructionError.empty() == false)
+      {
+        // If we have a module construction error, render it to an image and stream it over USB now (if we are doing USB
+        // and we want to see errors in the video stream):
+        if (itsCurrentMapping.ofmt && itsVideoErrors.load())
+          try
+          {
+            // Get an output image, draw error message, and send to host:
+            itsGadget->get(itsVideoErrorImage);
+            jevois::drawErrorImage(itsModuleConstructionError, itsVideoErrorImage);
+            itsGadget->send(itsVideoErrorImage);
+        
+            // Also get one camera frame to avoid accumulation of stale buffers:
+            (void)jevois::InputFrame(itsCamera, itsTurbo).get();
+          }
+          catch (...) { jevois::warnAndIgnoreException(); }
+      }
+      else if (itsModule)
       {
         // For standard modules, indicate frame start mark if user wants it:
         jevois::StdModule * stdmod = dynamic_cast<jevois::StdModule *>(itsModule.get());
@@ -779,23 +799,6 @@ void jevois::Engine::mainLoop()
         // Increment our master frame counter
         ++ itsFrame;
         itsNumSerialSent.store(0);
-      }
-      else
-      {
-        // No module. If we have a module construction error, render it to an image and stream it over USB now (if we
-        // are doing USB and we want to see errors in the video stream):
-        if (itsCurrentMapping.ofmt && itsVideoErrors.load())
-          try
-          {
-            // Get an output image, draw error message, and send to host:
-            itsGadget->get(itsVideoErrorImage);
-            jevois::drawErrorImage(itsModuleConstructionError, itsVideoErrorImage);
-            itsGadget->send(itsVideoErrorImage);
-        
-            // Also get one camera frame to avoid accumulation of stale buffers:
-            (void)jevois::InputFrame(itsCamera, itsTurbo).get();
-          }
-          catch (...) { jevois::warnAndIgnoreException(); }
       }
     }
   
@@ -1949,12 +1952,14 @@ void jevois::Engine::runScriptFromFile(std::string const & filename, std::shared
   }
   
   // Ok, run the script, plowing through any errors:
-  size_t linenum = 1;
+  size_t linenum = 0;
   for (std::string line; std::getline(ifs, line); /* */)
   {
+    ++linenum;
+
     // Strip any extra whitespace at end, which could be a CR if the file was edited in Windows:
     line = jevois::strip(line);
-
+    
     // Skip comments and empty lines:
     if (line.length() == 0 || line[0] == '#') continue;
 
@@ -1982,7 +1987,5 @@ void jevois::Engine::runScriptFromFile(std::string const & filename, std::shared
       }
     }
     catch (...) { jevois::warnAndIgnoreException(); }
-    
-    ++linenum;
   }
 }
