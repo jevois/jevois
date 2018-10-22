@@ -51,7 +51,7 @@ help
 listmappings
 \endverbatim
 
-To start jevois-daemon in a specific mode, find its number in the listmapping list, then CTRL-C to quit
+To start jevois-daemon in a specific mode, find its number in the listmapping list, then type 'quit' to exit
 jevois-daemon, and finally
 
 \verbatim
