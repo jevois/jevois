@@ -5,10 +5,10 @@
 #
 # mountpoint: optional mount point for the exported drive, defaults to /media/${username}/JEVOIS
 # ttydev:     optional serial-over-USB tty device, defaults to /dev/ttyACM0
-# username:   username under which the card was mounted, useful if this script is run by root, def to `logname`
+# username:   username under which the card was mounted, useful if this script is run by root, default is ${USER}
 
 if [ "$#" -eq 0 ]; then echo "USAGE: jevois-usbsd <start|stop> [mountpoint [ttydev [username]]]"; exit 1; fi
-if [ "$#" -gt 3 ]; then username="$4"; else username=`logname` | tr -d '\\n'; fi
+if [ "$#" -gt 3 ]; then username="$4"; else username="${USER}"; fi
 if [ "$#" -gt 2 ]; then ttydev="$3"; else ttydev="/dev/ttyACM0"; fi
 if [ "$#" -gt 1 ]; then mountpoint="$2"; else mountpoint="/media/${username}/JEVOIS"; fi
 
