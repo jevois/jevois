@@ -289,7 +289,7 @@ void jevois::drawErrorImage(std::string const & errmsg, jevois::RawImage & video
 jevois::timed_lock_guard::timed_lock_guard(std::timed_mutex & mtx, char const * file, char const * func) :
     itsMutex(mtx)
 {
-  if (itsMutex.try_lock_for(std::chrono::seconds(1)) == false)
+  if (itsMutex.try_lock_for(std::chrono::seconds(2)) == false)
   {
     jevois::Log<LOG_CRIT>(file, func) << "Timeout trying to acquire lock";
     throw std::runtime_error("FATAL DEADLOCK ERROR");

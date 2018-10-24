@@ -346,6 +346,10 @@ void jevois::Engine::postInit()
   // First make sure the manager gets to run this:
   jevois::Manager::postInit();
 
+  // Prevent any setFormat() that may be requested, e.g., by the Inventor, as soon as it detects our gadget, until after
+  // we have completed running the initscript:
+  JEVOIS_TIMED_LOCK(itsMtx);
+  
   // Freeze the serial port device names, their params, and camera and gadget too:
   serialdev::freeze();
   usbserialdev::freeze();
@@ -460,10 +464,9 @@ void jevois::Engine::postInit()
   itsRunning.store(true);
 
   // Set initial format:
-  try { setFormat(midx); } catch (...) { jevois::warnAndIgnoreException(); }
+  ///try { setFormatInternal(midx); } catch (...) { jevois::warnAndIgnoreException(); }
   
   // Run init script:
-  JEVOIS_TIMED_LOCK(itsMtx);
   runScriptFromFile(JEVOIS_ENGINE_INIT_SCRIPT, nullptr, false);
 }
 
@@ -612,7 +615,7 @@ void jevois::Engine::setFormatInternal(jevois::VideoMapping const & m, bool relo
   if (reload == false)
   {
     itsCamera->setFormat(m);
-    if (m.ofmt) itsGadget->setFormat(m);
+    itsGadget->setFormat(m);
   }
   
   // Keep track of our current mapping:
@@ -1695,14 +1698,9 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
     if (cmd == "setmapping")
     {
       size_t const idx = std::stoi(rem);
-      bool was_streaming = itsStreaming.load();
 
-      if (was_streaming)
-      {
-        errmsg = "Cannot set mapping while streaming: ";
-        if (itsCurrentMapping.ofmt) errmsg += "Stop your webcam program on the host computer first.";
-        else errmsg += "Issue a 'streamoff' command first.";
-      }
+      if (itsStreaming.load() && itsCurrentMapping.ofmt)
+        errmsg = "Cannot set mapping while streaming: Stop your webcam program on the host computer first.";
       else if (idx >= itsMappings.size())
         errmsg = "Requested mapping index " + std::to_string(idx) + " out of range [0 .. " +
           std::to_string(itsMappings.size()-1) + ']';
@@ -1721,14 +1719,8 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
     // ----------------------------------------------------------------------------------------------------
     if (cmd == "setmapping2")
     {
-      bool was_streaming = itsStreaming.load();
-
-      if (was_streaming)
-      {
-        errmsg = "Cannot set mapping while streaming: ";
-        if (itsCurrentMapping.ofmt) errmsg += "Stop your webcam program on the host computer first.";
-        else errmsg += "Issue a 'streamoff' command first.";
-      }
+      if (itsStreaming.load() && itsCurrentMapping.ofmt)
+        errmsg = "Cannot set mapping while streaming: Stop your webcam program on the host computer first.";
       else
       {
         try

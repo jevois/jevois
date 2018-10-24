@@ -213,6 +213,9 @@ void jevois::Gadget::setFormat(jevois::VideoMapping const & m)
   itsFormat.fmt.pix.field = V4L2_FIELD_NONE;
   itsFormat.fmt.pix.sizeimage = m.osize();
   itsFps = m.ofps;
+
+  // Do not do anything if ofmt is NONE:
+  if (m.ofmt == 0) { LINFO("USB Gadget set video format to NONE"); return; }
   
   // First try to set our own format, will throw if phony:
   XIOCTL(itsFd, VIDIOC_S_FMT, &itsFormat);
@@ -724,7 +727,8 @@ void jevois::Gadget::streamOn()
   JEVOIS_TIMED_LOCK(itsMtx);
 
   if (itsStreaming.load() || itsBuffers) { LERROR("Stream is already on -- IGNORED"); return; }
-
+  if (itsFormat.fmt.pix.pixelformat == 0) { LINFO("Gadget output format is NONE"); return; }
+  
   // If number of buffers is zero, adjust it depending on frame size:
   unsigned int nbuf = itsNbufs;
   if (nbuf == 0)

@@ -103,7 +103,9 @@ namespace jevois
                              0, ParamCateg);
 
     //! Parameter \relates jevois::Engine
-    JEVOIS_DECLARE_PARAMETER(videomapping, int, "Index of Video Mapping to use, or -1 to use the default mapping",
+    JEVOIS_DECLARE_PARAMETER(videomapping, int, "Index of Video Mapping to use, or -1 to use the default mapping. "
+                             "Note that this parameter is only available when parsing command-line arguments. "
+                             "At runtime, the setmapping command should be used instead.",
                              -1, ParamCateg);
 
     //! Parameter \relates jevois::Engine
