@@ -1,0 +1,38 @@
+/*! \page Change110log Changes and new features in JeVois 1.10
+
+
+JeVois 1.10 brings the following new features:
+
+- Improved JeVois Inventor allows for testing of headless (no USB video output) operation of JeVois
+
+- Bumped to OpenCV 4.0.0-beta, with all contrib modules including deep neural networks (DNN) and non-free
+
+- YOLO v3 is now supported by \jvmod{DarknetYOLO}, faster, more accurate, less memory, and 80 object classes.
+
+- New module \jvmod{PyClassificationDNN} show how to use object recognition deep neural
+  networks using the OpenCV DNN framework, in Python. Supported network formats are Caffe, TensorFlow, Darknet,
+  Torch, and ONNX. Examples are provided which include:
+  + SqueezeNet v1.1 trained on ImageNet (1000 object categories), Caffe model
+  + More soon! Please contribute!
+
+- Several new tutorials about optical flow implementation in python, headless operation, etc.
+
+- Added support for different camera sensors. ov7725 is working great, still work in progress for ov2640 and AR0135
+  (global shutter, M12 lens mount) with ICM-20948 9-DOF IMU placed right behind the image sensor. More on that coming in
+  the next release.
+
+- Added support for on-the-fly conversion from raw BAYER camera frames to YUYV. Useful for sensors which can only output
+  BAYER, like the AR0135 global shutter sensor.
+
+- Bugfix of `jevois-usbsd` which was not working for some users.
+
+- Better handling of module startup errors, config file errors, etc so that the Inventor does not get stuck even if a
+  viion module completely fails to load or some config file is bogus.
+
+- Additional support for accessing raw camer asensor registers and raw IMU registers, both from C++ and Python.
+
+- More docs about optional lenses, optional sensors, etc.
+
+- Patch for missing CPU_SETSIZE definition on some machines (needed to compile TensorFlow in jevoisbase).
+
+*/

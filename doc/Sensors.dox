@@ -1,0 +1,150 @@
+/*! \page Sensors Camera sensor options
+
+JeVois smart cameras by default use an Omnivision ov9653 1.3MP camera sensor. This is a very good overall sensor that is
+well matched to the available comptutation power of the processor inside the JeVois unit.
+
+In some cases, however, one may want to use different optics or sensors.
+
+The following options are available as a modification to an existing JeVois smart camera:
+
+\warning The AR0135 sensor for JeVois is still under development and not officially available yet. It will be sold as a
+modification to existing JeVois units. The custom sensor board includes a 9-DOF IMU (inertial measurement unit) that is
+aligned with the optical axis of the AR0135 camera sensor. This sensor will be available as a mod package that will
+include a new modified plastic case for the camera, a bigger fan, and several lenses, for likely around $100 (global
+shutter sensors, IMUs, and custom cases are expensive).
+
+\note Likewise, the ov2640 sensor is not officially available yet as we are still developing its driver for the Linux
+kernel. It will be a mod to existing JeVois cameras, like the ov7725 mod.
+
+Sensor                      | Resolution              | Shutter | Pixel size      | Lens type           | JeVois name
+----------------------------|-------------------------|---------|-----------------|---------------------|------------
+Omnivision ov9653 (standard)| 1.3MP (1280x1024 max)   | Rolling | 3.18um x 3.18um | 1/4 inch            | ov9650
+Omnivision ov7725           | 0.3MP (640x480 max)     | Rolling | 6.00um x 6.00um | 1/4 inch            | ov7725
+OnSemi AR0135 color         | 1.2MP (1280x960 max)    | Global  | 3.75um x 3.75um | M12 (12mm, S-mount) | ar0135
+OnSemi AR0135 monochrome    | 1.2MP (1280x960 max)    | Global  | 3.75um x 3.75um | M12 (12mm, S-mount) | ar0135
+Omnivision ov2640           | 2.0MP (1600x1200 max)   | Rolling | 2.20um x 2.20um | 1/4 inch            | ov2640
+
+\note Sensors with M12 lens mounts require a new plastic case for your JeVois smart camera. They allow for the broadest
+range of possible lenses, from ultra wide angle to telephoto.
+
+\note Global Shutter means that all pixels are sampled at the exact same time, as opposed to rolling shutter, which
+samples pixels one after the other in a raster-scan manner. Global shutter sensors are great for:
+- Drones
+- Fast moving robots
+- Automotive
+- Barcode scanner
+- 3D scanning
+- Positional tracking
+- Iris Scanning
+- Augmented Reality
+- See https://en.wikipedia.org/wiki/Rolling_shutter for more information.
+
+\note Typically, sensors with bigger pixels will have better low-light performance. Monochrome sensors also usually have
+better low-light performance. Refer to a given sensor's datasheet for more details.
+
+Lenses
+------
+
+For lenses, see \ref Lenses
+
+Installation
+------------
+
+This requires some skills but can be done in less than 5 minutes. See the video below for full details.
+
+\youtube{8rf643fsjSE}
+
+JeVois smart camera configuration
+---------------------------------
+
+To let your JeVois smart camera know that you have installed a new sensor, you need to indicate the sensor's name in a
+special configuration file on the microSD of your JeVois unit.
+
+- Insert microSD into desktop or laptop
+- Browse the BOOT partition
+- Using any editor, create a plain text file in that directory named \a sensor
+- Write a single line of plain ASCII text in that file with the <a>JeVois name</a> listed above.
+
+\jvimg{sensor-edit.png, 30%}
+
+For example (after installing an ov7725 sensor):
+
+- \b Linux: `echo ov7725 > /media/${USER}/BOOT/sensor`
+- \b Mac: `echo ov7725 > /Volumes/BOOT/sensor`
+- \b Windows: use TextEdit to create and save the file.
+
+Sensor specific information
+===========================
+
+Omnivision ov7725
+-----------------
+
+This sensor offers better low-light performance than the default JeVois sensor, thanks to its bigger pixels. On the flip
+side, its resolution is lower. It can also grab at 60fps at 640x480 (original sensor can only do 30fps at that
+resolution), but it is limited to 60fps and cannot grab at 120fps like the original sensor.
+
+Use this sensor if you feel that the original sensor is struggling in low light and you would like to sustain a high
+framerate in low light (otherwise, see \ref UserLighting for tips on how to increase exposure time, when needed, by
+dynamically adjusting framerate on the original ov9653 sensor).
+
+\jvimg{jevois-ov7725-comparison.png, 30%}
+
+OnSemi (Aptina) AR0135
+----------------------
+
+\note This sensor is primarily intended for industrial machine vision and hence has fewer automatic image enhancements
+than the consumer-grade Omnivision sensors. Only auto-gain and auto-exposure are available, no auto white balance.
+
+\note This sensor only supports <b>RAW BAYER</b> output format. The JeVois core software \jvversion{1.10} and later is
+able to convert on the fly from BAYER to YUYV, allowing you to still run the vast majority of JeVois modules, which
+expect YUYV pixel format. However, there is a cost to this (the JeVois processor has to convert from BAYER to
+YUYV). When operating in headless mode (no video out to the USB port), you can eliminate that extra cost by using BAYER
+as the camera pixel format and making sure your code can handle that (e.g., no problem if you will just to a
+`getCvBGR()` or similar on the input frame, that function can convert from anything, including BAYER, to BGR).
+
+This sensor requires a custom plastic case for your JeVois unit. Instructions are roughly as in the installation video
+above, just be careful to make sure the sensor is pulled towards the front of the case as far as it will go:
+
+\jvimg{ar0135-front.jpg, 25%}
+
+\jvimg{ar0135-back.jpg, 25%}
+
+\jvimg{ar0135-connect.jpg, 25%}
+
+\jvimg{ar0135-connect2.jpg, 25%}
+
+\jvimg{ar0135-mount.jpg, 25%}
+
+
+Omnivision ov2640
+-----------------
+
+\warning The kernel driver is still under development. This sensor is not available yet.
+
+Which one is which?
+-------------------
+
+The Omnivision sensor modules look almost identical. Look for markings on the flat flex cable that connect the sensor to
+the JeVois circuit board:
+
+- HDF-25 or HDF-7725: is an ov7725 \jvimg{hdf25-a.jpg, 20%}
+
+- HDF-53: is an ov9653 \jvimg{hdf53-a.jpg, 20%}
+
+As far as lenses:
+
+- Standard and NOIR have the smallest lens hole. NOIR has no glue on the lens thread while Standard is glued.
+
+- 90deg has a slightly bigger hole than Standard and NOIR.
+
+- 120deg is much bigger and easy to recognize.
+
+\jvimg{jevois-lenses-small.png, 50%}
+
+- You may have received extra lenses which sometimes are screwed into a square shroud for protection. You should unscrew
+  the shroud before attempting to install the lens onto your JeVois camera. You can discard the shroud:
+
+\jvimg{lens-shroud.jpg, 25%}
+
+
+*/
