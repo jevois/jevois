@@ -248,7 +248,8 @@ Select <b>New Python Module...</b> from the <b>Vision Module</b> pull-down menu.
 
 \jvimg{jvinv0010.png, 70%}
 
-Enter the data. All fields are required.
+Enter the data. <b>All fields are required.</b> The \b Finish button will not be enabled until you have entered
+acceptable data. Hover your mouse over each field to see tips.
 
 For simple modules, you would typically select the same resolution for USB output and camera sensor. For more complex
 modules, for example showing a side-by-side output with the original video frame at left and the machine vision results
