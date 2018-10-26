@@ -99,7 +99,7 @@ than the consumer-grade Omnivision sensors. Only auto-gain and auto-exposure are
 able to convert on the fly from BAYER to YUYV, allowing you to still run the vast majority of JeVois modules, which
 expect YUYV pixel format. However, there is a cost to this (the JeVois processor has to convert from BAYER to
 YUYV). When operating in headless mode (no video out to the USB port), you can eliminate that extra cost by using BAYER
-as the camera pixel format and making sure your code can handle that (e.g., no problem if you will just to a
+as the camera pixel format and making sure your code can handle that (e.g., no problem if you will just do a
 `getCvBGR()` or similar on the input frame, that function can convert from anything, including BAYER, to BGR).
 
 This sensor requires a custom plastic case for your JeVois unit. Instructions are roughly as in the installation video

@@ -935,6 +935,18 @@ unsigned short jevois::Engine::readIMUregister(unsigned short reg)
 }
 
 // ####################################################################################################
+void jevois::Engine::writeIMUregisterArray(unsigned short reg, unsigned char const * vals, size_t num)
+{
+  itsCamera->writeIMUregisterArray(reg, vals, num);
+}
+
+// ####################################################################################################
+void jevois::Engine::readIMUregisterArray(unsigned short reg, unsigned char * vals, size_t num)
+{
+  itsCamera->readIMUregisterArray(reg, vals, num);
+}
+
+// ####################################################################################################
 jevois::VideoMapping const & jevois::Engine::getCurrentVideoMapping() const
 {
   return itsCurrentMapping;
@@ -1265,6 +1277,8 @@ void jevois::Engine::cmdInfo(std::shared_ptr<UserInterface> s, bool showAll, std
     s->writeString(pfx, "getcamreg <reg> - get value of raw camera register <reg>");
     s->writeString(pfx, "setimureg <reg> <val> - set raw IMU register <reg> to value <val>");
     s->writeString(pfx, "getimureg <reg> - get value of raw IMU register <reg>");
+    s->writeString(pfx, "setimuregs <reg> <num> <val1> ... <valn> - set array of raw IMU register values");
+    s->writeString(pfx, "getimuregs <reg> <num> - get array of raw IMU register values");
   }
 
   s->writeString(pfx, "listmappings - list all available video mappings");
@@ -1676,6 +1690,55 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
         std::ostringstream os; os << std::hex << val;
         s->writeString(pfx, os.str());
         return true;
+      }
+      errmsg = "Access to camera's IMU registers is disabled, enable with: setpar camreg true";
+    }
+    
+    // ----------------------------------------------------------------------------------------------------
+    if (cmd == "setimuregs")
+    {
+      if (camreg::get())
+      {
+        // Read register and value as strings, then std::stoi to convert to int, supports 0x (and 0 for octal, caution)
+        std::vector<std::string> v = jevois::split(rem);
+        if (v.size() < 3) errmsg = "Malformed arguments, need at least 3"; 
+        else
+        {
+          unsigned short reg = std::stoi(v[0], nullptr, 0);
+          size_t num = std::stoi(v[1], nullptr, 0);
+          if (num > 32) errmsg = "Maximum transfer size is 32 bytes";
+          else
+          {
+            unsigned char data[32];
+            for (size_t i = 2; i < v.size(); ++i) data[i-2] = std::stoi(v[i], nullptr, 0) & 0xff;
+            
+            itsCamera->writeIMUregisterArray(reg, data, num);
+            return true;
+          }
+        }
+      }
+      errmsg = "Access to camera's IMU registers is disabled, enable with: setpar camreg true";
+    }
+
+    // ----------------------------------------------------------------------------------------------------
+    if (cmd == "getimuregs")
+    {
+      if (camreg::get())
+      {
+        std::istringstream ss(rem); std::string reg, num; ss >> reg >> num;
+        int n = std::stoi(num, nullptr, 0);
+
+        if (n > 32) errmsg = "Maximum transfer size is 32 bytes";
+        else
+        {
+          unsigned char data[32];
+          itsCamera->readIMUregisterArray(std::stoi(reg, nullptr, 0), data, n);
+
+          std::ostringstream os; os << std::hex;
+          for (int i = 0; i < n; ++i) os << (unsigned int)(data[i]) << ' ';
+          s->writeString(pfx, os.str());
+          return true;
+        }
       }
       errmsg = "Access to camera's IMU registers is disabled, enable with: setpar camreg true";
     }

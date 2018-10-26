@@ -84,24 +84,36 @@ namespace jevois
 
       //! Write a value of one of the camera's registers
       /*! This very low-level access is for development of optimal camera settings only and should not be used in normal
-          operation, it can crash your system. */
-      virtual void writeRegister(unsigned short reg, unsigned short val) = 0;
+          operation, it can crash your system. Default implementation throws a runtime_error. */
+      virtual void writeRegister(unsigned short reg, unsigned short val);
 
       //! Read a value from one of the camera's registers
       /*! This very low-level access is for development of optimal camera settings only and should not be used in normal
-          operation, it can crash your system. */
-      virtual unsigned short readRegister(unsigned short reg) = 0;
+          operation, it can crash your system. Default implementation throws a runtime_error. */
+      virtual unsigned short readRegister(unsigned short reg);
 
       //! Write a value to one of the camera's IMU registers
       /*! This very low-level access is for development of optimal IMU settings only and should not be used in normal
-          operation, it can crash your system. */
-      virtual void writeIMUregister(unsigned short reg, unsigned short val) = 0;
+          operation, it can crash your system. Default implementation throws a runtime_error. */
+      virtual void writeIMUregister(unsigned short reg, unsigned short val);
 
       //! Read a value from one of the camera's IMU registers
       /*! This very low-level access is for development of optimal IMU settings only and should not be used in normal
-          operation, it can crash your system. */
-      virtual unsigned short readIMUregister(unsigned short reg) = 0;
- 
+          operation, it can crash your system. Default implementation throws a runtime_error. */
+      virtual unsigned short readIMUregister(unsigned short reg);
+
+      //! Write an array of values to the camera's IMU registers
+      /*! This very low-level access is for development of optimal IMU settings only and should not be used in normal
+          operation, it can crash your system. Memory for vals should have been allocated by the caller with at least
+          num bytes. num must be less than 32. Default implementation throws a runtime_error. */
+      virtual void writeIMUregisterArray(unsigned short reg, unsigned char const * vals, size_t num);
+
+      //! Read an array of values from the camera's IMU registers
+      /*! This very low-level access is for development of optimal IMU settings only and should not be used in normal
+          operation, it can crash your system. Memory for vals should have been allocated by the caller with at least
+          num bytes. num must be less than 32. Default implementation throws a runtime_error. */
+      virtual void readIMUregisterArray(unsigned short reg, unsigned char * vals, size_t num);
+
     protected:
       std::string const itsDevName; //!< Our device or movie file name
       unsigned int const itsNbufs;  //!< Our number of buffers

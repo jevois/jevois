@@ -537,3 +537,41 @@ unsigned short jevois::Camera::readIMUregister(unsigned short reg)
   LDEBUG("Register 0x" << std::hex << reg << " has value 0x" << data[1]);
   return data[1];
 }
+
+namespace
+{
+  struct jevois_data
+  {
+      unsigned char addr;
+      unsigned char size;
+      unsigned char data[32];
+  };
+}
+
+// ##############################################################################################################
+void jevois::Camera::writeIMUregisterArray(unsigned short reg, unsigned char const * vals, size_t num)
+{
+  if (num > 32) LFATAL("Maximum allowed size is 32 bytes. You must break down larger transfers into 32 byte chunks.");
+
+  static jevois_data d;
+  d.addr = reg & 0xff;
+  d.size = num;
+  memcpy(d.data, vals, num);
+
+  LDEBUG("Writing " << num << " values to 0x"<< std::hex << reg);
+  XIOCTL(itsFd, _IOW('V', 196, struct jevois_data), &d);
+}
+
+// ##############################################################################################################
+void jevois::Camera::readIMUregisterArray(unsigned short reg, unsigned char * vals, size_t num)
+{
+  if (num > 32) LFATAL("Maximum allowed size is 32 bytes. You must break down larger transfers into 32 byte chunks.");
+
+  static jevois_data d;
+  d.addr = reg & 0xff;
+  d.size = num;
+
+  XIOCTL(itsFd, _IOWR('V', 197, struct jevois_data), &d);
+  LDEBUG("Received " << num <<" values from register 0x" << std::hex << reg);
+  memcpy(vals, d.data, num);
+}

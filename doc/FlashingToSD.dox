@@ -33,8 +33,8 @@ called \b /dev/mmcblkX instead.
 
 \note If you do a lot of development that requires re-flashing (e.g., developing kernel code for JeVois), it may be
 worth investing in a super-fast microSD card. While it can take about 5 minutes to run jevois-flash-card with a regular
-class 10 microSD card, we have been able to get this time down to less than 40 seconds using a Lexar 1800x UHS-II 32GB
-microSD card.
+class 10 microSD card, we have been able to get this time down to less than 40 seconds using 1800x, 1900x, or V30, V60,
+or V90, UHS-II microSD cards.
 
 Re-flashing after some code update - full recompilation
 =======================================================

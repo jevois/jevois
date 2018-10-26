@@ -117,20 +117,3 @@ void jevois::MovieInput::setFormat(VideoMapping const & m)
   // Store the mapping so we can check frame size and format when grabbing:
   itsMapping = m;
 }
-
-// ##############################################################################################################
-void jevois::MovieInput::writeRegister(unsigned short JEVOIS_UNUSED_PARAM(reg), unsigned short JEVOIS_UNUSED_PARAM(val))
-{ LFATAL("Operation not supported by MovieInput"); }
-
-// ##############################################################################################################
-unsigned short jevois::MovieInput::readRegister(unsigned short JEVOIS_UNUSED_PARAM(reg))
-{ LFATAL("Operation not supported by MovieInput"); }
-
-// ##############################################################################################################
-void jevois::MovieInput::writeIMUregister(unsigned short JEVOIS_UNUSED_PARAM(reg),
-                                          unsigned short JEVOIS_UNUSED_PARAM(val))
-{ LFATAL("Operation not supported by MovieInput"); }
-
-// ##############################################################################################################
-unsigned short jevois::MovieInput::readIMUregister(unsigned short JEVOIS_UNUSED_PARAM(reg))
-{ LFATAL("Operation not supported by MovieInput"); }

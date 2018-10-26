@@ -80,27 +80,10 @@ namespace jevois
           will be converted (if necessary) to that format's pixel type. */
       void setFormat(VideoMapping const & m) override;
 
-      //! Write a value of one of the camera's registers
-      /*! In MovieInput, this just throws an std::runtime_error */
-      void writeRegister(unsigned short reg, unsigned short val) override;
-
-      //! Read a value from one of the camera's registers
-      /*! In MovieInput, this just throws an std::runtime_error */
-      unsigned short readRegister(unsigned short reg) override;
-
-      //! Write a value to one of the camera's IMU registers
-      /*! This very low-level access is for development of optimal IMU settings only and should not be used in normal
-          operation, it can crash your system. */
-      void writeIMUregister(unsigned short reg, unsigned short val) override;
-
-      //! Read a value from one of the camera's IMU registers
-      /*! This very low-level access is for development of optimal IMU settings only and should not be used in normal
-          operation, it can crash your system. */
-      unsigned short readIMUregister(unsigned short reg) override;
- 
     protected:
       cv::VideoCapture itsCap; //!< Our OpenCV video capture, works on movie and image files too
       std::shared_ptr<VideoBuf> itsBuf; //!< Our single video buffer
       VideoMapping itsMapping; //!< Our current video mapping, we resize the input to the mapping's camera dims
   };
+  
 } // namespace jevois

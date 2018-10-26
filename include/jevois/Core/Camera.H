@@ -137,7 +137,19 @@ namespace jevois
       /*! This very low-level access is for development of optimal IMU settings only and should not be used in normal
           operation, it can crash your system. */
       unsigned short readIMUregister(unsigned short reg) override;
-    
+
+      //! Write an array of values to the camera's IMU registers
+      /*! This very low-level access is for development of optimal IMU settings only and should not be used in normal
+          operation, it can crash your system. Memory for vals should have been allocated by the caller with at least
+          num bytes. num must be less than 32. */
+      void writeIMUregisterArray(unsigned short reg, unsigned char const * vals, size_t num) override;
+
+      //! Read an array of values from the camera's IMU registers
+      /*! This very low-level access is for development of optimal IMU settings only and should not be used in normal
+          operation, it can crash your system. Memory for vals should have been allocated by the caller with at least
+          num bytes. num must be less than 32. */
+      void readIMUregisterArray(unsigned short reg, unsigned char * vals, size_t num) override;
+
     private:
       int itsFd;
       VideoBuffers * itsBuffers;

@@ -28,3 +28,31 @@ jevois::VideoInput::~VideoInput()
 { }
 
 
+// ##############################################################################################################
+void jevois::VideoInput::writeRegister(unsigned short JEVOIS_UNUSED_PARAM(reg), unsigned short JEVOIS_UNUSED_PARAM(val))
+{ throw std::runtime_error("Operation writeRegister() not supported by VideoInput"); }
+
+// ##############################################################################################################
+unsigned short jevois::VideoInput::readRegister(unsigned short JEVOIS_UNUSED_PARAM(reg))
+{ throw std::runtime_error("Operation readRegister() not supported by VideoInput"); }
+
+// ##############################################################################################################
+void jevois::VideoInput::writeIMUregister(unsigned short JEVOIS_UNUSED_PARAM(reg),
+                                          unsigned short JEVOIS_UNUSED_PARAM(val))
+{ throw std::runtime_error("Operation writeIMUregister() not supported by VideoInput"); }
+
+// ##############################################################################################################
+unsigned short jevois::VideoInput::readIMUregister(unsigned short JEVOIS_UNUSED_PARAM(reg))
+{ throw std::runtime_error("Operation readIMUregister() not supported by VideoInput"); }
+
+// ##############################################################################################################
+void jevois::VideoInput::writeIMUregisterArray(unsigned short JEVOIS_UNUSED_PARAM(reg),
+                                               unsigned char const * JEVOIS_UNUSED_PARAM(vals),
+                                               size_t JEVOIS_UNUSED_PARAM(num))
+{ throw std::runtime_error("Operation writeIMUregisterArray() not supported by VideoInput"); }
+
+// ##############################################################################################################
+void jevois::VideoInput::readIMUregisterArray(unsigned short JEVOIS_UNUSED_PARAM(reg),
+                                              unsigned char * JEVOIS_UNUSED_PARAM(vals),
+                                              size_t JEVOIS_UNUSED_PARAM(num))
+{ throw std::runtime_error("Operation readIMUregisterArray() not supported by VideoInput"); }
