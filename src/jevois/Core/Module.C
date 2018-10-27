@@ -298,7 +298,23 @@ unsigned short jevois::Module::readIMUregister(unsigned short reg)
   if (e == nullptr) LFATAL("My parent is not Engine -- CANNOT COMPLETE OPERATION");
   return e->readIMUregister(reg);
 }
- 
+
+// ####################################################################################################
+void jevois::Module::writeIMUregisterArray(unsigned short reg, unsigned char const * vals, size_t num)
+{
+  jevois::Engine * e = dynamic_cast<jevois::Engine *>(itsParent);
+  if (e == nullptr) LFATAL("My parent is not Engine -- CANNOT COMPLETE OPERATION");
+  e->writeIMUregisterArray(reg, vals, num);
+}
+
+// ####################################################################################################
+void jevois::Module::readIMUregisterArray(unsigned short reg, unsigned char * vals, size_t num)
+{
+  jevois::Engine * e = dynamic_cast<jevois::Engine *>(itsParent);
+  if (e == nullptr) LFATAL("My parent is not Engine -- CANNOT COMPLETE OPERATION");
+  return e->readIMUregisterArray(reg, vals, num);
+}
+
 // ####################################################################################################
 // ####################################################################################################
 jevois::StdModule::StdModule(std::string const & instance) :

@@ -1707,6 +1707,7 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
           unsigned short reg = std::stoi(v[0], nullptr, 0);
           size_t num = std::stoi(v[1], nullptr, 0);
           if (num > 32) errmsg = "Maximum transfer size is 32 bytes";
+          else if (num != v.size() - 2) errmsg = "Incorrect number of data bytes, should pass " + v[1] + " values.";
           else
           {
             unsigned char data[32];
@@ -1717,7 +1718,7 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
           }
         }
       }
-      errmsg = "Access to camera's IMU registers is disabled, enable with: setpar camreg true";
+      else errmsg = "Access to camera's IMU registers is disabled, enable with: setpar camreg true";
     }
 
     // ----------------------------------------------------------------------------------------------------
@@ -1740,7 +1741,7 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
           return true;
         }
       }
-      errmsg = "Access to camera's IMU registers is disabled, enable with: setpar camreg true";
+      else errmsg = "Access to camera's IMU registers is disabled, enable with: setpar camreg true";
     }
 
     // ----------------------------------------------------------------------------------------------------
