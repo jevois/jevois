@@ -21,6 +21,7 @@
 #include <jevois/Component/Component.H>
 #include <jevois/Component/Manager.H>
 #include <jevois/Component/Parameter.H>
+#include <jevois/Core/Engine.H>
 #include <jevois/Util/Utils.H>
 #include <jevois/Core/UserInterface.H>
 
@@ -120,10 +121,20 @@ bool jevois::Component::isTopLevel() const
   JEVOIS_TRACE(6);
 
   boost::shared_lock<boost::shared_mutex> lck(itsMtx);
-
   if (dynamic_cast<jevois::Manager *>(itsParent) != nullptr) return true;
-
   return false;
+}
+
+// ######################################################################
+jevois::Engine * jevois::Component::engine() const
+{
+  JEVOIS_TRACE(6);
+
+  boost::shared_lock<boost::shared_mutex> lck(itsMtx);
+  jevois::Engine * eng = dynamic_cast<jevois::Engine *>(itsParent);
+  if (eng) return eng;
+  if (itsParent) return itsParent->engine();
+  LFATAL("Reached root of hierarchy but could not find an Engine");
 }
 
 // ######################################################################

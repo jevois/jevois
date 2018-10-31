@@ -30,6 +30,7 @@
 namespace jevois
 {
   class Manager;
+  class Engine;
   class UserInterface;
   
   /*! \defgroup component Model components, parameters, manager, and associated classes
@@ -267,6 +268,10 @@ namespace jevois
       /*! The Module of Engine is top-level. */
       bool isTopLevel() const;
 
+      //! Get a handle to our Engine, or throw if we do not have an Engine as root ancestor
+      /*! Use with caution as this could break runtime loading/unloading of component hierarchies. */
+      Engine * engine() const;
+      
       //! @}
  
       //! @name Component runtime

@@ -261,59 +261,31 @@ void jevois::Module::supportedCommands(std::ostream & os)
 
 // ####################################################################################################
 size_t jevois::Module::frameNum() const
-{
-  jevois::Engine * e = dynamic_cast<jevois::Engine *>(itsParent);
-  if (e == nullptr) LFATAL("My parent is not Engine -- CANNOT GET FRAME NUMBER");
-
-  return e->frameNum();
-}
+{ return engine()->frameNum(); }
 
 // ####################################################################################################
 void jevois::Module::writeCamRegister(unsigned short reg, unsigned short val)
-{
-  jevois::Engine * e = dynamic_cast<jevois::Engine *>(itsParent);
-  if (e == nullptr) LFATAL("My parent is not Engine -- CANNOT COMPLETE OPERATION");
-  e->writeCamRegister(reg, val);
-}
+{ engine()->writeCamRegister(reg, val); }
+
 // ####################################################################################################
 unsigned short jevois::Module::readCamRegister(unsigned short reg)
-{
-  jevois::Engine * e = dynamic_cast<jevois::Engine *>(itsParent);
-  if (e == nullptr) LFATAL("My parent is not Engine -- CANNOT COMPLETE OPERATION");
-  return e->readCamRegister(reg);
-}
+{ return engine()->readCamRegister(reg); }
 
 // ####################################################################################################
 void jevois::Module::writeIMUregister(unsigned short reg, unsigned short val)
-{
-  jevois::Engine * e = dynamic_cast<jevois::Engine *>(itsParent);
-  if (e == nullptr) LFATAL("My parent is not Engine -- CANNOT COMPLETE OPERATION");
-  e->writeIMUregister(reg, val);
-}
+{ engine()->writeIMUregister(reg, val); }
 
 // ####################################################################################################
 unsigned short jevois::Module::readIMUregister(unsigned short reg)
-{
-  jevois::Engine * e = dynamic_cast<jevois::Engine *>(itsParent);
-  if (e == nullptr) LFATAL("My parent is not Engine -- CANNOT COMPLETE OPERATION");
-  return e->readIMUregister(reg);
-}
+{ return engine()->readIMUregister(reg); }
 
 // ####################################################################################################
 void jevois::Module::writeIMUregisterArray(unsigned short reg, unsigned char const * vals, size_t num)
-{
-  jevois::Engine * e = dynamic_cast<jevois::Engine *>(itsParent);
-  if (e == nullptr) LFATAL("My parent is not Engine -- CANNOT COMPLETE OPERATION");
-  e->writeIMUregisterArray(reg, vals, num);
-}
+{ engine()->writeIMUregisterArray(reg, vals, num); }
 
 // ####################################################################################################
 void jevois::Module::readIMUregisterArray(unsigned short reg, unsigned char * vals, size_t num)
-{
-  jevois::Engine * e = dynamic_cast<jevois::Engine *>(itsParent);
-  if (e == nullptr) LFATAL("My parent is not Engine -- CANNOT COMPLETE OPERATION");
-  return e->readIMUregisterArray(reg, vals, num);
-}
+{ return engine()->readIMUregisterArray(reg, vals, num); }
 
 // ####################################################################################################
 // ####################################################################################################
