@@ -161,27 +161,6 @@ void jevois::ICM20948::preInit()
   unsigned char wia2 = readMagRegister(REG_AK09916_WIA);
   if (wia2 != VAL_AK09916_WIA) LFATAL("Cannot communicate with magnetometer");
   LINFO("AK09916 magnetometer ok.");
-  
-  // Turn on the magnetometer:
-  writeMagRegister(REG_AK09916_CNTL2, VAL_AK09916_CNTL2_PD); // first, power down mode
-  std::this_thread::sleep_for(std::chrono::milliseconds(10));
-  writeMagRegister(REG_AK09916_CNTL2, VAL_AK09916_CNTL2_MOD4); // then, mode 4: 100Hz
-
-  // Set output data rate (but is overridden by gyro ODR wen gyro is on):
-  writeRegister(ICM20948_REG_I2C_MST_ODR_CONFIG, 0x04); // Rate is 1.1kHz/(2^value)
-
-  // Wait for magnetometer to be on:
-  std::this_thread::sleep_for(std::chrono::milliseconds(10));
-  
-  // Check that the magnetometer indeed is in mode 4:
-  int mode = readMagRegister(REG_AK09916_CNTL2);
-  if (mode != VAL_AK09916_CNTL2_MOD4) LERROR("Warning: magnetometer slave mode is " << mode);
-
-  // Setup to transfer 6 bytes of data from magnetometer to ICM20948 main:
-  writeRegister(ICM20948_REG_I2C_SLV0_ADDR, ICM20948_BIT_I2C_READ | COMPASS_SLAVEADDR);
-  writeRegister(ICM20948_REG_I2C_SLV0_REG, REG_AK09916_HXL);
-  writeRegister(ICM20948_REG_I2C_SLV0_CTRL, // Enable, byteswap, odd-grouping, and read 8 bytes
-                ICM20948_BIT_I2C_SLV_EN | ICM20948_BIT_I2C_BYTE_SW | ICM20948_BIT_I2C_GRP | 8);
 }
 
 // ####################################################################################################
@@ -293,7 +272,46 @@ void jevois::ICM20948::onParamChange(jevois::imu::grate const & JEVOIS_UNUSED_PA
   // Calculate the actual sample rate from the divider value:
   LINFO("Gyroscope sampling rate set to " << 1125.0F / (gyroDiv + 1.0F) << " Hz");
 }
- 
+
+// ####################################################################################################
+void jevois::ICM20948::onParamChange(jevois::imu::mrate const & JEVOIS_UNUSED_PARAM(param),
+                                     jevois::imu::MagRate const & newval)
+{
+  // Turn off the magnetometer:
+  writeMagRegister(REG_AK09916_CNTL2, VAL_AK09916_CNTL2_PD);
+
+  // Set the mode value:
+  unsigned char mode;
+  switch (newval)
+  {
+  case jevois::imu::MagRate::Off: return;
+  case jevois::imu::MagRate::Once: mode = VAL_AK09916_CNTL2_SNGL; break;
+  case jevois::imu::MagRate::M10Hz: mode = VAL_AK09916_CNTL2_MOD1; break;
+  case jevois::imu::MagRate::M20Hz: mode = VAL_AK09916_CNTL2_MOD2; break;
+  case jevois::imu::MagRate::M50Hz: mode = VAL_AK09916_CNTL2_MOD3; break;
+  case jevois::imu::MagRate::M100Hz: mode = VAL_AK09916_CNTL2_MOD4; break;
+  default: LFATAL("Invalid mode value: " << newval);
+  }
+
+  // Wait until mag is down:
+  std::this_thread::sleep_for(std::chrono::milliseconds(10));
+
+  // Now turn it back on in the specified mode:
+  writeMagRegister(REG_AK09916_CNTL2, mode);
+
+  // Set output data rate (but is overridden by gyro ODR wen gyro is on):
+  writeRegister(ICM20948_REG_I2C_MST_ODR_CONFIG, 0x04); // Rate is 1.1kHz/(2^value)
+
+  // Wait for magnetometer to be on:
+  std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  
+  // Setup to transfer 8 bytes of data from magnetometer to ICM20948 main:
+  writeRegister(ICM20948_REG_I2C_SLV0_ADDR, ICM20948_BIT_I2C_READ | COMPASS_SLAVEADDR);
+  writeRegister(ICM20948_REG_I2C_SLV0_REG, REG_AK09916_HXL);
+  writeRegister(ICM20948_REG_I2C_SLV0_CTRL, // Enable, byteswap, odd-grouping, and read 8 bytes
+                ICM20948_BIT_I2C_SLV_EN | ICM20948_BIT_I2C_BYTE_SW | ICM20948_BIT_I2C_GRP | 8);
+}
+
 // ####################################################################################################
 void jevois::ICM20948::onParamChange(jevois::imu::abw const & JEVOIS_UNUSED_PARAM(param),
                                      unsigned int const & newval)

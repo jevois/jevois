@@ -44,6 +44,7 @@
 
 #include <jevois/Component/Component.H>
 #include <jevois/Core/IMUdata.H>
+#include <jevois/Types/Enum.H>
 
 namespace jevois
 {
@@ -63,11 +64,16 @@ namespace jevois
                                            "discrete divider settings.",
                                            50.0F, jevois::Range(0.0F, 1125.0F), ParamCateg);
 
+    //! Enum for Parameter \relates jevois::ICM20948
+    JEVOIS_DEFINE_ENUM_CLASS(MagRate, (Off) (Once) (M10Hz) (M20Hz) (M50Hz) (M100Hz) )
+
     //! Parameter \relates jevois::ICM20948
-    JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(mrate, float, "Magnetometer sampling rate (Hz), or 0.0 to disable "
-                                           "magnetometer. Actual sample rate may differ because of finite and "
-                                           "discrete divider settings.",
-                                           50.0F, jevois::Range(0.0F, 1000.0F), ParamCateg);
+    JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(mrate, MagRate, "Magnetometer sampling rate (Hz), or Off to disable "
+                                           "magnetometer, or Once to only get one measurement. You can repeatedly "
+                                           "set this parameter to Once to obtain repeated measurements "
+                                           "at your own pace. In JeVois Inventor, you need to alternate between "
+                                           "Off and Once.",
+                                           MagRate::M100Hz, MagRate_Values, ParamCateg);
 
     //! Parameter \relates jevois::ICM20948
     JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(abw, unsigned int, "Accelerometer bandwidth rate (Hz), or 0 for no "
@@ -106,7 +112,7 @@ namespace jevois
       concurrently. Because we assume this will not be the case in normal operation, we do not protect chip access with
       a mutex. Users should use an external mutex to protect this class if used in a multithreaded manner. */
   class ICM20948 : public Component,
-                   public Parameter<imu::arate, imu::grate, /*imu::mrate,*/ imu::abw, imu::gbw, imu::tbw,
+                   public Parameter<imu::arate, imu::grate, imu::mrate, imu::abw, imu::gbw, imu::tbw,
                                     imu::arange, imu::grange>
   {
     public:
@@ -161,13 +167,12 @@ namespace jevois
       // Parameter callbacks:
       void onParamChange(imu::arate const & param, float const & newval);
       void onParamChange(imu::grate const & param, float const & newval);
-      //void onParamChange(imu::mrate const & param, float const & newval);
+      void onParamChange(imu::mrate const & param, imu::MagRate const & newval);
       void onParamChange(imu::abw const & param, unsigned int const & newval);
       void onParamChange(imu::gbw const & param, unsigned int const & newval);
       void onParamChange(imu::tbw const & param, unsigned int const & newval);
       void onParamChange(imu::arange const & param, unsigned int const & newval);
       void onParamChange(imu::grange const & param, unsigned int const & newval);
-      //void onParamChange(imu::mrange const & param, unsigned int const & newval);
 
       unsigned char readMagRegister(unsigned char magreg);
       void writeMagRegister(unsigned char magreg, unsigned char val);
