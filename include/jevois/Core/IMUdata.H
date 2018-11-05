@@ -31,56 +31,59 @@ namespace jevois
       measurements.  \ingroup imu */
   struct IMUrawData
   {
-    short v[10]; //! The values: ax, ay, az, gy, gy, gz, temp, mx, my, mz
+      short v[11]; //!< The values: ax, ay, az, gy, gy, gz, temp, mx, my, mz, mst2
 
-    inline short & ax() { return v[0]; }
-    inline short const & ax() const { return v[0]; }
-    inline short & ay() { return v[1]; }
-    inline short const & ay() const { return v[1]; }
-    inline short & az() { return v[2]; }
-    inline short const & az() const { return v[2]; }
-    inline short & gx() { return v[3]; }
-    inline short const & gx() const { return v[3]; }
-    inline short & gy() { return v[4]; }
-    inline short const & gy() const { return v[4]; }
-    inline short & gz() { return v[5]; }
-    inline short const & gz() const { return v[5]; }
-    inline short & temp() { return v[6]; }
-    inline short const & temp() const { return v[6]; }
-    inline short & mx() { return v[7]; }
-    inline short const & mx() const { return v[7]; }
-    inline short & my() { return v[8]; }
-    inline short const & my() const { return v[8]; }
-    inline short & mz() { return v[9]; }
-    inline short const & mz() const { return v[9]; }
+      inline short & ax() { return v[0]; }
+      inline short const & ax() const { return v[0]; }
+      inline short & ay() { return v[1]; }
+      inline short const & ay() const { return v[1]; }
+      inline short & az() { return v[2]; }
+      inline short const & az() const { return v[2]; }
+      inline short & gx() { return v[3]; }
+      inline short const & gx() const { return v[3]; }
+      inline short & gy() { return v[4]; }
+      inline short const & gy() const { return v[4]; }
+      inline short & gz() { return v[5]; }
+      inline short const & gz() const { return v[5]; }
+      inline short & temp() { return v[6]; }
+      inline short const & temp() const { return v[6]; }
+      inline short & mx() { return v[7]; }
+      inline short const & mx() const { return v[7]; }
+      inline short & my() { return v[8]; }
+      inline short const & my() const { return v[8]; }
+      inline short & mz() { return v[9]; }
+      inline short const & mz() const { return v[9]; }
+      inline short & mst2() { return v[10]; }
+      inline short const & mst2() const { return v[10]; }
   };
-
+  
   //! IMU data
   /*! These are scaled measurements from the sensor, in absolute units (g for accelerations, degrees per second (dps)
-      for gyro, degrees Celsius for temperature, and xxx for magnetometer).  \ingroup imu */
+      for gyro, degrees Celsius for temperature, and micro-Tesla for magnetometer).  \ingroup imu */
   struct IMUdata
   {
-    float v[10]; //! The values: ax, ay, az, gy, gy, gz, temp, mx, my, mz
-
-    inline float & ax() { return v[0]; }
-    inline float const & ax() const { return v[0]; }
-    inline float & ay() { return v[1]; }
-    inline float const & ay() const { return v[1]; }
-    inline float & az() { return v[2]; }
-    inline float const & az() const { return v[2]; }
-    inline float & gx() { return v[3]; }
-    inline float const & gx() const { return v[3]; }
-    inline float & gy() { return v[4]; }
-    inline float const & gy() const { return v[4]; }
-    inline float & gz() { return v[5]; }
-    inline float const & gz() const { return v[5]; }
-    inline float & temp() { return v[6]; }
-    inline float const & temp() const { return v[6]; }
-    inline float & mx() { return v[7]; }
-    inline float const & mx() const { return v[7]; }
-    inline float & my() { return v[8]; }
-    inline float const & my() const { return v[8]; }
-    inline float & mz() { return v[9]; }
-    inline float const & mz() const { return v[9]; }
+      float v[10]; //!< The values: ax, ay, az, gy, gy, gz, temp, mx, my, mz
+      bool magovf; //!< True if magnetometer overflow
+      
+      inline float & ax() { return v[0]; }
+      inline float const & ax() const { return v[0]; }
+      inline float & ay() { return v[1]; }
+      inline float const & ay() const { return v[1]; }
+      inline float & az() { return v[2]; }
+      inline float const & az() const { return v[2]; }
+      inline float & gx() { return v[3]; }
+      inline float const & gx() const { return v[3]; }
+      inline float & gy() { return v[4]; }
+      inline float const & gy() const { return v[4]; }
+      inline float & gz() { return v[5]; }
+      inline float const & gz() const { return v[5]; }
+      inline float & temp() { return v[6]; }
+      inline float const & temp() const { return v[6]; }
+      inline float & mx() { return v[7]; }
+      inline float const & mx() const { return v[7]; }
+      inline float & my() { return v[8]; }
+      inline float const & my() const { return v[8]; }
+      inline float & mz() { return v[9]; }
+      inline float const & mz() const { return v[9]; }
   };
 };

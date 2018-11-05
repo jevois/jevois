@@ -72,12 +72,12 @@ namespace jevois
     //! Parameter \relates jevois::ICM20948
     JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(abw, unsigned int, "Accelerometer bandwidth rate (Hz), or 0 for no "
                                            "low-pass filter on accelerometer data.",
-                                           0, { 0, 6, 12, 24, 50, 111, 246, 470, 1210 }, ParamCateg);
+                                           50, { 0, 6, 12, 24, 50, 111, 246, 470, 1210 }, ParamCateg);
 
     //! Parameter \relates jevois::ICM20948
     JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(gbw, unsigned int, "Gyroscope bandwidth rate (Hz), or 0 for no low-pass "
                                            "filter on gyroscope data.",
-                                           0, { 0, 6, 12, 24, 51, 120, 150, 200, 360, 12100 }, ParamCateg);
+                                           51, { 0, 6, 12, 24, 51, 120, 150, 200, 360, 12100 }, ParamCateg);
 
     //! Parameter \relates jevois::ICM20948
     JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(tbw, unsigned int, "Temperature bandwidth rate (Hz), or 0 to turn off "
@@ -88,7 +88,7 @@ namespace jevois
     //! Parameter \relates jevois::ICM20948
     JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(arange, unsigned int, "Accelerometer full-scale range (+/-g; for example, "
                                            "2 means +/-2g)).",
-                                           4, { 2, 4, 9, 16 }, ParamCateg);
+                                           4, { 2, 4, 8, 16 }, ParamCateg);
 
     //! Parameter \relates jevois::ICM20948
     JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(grange, unsigned int, "Gyroscope full-scale range (+/-dps; for example, "
@@ -127,7 +127,7 @@ namespace jevois
       
     protected:
       //! Connect to and initialize the IMU chip
-      void postInit();
+      void preInit();
       
       //! Write a value to one of the camera's IMU registers
       /*! This very low-level access is for development of optimal IMU settings only and should not be used in normal
@@ -169,6 +169,10 @@ namespace jevois
       void onParamChange(imu::grange const & param, unsigned int const & newval);
       //void onParamChange(imu::mrange const & param, unsigned int const & newval);
 
+      unsigned char readMagRegister(unsigned char magreg);
+      void writeMagRegister(unsigned char magreg, unsigned char val);
+      void waitForSlave4();
+      
       uint8_t itsBank = 0;
   };
 }

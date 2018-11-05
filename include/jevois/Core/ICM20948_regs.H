@@ -109,7 +109,17 @@
 #define ICM20948_BIT_FIFO_OVERFLOW_EN_0  0x01                        /**< FIFO overflow interrupt enable bit                     */
  
 #define ICM20948_REG_INT_ENABLE_3        (ICM20948_BANK_0 | 0x13)    /**< Interrupt Enable 2 register                            */
- 
+
+#define ICM20948_REG_I2C_MST_STATUS      (ICM20948_BANK_0 | 0x17)    /**< Status of I2C master                                   */
+#define ICM20948_BIT_PASS_THROUGH        0x80
+#define ICM20948_BIT_SLV4_DONE           0x40
+#define ICM20948_BIT_LOST_ARB            0x20
+#define ICM20948_BIT_SLV4_NACK           0x10
+#define ICM20948_BIT_SLV3_NACK           0x08
+#define ICM20948_BIT_SLV2_NACK           0x04
+#define ICM20948_BIT_SLV1_NACK           0x02
+#define ICM20948_BIT_SLV0_NACK           0x01
+
 #define ICM20948_REG_INT_STATUS          (ICM20948_BANK_0 | 0x19)    /**< Interrupt Status register                              */
 #define ICM20948_BIT_WOM_INT             0x08                        /**< Wake-up on motion interrupt occured bit                */
 #define ICM20948_BIT_PLL_RDY             0x04                        /**< PLL ready interrupt occured bit                        */
@@ -277,17 +287,62 @@
 #define ICM20948_REG_I2C_SLV4_DO         (ICM20948_BANK_3 | 0x16)    /**< I2C Slave4 Data Out register                        */
 #define ICM20948_REG_I2C_SLV4_DI         (ICM20948_BANK_3 | 0x17)    /**< I2C Slave4 Data In register                         */
  
+#define ICM20948_BIT_I2C_SLV4_INT_EN     0x40                        /**< I2C Slave 4 interrupt enable */
+#define ICM20948_BIT_I2C_SLV4_REG_DIS    0x20                        /**< I2C Slave 4 no register address */
+
 #define ICM20948_BIT_I2C_SLV_EN          0x80                        /**< I2C Slave Enable bit                                */
 #define ICM20948_BIT_I2C_BYTE_SW         0x40                        /**< I2C Slave Byte Swap enable bit                      */
 #define ICM20948_BIT_I2C_REG_DIS         0x20                        /**< I2C Slave Do Not Write Register Value bit           */
 #define ICM20948_BIT_I2C_GRP             0x10                        /**< I2C Slave Group bit                                 */
 #define ICM20948_BIT_I2C_READ            0x80                        /**< I2C Slave R/W bit                                   */
- 
+
 /* Register common for all banks */
 #define ICM20948_REG_BANK_SEL            0x7F                        /**< Bank Select register                                */
  
 #define ICM20648_DEVICE_ID               0xE0                        /**< ICM20948 Device ID value                            */
 #define ICM20948_DEVICE_ID               0xEA                        /**< ICM20948 Device ID value                            */
+
+
+/* AK09916 definitions */
+
+/* AK09916 register definition */
+#define REG_AK09916_WIA          0x01
+#define VAL_AK09916_WIA          0x09
+
+#define REG_AK09916_STATUS1      0x10
+#define BIT_AK09916_STATUS1_DOR  0x02 /*!< Data overrun */
+#define BIT_AK09916_STATUS1_DRDY 0x01 /*!< Data ready */
+
+#define REG_AK09916_HXL          0x11
+#define REG_AK09916_HXH          0x12
+#define REG_AK09916_HYL          0x13
+#define REG_AK09916_HYH          0x14
+#define REG_AK09916_HZL          0x15
+#define REG_AK09916_HZH          0x16
+
+
+#define REG_AK09916_STATUS2      0x18
+#define BIT_AK09916_STATUS2_HOFL 0x08 /*!< Magnetic sensor overflow */
+
+#define REG_AK09916_CNTL2       0x31
+#define VAL_AK09916_CNTL2_PD    0x00  /*!< AK power down */
+#define VAL_AK09916_CNTL2_SNGL  0x01  /*!< AK single measurement */
+#define VAL_AK09916_CNTL2_MOD1  0x02  /*!< AK continuous measurement mode 1 (10Hz) */
+#define VAL_AK09916_CNTL2_MOD2  0x04  /*!< AK continuous measurement mode 1 (20Hz) */
+#define VAL_AK09916_CNTL2_MOD3  0x06  /*!< AK continuous measurement mode 1 (50Hz) */
+#define VAL_AK09916_CNTL2_MOD4  0x08  /*!< AK continuous measurement mode 1 (100Hz) */
+
+#define REG_AK09916_CNTL3       0x32
+#define BIT_AK09916_CNTL3_SRST  0x01  /*!< Soft reset */
+
+#define REG_AK09916_TST1        0x33
+#define REG_AK09916_TST2        0x34
+
+#define DATA_AK09916_SCALE      161061273
+
+#define COMPASS_SLAVEADDR       0x0C /*!< I2C address of the AK09916 */
+
+
 /**@}*/
  
 /** @endcond */

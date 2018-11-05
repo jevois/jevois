@@ -87,11 +87,101 @@ jevois::ICM20948::~ICM20948(void)
 { }
 
 // ####################################################################################################
-void jevois::ICM20948::postInit()
+unsigned char jevois::ICM20948::readMagRegister(unsigned char magreg)
 {
+  // We use slave4, which is oneshot:
+  writeRegister(ICM20948_REG_I2C_SLV4_ADDR, ICM20948_BIT_I2C_READ | COMPASS_SLAVEADDR);
+  writeRegister(ICM20948_REG_I2C_SLV4_REG, magreg);
+  writeRegister(ICM20948_REG_I2C_SLV4_CTRL, ICM20948_BIT_I2C_SLV_EN);
+
+  waitForSlave4();
+  
+  return readRegister(ICM20948_REG_I2C_SLV4_DI);
+}
+
+// ####################################################################################################
+void jevois::ICM20948::waitForSlave4()
+{
+  // Wait until the data is ready:
+  auto tooLate = std::chrono::high_resolution_clock::now() + std::chrono::milliseconds(300);
+
+  do
+  {
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    unsigned char status = readRegister(ICM20948_REG_I2C_MST_STATUS);
+    if (status & ICM20948_BIT_SLV4_NACK) LFATAL("Failed to communicate with compass: NACK");
+    if (status & ICM20948_BIT_SLV4_DONE) return; // Transaction to slave is complete
+  }
+  while (std::chrono::high_resolution_clock::now() < tooLate);
+
+  LFATAL("Failed to communicate with compass: timeout");
+}
+
+// ####################################################################################################
+void jevois::ICM20948::writeMagRegister(unsigned char magreg, unsigned char val)
+{
+  // We use slave4, which is oneshot:
+  writeRegister(ICM20948_REG_I2C_SLV4_ADDR, COMPASS_SLAVEADDR);
+  writeRegister(ICM20948_REG_I2C_SLV4_REG, magreg);
+  writeRegister(ICM20948_REG_I2C_SLV4_DO, val);
+  writeRegister(ICM20948_REG_I2C_SLV4_CTRL, ICM20948_BIT_I2C_SLV_EN);
+
+  waitForSlave4();
+}
+
+// ####################################################################################################
+void jevois::ICM20948::preInit()
+{
+  // Make sure the chip is on:
+  writeRegister(ICM20948_REG_PWR_MGMT_1, 0x01); // Auto clock selection as recommended by datasheet
+  std::this_thread::sleep_for(std::chrono::milliseconds(10));
+
   if (ready() == false) LFATAL("Cannot access ICM20948 inertial measurement unit (IMU) chip. This chip is only "
                                "available with a modified Global Shutter OnSemi (Aptina) AR0135 camera sensor. "
                                "It is not available on standard JeVois cameras.");
+
+  // Configure the compass:
+
+  // First, disable slaves:
+  writeRegister(ICM20948_REG_I2C_SLV0_CTRL, 0);
+  writeRegister(ICM20948_REG_I2C_SLV1_CTRL, 0);
+  writeRegister(ICM20948_REG_I2C_SLV2_CTRL, 0);
+  writeRegister(ICM20948_REG_I2C_SLV3_CTRL, 0);
+  writeRegister(ICM20948_REG_I2C_SLV4_CTRL, 0);
+
+  // Recommended target for I2C master clock:
+  writeRegister(ICM20948_REG_I2C_MST_CTRL, 0x07 | ICM20948_BIT_I2C_MST_P_NSR);
+
+  // Enable master I2C:
+  unsigned char v = readRegister(ICM20948_REG_USER_CTRL);
+  v |= ICM20948_BIT_I2C_MST_EN;
+  writeRegister(ICM20948_REG_USER_CTRL, v);
+
+  // Check the who-am-I of the magnetometer, to make sure I2C master is working:
+  unsigned char wia2 = readMagRegister(REG_AK09916_WIA);
+  if (wia2 != VAL_AK09916_WIA) LFATAL("Cannot communicate with magnetometer");
+  LINFO("AK09916 magnetometer ok.");
+  
+  // Turn on the magnetometer:
+  writeMagRegister(REG_AK09916_CNTL2, VAL_AK09916_CNTL2_PD); // first, power down mode
+  std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  writeMagRegister(REG_AK09916_CNTL2, VAL_AK09916_CNTL2_MOD4); // then, mode 4: 100Hz
+
+  // Set output data rate (but is overridden by gyro ODR wen gyro is on):
+  writeRegister(ICM20948_REG_I2C_MST_ODR_CONFIG, 0x04); // Rate is 1.1kHz/(2^value)
+
+  // Wait for magnetometer to be on:
+  std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  
+  // Check that the magnetometer indeed is in mode 4:
+  int mode = readMagRegister(REG_AK09916_CNTL2);
+  if (mode != VAL_AK09916_CNTL2_MOD4) LERROR("Warning: magnetometer slave mode is " << mode);
+
+  // Setup to transfer 6 bytes of data from magnetometer to ICM20948 main:
+  writeRegister(ICM20948_REG_I2C_SLV0_ADDR, ICM20948_BIT_I2C_READ | COMPASS_SLAVEADDR);
+  writeRegister(ICM20948_REG_I2C_SLV0_REG, REG_AK09916_HXL);
+  writeRegister(ICM20948_REG_I2C_SLV0_CTRL, // Enable, byteswap, odd-grouping, and read 8 bytes
+                ICM20948_BIT_I2C_SLV_EN | ICM20948_BIT_I2C_BYTE_SW | ICM20948_BIT_I2C_GRP | 8);
 }
 
 // ####################################################################################################
@@ -106,11 +196,11 @@ jevois::IMUrawData jevois::ICM20948::getRaw()
   IMUrawData d;
 
   // Grab the raw data register contents:
-  readRegisterArray(ICM20948_REG_ACCEL_XOUT_H_SH, reinterpret_cast<unsigned char *>(&d.v[0]), 10*2);
+  readRegisterArray(ICM20948_REG_ACCEL_XOUT_H_SH, reinterpret_cast<unsigned char *>(&d.v[0]), 11*2);
 
   // The data from the sensor is in big endian, convert to little endian:
   for (short & s : d.v) { short hi = (s & 0xff00) >> 8; short lo = s & 0x00ff; s = (lo << 8) | hi; }
-
+  
   return d;
 }
 
@@ -123,22 +213,24 @@ jevois::IMUdata jevois::ICM20948::get()
   // Scale it:
   IMUdata d;
 
-  float const ar = jevois::imu::arange::get();
-  d.ax() = rd.ax() * ar / 32768.0F;
-  d.ay() = rd.ay() * ar / 32768.0F;
-  d.az() = rd.az() * ar / 32768.0F;
+  double const ar = jevois::imu::arange::get() / 32768.0;
+  d.ax() = rd.ax() * ar;
+  d.ay() = rd.ay() * ar;
+  d.az() = rd.az() * ar;
 
-  float const gr = jevois::imu::grange::get();
-  d.gx() = rd.gx() * gr / 32768.0F;
-  d.gy() = rd.gy() * gr / 32768.0F;
-  d.gz() = rd.gz() * gr / 32768.0F;
+  double const gr = jevois::imu::grange::get() / 32768.0;
+  d.gx() = rd.gx() * gr;
+  d.gy() = rd.gy() * gr;
+  d.gz() = rd.gz() * gr;
 
   d.temp() = rd.temp() / 333.87F + 21.0F;
 
-  float const mr = 32768.0F;///////////FIXME jevois::imu::mrange::get();
-  d.mx() = rd.mx() * mr / 32768.0F;
-  d.my() = rd.my() * mr / 32768.0F;
-  d.mz() = rd.mz() * mr / 32768.0F;
+  double const mr = 4912.0 / 32752.0; // full range is +/-4912uT for raw values +/-32752
+  d.mx() = rd.mx() * mr;
+  d.my() = rd.my() * mr;
+  d.mz() = rd.mz() * mr;
+
+  d.magovf = ((rd.mst2() & BIT_AK09916_STATUS2_HOFL) != 0);
   
   return d;
 }
