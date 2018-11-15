@@ -27,7 +27,8 @@ namespace jevois
   /*! @{ */ // **********************************************************************
 
   //! Enum for different sensor models
-  /*! Note that the value 'any' should not be used, it is only so that jevois-add-videomapping will always succeed. */
+  /*! Use 'any' when you either don't know (e.g., running in host mode with an unknown dumb USB webcam), or when you
+      don't care (e.g., we use 'any' in jevois-add-videomapping so that it will always succeed). */
   JEVOIS_DEFINE_ENUM_CLASS(CameraSensor, (any) (ov9650) (ov2640) (ov7725) (ar0135) );
 
   //! Check whether a given resolution and frame rate is supported by a sensor

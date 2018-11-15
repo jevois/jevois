@@ -157,6 +157,8 @@ void jevois::ICM20948::preInit()
   v |= ICM20948_BIT_I2C_MST_EN;
   writeRegister(ICM20948_REG_USER_CTRL, v);
 
+  std::this_thread::sleep_for(std::chrono::milliseconds(30));
+
   // Check the who-am-I of the magnetometer, to make sure I2C master is working:
   unsigned char wia2 = readMagRegister(REG_AK09916_WIA);
   if (wia2 != VAL_AK09916_WIA) LFATAL("Cannot communicate with magnetometer");

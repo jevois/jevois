@@ -67,7 +67,8 @@ namespace jevois
       //! Construct and open the device
       /*! \param devname device name, e.g., /dev/video0
           \param nbufs number of video grab buffers, or 0 for automatic. */
-      Camera(std::string const & devname, unsigned int const nbufs = 0);
+      Camera(std::string const & devname, jevois::CameraSensor s = jevois::CameraSensor::any,
+             unsigned int const nbufs = 0);
 
       //! Close the device and free all resources
       ~Camera();
@@ -150,7 +151,21 @@ namespace jevois
           num bytes. num must be less than 32. */
       void readIMUregisterArray(unsigned short reg, unsigned char * vals, size_t num) override;
 
+    protected:
+      //! Sensor flags
+      /*! Keep this in sync with jevois-sdk/linux-3.4/drivers/media/video/sunxi-vfe/device/camera.h */
+      enum Flags
+      {
+        JEVOIS_SENSOR_COLOR    = 0x00,
+        JEVOIS_SENSOR_MONO     = 0x01,
+        JEVOIS_SENSOR_ICM20948 = 0x02
+      };
+      
+      //! Get the sensor flags
+      Flags readFlags();
+      
     private:
+      jevois::CameraSensor itsSensor;
       int itsFd;
       VideoBuffers * itsBuffers;
       struct v4l2_format itsFormat;
@@ -168,6 +183,7 @@ namespace jevois
       std::atomic<bool> itsRunning;
 
       mutable std::timed_mutex itsMtx;
+      int itsFlags;
   };
 
 } // namespace jevois

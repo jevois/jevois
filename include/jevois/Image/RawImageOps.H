@@ -271,6 +271,10 @@ namespace jevois
     /*! Both src and dst should already have allocated buffers of correct sizes. */
     void convertBayerToYUYV(RawImage const & src, RawImage & dst);
     
+    //! Convert from Grey (monochrome) to YUYV, only used internally by Camera class
+    /*! Both src and dst should already have allocated buffers of correct sizes. */
+    void convertGreyToYUYV(RawImage const & src, RawImage & dst);
+    
   } // namespace rawimage
 
   //! Rescale an OpenCV image, choosing the right kind of interpolation

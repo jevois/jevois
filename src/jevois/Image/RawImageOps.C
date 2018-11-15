@@ -1573,6 +1573,7 @@ namespace
 #endif
 
 
+// ####################################################################################################
 void jevois::rawimage::convertBayerToYUYV(RawImage const & src, RawImage & dst)
 {
   if (src.fmt != V4L2_PIX_FMT_SRGGB8) LFATAL("src format must be V4L2_PIX_FMT_SRGGB8");
@@ -1590,6 +1591,17 @@ void jevois::rawimage::convertBayerToYUYV(RawImage const & src, RawImage & dst)
   cv::cvtColor(cvsrc, xx, cv::COLOR_BayerBG2BGR);
   cv::parallel_for_(cv::Range(0, xx.rows), bgrToYUYV(xx, cvdst.data, cvdst.cols));
 #endif
+}
+
+// ####################################################################################################
+void jevois::rawimage::convertGreyToYUYV(RawImage const & src, RawImage & dst)
+{
+  if (src.fmt != V4L2_PIX_FMT_GREY) LFATAL("src format must be V4L2_PIX_FMT_GREY");
+  if (dst.fmt != V4L2_PIX_FMT_YUYV) LFATAL("dst format must be V4L2_PIX_FMT_YUYV");
+  if (dst.width != src.width || dst.height < src.height) LFATAL("src and dst dims must match");
+
+  auto cvsrc = jevois::rawimage::cvImage(src);
+  convertCvGRAYtoYUYV(cvsrc, dst);
 }
 
 // ####################################################################################################

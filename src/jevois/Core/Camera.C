@@ -36,6 +36,7 @@ namespace
     case 0x2008: // Handle bug in our sunxi camera driver
     case V4L2_PIX_FMT_YUYV: return V4L2_PIX_FMT_YUYV;
       
+    case 0x2001: // Handle bug in our sunxi camera driver
     case V4L2_PIX_FMT_GREY: return V4L2_PIX_FMT_GREY;
       
     case 0x3001: // Handle bug in our sunxi camera driver
@@ -54,8 +55,9 @@ namespace
 }
 
 // ##############################################################################################################
-jevois::Camera::Camera(std::string const & devname, unsigned int const nbufs) :
-    jevois::VideoInput(devname, nbufs), itsFd(-1), itsBuffers(nullptr), itsFormat(), itsStreaming(false), itsFps(0.0F)
+jevois::Camera::Camera(std::string const & devname, jevois::CameraSensor s, unsigned int const nbufs) :
+    jevois::VideoInput(devname, nbufs), itsSensor(s), itsFd(-1), itsBuffers(nullptr), itsFormat(),
+    itsStreaming(false), itsFps(0.0F), itsFlags(JEVOIS_SENSOR_COLOR)
 {
   JEVOIS_TRACE(1);
 
@@ -106,6 +108,13 @@ jevois::Camera::Camera(std::string const & devname, unsigned int const nbufs) :
            std::hex << fmtdesc.pixelformat << " [" << jevois::fccstr(fmtdesc.pixelformat) << ']');
     ++fmtdesc.index;
   }
+
+#ifdef JEVOIS_PLATFORM
+  // Get the sensor flags (if supported):
+  itsFlags = readFlags();
+  LDEBUG("Sensor " << s << (itsFlags & JEVOIS_SENSOR_MONO) ? " Monochrome" : " Color" <<
+         (itsFlags & JEVOIS_SENSOR_ICM20948) ? " with ICM20948 IMU" : " ");
+#endif
 }
 
 // ##############################################################################################################
@@ -134,13 +143,30 @@ void jevois::Camera::setFormat(jevois::VideoMapping const & m)
          jevois::fccstr(itsFormat.fmt.pix.pixelformat));
   try
   {
-    XIOCTL(itsFd, VIDIOC_S_FMT, &itsFormat);
+    XIOCTL_QUIET(itsFd, VIDIOC_S_FMT, &itsFormat);
   }
   catch (...)
   {
-    // Oops, maybe this sensor only supports raw bayer:
-    itsFormat.fmt.pix.pixelformat = V4L2_PIX_FMT_SRGGB8;
-    XIOCTL(itsFd, VIDIOC_S_FMT, &itsFormat);
+    try
+    {
+      // Oops, maybe this sensor only supports raw Bayer:
+      itsFormat.fmt.pix.pixelformat = V4L2_PIX_FMT_SRGGB8;
+      XIOCTL_QUIET(itsFd, VIDIOC_S_FMT, &itsFormat);
+    }
+    catch (...)
+    {
+      try
+      {
+        // Oops, maybe this sensor only supports monochrome:
+        itsFormat.fmt.pix.pixelformat = V4L2_PIX_FMT_GREY;
+        XIOCTL_QUIET(itsFd, VIDIOC_S_FMT, &itsFormat);
+      }
+      catch (...)
+      {
+        LFATAL("Could not set camera format to " << itsFormat.fmt.pix.width << 'x' << itsFormat.fmt.pix.height << ' ' <<
+               jevois::fccstr(m.cfmt) << ". Maybe the sensor does not support requested pixel type or resolution.");
+      }
+    }
   }
   
   // Get the format back as the driver may have adjusted some sizes, etc:
@@ -156,13 +182,16 @@ void jevois::Camera::setFormat(jevois::VideoMapping const & m)
   if (itsFormat.fmt.pix.width != m.cw ||
       itsFormat.fmt.pix.height != m.ch ||
       (itsFormat.fmt.pix.pixelformat != m.cfmt &&
-       (m.cfmt != V4L2_PIX_FMT_YUYV || itsFormat.fmt.pix.pixelformat != V4L2_PIX_FMT_SRGGB8)))
+       (m.cfmt != V4L2_PIX_FMT_YUYV ||
+        (itsFormat.fmt.pix.pixelformat != V4L2_PIX_FMT_SRGGB8 &&
+         itsFormat.fmt.pix.pixelformat != V4L2_PIX_FMT_GREY))))
     LFATAL("Camera did not accept the requested video format as specified");
   
-  // Allocate a RawImage for conversion from Bayer to YUYV if needed:
-  if (m.cfmt == V4L2_PIX_FMT_YUYV && itsFormat.fmt.pix.pixelformat == V4L2_PIX_FMT_SRGGB8)
+  // Allocate a RawImage for conversion from Bayer or Monochrome to YUYV if needed:
+  if (m.cfmt == V4L2_PIX_FMT_YUYV &&
+      (itsFormat.fmt.pix.pixelformat == V4L2_PIX_FMT_SRGGB8 || itsFormat.fmt.pix.pixelformat == V4L2_PIX_FMT_GREY))
   {
-    // We will grab raw Bayer and store that into itsOutputImage, finally converting to YUYV in get():
+    // We will grab raw Bayer/Mono and store that into itsOutputImage, finally converting to YUYV in get():
     itsConvertedOutputImage.width = itsFormat.fmt.pix.width;
     itsConvertedOutputImage.height = itsFormat.fmt.pix.height;
     itsConvertedOutputImage.fmt = V4L2_PIX_FMT_YUYV;
@@ -430,11 +459,16 @@ void jevois::Camera::get(jevois::RawImage & img)
 
   if (itsConvertedOutputImage.valid())
   {
-    // We need to convert from Bayer to YUYV:
+    // We need to convert from Bayer/Mono to YUYV:
     std::unique_lock<std::mutex> ulck(itsOutputMtx);
     itsOutputCondVar.wait(ulck, [&]() { return itsOutputImage.valid() || itsStreaming.load() == false; });
     if (itsStreaming.load() == false) { LDEBUG("Not streaming"); throw std::runtime_error("Camera not streaming"); }
-    jevois::rawimage::convertBayerToYUYV(itsOutputImage, itsConvertedOutputImage);
+
+    if (itsFlags & JEVOIS_SENSOR_MONO)
+      jevois::rawimage::convertGreyToYUYV(itsOutputImage, itsConvertedOutputImage);
+    else
+      jevois::rawimage::convertBayerToYUYV(itsOutputImage, itsConvertedOutputImage);
+
     img = itsConvertedOutputImage;
     img.bufindex = itsOutputImage.bufindex;
     itsOutputImage.invalidate();
@@ -546,6 +580,14 @@ namespace
       unsigned char size;
       unsigned char data[32];
   };
+}
+
+// ##############################################################################################################
+jevois::Camera::Flags jevois::Camera::readFlags()
+{
+  int data;
+  try { XIOCTL(itsFd, _IOWR('V', 198, int), &data); } catch (...) { return jevois::Camera::JEVOIS_SENSOR_COLOR; }
+  return Flags(data);
 }
 
 // ##############################################################################################################

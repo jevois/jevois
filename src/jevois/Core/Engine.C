@@ -400,7 +400,7 @@ void jevois::Engine::postInit()
 #endif
     
     // Now instantiate the camera:
-    itsCamera.reset(new jevois::Camera(camdev, cameranbuf::get()));
+    itsCamera.reset(new jevois::Camera(camdev, camerasens::get(), cameranbuf::get()));
     
 #ifndef JEVOIS_PLATFORM
     // No need to confuse people with a non-working camreg param:
@@ -463,8 +463,10 @@ void jevois::Engine::postInit()
   // We are ready to run:
   itsRunning.store(true);
 
-  // Set initial format:
-  ///try { setFormatInternal(midx); } catch (...) { jevois::warnAndIgnoreException(); }
+#ifndef JEVOIS_PLATFORM
+  // Set initial format when running on host, since we will start streaming immediately:
+  try { setFormatInternal(midx); } catch (...) { jevois::warnAndIgnoreException(); }
+#endif
   
   // Run init script:
   runScriptFromFile(JEVOIS_ENGINE_INIT_SCRIPT, nullptr, false);
