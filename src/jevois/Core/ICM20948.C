@@ -133,13 +133,20 @@ void jevois::ICM20948::writeMagRegister(unsigned char magreg, unsigned char val)
 void jevois::ICM20948::preInit()
 {
   // Make sure the chip is on:
-  writeRegister(ICM20948_REG_PWR_MGMT_1, 0x01); // Auto clock selection as recommended by datasheet
-  std::this_thread::sleep_for(std::chrono::milliseconds(10));
-
-  if (ready() == false) LFATAL("Cannot access ICM20948 inertial measurement unit (IMU) chip. This chip is only "
-                               "available with a modified Global Shutter OnSemi (Aptina) AR0135 camera sensor. "
-                               "It is not available on standard JeVois cameras.");
-
+  try
+  {
+    writeRegister(ICM20948_REG_PWR_MGMT_1, 0x01); // Auto clock selection as recommended by datasheet
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    
+    if (ready() == false) throw std::runtime_error("not ready");
+  }
+  catch (...)
+  {
+    LFATAL("Cannot access ICM20948 inertial measurement unit (IMU) chip. This chip is only "
+           "available with a modified Global Shutter OnSemi (Aptina) AR0135 camera sensor. "
+           "It is not included with standard JeVois cameras.");
+  }
+  
   // Configure the compass:
 
   // First, disable slaves:
