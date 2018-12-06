@@ -20,7 +20,7 @@
 #include <jevois/Util/Utils.H>
 #include <jevois/Image/RawImageOps.H>
 
-#include <opencv2/videoio/videoio_c.h> // for CV_CAP_PROP_POS_AVI_RATIO
+#include <opencv2/videoio.hpp> // for CV_CAP_PROP_POS_AVI_RATIO
 #include <opencv2/imgproc/imgproc.hpp>
 
 // ##############################################################################################################
@@ -59,7 +59,7 @@ void jevois::MovieInput::get(RawImage & img)
     LINFO("End of input - Rewinding...");
     
     // Maybe end of file, reset the position:
-    itsCap.set(CV_CAP_PROP_POS_AVI_RATIO, 0);
+    itsCap.set(cv::CAP_PROP_POS_AVI_RATIO, 0);
 
     // Try again:
     if (itsCap.read(frame) == false) LFATAL("Could not read next video frame");

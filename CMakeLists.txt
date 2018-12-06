@@ -54,7 +54,7 @@ set(JEVOIS_PLATFORM_PYTHON_M "m")
 # OpenCV version to use with JeVois:
 set(JEVOIS_OPENCV_MAJOR 4)
 set(JEVOIS_OPENCV_MINOR 0)
-set(JEVOIS_OPENCV_PATCH 0-beta)
+set(JEVOIS_OPENCV_PATCH 0)
 set(JEVOIS_OPENCV_VERSION "${JEVOIS_OPENCV_MAJOR}.${JEVOIS_OPENCV_MINOR}.${JEVOIS_OPENCV_PATCH}")
 
 ########################################################################################################################
