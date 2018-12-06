@@ -1,0 +1,20 @@
+/*! \page Change111log Changes and new features in JeVois 1.11
+
+
+JeVois 1.11 brings the following new features:
+
+- Bumped to OpenCV 4.0.0, with all contrib modules including deep neural networks (DNN) and non-free
+
+- Add support for MacOS Mojave in jevois-inventor
+
+- Fix a bug in jevois-daemon for host
+
+- Added support for greyscale sensors (e.g., AR0135 monochrome)
+
+- Support for full 9-DOF access in ICM-20948 inertial sensor (comes only with oprional AR0135 global shutter camera
+  sensor upgrade)
+
+- Added support for on-the-fly conversion from raw BAYER and raw GREY camera frames to YUYV. Useful for sensors which
+  can only output BAYER or GREY, like the AR0135 global shutter sensor.
+
+*/

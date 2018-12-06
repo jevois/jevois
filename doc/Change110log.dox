@@ -29,7 +29,7 @@ JeVois 1.10 brings the following new features:
 - Better handling of module startup errors, config file errors, etc so that the Inventor does not get stuck even if a
   viion module completely fails to load or some config file is bogus.
 
-- Additional support for accessing raw camer asensor registers and raw IMU registers, both from C++ and Python.
+- Additional support for accessing raw camera sensor registers and raw IMU registers, both from C++ and Python.
 
 - More docs about optional lenses, optional sensors, etc.
 
