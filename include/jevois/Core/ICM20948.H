@@ -56,13 +56,13 @@ namespace jevois
     JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(arate, float, "Accelerometer sampling rate (Hz), or 0.0 to disable "
                                            "accelerometer. Actual sample rate may differ because of finite and "
                                            "discrete divider settings.",
-                                           50.0F, jevois::Range(0.0F, 1125.0F), ParamCateg);
+                                           50.0F, jevois::Range<float>(0.0F, 1125.0F), ParamCateg);
 
     //! Parameter \relates jevois::ICM20948
     JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(grate, float, "Gyroscope sampling rate (Hz), or 0.0 to disable "
                                            "gyroscope. Actual sample rate may differ because of finite and "
                                            "discrete divider settings.",
-                                           50.0F, jevois::Range(0.0F, 1125.0F), ParamCateg);
+                                           50.0F, jevois::Range<float>(0.0F, 1125.0F), ParamCateg);
 
     //! Enum for Parameter \relates jevois::ICM20948
     JEVOIS_DEFINE_ENUM_CLASS(MagRate, (Off) (Once) (M10Hz) (M20Hz) (M50Hz) (M100Hz) )
