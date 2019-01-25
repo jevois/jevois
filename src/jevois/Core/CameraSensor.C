@@ -57,8 +57,8 @@ bool jevois::sensorSupportsFormat(jevois::CameraSensor s, unsigned int fmt, unsi
     //  SXGA (1280 x 1024): up to 15 fps
     //  720p (1280 x  720): up to 15 fps
     //   XGA (1024 x  768): up to 15 fps
-    //  SVGA ( 800 x  600): up to 30 fps
-    //   VGA ( 640 x  480): up to 30 fps
+    //  SVGA ( 800 x  600): up to 40 fps
+    //   VGA ( 640 x  480): up to 40 fps
     //   CIF ( 352 x  288): up to 60 fps
     //  QVGA ( 320 x  240): up to 60 fps
     //  QCIF ( 176 x  144): up to 60 fps
@@ -71,8 +71,8 @@ bool jevois::sensorSupportsFormat(jevois::CameraSensor s, unsigned int fmt, unsi
     if (w == 1280 && h == 1024) { if (fps <=  15.0F) return true; else return false; }
     if (w == 1280 && h ==  720) { if (fps <=  15.0F) return true; else return false; }
     if (w == 1024 && h ==  768) { if (fps <=  15.0F) return true; else return false; }
-    if (w ==  800 && h ==  600) { if (fps <=  30.0F) return true; else return false; }
-    if (w ==  640 && h ==  480) { if (fps <=  30.0F) return true; else return false; }
+    if (w ==  800 && h ==  600) { if (fps <=  40.0F) return true; else return false; }
+    if (w ==  640 && h ==  480) { if (fps <=  40.0F) return true; else return false; }
     if (w ==  352 && h ==  288) { if (fps <=  60.0F) return true; else return false; }
     if (w ==  320 && h ==  240) { if (fps <=  60.0F) return true; else return false; }
     if (w ==  176 && h ==  144) { if (fps <=  60.0F) return true; else return false; }

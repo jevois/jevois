@@ -231,10 +231,40 @@ macro(jevois_setup_modules basedir deps)
 endmacro()
 
 ####################################################################################################
-# Setup a library
+# Setup a library - keep in sync with second version below
 macro(jevois_setup_library basedir libname libversion)
   file(GLOB_RECURSE JV_LIB_SRC_FILES ${basedir}/*.[Cc] ${basedir}/*.cpp)
   add_library(${libname} SHARED ${JV_LIB_SRC_FILES})
+
+  # On host, make sure we prefer /usr/local/lib, where latest opencv is:
+  if (JEVOIS_PLATFORM)
+    target_link_libraries(${libname} jevois)
+  else (JEVOIS_PLATFORM)
+    target_link_libraries(${libname} -L/usr/local/lib jevois)
+  endif (JEVOIS_PLATFORM)
+
+  # Add version information, this will create symlinks as needed:
+  if (NOT JEVOIS_PLATFORM)
+    set_target_properties(${libname} PROPERTIES VERSION "${libversion}" SOVERSION ${libversion})
+  endif (NOT JEVOIS_PLATFORM)
+  
+  link_libraries(${libname})
+
+  # On platform, install libraries to /jevois/lib, but on host just install to /usr/lib:
+  if (JEVOIS_PLATFORM)
+    install(TARGETS ${libname} LIBRARY
+      DESTINATION "${JEVOIS_INSTALL_ROOT}/lib/${JEVOIS_VENDOR}"
+      COMPONENT libs)
+  else (JEVOIS_PLATFORM)
+    install(TARGETS ${libname} LIBRARY DESTINATION lib COMPONENT libs)
+  endif (JEVOIS_PLATFORM)
+    
+endmacro()
+
+####################################################################################################
+# Setup a library - keep in sync with second version above
+macro(jevois_setup_library2 srcfile libname libversion)
+  add_library(${libname} SHARED ${srcfile})
 
   # On host, make sure we prefer /usr/local/lib, where latest opencv is:
   if (JEVOIS_PLATFORM)
