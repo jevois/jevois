@@ -86,4 +86,42 @@ namespace jevois
       inline float & mz() { return v[9]; }
       inline float const & mz() const { return v[9]; }
   };
+
+  //! \defgroup icmdmpheader ICM-20948 DMP computation header fields
+  /*! @{ */
+#define JEVOIS_DMP_ACCEL          0x8000 /*!< calibrated accel if accel calibrated, raw accel otherwise */
+#define JEVOIS_DMP_GYRO           0x4000 /*!< raw gyro */
+#define JEVOIS_DMP_CPASS          0x2000 /*!< raw magnetic */
+#define JEVOIS_DMP_ALS            0x1000 /*!< ALS/proximity */
+#define JEVOIS_DMP_QUAT6          0x0800 /*!< game rotation vector */
+#define JEVOIS_DMP_QUAT9          0x0400 /*!< rotation vector with heading accuracy */
+#define JEVOIS_DMP_PQUAT6         0x0200 /*!< truncated game rotation vector for batching */
+#define JEVOIS_DMP_GEOMAG         0x0100 /*!< geomag rotation vector with heading accuracy */
+#define JEVOIS_DMP_PRESSURE       0x0080 /*!< pressure */
+#define JEVOIS_DMP_GYRO_CALIBR    0x0040 /*!< calibrated gyro */
+#define JEVOIS_DMP_CPASS_CALIBR   0x0020 /*!< calibrated magnetic */
+#define JEVOIS_DMP_PED_STEPDET    0x0010 /*!< timestamp when each step is detected */
+#define JEVOIS_DMP_HEADER2        0x0008 /*!< enable/disable data output in data output control register 2 */
+#define JEVOIS_DMP_PED_STEPIND    0x0007 /*!< number of steps detected is in 3 LSBs of header */
+
+#define JEVOIS_DMP_ACCEL_ACCURACY 0x4000 /*!< accel accuracy when changes (HEADER2) */
+#define JEVOIS_DMP_GYRO_ACCURACY  0x2000 /*!< gyro accuracy when changes (HEADER2) */
+#define JEVOIS_DMP_CPASS_ACCURACY 0x1000 /*!< compass accuracy when changes (HEADER2) */
+#define JEVOIS_DMP_BATCH_MODE_EN  0x0100 /*!< enable batching  (HEADER2) */
+      /*! @} */
+
+  //! DMP data (Digital Motion Processor)
+  /*! The digital motion processor (DMP) inside the ICM-20948 IMU chip can compute a variety of things that range from
+      simply the raw data buffered at a fixed rate to quaternions to activity detection (footsteps, driving, biking,
+      etc). The chip must be operating in DMP mode for this data to be available. In addition, one can configure which
+      data is computed and output by the DMP. \ingroup imu */
+  struct DMPdata
+  {
+      unsigned short contents = 0; //!< Indicates which contents are populated in this packet \see icmdmpheader
+      
+  };
+
+  //! Helper function to determine DMP packet size depending on options
+  /*! \ingroup imu */
+  size_t DMPpacketSize(unsigned short ctl1, unsigned short ctl2) { return 8; }
 };

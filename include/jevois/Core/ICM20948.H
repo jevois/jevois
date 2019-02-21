@@ -52,17 +52,37 @@ namespace jevois
   {
     static jevois::ParameterCategory const ParamCateg("ICM-20948 IMU Options");
 
+    //! Enum for Parameter \relates jevois::ICM20948
+    JEVOIS_DEFINE_ENUM_CLASS(Mode, (RAW) (FIFO) (DMP) )
+
+    //! Parameter \relates jevois::ICM20948
+    JEVOIS_DECLARE_PARAMETER(mode, Mode, "Data collection mode. RAW means that the latest available raw "
+                             "data is returned each time get() is called, hence timing may not be very "
+                             "accurate depending on how regularly get() is called. FIFO collects accel and gyro data "
+                             "at the exact rates specified by parameters arate, grate into a 1kb FIFO queue, and "
+                             "get() takes that data back from the FIFO. DMP runs the embedded "
+                             "digital motion processor on raw data, and accumulates resulting output "
+                             "data into the IMU's internal FIFO buffer at a precise, fixed rate. This "
+                             "parameter can only be set in a module's params.cfg file.",
+                             Mode::RAW, Mode_Values, ParamCateg);
+
+    //! Parameter \relates jevois::ICM20948
+    JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(dmp, std::string, "Requested DMP data. Only valid when mode is DMP. "
+                                           "Use any string of letters including: A=acceleration, G=gyro, "
+                                           "M=magnetometer,............. ",
+                                           "AGM", ParamCateg);
+
     //! Parameter \relates jevois::ICM20948
     JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(arate, float, "Accelerometer sampling rate (Hz), or 0.0 to disable "
                                            "accelerometer. Actual sample rate may differ because of finite and "
-                                           "discrete divider settings.",
-                                           50.0F, jevois::Range<float>(0.0F, 1125.0F), ParamCateg);
+                                           "discrete divider settings. In FIFO mode, grate controls the data rate.",
+                                           30.0F, jevois::Range<float>(0.0F, 1125.0F), ParamCateg);
 
     //! Parameter \relates jevois::ICM20948
     JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(grate, float, "Gyroscope sampling rate (Hz), or 0.0 to disable "
                                            "gyroscope. Actual sample rate may differ because of finite and "
-                                           "discrete divider settings.",
-                                           50.0F, jevois::Range<float>(0.0F, 1125.0F), ParamCateg);
+                                           "discrete divider settings. In FIFO mode, grate controls the data rate.",
+                                           30.0F, jevois::Range<float>(0.0F, 1125.0F), ParamCateg);
 
     //! Enum for Parameter \relates jevois::ICM20948
     JEVOIS_DEFINE_ENUM_CLASS(MagRate, (Off) (Once) (M10Hz) (M20Hz) (M50Hz) (M100Hz) )
@@ -72,8 +92,8 @@ namespace jevois
                                            "magnetometer, or Once to only get one measurement. You can repeatedly "
                                            "set this parameter to Once to obtain repeated measurements "
                                            "at your own pace. In JeVois Inventor, you need to alternate between "
-                                           "Off and Once.",
-                                           MagRate::M100Hz, MagRate_Values, ParamCateg);
+                                           "Off and Once. In FIFO mode, grate controls the data rate.",
+                                           MagRate::M50Hz, MagRate_Values, ParamCateg);
 
     //! Parameter \relates jevois::ICM20948
     JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(abw, unsigned int, "Accelerometer bandwidth rate (Hz), or 0 for no "
@@ -102,7 +122,7 @@ namespace jevois
                                            500, { 250, 500, 1000, 2000 }, ParamCateg);
   }
   
-  //! TDK InvenSense IMC-20948 9DOF IMU high-level driver
+  //! TDK InvenSense ICM-20948 9DOF IMU high-level driver
   /*! This driver communicates with a kernel-side driver that is integrated with the camera sensor driver on some
       optional JeVois sensors only. Currently, only the OnSemi (Aptina) AR0135 global shutter optional camera sensor is
       equipped with an IMU. \ingroup core.
@@ -112,8 +132,8 @@ namespace jevois
       concurrently. Because we assume this will not be the case in normal operation, we do not protect chip access with
       a mutex. Users should use an external mutex to protect this class if used in a multithreaded manner. */
   class ICM20948 : public Component,
-                   public Parameter<imu::arate, imu::grate, imu::mrate, imu::abw, imu::gbw, imu::tbw,
-                                    imu::arange, imu::grange>
+                   public Parameter<imu::mode, imu::dmp, imu::arate, imu::grate, imu::mrate, imu::abw, imu::gbw,
+                                    imu::tbw, imu::arange, imu::grange>
   {
     public:
       //! Base class constructor ok
@@ -125,16 +145,37 @@ namespace jevois
       //! Returns true if this camera indeed has a working ICM20948
       bool ready();
 
-      //! Get one round of raw data
-      IMUrawData getRaw();
+      //! Returns the amount of new data that had not previously been obtained
+      /*! In RAW mode, this is either 0 or 1. In FIFO or DMP mode, returns length in bytes of new data in the FIFO. */
+      int dataReady();
       
-      //! Get one round of scaled data
-      IMUdata get();
+      //! Get one round of raw data
+      /*! In RAW or DMP mode, this is the latest available, and blocking has no effect as some latest data always is
+          available immediately. In FIFO mode, this is the oldest data in the FIFO, and we may block if the FIFO is
+          currently empty. */
+      IMUrawData getRaw(bool blocking = true);
+      
+      //! Get one round of scaled raw data
+      /*! In RAW or DMP mode, this is the latest available, and blocking has no effect as some latest data always is
+          available immediately. In FIFO mode, this is the oldest data in the FIFO, and we may block if the FIFO is
+          currently empty. */
+      IMUdata get(bool blocking = true);
+
+      //! Get one packet of DMP data
+      /*! Will throw if mode is not set to DMP. If blocking is true, will block until one new data packet is
+          available from the IMU; otherwise, may return DMPdata with contents set to zero. */
+      DMPdata getDMP(bool blocking = true);
       
     protected:
       //! Connect to and initialize the IMU chip
-      void preInit();
-      
+      void preInit() override;
+
+      //! Configure RAW vs DMP mode:
+      void postInit() override;
+
+      //! Unfreeze any previously frozen parameters
+      void preUninit() override;
+     
       //! Write a value to one of the camera's IMU registers
       /*! This very low-level access is for development of optimal IMU settings only and should not be used in normal
           operation, it can crash your system. Bank selection is included in this function. */
@@ -163,6 +204,19 @@ namespace jevois
       void cycle(bool enable); //!< Turn on/off cycle mode vs continuous for accel, gyro and compass
       uint32_t devid(); //!< Read device ID
 
+      //! Write a value to a DMP register (data will be written in big endian)
+      void writeDMP(unsigned short reg, unsigned short val);
+      
+      //! Write values to DMP
+      /*! Caution: this code is not handling bank crossings. */
+      void writeDMParray(unsigned short reg, unsigned char const * vals, size_t num);
+      
+      //! Read a value from a DMP register
+      unsigned short readDMP(unsigned short reg);
+
+      //! Read values from DMP
+      void readDMParray(unsigned short reg, unsigned char * vals, size_t num);
+
     private:
       // Parameter callbacks:
       void onParamChange(imu::arate const & param, float const & newval);
@@ -173,11 +227,17 @@ namespace jevois
       void onParamChange(imu::tbw const & param, unsigned int const & newval);
       void onParamChange(imu::arange const & param, unsigned int const & newval);
       void onParamChange(imu::grange const & param, unsigned int const & newval);
+      void onParamChange(imu::dmp const & param, std::string const & newval);
 
       unsigned char readMagRegister(unsigned char magreg);
       void writeMagRegister(unsigned char magreg, unsigned char val);
       void waitForSlave4();
+      void computeFIFOpktSize(float ar, float gr, int mm);
       
       uint8_t itsBank = 0;
+
+      unsigned short itsDMPctl1 = 0; // Cached DMP control 1 so we can precompute packet size
+      unsigned short itsDMPctl2 = 0; // Cached DMP control 2 so we can precompute packet size
+      unsigned short itsFIFOpktSiz = 0; // Cached size of a FIFO-mode packet
   };
 }
