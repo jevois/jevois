@@ -108,7 +108,7 @@
 #define ICM20948_REG_INT_ENABLE_2        (ICM20948_BANK_0 | 0x12)    /**< Interrupt Enable 2 register                            */
 #define ICM20948_BIT_FIFO_OVERFLOW_EN_0  0x01                        /**< FIFO overflow interrupt enable bit                     */
  
-#define ICM20948_REG_INT_ENABLE_3        (ICM20948_BANK_0 | 0x13)    /**< Interrupt Enable 2 register                            */
+#define ICM20948_REG_INT_ENABLE_3        (ICM20948_BANK_0 | 0x13)    /**< Interrupt Enable 3 register                            */
 
 #define ICM20948_REG_I2C_MST_STATUS      (ICM20948_BANK_0 | 0x17)    /**< Status of I2C master                                   */
 #define ICM20948_BIT_PASS_THROUGH        0x80
@@ -605,3 +605,11 @@
 #define DMP_LOAD_START      0x90
 
 #define DMP_CODE_SIZE 14301
+
+// BAC states
+#define DMP_BAC_DRIVE   0x01
+#define DMP_BAC_WALK    0x02
+#define DMP_BAC_RUN     0x04
+#define DMP_BAC_BIKE    0x08
+#define DMP_BAC_TILT    0x10
+#define DMP_BAC_STILL   0x20

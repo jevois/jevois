@@ -216,6 +216,9 @@ void jevois::ICM20948::preInit()
   unsigned char wia2 = readMagRegister(REG_AK09916_WIA);
   if (wia2 != VAL_AK09916_WIA) LFATAL("Cannot communicate with magnetometer");
   LINFO("AK09916 magnetometer ok.");
+
+  // Enable 0x80 in ICM20948_REG_PWR_MGMT_2, needed by DMP:
+  writeRegister(ICM20948_REG_PWR_MGMT_2, readRegister(ICM20948_REG_PWR_MGMT_2) | 0x80);
 }
 
 // ####################################################################################################
@@ -229,52 +232,13 @@ void jevois::ICM20948::postInit()
   {
     // The DMP code was loaded by the kernel driver, which also has set the start address. So here we just need to
     // launch the DMP. First, disable FIFO and DMP:
-    LINFO("DMP reset start");
-    unsigned char v = readRegister(ICM20948_REG_USER_CTRL);
-    v &= ~(ICM20948_BIT_DMP_EN | ICM20948_BIT_FIFO_EN);
-    v |= ICM20948_BIT_DMP_RST;
-    writeRegister(ICM20948_REG_USER_CTRL, v);
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    LINFO("DMP is in reset");
-    
-    // Reset / setup the FIFO:
-    writeRegister(ICM20948_REG_FIFO_CFG, ICM20948_BIT_SINGLE_FIFO_CFG); // FIFO Config
-    writeRegister(ICM20948_REG_FIFO_RST, 0x1f); // Reset all FIFOs.
-    writeRegister(ICM20948_REG_FIFO_RST, 0x1e); // Keep all but Gyro FIFO in reset.
-    writeRegister(ICM20948_REG_FIFO_EN_1, 0x0); // Slave FIFO turned off.
-    writeRegister(ICM20948_REG_FIFO_EN_2, 0x0); // Hardware FIFO turned off.
-
-    writeRegister(ICM20948_REG_SINGLE_FIFO_PRIORITY_SEL, 0xe4); // Use a single interrupt for FIFO
-
-    // Enable FIFO and DMP:
-    LINFO("DMP enable start");
-    LINFO("addr = " << std::hex << readRegister(ICM20948_BANK_2 | 0x50) << ' ' << readRegister(ICM20948_BANK_2 | 0x51));
-    v |= ICM20948_BIT_DMP_EN | ICM20948_BIT_FIFO_EN;
-    v &= ~ICM20948_BIT_DMP_RST;
-    writeRegister(ICM20948_REG_USER_CTRL, v);
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-
-    // Enable DMP interrupts:
-    //writeRegister(ICM20948_REG_INT_ENABLE_1, 0x02); // Enable DMP Interrupt
-    //writeRegister(ICM20948_REG_INT_ENABLE_2, ICM20948_BIT_FIFO_OVERFLOW_EN_0); // Enable FIFO Overflow Interrupt
-
-    LINFO("DMP enabled");
-
-    LINFO("IMU Digital Motion Processor (DMP) enabled.");
-  }
-  break;
-
-  case jevois::imu::Mode::FIFO:
-  {
-    // The DMP code was loaded by the kernel driver, which also has set the start address. So here we just need to
-    // launch the DMP. First, disable FIFO and DMP:
     unsigned char v = readRegister(ICM20948_REG_USER_CTRL);
     v &= ~(ICM20948_BIT_DMP_EN | ICM20948_BIT_FIFO_EN); v |= ICM20948_BIT_DMP_RST;
     writeRegister(ICM20948_REG_USER_CTRL, v);
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     
     // Reset / setup the FIFO:
-    writeRegister(ICM20948_REG_FIFO_CFG, ICM20948_BIT_SINGLE_FIFO_CFG); // FIFO Config
+    writeRegister(ICM20948_REG_FIFO_CFG, ICM20948_BIT_MULTI_FIFO_CFG); // FIFO Config
     writeRegister(ICM20948_REG_FIFO_RST, 0x1f); // Reset all FIFOs.
     writeRegister(ICM20948_REG_FIFO_RST, 0x1e); // Keep all but Gyro FIFO in reset.
     writeRegister(ICM20948_REG_FIFO_EN_1, 0x0); // Slave FIFO turned off.
@@ -282,12 +246,26 @@ void jevois::ICM20948::postInit()
 
     writeRegister(ICM20948_REG_SINGLE_FIFO_PRIORITY_SEL, 0xe4); // Use a single interrupt for FIFO
 
-    // Enable FIFO:
-    v |= ICM20948_BIT_FIFO_EN; v &= ~ICM20948_BIT_DMP_RST;
+    // Enable DMP interrupts:
+    writeRegister(ICM20948_REG_INT_ENABLE_1, 0x02); // Enable DMP Interrupt
+    writeRegister(ICM20948_REG_INT_ENABLE_2, ICM20948_BIT_FIFO_OVERFLOW_EN_0); // Enable FIFO Overflow Interrupt
+
+    // Enable DMP:
+    v |= ICM20948_BIT_DMP_EN | ICM20948_BIT_FIFO_EN; v &= ~ICM20948_BIT_DMP_RST;
     writeRegister(ICM20948_REG_USER_CTRL, v);
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
-    computeFIFOpktSize(-1.0F, -1.0F, 1);
+    // Force an execution of our dmp callback:
+    dmp::set(dmp::get());
+    
+    LINFO("IMU Digital Motion Processor (DMP) enabled.");
+  }
+  break;
+
+  case jevois::imu::Mode::FIFO:
+  {
+    // Enable FIFO, set packet size, nuke any old FIFO data:
+    computeFIFOpktSize(-1.0F, -1.0F, -1);
 
     LINFO("IMU FIFO mode enabled.");
   }
@@ -345,6 +323,7 @@ jevois::IMUrawData jevois::ICM20948::getRaw(bool blocking)
 
   switch(mode::get())
   {
+    // ----------------------------------------------------------------------------------------------------
   case jevois::imu::Mode::FIFO:
   {
     int siz = dataReady();
@@ -365,14 +344,15 @@ jevois::IMUrawData jevois::ICM20948::getRaw(bool blocking)
     {
       if (blocking == false) return d;
 
-      auto n = std::chrono::high_resolution_clock::now();
+      auto tooLate = std::chrono::high_resolution_clock::now() + std::chrono::seconds(2);
       do
       {
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        if (std::chrono::high_resolution_clock::now() > tooLate)
+        { LERROR("TIMEOUT waiting for IMU FIFO data - RETURNING BLANK"); return d; }
         siz = dataReady();
       }
-      while (siz < itsFIFOpktSiz && std::chrono::high_resolution_clock::now() - n < std::chrono::seconds(2));
-      if (siz < itsFIFOpktSiz) { LERROR("TIMEOUT waiting for IMU FIFO data - RETURNING BLANK"); return d; }
+      while (siz < itsFIFOpktSiz);
     }
 
     // Read the packet:
@@ -407,6 +387,7 @@ jevois::IMUrawData jevois::ICM20948::getRaw(bool blocking)
   }
   break;
   
+  // ----------------------------------------------------------------------------------------------------
   case jevois::imu::Mode::RAW:
   case jevois::imu::Mode::DMP:
   {
@@ -458,35 +439,83 @@ jevois::DMPdata jevois::ICM20948::getDMP(bool blocking)
 {
   if (mode::get() != jevois::imu::Mode::DMP) LFATAL("getDMP() only available when mode=DMP, see params.cfg");
   DMPdata d;
-  
-  // Check how much data is in the FIFO; we need at least one packet:
-  int const pktsiz = jevois::DMPpacketSize(itsDMPctl1, itsDMPctl2);
-  int siz = dataReady();
-  if (siz < pktsiz)
-  {
-    if (blocking == false) return d;
 
-    auto n = std::chrono::high_resolution_clock::now();
+  writeDMP(DMP_DATA_RDY_STATUS, 1+2+8); //////fixme////////////////////////////////////////////
+
+  // Start parsing a new packet?
+  if (itsDMPsz < 4)
+  {
+    // We need at least 4 bytes in the FIFO to get going. Could be either two empty packets (may not exist), or the
+    // start of a non-empty packet, possibly with a header2 (which is why we want 4):
+    size_t got = getDMPsome(blocking, 4);
+    if (got < 4) return d;
+  }
+  
+  // Parse the headers:
+  unsigned short ctl1 = itsDMPpacket[0] * 256 + itsDMPpacket[1];
+  int off = 2; // offset to where we are in parsing the packet so far
+  unsigned short ctl2 = 0;
+  if (ctl1 & JEVOIS_DMP_HEADER2) { ctl2 = itsDMPpacket[off] * 256 + itsDMPpacket[off + 1]; off += 2; }
+  
+  // Compute how much data remains to be grabbed for this packet:
+  size_t need = jevois::DMPpacketSize(ctl1, ctl2) - itsDMPsz;
+
+  // Read the rest of the packet if needed:
+  while (need > 0)
+  {
+    // We can read out max 32 bytes at a time:
+    size_t need2 = std::min(need, size_t(32));
+    size_t got = getDMPsome(blocking, need2);
+    if (got < need2) return d;
+    need -= got;
+  }
+
+  // We have the whole packet, parse it:
+  d.parsePacket(itsDMPpacket, itsDMPsz);
+  
+  // Debug raw packet dump:
+  if (dmpdbg::get())
+  {
+    std::stringstream stream; stream << "RAW" << std::hex;
+    for (int i = 0; i < itsDMPsz; ++i) stream << ' ' << (unsigned int)(itsDMPpacket[i]);
+    LINFO(stream.str());
+  }
+  
+  // Done with this packet, nuke it:
+  itsDMPsz = 0;
+  
+  return d;
+}
+
+// ####################################################################################################
+  size_t jevois::ICM20948::getDMPsome(bool blocking, size_t desired)
+{
+  size_t siz = dataReady();
+  
+  if (siz < desired)
+  {
+    if (blocking == false) return 0;
+
+    auto tooLate = std::chrono::high_resolution_clock::now() + std::chrono::seconds(2);
     do
     {
       std::this_thread::sleep_for(std::chrono::milliseconds(1));
+
+      if (std::chrono::high_resolution_clock::now() >= tooLate)
+      { LERROR("TIMEOUT waiting for IMU DMP data - RETURNING BLANK"); return 0; }
+
       siz = dataReady();
     }
-    while (siz < pktsiz && std::chrono::high_resolution_clock::now() - n < std::chrono::seconds(2));
-    if (siz < pktsiz) { LERROR("TIMEOUT waiting for IMU DMP data - RETURNING BLANK"); return d; }
+    while (siz < desired);
   }
 
-  // Read the packet:
-  unsigned char packet[pktsiz];
-  readRegisterArray(ICM20948_REG_FIFO_R_W, &packet[0], pktsiz);
+  // We have enough data in the FIFO, read out what we wanted:
+  readRegisterArray(ICM20948_REG_FIFO_R_W, &itsDMPpacket[itsDMPsz], desired);
+  itsDMPsz += desired;
   
-  // to be continued....
-  std::stringstream stream; stream << "FIFO data:" << std::hex;
-  for (int i = 0; i < pktsiz; ++i) stream << ' ' << (unsigned int)(packet[i]);
-  LINFO(stream.str());
-
-  return DMPdata();
+  return desired;
 }
+
 
 // ####################################################################################################
 void jevois::ICM20948::reset(void)
@@ -587,11 +616,12 @@ void jevois::ICM20948::onParamChange(jevois::imu::mrate const & JEVOIS_UNUSED_PA
 
   computeFIFOpktSize(-1.0F, -1.0F, mode);
 
-  // Setup to transfer 8 bytes of data from magnetometer to ICM20948 main:
+  // Setup to transfer 8 bytes (RAW, FIFO) or 6 bytes (DMP) of data from magnetometer to ICM20948 main:
   writeRegister(ICM20948_REG_I2C_SLV0_ADDR, ICM20948_BIT_I2C_READ | COMPASS_SLAVEADDR);
   writeRegister(ICM20948_REG_I2C_SLV0_REG, REG_AK09916_HXL);
-  writeRegister(ICM20948_REG_I2C_SLV0_CTRL, // Enable, byteswap, odd-grouping, and read 8 bytes
-                ICM20948_BIT_I2C_SLV_EN | ICM20948_BIT_I2C_BYTE_SW | ICM20948_BIT_I2C_GRP | 8);
+  int siz = (mode::get() == jevois::imu::Mode::DMP) ? 6 : 8;
+  writeRegister(ICM20948_REG_I2C_SLV0_CTRL, // Enable, byteswap, odd-grouping, and read 8 or 6 bytes
+                ICM20948_BIT_I2C_SLV_EN | ICM20948_BIT_I2C_BYTE_SW | ICM20948_BIT_I2C_GRP | siz);
 }
 
 // ####################################################################################################
@@ -728,33 +758,52 @@ uint32_t jevois::ICM20948::devid()
 // ####################################################################################################
 void jevois::ICM20948::onParamChange(imu::dmp const & JEVOIS_UNUSED_PARAM(param), std::string const & newval)
 {
-  itsDMPctl1 = 0; itsDMPctl2 = 0;
+  unsigned short ctl1 = 0, ctl2 = 0, mec = 0;
+  bool a = false, g = false, m = false, h2 = false;
   
+  LINFO("Setting dmp parameter to " << newval);  
+
   for (unsigned char c : newval)
     switch(c)
     {
-    case 'A': itsDMPctl1 |= JEVOIS_DMP_ACCEL; break;
-    case 'G': itsDMPctl1 |= JEVOIS_DMP_GYRO; break;
-    case 'M': itsDMPctl1 |= JEVOIS_DMP_CPASS; break;
-    case 'R': itsDMPctl1 |= JEVOIS_DMP_QUAT6; break;
-    case 'Q': itsDMPctl1 |= JEVOIS_DMP_QUAT9; break;
-    case 'E': itsDMPctl1 |= JEVOIS_DMP_GEOMAG; break;
-    case 'g': itsDMPctl1 |= JEVOIS_DMP_GYRO_CALIBR; break;
-    case 'm': itsDMPctl1 |= JEVOIS_DMP_CPASS_CALIBR; break;
-    case 'S': itsDMPctl1 |= JEVOIS_DMP_PED_STEPDET; break;
+    case 'A': ctl1 |= JEVOIS_DMP_ACCEL; a = true; break;
+    case 'G': ctl1 |= JEVOIS_DMP_GYRO; g = true; break;
+    case 'M': ctl1 |= JEVOIS_DMP_CPASS; m = true; break;
+    case 'R': ctl1 |= JEVOIS_DMP_QUAT6; a = true; g = true; break;
+    case 'Q': ctl1 |= JEVOIS_DMP_QUAT9; a = true; g = true; m = true; mec |= JEVOIS_DMP_NINE_AXIS_EN; break;
+    case 'E': ctl1 |= JEVOIS_DMP_GEOMAG; a = true; g = true; m = true; mec |= JEVOIS_DMP_GEOMAG_EN; break;
+    case 'g': ctl1 |= JEVOIS_DMP_GYRO_CALIBR; g = true; break;
+    case 'm': ctl1 |= JEVOIS_DMP_CPASS_CALIBR; m = true; break;
+    case 'S': ctl1 |= JEVOIS_DMP_PED_STEPDET; a = true; mec |= JEVOIS_DMP_PEDOMETER_EN; break;
+    case 'b': ctl2 |= JEVOIS_DMP_ACCEL_ACCURACY; h2 = true; a = true; break;
+    case 'h': ctl2 |= JEVOIS_DMP_GYRO_ACCURACY; h2 = true; g = true; break;
+    case 'n': ctl2 |= JEVOIS_DMP_CPASS_ACCURACY; h2 = true; m = true; break;
+    case 'P': ctl2 |= JEVOIS_DMP_FLIP_PICKUP; h2 = true; a = true; g = true; mec |= JEVOIS_DMP_FLIP_PICKUP_EN; break;
+    case 'T': ctl2 |= JEVOIS_DMP_ACT_RECOG; h2 = true; a = true; g = true;
+      mec |= JEVOIS_DMP_SMD_EN | JEVOIS_DMP_BTS_EN | JEVOIS_DMP_PEDOMETER_EN |
+        JEVOIS_DMP_BRING_AND_LOOK_T0_SEE_EN; break;
+    case 'w': mec |= JEVOIS_DMP_BAC_WEARABLE_EN; break;
+
     default: LERROR("Phony character '" << c << "' ignored while parsing parameter dmp.");
     }
 
+  // Apply a few dependencies:
+  if (a) { h2 = true; ctl2 |= JEVOIS_DMP_ACCEL_ACCURACY; mec |= JEVOIS_DMP_ACCEL_CAL_EN; }
+  if (g) { h2 = true; ctl2 |= JEVOIS_DMP_GYRO_ACCURACY; mec |= JEVOIS_DMP_GYRO_CAL_EN; }
+  if (m) { h2 = true; ctl2 |= JEVOIS_DMP_CPASS_ACCURACY; mec |= JEVOIS_DMP_COMPASS_CAL_EN; }
+  if (h2) ctl1 |= JEVOIS_DMP_HEADER2;
+  
   // Set the two control parameters in the IMU:
-  writeDMP(DMP_DATA_OUT_CTL1, itsDMPctl1);
-  writeDMP(DMP_DATA_OUT_CTL2, itsDMPctl2);
+  writeDMP(DMP_DATA_OUT_CTL1, ctl1);
+  writeDMP(DMP_DATA_OUT_CTL2, ctl2);
   writeDMP(DMP_FIFO_WATERMARK, 800);
 
-  //writeDMP(DMP_DATA_INTR_CTL, 0);
-  //writeDMP(DMP_MOTION_EVENT_CTL, 0); // fixme
-  //writeDMP(DMP_DATA_RDY_STATUS, 0);
+  // Set the data rates:
+  //writeDMP(DMP_ODR_ACCEL, 0x10); // a divider?
 
-
+  writeDMP(DMP_DATA_INTR_CTL, ctl1);
+  writeDMP(DMP_MOTION_EVENT_CTL, mec);
+  writeRegister(ICM20948_REG_DATA_RDY_STATUS, (a ? 0x02 : 0x00) | (g ? 0x01 : 0x00) | (m ? 0x08 : 0x00));
 
 
   // note BAC and B2S require 56Hz

@@ -69,9 +69,16 @@ namespace jevois
     //! Parameter \relates jevois::ICM20948
     JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(dmp, std::string, "Requested DMP data. Only valid when mode is DMP. "
                                            "Use any string of letters including: A=acceleration, G=gyro, "
-                                           "M=magnetometer,............. ",
-                                           "AGM", ParamCateg);
-
+                                           "M=magnetometer, R=quaternion 6, Q=quaternion 9, E=geomag, "
+                                           "g=gyro calibration, m=compass calibration, S=step detection, "
+                                           "b=accel accuracy, h=gyro accuracy, n=compass accuracy, "
+                                           "P=flip/pickup detection, T=activity recognition, "
+                                           "w=configure activity recognition for wearable.",
+                                           "QSPT", ParamCateg);
+    //! Parameter \relates jevois::ICM20948
+    JEVOIS_DECLARE_PARAMETER(dmpdbg, bool, "Send raw DMP packets to console for debug/hacking purposes.",
+                             false, ParamCateg);
+    
     //! Parameter \relates jevois::ICM20948
     JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(arate, float, "Accelerometer sampling rate (Hz), or 0.0 to disable "
                                            "accelerometer. Actual sample rate may differ because of finite and "
@@ -133,7 +140,7 @@ namespace jevois
       a mutex. Users should use an external mutex to protect this class if used in a multithreaded manner. */
   class ICM20948 : public Component,
                    public Parameter<imu::mode, imu::dmp, imu::arate, imu::grate, imu::mrate, imu::abw, imu::gbw,
-                                    imu::tbw, imu::arange, imu::grange>
+                                    imu::tbw, imu::arange, imu::grange, imu::dmpdbg>
   {
     public:
       //! Base class constructor ok
@@ -233,11 +240,13 @@ namespace jevois
       void writeMagRegister(unsigned char magreg, unsigned char val);
       void waitForSlave4();
       void computeFIFOpktSize(float ar, float gr, int mm);
+      size_t getDMPsome(bool blocking, size_t desired);
       
       uint8_t itsBank = 0;
 
-      unsigned short itsDMPctl1 = 0; // Cached DMP control 1 so we can precompute packet size
-      unsigned short itsDMPctl2 = 0; // Cached DMP control 2 so we can precompute packet size
       unsigned short itsFIFOpktSiz = 0; // Cached size of a FIFO-mode packet
+
+      unsigned char itsDMPpacket[1024]; // fixme max packet size...
+      int itsDMPsz = 0; // size of DMP data received so far
   };
 }

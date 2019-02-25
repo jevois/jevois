@@ -17,6 +17,9 @@
 
 #pragma once
 
+#include <vector>
+#include <string>
+
 namespace jevois
 {
   /*! \defgroup imu Inertial Measurement Unit (IMU) classes and functions
@@ -87,28 +90,44 @@ namespace jevois
       inline float const & mz() const { return v[9]; }
   };
 
-  //! \defgroup icmdmpheader ICM-20948 DMP computation header fields
+  //! \defgroup icmdmpheader ICM-20948 DMP computation header fields \ingroup imu
   /*! @{ */
-#define JEVOIS_DMP_ACCEL          0x8000 /*!< calibrated accel if accel calibrated, raw accel otherwise */
-#define JEVOIS_DMP_GYRO           0x4000 /*!< raw gyro */
-#define JEVOIS_DMP_CPASS          0x2000 /*!< raw magnetic */
-#define JEVOIS_DMP_ALS            0x1000 /*!< ALS/proximity */
-#define JEVOIS_DMP_QUAT6          0x0800 /*!< game rotation vector */
-#define JEVOIS_DMP_QUAT9          0x0400 /*!< rotation vector with heading accuracy */
-#define JEVOIS_DMP_PQUAT6         0x0200 /*!< truncated game rotation vector for batching */
-#define JEVOIS_DMP_GEOMAG         0x0100 /*!< geomag rotation vector with heading accuracy */
-#define JEVOIS_DMP_PRESSURE       0x0080 /*!< pressure */
-#define JEVOIS_DMP_GYRO_CALIBR    0x0040 /*!< calibrated gyro */
-#define JEVOIS_DMP_CPASS_CALIBR   0x0020 /*!< calibrated magnetic */
-#define JEVOIS_DMP_PED_STEPDET    0x0010 /*!< timestamp when each step is detected */
-#define JEVOIS_DMP_HEADER2        0x0008 /*!< enable/disable data output in data output control register 2 */
-#define JEVOIS_DMP_PED_STEPIND    0x0007 /*!< number of steps detected is in 3 LSBs of header */
+#define JEVOIS_DMP_ACCEL           0x8000 /*!< calibrated accel if accel calibrated, raw accel otherwise */
+#define JEVOIS_DMP_GYRO            0x4000 /*!< raw gyro */
+#define JEVOIS_DMP_CPASS           0x2000 /*!< raw magnetic */
+#define JEVOIS_DMP_ALS             0x1000 /*!< ALS/proximity */
+#define JEVOIS_DMP_QUAT6           0x0800 /*!< game rotation vector */
+#define JEVOIS_DMP_QUAT9           0x0400 /*!< rotation vector with heading accuracy */
+#define JEVOIS_DMP_PQUAT6          0x0200 /*!< truncated game rotation vector for batching */
+#define JEVOIS_DMP_GEOMAG          0x0100 /*!< geomag rotation vector with heading accuracy */
+#define JEVOIS_DMP_PRESSURE        0x0080 /*!< pressure */
+#define JEVOIS_DMP_GYRO_CALIBR     0x0040 /*!< calibrated gyro */
+#define JEVOIS_DMP_CPASS_CALIBR    0x0020 /*!< calibrated magnetic */
+#define JEVOIS_DMP_PED_STEPDET     0x0010 /*!< timestamp when each step is detected */
+#define JEVOIS_DMP_HEADER2         0x0008 /*!< enable/disable data output in data output control register 2 */
+#define JEVOIS_DMP_PED_STEPIND     0x0007 /*!< number of steps detected is in 3 LSBs of header (JEVOIS: always 0...) */
 
-#define JEVOIS_DMP_ACCEL_ACCURACY 0x4000 /*!< accel accuracy when changes (HEADER2) */
-#define JEVOIS_DMP_GYRO_ACCURACY  0x2000 /*!< gyro accuracy when changes (HEADER2) */
-#define JEVOIS_DMP_CPASS_ACCURACY 0x1000 /*!< compass accuracy when changes (HEADER2) */
-#define JEVOIS_DMP_BATCH_MODE_EN  0x0100 /*!< enable batching  (HEADER2) */
+#define JEVOIS_DMP_ACCEL_ACCURACY  0x4000 /*!< accel accuracy when changes (HEADER2) */
+#define JEVOIS_DMP_GYRO_ACCURACY   0x2000 /*!< gyro accuracy when changes (HEADER2) */
+#define JEVOIS_DMP_CPASS_ACCURACY  0x1000 /*!< compass accuracy when changes (HEADER2) */
+#define JEVOIS_DMP_FLIP_PICKUP     0x0400 /*!< Flip/pick-up gesture detector (HEADER2) */
+#define JEVOIS_DMP_BATCH_MODE_EN   0x0100 /*!< enable batching (HEADER2) */
+#define JEVOIS_DMP_ACT_RECOG       0x0080 /*!< Activity recognition engine (HEADER2)*/
       /*! @} */
+
+  // motion event control reg
+#define JEVOIS_DMP_BAC_WEARABLE_EN          0x8000
+#define JEVOIS_DMP_PEDOMETER_EN             0x4000
+#define JEVOIS_DMP_PEDOMETER_INT_EN         0x2000
+#define JEVOIS_DMP_SMD_EN                   0x0800
+#define JEVOIS_DMP_BTS_EN                   0x0020
+#define JEVOIS_DMP_FLIP_PICKUP_EN           0x0010
+#define JEVOIS_DMP_GEOMAG_EN                0x0008
+#define JEVOIS_DMP_ACCEL_CAL_EN             0x0200
+#define JEVOIS_DMP_GYRO_CAL_EN              0x0100
+#define JEVOIS_DMP_COMPASS_CAL_EN           0x0080
+#define JEVOIS_DMP_NINE_AXIS_EN             0x0040
+#define JEVOIS_DMP_BRING_AND_LOOK_T0_SEE_EN 0x0004
 
   //! DMP data (Digital Motion Processor)
   /*! The digital motion processor (DMP) inside the ICM-20948 IMU chip can compute a variety of things that range from
@@ -117,11 +136,50 @@ namespace jevois
       data is computed and output by the DMP. \ingroup imu */
   struct DMPdata
   {
-      unsigned short contents = 0; //!< Indicates which contents are populated in this packet \see icmdmpheader
+      //! Populate our fields from a packet received from the DMP
+      void parsePacket(unsigned char const * packet, size_t siz);
+
+      unsigned short header1; //!< Header 1 fields that indicate what data is valid
+      unsigned short header2; //!< Header 2 fields that indicate what data is valid
+
+      short accel[3]; //!< Raw accelerometer data (when JEVOIS_DMP_ACCEL in header1)
+      short gyro[3]; //!< Raw gyro data (when JEVOIS_DMP_GYRO in header1)
+      short cpass[3]; //!< Raw compass data (when JEVOIS_DMP_CPASS in header1)
+      short gbias[3]; //!< Raw gyro bias data (when JEVOIS_DMP_GYRO in header1)
+
+      long quat6[3]; //!< Quaternion6 data (when JEVOIS_DMP_QUAT6 in header1)
+      long quat9[3]; //!< Quaternion9 data (when JEVOIS_DMP_QUAT9 in header1)
+      long quat9acc; //!< Quaternion9 accuracy (when JEVOIS_DMP_QUAT9 in header1)
+
+      unsigned long stepts; //!< Step detection timestamp (when JEVOIS_DMP_PED_STEPDET)
+      unsigned short steps; //!< Number of steps (0..7) detected this cycle (when JEVOIS_DMP_PED_STEPDET)
       
-  };
+      long geomag[3]; //!< Geomag data (when JEVOIS_DMP_GEOMAG in header1)
+      long geomagacc; //!< Geomag accuracy (when JEVOIS_DMP_GEOMAG in header1)
+      
+      short gyrobias[3]; //!< Gyro bias/calibration data (when JEVOIS_DMP_GYRO_CALIBR in header1)
+      long cpasscal[3]; //!< Compass calibration data (when JEVOIS_DMP_CPASS_CALIBR in header1)
+
+      short accelacc; //!< Accelerometer accuracy data (when JEVOIS_DMP_ACCEL_ACCURACY in header2)
+      short gyroacc; //!< Gyro accuracy data (when JEVOIS_DMP_GYRO_ACCURACY in header2)
+      short cpassacc; //!< Compass accuracy data (when JEVOIS_DMP_CPASS_ACCURACY in header2)
+
+      short pickup; //!< Flip/pickup detection (when JEVOIS_DMP_FLIP_PICKUP in header2)
+
+      unsigned short bacstate; //!< Activity recognition state (when JEVOIS_DMP_ACT_RECOG in header2)
+      long bacts; //!< Activity recognition timestamp (when JEVOIS_DMP_ACT_RECOG in header2)
+
+      unsigned short odrcnt; //!< Output data rate counter (always here but unclear what it is)
+
+      //!< Decode activities into a string
+      /*! Requires that JEVOIS_DMP_ACT_RECOG be set in header2 and correct data rates are used. */
+      std::vector<std::string> activity();
+
+      //! Convert a long fixed-point value to float
+      static float fix2float(long val);
+};
 
   //! Helper function to determine DMP packet size depending on options
   /*! \ingroup imu */
-  size_t DMPpacketSize(unsigned short ctl1, unsigned short ctl2) { return 8; }
+  size_t DMPpacketSize(unsigned short ctl1, unsigned short ctl2);
 };
