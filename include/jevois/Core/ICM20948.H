@@ -68,13 +68,24 @@ namespace jevois
 
     //! Parameter \relates jevois::ICM20948
     JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(dmp, std::string, "Requested DMP data. Only valid when mode is DMP. "
-                                           "Use any string of letters including: A=acceleration, G=gyro, "
-                                           "M=magnetometer, R=quaternion 6, Q=quaternion 9, E=geomag, "
-                                           "g=gyro calibration, m=compass calibration, S=step detection, "
-                                           "b=accel accuracy, h=gyro accuracy, n=compass accuracy, "
-                                           "P=flip/pickup detection, T=activity recognition, "
-                                           "w=configure activity recognition for wearable.",
+                                           "Use any string of letters including:"
+                                           "A=acceleration, "
+                                           "G=gyro, "
+                                           "M=magnetometer (compass), "
+                                           "R=quaternion 6 (uses accel + gyro), "
+                                           "Q=quaternion 9 (uses accel + gyro + compass), "
+                                           "E=geomag (uses accel + compass), "
+                                           "P=flip/pickup detection, "
+                                           "S=step detection, "
+                                           "T=activity recognition, "
+                                           "w=configure activity recognition for wearable, "
+                                           "g=gyro calibration (always on when gyro used), "
+                                           "m=compass calibration (always on when compass used), "
+                                           "b=accel accuracy (always on when accel used), "
+                                           "h=gyro accuracy (always on when gyro used), "
+                                           "n=compass accuracy (always on when compass used).",
                                            "QSPT", ParamCateg);
+    
     //! Parameter \relates jevois::ICM20948
     JEVOIS_DECLARE_PARAMETER(dmpdbg, bool, "Send raw DMP packets to console for debug/hacking purposes.",
                              false, ParamCateg);

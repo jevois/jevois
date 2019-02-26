@@ -65,6 +65,9 @@ namespace jevois
       for gyro, degrees Celsius for temperature, and micro-Tesla for magnetometer).  \ingroup imu */
   struct IMUdata
   {
+      //! Construct from a raw data reading
+      IMUdata(IMUrawData const & rd, double arange, double grange);
+      
       float v[10]; //!< The values: ax, ay, az, gy, gy, gz, temp, mx, my, mz
       bool magovf; //!< True if magnetometer overflow
       
@@ -180,8 +183,8 @@ namespace jevois
       //!< Decode current ongoing activities into a string
       /*! Requires that JEVOIS_DMP_ACT_RECOG be set in header2 and correct data rates are used. This function returns
           strings that contain the name of each ongoing event. Warning, it has state, so you should only call this
-          function for any activity-related parsing after you start using it. Activities are: drive, walk, run, bike,
-          tilt, still. */
+          function for any activity-related parsing after you start using it, and you should call it for every reading
+          from the DMP. Activities are: drive, walk, run, bike, tilt, still. */
       std::vector<std::string> activity2();
 
       //! Convert a long fixed-point value to float

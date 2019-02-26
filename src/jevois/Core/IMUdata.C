@@ -271,3 +271,26 @@ std::vector<std::string> jevois::DMPdata::activity2()
 float jevois::DMPdata::fix2float(long val)
 { return float(val * 1.0 / (1<<30)); }
 
+// ####################################################################################################
+jevois::IMUdata::IMUdata(jevois::IMUrawData const & rd, double arange, double grange)
+{
+  double const ar = arange / 32768.0;
+  ax() = rd.ax() * ar;
+  ay() = rd.ay() * ar;
+  az() = rd.az() * ar;
+
+  double const gr = grange / 32768.0;
+  gx() = rd.gx() * gr;
+  gy() = rd.gy() * gr;
+  gz() = rd.gz() * gr;
+
+  temp() = rd.temp() / 333.87F + 21.0F;
+
+  double const mr = 4912.0 / 32752.0; // full range is +/-4912uT for raw values +/-32752
+  mx() = rd.mx() * mr;
+  my() = rd.my() * mr;
+  mz() = rd.mz() * mr;
+
+  magovf = ((rd.mst2() & BIT_AK09916_STATUS2_HOFL) != 0);
+}
+

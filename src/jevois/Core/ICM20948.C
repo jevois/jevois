@@ -247,7 +247,9 @@ void jevois::ICM20948::postInit()
     writeRegister(ICM20948_REG_SINGLE_FIFO_PRIORITY_SEL, 0xe4); // Use a single interrupt for FIFO
 
     // Enable DMP interrupts:
-    writeRegister(ICM20948_REG_INT_ENABLE_1, 0x02); // Enable DMP Interrupt
+    writeRegister(ICM20948_REG_INT_ENABLE, ICM20948_BIT_DMP_INT_EN); // Enable DMP Interrupt
+    writeRegister(ICM20948_REG_INT_ENABLE_1, ICM20948_BIT_RAW_DATA_0_RDY_EN | ICM20948_BIT_RAW_DATA_1_RDY_EN |
+                  ICM20948_BIT_RAW_DATA_2_RDY_EN | ICM20948_BIT_RAW_DATA_3_RDY_EN); // Enable raw data ready Interrupt
     writeRegister(ICM20948_REG_INT_ENABLE_2, ICM20948_BIT_FIFO_OVERFLOW_EN_0); // Enable FIFO Overflow Interrupt
 
     // Enable DMP:
@@ -406,32 +408,7 @@ jevois::IMUrawData jevois::ICM20948::getRaw(bool blocking)
 // ####################################################################################################
 jevois::IMUdata jevois::ICM20948::get(bool blocking)
 {
-  // Get the raw data:
-  IMUrawData rd = getRaw(blocking);
-
-  // Scale it:
-  IMUdata d;
-
-  double const ar = jevois::imu::arange::get() / 32768.0;
-  d.ax() = rd.ax() * ar;
-  d.ay() = rd.ay() * ar;
-  d.az() = rd.az() * ar;
-
-  double const gr = jevois::imu::grange::get() / 32768.0;
-  d.gx() = rd.gx() * gr;
-  d.gy() = rd.gy() * gr;
-  d.gz() = rd.gz() * gr;
-
-  d.temp() = rd.temp() / 333.87F + 21.0F;
-
-  double const mr = 4912.0 / 32752.0; // full range is +/-4912uT for raw values +/-32752
-  d.mx() = rd.mx() * mr;
-  d.my() = rd.my() * mr;
-  d.mz() = rd.mz() * mr;
-
-  d.magovf = ((rd.mst2() & BIT_AK09916_STATUS2_HOFL) != 0);
-  
-  return d;
+  return jevois::IMUdata(getRaw(blocking), jevois::imu::arange::get(), jevois::imu::grange::get());
 }
 
 // ####################################################################################################
@@ -439,8 +416,6 @@ jevois::DMPdata jevois::ICM20948::getDMP(bool blocking)
 {
   if (mode::get() != jevois::imu::Mode::DMP) LFATAL("getDMP() only available when mode=DMP, see params.cfg");
   DMPdata d;
-
-  writeDMP(DMP_DATA_RDY_STATUS, 1+2+8); //////fixme////////////////////////////////////////////
 
   // Start parsing a new packet?
   if (itsDMPsz < 4)
@@ -798,17 +773,10 @@ void jevois::ICM20948::onParamChange(imu::dmp const & JEVOIS_UNUSED_PARAM(param)
   writeDMP(DMP_DATA_OUT_CTL2, ctl2);
   writeDMP(DMP_FIFO_WATERMARK, 800);
 
-  // Set the data rates:
-  //writeDMP(DMP_ODR_ACCEL, 0x10); // a divider?
-
+  // Setup the DMP:
   writeDMP(DMP_DATA_INTR_CTL, ctl1);
   writeDMP(DMP_MOTION_EVENT_CTL, mec);
-  writeRegister(ICM20948_REG_DATA_RDY_STATUS, (a ? 0x02 : 0x00) | (g ? 0x01 : 0x00) | (m ? 0x08 : 0x00));
-
-
-  // note BAC and B2S require 56Hz
-  // see dmp_icm20948_set_bac_rate
-  // and more generally we should set ODR
+  writeDMP(DMP_DATA_RDY_STATUS, (a ? 0x02 : 0x00) | (g ? 0x01 : 0x00) | (m ? 0x08 : 0x00));
 }
 
 // ####################################################################################################

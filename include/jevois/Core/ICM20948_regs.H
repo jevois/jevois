@@ -101,9 +101,13 @@
  
 #define ICM20948_REG_INT_ENABLE          (ICM20948_BANK_0 | 0x10)    /**< Interrupt Enable register                              */
 #define ICM20948_BIT_WOM_INT_EN          0x08                        /**< Wake-up On Motion enable bit                           */
- 
+#define ICM20948_BIT_DMP_INT_EN          0x02
+
 #define ICM20948_REG_INT_ENABLE_1        (ICM20948_BANK_0 | 0x11)    /**< Interrupt Enable 1 register                            */
 #define ICM20948_BIT_RAW_DATA_0_RDY_EN   0x01                        /**< Raw data ready interrupt enable bit                    */
+#define ICM20948_BIT_RAW_DATA_1_RDY_EN   0x02                        /**< Raw data ready interrupt enable bit                    */
+#define ICM20948_BIT_RAW_DATA_2_RDY_EN   0x04                        /**< Raw data ready interrupt enable bit                    */
+#define ICM20948_BIT_RAW_DATA_3_RDY_EN   0x08                        /**< Raw data ready interrupt enable bit                    */
  
 #define ICM20948_REG_INT_ENABLE_2        (ICM20948_BANK_0 | 0x12)    /**< Interrupt Enable 2 register                            */
 #define ICM20948_BIT_FIFO_OVERFLOW_EN_0  0x01                        /**< FIFO overflow interrupt enable bit                     */
@@ -120,10 +124,21 @@
 #define ICM20948_BIT_SLV1_NACK           0x02
 #define ICM20948_BIT_SLV0_NACK           0x01
 
+#define ICM20948_REG_DMP_INT_STATUS      (ICM20948_BANK_0 | 0x18)
+#define ICM20948_BIT_WAKE_ON_MOTION_INT  0x08
+#define ICM20948_BIT_MSG_DMP_INT         0x0002
+#define ICM20948_BIT_MSG_DMP_INT_0       0x0100  // CI Command
+#define ICM20948_BIT_MSG_DMP_INT_2       0x0200  // CIM Command - SMD
+#define ICM20948_BIT_MSG_DMP_INT_3       0x0400  // CIM Command - Pedometer
+#define ICM20948_BIT_MSG_DMP_INT_4       0x1000  // CIM Command - Pedometer binning
+#define ICM20948_BIT_MSG_DMP_INT_5       0x2000  // CIM Command - Bring To See Gesture
+#define ICM20948_BIT_MSG_DMP_INT_6       0x4000  // CIM Command - Look To See Gesture
+
 #define ICM20948_REG_INT_STATUS          (ICM20948_BANK_0 | 0x19)    /**< Interrupt Status register                              */
 #define ICM20948_BIT_WOM_INT             0x08                        /**< Wake-up on motion interrupt occured bit                */
 #define ICM20948_BIT_PLL_RDY             0x04                        /**< PLL ready interrupt occured bit                        */
- 
+#define ICM20948_BIT_DMP_INT             0x02 
+
 #define ICM20948_REG_INT_STATUS_1        (ICM20948_BANK_0 | 0x1A)    /**< Interrupt Status 1 register                            */
 #define ICM20948_BIT_RAW_DATA_0_RDY_INT  0x01                        /**< Raw data ready interrupt occured bit                   */
  
