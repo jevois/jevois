@@ -171,9 +171,18 @@ namespace jevois
 
       unsigned short odrcnt; //!< Output data rate counter (always here but unclear what it is)
 
-      //!< Decode activities into a string
-      /*! Requires that JEVOIS_DMP_ACT_RECOG be set in header2 and correct data rates are used. */
+      //!< Decode start/stop of activities into a string
+      /*! Requires that JEVOIS_DMP_ACT_RECOG be set in header2 and correct data rates are used. This function returns
+          strings that contain start or stop as a prefix, then each activity. Activities are: drive, walk, run, bike,
+          tilt, still. */
       std::vector<std::string> activity();
+
+      //!< Decode current ongoing activities into a string
+      /*! Requires that JEVOIS_DMP_ACT_RECOG be set in header2 and correct data rates are used. This function returns
+          strings that contain the name of each ongoing event. Warning, it has state, so you should only call this
+          function for any activity-related parsing after you start using it. Activities are: drive, walk, run, bike,
+          tilt, still. */
+      std::vector<std::string> activity2();
 
       //! Convert a long fixed-point value to float
       static float fix2float(long val);

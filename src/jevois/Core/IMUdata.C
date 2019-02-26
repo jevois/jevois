@@ -221,17 +221,48 @@ void jevois::DMPdata::parsePacket(unsigned char const * packet, size_t siz)
 std::vector<std::string> jevois::DMPdata::activity()
 {
   std::vector<std::string> ret;
-  //if (bacstate) LINFO("bacstate=0x" << std::hex<<bacstate);
-  
-  if (bacstate & DMP_BAC_DRIVE) ret.push_back("drive");
-  if (bacstate & DMP_BAC_WALK) ret.push_back("walk");
-  if (bacstate & DMP_BAC_RUN) ret.push_back("run");
-  if (bacstate & DMP_BAC_BIKE) ret.push_back("bike");
-  if (bacstate & DMP_BAC_TILT) ret.push_back("tilt");
-  if (bacstate & DMP_BAC_STILL) ret.push_back("still");
 
-  unsigned short mask = DMP_BAC_DRIVE | DMP_BAC_WALK | DMP_BAC_RUN | DMP_BAC_BIKE | DMP_BAC_TILT | DMP_BAC_STILL;
-  if (bacstate & ~mask) ret.push_back(jevois::sformat("Unk(0x%02x)", bacstate & ~mask));
+  // The activity classifier reports start/stop of activities:
+  // bacstate is a set of 2 bytes:
+  // - high byte indicates activity start
+  // - low byte indicates activity end
+  unsigned char bs[2]; bs[0] = bacstate >> 8; bs[1] = bacstate & 0xff;
+  unsigned short const mask = DMP_BAC_DRIVE | DMP_BAC_WALK | DMP_BAC_RUN | DMP_BAC_BIKE | DMP_BAC_TILT | DMP_BAC_STILL;
+  for (int i = 0; i < 2; ++i)
+  {
+    std::string const ss = (i == 0) ? "start " : "stop ";
+    if (bs[i] & DMP_BAC_DRIVE) ret.push_back(ss + "drive");
+    if (bs[i] & DMP_BAC_WALK) ret.push_back(ss + "walk");
+    if (bs[i] & DMP_BAC_RUN) ret.push_back(ss + "run");
+    if (bs[i] & DMP_BAC_BIKE) ret.push_back(ss + "bike");
+    if (bs[i] & DMP_BAC_TILT) ret.push_back(ss + "tilt");
+    if (bs[i] & DMP_BAC_STILL) ret.push_back(ss + "still");
+    if (bs[i] & ~mask) ret.push_back(ss + jevois::sformat("Unk(0x%02x)", bs[i] & ~mask));
+  }
+  
+  return ret;
+}
+
+// ####################################################################################################
+std::vector<std::string> jevois::DMPdata::activity2()
+{
+  std::vector<std::string> ret;
+  static unsigned char act = 0; // Activities that currently are ongoing
+
+  // The activity classifier reports start/stop of activities:
+  // - high byte indicates activity start
+  // - low byte indicates activity end
+  unsigned char bs[2]; bs[0] = bacstate >> 8; bs[1] = bacstate & 0xff;
+
+  act |= bs[0]; // Activities that started are turned on
+  act &= ~bs[1]; // Activities that stopped are turned off
+  
+  if (act & DMP_BAC_DRIVE) ret.push_back("drive");
+  if (act & DMP_BAC_WALK) ret.push_back("walk");
+  if (act & DMP_BAC_RUN) ret.push_back("run");
+  if (act & DMP_BAC_BIKE) ret.push_back("bike");
+  if (act & DMP_BAC_TILT) ret.push_back("tilt");
+  if (act & DMP_BAC_STILL) ret.push_back("still");
   
   return ret;
 }
