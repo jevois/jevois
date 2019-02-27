@@ -43,7 +43,22 @@
  * limitations under the License.
  *
  ******************************************************************************/
- 
+
+// motion event control reg
+#define JEVOIS_DMP_BAC_WEARABLE_EN          0x8000
+#define JEVOIS_DMP_PEDOMETER_EN             0x4000
+#define JEVOIS_DMP_PEDOMETER_INT_EN         0x2000
+#define JEVOIS_DMP_SMD_EN                   0x0800
+#define JEVOIS_DMP_BTS_EN                   0x0020
+#define JEVOIS_DMP_FLIP_PICKUP_EN           0x0010
+#define JEVOIS_DMP_GEOMAG_EN                0x0008
+#define JEVOIS_DMP_ACCEL_CAL_EN             0x0200
+#define JEVOIS_DMP_GYRO_CAL_EN              0x0100
+#define JEVOIS_DMP_COMPASS_CAL_EN           0x0080
+#define JEVOIS_DMP_NINE_AXIS_EN             0x0040
+#define JEVOIS_DMP_BRING_AND_LOOK_T0_SEE_EN 0x0004
+
+
 // ####################################################################################################
 void jevois::ICM20948::selectBank(unsigned short reg)
 {
@@ -266,17 +281,32 @@ void jevois::ICM20948::postInit()
 
   case jevois::imu::Mode::FIFO:
   {
+    // Disable the DMP:
+    unsigned char v = readRegister(ICM20948_REG_USER_CTRL);
+    v &= ~ICM20948_BIT_DMP_EN; v |= ICM20948_BIT_DMP_RST;
+    writeRegister(ICM20948_REG_USER_CTRL, v);
+
     // Enable FIFO, set packet size, nuke any old FIFO data:
     computeFIFOpktSize(-1.0F, -1.0F, -1);
 
+    // DMP is not available:
+    dmp::freeze();
+    
     LINFO("IMU FIFO mode enabled.");
   }
   break;
 
   case jevois::imu::Mode::RAW:
   {
-    // Enable data ready interrupt so we can report when new data is ready:
-    ///writeRegister(ICM20948_REG_INT_ENABLE_1, ICM20948_BIT_RAW_DATA_0_RDY_EN);
+    // Disable the DMP and FIFO:
+    unsigned char v = readRegister(ICM20948_REG_USER_CTRL);
+    v &= ~(ICM20948_BIT_DMP_EN | ICM20948_BIT_FIFO_EN); v |= ICM20948_BIT_DMP_RST;
+    writeRegister(ICM20948_REG_USER_CTRL, v);
+
+    // DMP is not available:
+    dmp::freeze();
+    pktdbg::freeze();
+
     LINFO("IMU raw data mode enabled.");
   }
   break;
@@ -331,10 +361,10 @@ jevois::IMUrawData jevois::ICM20948::getRaw(bool blocking)
     int siz = dataReady();
 
     // Gobble up the FIFO if it is getting full, so that we never get out of sync:
-    if (siz > 800)
+    if (siz > 500)
     {
-      LERROR("IMU FIFO almost full. You need to call get() more often or reduce rate. Data will be lost.");
-      while (siz > 500)
+      LERROR("IMU FIFO filling up. You need to call get() more often or reduce rate. Data will be lost.");
+      while (siz > 100)
       {
         unsigned char trash[itsFIFOpktSiz];
         readRegisterArray(ICM20948_REG_FIFO_R_W, &trash[0], itsFIFOpktSiz);
@@ -365,27 +395,35 @@ jevois::IMUrawData jevois::ICM20948::getRaw(bool blocking)
     int off = 0;
     if (arate::get() > 0.0F)
     {
-      d.ax() = packet[off + 0] * 256 + packet[off + 1];
-      d.ay() = packet[off + 2] * 256 + packet[off + 3];
-      d.az() = packet[off + 4] * 256 + packet[off + 5];
+      d.ax() = (packet[off + 0] << 8) | packet[off + 1];
+      d.ay() = (packet[off + 2] << 8) | packet[off + 3];
+      d.az() = (packet[off + 4] << 8) | packet[off + 5];
       off += 6;
     }
     if (grate::get() > 0.0F)
     {
-      d.gx() = packet[off + 0] * 256 + packet[off + 1];
-      d.gy() = packet[off + 2] * 256 + packet[off + 3];
-      d.gz() = packet[off + 4] * 256 + packet[off + 5];
+      d.gx() = (packet[off + 0] << 8) | packet[off + 1];
+      d.gy() = (packet[off + 2] << 8) | packet[off + 3];
+      d.gz() = (packet[off + 4] << 8) | packet[off + 5];
       off += 6;
     }
     if (mrate::get() != jevois::imu::MagRate::Off && mrate::get() != jevois::imu::MagRate::Once)
     {
-      d.mx() = packet[off + 0] * 256 + packet[off + 1];
-      d.my() = packet[off + 2] * 256 + packet[off + 3];
-      d.mz() = packet[off + 4] * 256 + packet[off + 5];
-      d.mst2() = packet[off + 6] * 256 + packet[off + 7];
+      d.mx() = (packet[off + 0] << 8) | packet[off + 1];
+      d.my() = (packet[off + 2] << 8) | packet[off + 3];
+      d.mz() = (packet[off + 4] << 8) | packet[off + 5];
+      d.mst2() = (packet[off + 6] << 8) | packet[off + 7];
       off += 8;
     }
     d.temp() = 0; // temp not available in FIFO mode
+
+    // Debug raw packet dump:
+    if (pktdbg::get())
+    {
+      std::stringstream stream; stream << "RAW" << std::hex;
+      for (int i = 0; i < itsFIFOpktSiz; ++i) stream << ' ' << (unsigned int)(packet[i]);
+      LINFO(stream.str());
+    }
   }
   break;
   
@@ -427,10 +465,10 @@ jevois::DMPdata jevois::ICM20948::getDMP(bool blocking)
   }
   
   // Parse the headers:
-  unsigned short ctl1 = itsDMPpacket[0] * 256 + itsDMPpacket[1];
+  unsigned short ctl1 = (itsDMPpacket[0] << 8) | itsDMPpacket[1];
   int off = 2; // offset to where we are in parsing the packet so far
   unsigned short ctl2 = 0;
-  if (ctl1 & JEVOIS_DMP_HEADER2) { ctl2 = itsDMPpacket[off] * 256 + itsDMPpacket[off + 1]; off += 2; }
+  if (ctl1 & JEVOIS_DMP_HEADER2) { ctl2 = (itsDMPpacket[off] << 8) | itsDMPpacket[off + 1]; off += 2; }
   
   // Compute how much data remains to be grabbed for this packet:
   size_t need = jevois::DMPpacketSize(ctl1, ctl2) - itsDMPsz;
@@ -449,7 +487,7 @@ jevois::DMPdata jevois::ICM20948::getDMP(bool blocking)
   d.parsePacket(itsDMPpacket, itsDMPsz);
   
   // Debug raw packet dump:
-  if (dmpdbg::get())
+  if (pktdbg::get())
   {
     std::stringstream stream; stream << "RAW" << std::hex;
     for (int i = 0; i < itsDMPsz; ++i) stream << ' ' << (unsigned int)(itsDMPpacket[i]);

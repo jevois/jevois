@@ -118,20 +118,6 @@ namespace jevois
 #define JEVOIS_DMP_ACT_RECOG       0x0080 /*!< Activity recognition engine (HEADER2)*/
       /*! @} */
 
-  // motion event control reg
-#define JEVOIS_DMP_BAC_WEARABLE_EN          0x8000
-#define JEVOIS_DMP_PEDOMETER_EN             0x4000
-#define JEVOIS_DMP_PEDOMETER_INT_EN         0x2000
-#define JEVOIS_DMP_SMD_EN                   0x0800
-#define JEVOIS_DMP_BTS_EN                   0x0020
-#define JEVOIS_DMP_FLIP_PICKUP_EN           0x0010
-#define JEVOIS_DMP_GEOMAG_EN                0x0008
-#define JEVOIS_DMP_ACCEL_CAL_EN             0x0200
-#define JEVOIS_DMP_GYRO_CAL_EN              0x0100
-#define JEVOIS_DMP_COMPASS_CAL_EN           0x0080
-#define JEVOIS_DMP_NINE_AXIS_EN             0x0040
-#define JEVOIS_DMP_BRING_AND_LOOK_T0_SEE_EN 0x0004
-
   //! DMP data (Digital Motion Processor)
   /*! The digital motion processor (DMP) inside the ICM-20948 IMU chip can compute a variety of things that range from
       simply the raw data buffered at a fixed rate to quaternions to activity detection (footsteps, driving, biking,
