@@ -321,20 +321,42 @@ if (!$ispython)
     {
         my $comp = shift(@sclist);
         my @tmp = split(/\<|\>/, $comp);
+        $tmp[1] =~ s/jevois:://;
         $subcomps{$tmp[1]} = 1;
 
-        # Add any subs of that sub:
+        # Add any subs of that sub, from jevoisbase:
         my $subfilename = `find $jevoissrcroot/jevoisbase/src/Components/ -name $tmp[1].C`;
-        my @subsclist = `/bin/grep addSubComponent $subfilename`;
-        push(@sclist, @subsclist);
+        if ( -f $subfilename)
+        {
+            my @subsclist = `/bin/grep addSubComponent $subfilename`;
+            push(@sclist, @subsclist);
+        }
+        
+        # Add any subs of that sub, from jevois:
+        $subfilename = `find $jevoissrcroot/jevois/src/jevois/ -name $tmp[1].C`;
+        if ( -f $subfilename)
+        {
+            @subsclist = `/bin/grep addSubComponent $subfilename`;
+            push(@sclist, @subsclist);
+        }
     }
 
     # eliminate duplicates:
     foreach my $comp (keys %subcomps) {
         my $filename = `find $jevoissrcroot/jevoisbase/include/jevoisbase/Components/ -name ${comp}.H`;
         chomp $filename;
-        print STEDRR  "INCLUDING $filename\n";
-        getParams($filename, $comp);
+        if ( -f $filename)
+        {
+            print STEDRR  "INCLUDING $filename\n";
+            getParams($filename, $comp);
+        }
+        $filename = `find $jevoissrcroot/jevois/include/jevois/ -name ${comp}.H`;
+        chomp $filename;
+        if ( -f $filename)
+        {
+            print STEDRR  "INCLUDING $filename\n";
+            getParams($filename, $comp);
+        }
     }
 }
 

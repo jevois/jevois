@@ -7,15 +7,6 @@ In some cases, however, one may want to use different optics or sensors.
 
 The following options are available as a modification to an existing JeVois smart camera:
 
-\warning The AR0135 sensor for JeVois is still under development and not officially available yet. It will be sold as a
-modification to existing JeVois units. The custom sensor board includes a 9-DOF IMU (inertial measurement unit) that is
-aligned with the optical axis of the AR0135 camera sensor. This sensor will be available as a mod package that will
-include a new modified plastic case for the camera, a bigger fan, and several lenses, for likely around $100 (global
-shutter sensors, IMUs, and custom cases are expensive).
-
-\note Likewise, the ov2640 sensor is not officially available yet as we are still developing its driver for the Linux
-kernel. It will be a mod to existing JeVois cameras, like the ov7725 mod.
-
 Sensor                      | Resolution              | Shutter | Pixel size      | Lens type           | JeVois name
 ----------------------------|-------------------------|---------|-----------------|---------------------|------------
 Omnivision ov9653 (standard)| 1.3MP (1280x1024 max)   | Rolling | 3.18um x 3.18um | 1/4 inch            | ov9650
@@ -89,18 +80,27 @@ dynamically adjusting framerate on the original ov9653 sensor).
 
 \jvimg{jevois-ov7725-comparison.png, 30%}
 
+This sensor supports: YUYV, BAYER, RGB565
+    +   VGA ( 640 x  480): up to 60 fps
+    +   CIF ( 352 x  288): up to 60 fps
+    +  QVGA ( 320 x  240): up to 60 fps
+    +  QCIF ( 176 x  144): up to 60 fps
+    + QQVGA ( 160 x  120): up to 60 fps
+    + QQCIF (  88 x   72): up to 60 fps
+    
 OnSemi (Aptina) AR0135
 ----------------------
 
 \note This sensor is primarily intended for industrial machine vision and hence has fewer automatic image enhancements
 than the consumer-grade Omnivision sensors. Only auto-gain and auto-exposure are available, no auto white balance.
 
-\note This sensor only supports <b>RAW BAYER</b> output format. The JeVois core software \jvversion{1.10} and later is
-able to convert on the fly from BAYER to YUYV, allowing you to still run the vast majority of JeVois modules, which
-expect YUYV pixel format. However, there is a cost to this (the JeVois processor has to convert from BAYER to
-YUYV). When operating in headless mode (no video out to the USB port), you can eliminate that extra cost by using BAYER
-as the camera pixel format and making sure your code can handle that (e.g., no problem if you will just do a
-`getCvBGR()` or similar on the input frame, that function can convert from anything, including BAYER, to BGR).
+\note This sensor only supports <b>RAW BAYER</b> or <b>GRAY</b> output format (depending on whether you have the color
+or monochrome version). The JeVois core software \jvversion{1.12} and later is able to convert on the fly from BAYER or
+GRAY to YUYV, allowing you to still run the vast majority of JeVois modules, which expect YUYV pixel format. However,
+there is a cost to this (the JeVois processor has to convert from BAYER or GRAY to YUYV). When operating in headless
+mode (no video out to the USB port), you can eliminate that extra cost by using BAYER as the camera pixel format and
+making sure your code can handle that (e.g., no problem if you will just do a `getCvBGR()` or similar on the input
+frame, that function can convert from anything, including BAYER, to BGR).
 
 This sensor requires a custom plastic case for your JeVois unit. Instructions are roughly as in the installation video
 above, just be careful to make sure the sensor is pulled towards the front of the case as far as it will go:
@@ -115,11 +115,87 @@ above, just be careful to make sure the sensor is pulled towards the front of th
 
 \jvimg{ar0135-mount.jpg, 25%}
 
+This sensor supports: BAYER or MONO (depending on which model you have), with on-the-fly conversion to YUYV using the
+JeVois CPU
+    +  SXGA (1280 x  960): up to 54 fps
+    +  720p (1280 x  720): up to 60 fps
+    +   VGA ( 640 x  480): up to 54 fps (binned version of SXGA)
+    +  360p ( 640 x  360): up to 60 fps
+    +  QVGA ( 320 x  240): up to 54 fps (central crop of binned version of SXGA)
+    +  180p ( 320 x  180): up to 60 fps
+    + QQVGA ( 160 x  120): up to 54 fps (central crop of binned version of SXGA)
+    +   90p ( 160 x   90): up to 60 fps
+
+\note As of this writing we are not able to achieve the highest frame rates advertised by the manufacturer in all
+resolutions. Planning on 30fps is a safer bet right now.
+
+We added an awsome IMU (inertial measurement unit) to this sensor, a TDK/InvenSense ICM-20948.
+
+See new modules \jvmod{DemoIMU} and \jvmod{DemoDMP}.
+
+The specifications of this chip are quite impressive:
+      - 3-axis 16-bit accelerometer with full-range sensitivity selectable to +/-2g, +/-4g, +/-8g, and +/-16g.
+      - Accelerometer data rate from 4 Hz to 1125 Hz.
+      - 3-axis 16-bit gyroscope with full-range sensitivity selectable to +/-250dps (degrees/s), +/-500dps,
+        +/-1000dps, and +/-2000dps.
+      - Gyroscope data rate from 4 Hz to 1125 Hz.
+      - 3-axis 16-bit magnetometer (compass) with wide range of +/-4900uT (micro Tesla).
+      - Magnetometer data rates 10 Hz, 20 Hz, 50 Hz, or 100 Hz.
+      - 16-bit temperature sensor with readout rate of up to 8 kHz.
+      - RAW data mode (get current sensor values at any time), buffered (FIFO) data mode (sensor values accumulate into
+        a FIFO at a fixed rate), and digital motion processing mode (DMP; raw data is processed on-chip).
+      - On-chip digital motion processor (DMP) can compute, inside the IMU chip itself:
+        + quaternion 6 (uses accel + gyro),
+        + quaternion 9 (uses accel + gyro + compass),
+        + geomag quaternion (uses accel + compass),
+        + flip/pickup detection,
+        + step detection and counting,
+        + basic activity recognition: drive, walk, run, bike, tilt, still.
+  
+With quaternions computed on-chip, with an algorithm that gets sensor data at a highly accurate, fixed rate, and applies
+various calibrations, drift corrections, and compensations on the fly, one gets highly accurate real-time estimate of
+the sensor's pose in the 3D world and of how it is moving.
+
+Note that communication with the IMU is over a 400kHz I2C bus, which may limit data readout rate depending on which
+data is requested from the IMU.
+  
+This IMU has 3 basic modes of operation (parameter \p mode which can only be set in params.cfg):
+  - RAW: One can access the latest raw sensor data at any time using the getRaw() or get() functions. This is the
+    simplest mode of operation. One disadvantage is that if you are not calling get() at a perfectly regular interval,
+    there will be some time jitter in your readouts. The IMU does not provide any time stamps for its data.
+  - FIFO: In this mode, data from the sensor is piled up into a 1 kbyte FIFO buffer at a precise, constant rate (when
+    all three of accelerometer, gyroscope, and magnetometer are on, the gyro rate determines the FIFO buffering
+    rate). Main advantage is that you can then read out the data without having to worry about calling getRaw() or get()
+    at a highly precise interval. But you need to be careful that the FIFO can fill up and overflow very quickly when
+    using high sensor data rates.
+  - DMP: In this mode, data is captured from the sensor at an accurate, fixed rate, and is fed to the on-chip digital
+    motion processor (DMP). The DMP then computes quaternions, activity recognition, etc and pushes data packets into
+    the FIFO as results from these algorithms become available.
+
 
 Omnivision ov2640
 -----------------
 
-\warning The kernel driver is still under development. This sensor is not available yet.
+The main advantage of this sensor is its higher resolution. However, this comes at a price: light sensitivity is not as
+good, machine vision processing will likely be slow, at high resolutions framerate may be limited by USB 2.0 transfer
+speed (up to 24 MByte/s for video data).
+
+Use this sensor if you want to detect small objects far away and you do not need very high frame rate. For example,
+detecting ArUco markers of barcodes works very well with this sensor.
+
+This sensor supports: YUYV, BAYER, RGB565
+    +  UXGA (1600 x 1200): up to 15 fps
+    +  SXGA (1280 x 1024): up to 15 fps
+    +  720p (1280 x  720): up to 15 fps
+    +   XGA (1024 x  768): up to 15 fps
+    +  SVGA ( 800 x  600): up to 40 fps
+    +   VGA ( 640 x  480): up to 40 fps
+    +   CIF ( 352 x  288): up to 60 fps
+    +  QVGA ( 320 x  240): up to 60 fps
+    +  QCIF ( 176 x  144): up to 60 fps
+    + QQVGA ( 160 x  120): up to 60 fps
+    + QQCIF (  88 x   72): up to 60 fps
+
 
 Which one is which?
 -------------------
@@ -130,6 +206,8 @@ the JeVois circuit board:
 - HDF-25 or HDF-7725: is an ov7725 \jvimg{hdf25-a.jpg, 20%}
 
 - HDF-53: is an ov9653 \jvimg{hdf53-a.jpg, 20%}
+
+- HDF3M: is in ov2640 \jvimg{hdf3m.jpg, 20%}
 
 As far as lenses:
 
