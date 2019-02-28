@@ -57,7 +57,7 @@ JeVois 1.12 brings the following new features:
   Note that communication with the IMU is over a 400kHz I2C bus, which may limit data readout rate depending on which
   data is requested from the IMU.
   
-  This IMU has 3 basic modes of operation (parameter mode, which can only be set in params.cfg):
+  This IMU has 3 basic modes of operation (parameter \p mode which can only be set in params.cfg):
 
   - RAW: One can access the latest raw sensor data at any time using the getRaw() or get() functions. This is the
     simplest mode of operation. One disadvantage is that if you are not calling get() at a perfectly regular interval,

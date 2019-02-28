@@ -41,7 +41,7 @@ Installing JeVois Inventor
 
 
 - MacOS:
-  + Tested on High Sierra. Does not work on Snow Leopard, which is too old. Sorry we do not have versions in
+  + Tested on High Sierra and Mojave. Does not work on Snow Leopard, which is too old. Sorry we do not have versions in
     between to test...
   + Download <b>jevois-inventor_XXX.dmg</b> from http://jevois.org/start (XXX will vary depending on version)
   + Double-click on the DMG file to open it
