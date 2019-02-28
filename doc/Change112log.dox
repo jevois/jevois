@@ -25,6 +25,8 @@ JeVois 1.12 brings the following new features:
   But note that USB 2.0 bandwidth limitations (up to 24 Mbyte/s of video data) may limit framerates when streaming video
   over USB.
 
+- New module \jvmod{PyEmotion} recognizes facial emotions in Python using FER+ ONNX deep neural net in OpenCV.
+
 - New enhanced support for ICM-20948 inertial measurement unit chip. The JeVois ICM20948 driver communicates with a
   kernel-side driver that is integrated with the camera sensor driver on some optional JeVois sensors only. Currently,
   only the OnSemi (Aptina) AR0135 global shutter optional camera sensor is equipped with an IMU.
