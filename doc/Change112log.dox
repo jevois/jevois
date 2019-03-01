@@ -1,7 +1,9 @@
-/*! \page Change111log Changes and new features in JeVois 1.11
+/*! \page Change112log Changes and new features in JeVois 1.11
 
 
 JeVois 1.12 brings the following new features:
+
+\youtube{MFGpN_Vp7mg}
 
 - Bumped to OpenCV 4.0.1, with all contrib modules including deep neural networks (DNN) and non-free.
 
@@ -31,7 +33,7 @@ JeVois 1.12 brings the following new features:
   kernel-side driver that is integrated with the camera sensor driver on some optional JeVois sensors only. Currently,
   only the OnSemi (Aptina) AR0135 global shutter optional camera sensor is equipped with an IMU.
   
-  See new modules \jvmod{DemoIMU} and \jvmod{DemoDMP}.
+  See new modules \jvmod{DemoIMU} and \jvmod{DemoDMP}, and see \ref Sensors.
 
   The specifications of this chip are quite impressive:
       - 3-axis 16-bit accelerometer with full-range sensitivity selectable to +/-2g, +/-4g, +/-8g, and +/-16g.
@@ -55,8 +57,6 @@ JeVois 1.12 brings the following new features:
   With quaternions computed on-chip, with an algorithm that gets sensor data at a highly accurate, fixed rate, and
   applies various calibrations, drift corrections, and compensations on the fly, one gets highly accurate real-time
   estimate of the sensor's pose in the 3D world and of how it is moving.
-  
-  \youtube{MFGpN_Vp7mg}
   
   Note that communication with the IMU is over a 400kHz I2C bus, which may limit data readout rate depending on which
   data is requested from the IMU.
