@@ -10,6 +10,7 @@ my $mods = [
     [ "DetectionDNN", "Locate and identify", "faces or objects" ],
     [ "PyDetectionDNN", "Locate and identify", "faces or objects in Python" ],
     [ "PyClassificationDNN", "Recognize 1000 object", "types in Python" ],
+    [ "PyEmotion", "Classify facial emotions", "in Python" ],
     [ "TensorFlowSaliency", "Detect and recognize", "1000 object types" ],
     [ "TensorFlowEasy", "Recognize 1000 objects", "at up to 83 fps" ],
     [ "DarknetSaliency", "Detect and recognize", "1000 object types" ],
@@ -42,6 +43,8 @@ my $mods = [
     [ "FirstPython", "FIRST Robotics", "object detection" ],
     [ "ArUcoBlob", "ArUco tag +", "color blob tracking" ],
     [ "PythonSandbox", "Your algorithm", "in Python + OpenCV" ],
+    [ "DemoIMU", "Optional global shutter", "sensor with IMU" ],
+    [ "DemoDMP", "Digital motion processing", "on global shutter sensor IMU" ],
     ];
 
         
