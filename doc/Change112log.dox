@@ -56,6 +56,8 @@ JeVois 1.12 brings the following new features:
   applies various calibrations, drift corrections, and compensations on the fly, one gets highly accurate real-time
   estimate of the sensor's pose in the 3D world and of how it is moving.
   
+  \youtube{MFGpN_Vp7mg}
+  
   Note that communication with the IMU is over a 400kHz I2C bus, which may limit data readout rate depending on which
   data is requested from the IMU.
   
