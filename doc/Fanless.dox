@@ -1,0 +1,123 @@
+/*! \page Fanless Fanless operation
+
+In some situations, the fan that cools JeVois is just too loud or consumes too much power. It is possible for JeVois to
+work without it. Here we show you how to convert your JeVois camera to using a heatsink instead of the fan.
+
+During development of JeVois, we had initially planned on passive cooling with a heatsink. However, the required
+heatsink was so large and was getting so hot that we finally opted for a fan.
+
+Requirements
+============
+
+You will need:
+
+- a working JeVois camera
+- a large flat screwdriver
+- wire cutters or scissors
+- super glue
+- a heatsink, here we used 30x30x20mm, with spike-style fins as those tend to be more efficient
+- heatsink (thermally conductive) glue, we got ours on ebay or aliexpress
+- alcohol pads
+- a vise with soft jaws (e.g., rubber)
+
+\warning The heatsink will get very hot, too hot for confortable touching. It can go up to 80C (175F).
+
+Converting to fanless
+=====================
+
+- This modification of course voids your warranty. Proceed at your own risk.
+
+- Open the case using the large flat screwdriver
+
+\jvimg{fanless1.jpg, 25%}
+
+\youtube{8rf643fsjSE}
+
+\jvimg{fanless2.jpg, 25%}
+
+- Cut the fan wires. Make sure they do not get shorted!
+
+\jvimg{fanless3.jpg, 25%}
+
+
+- You may want to glue the camera sensor to the case bottom using some super glue. Just beware that the invisible fumes
+  from super glue will permanently damage your lens. So make sure that the lens is covered before applying glue to the
+  case. In the picture below, you would slightly lift the sensor out of the case, put a very small amount of super-glue
+  on the case in the housing of the sensor, and put the sensor back.
+
+\jvimg{fanless4.jpg, 25%}
+
+
+- Examine the soldering job all around the CPU. None of the solder joints should extend higher than the CPU. Othwerwise,
+  the heatsink could create short circuits. You may have to cover some of the solder joints with tape if you are afraid
+  that they will come in contact with the heatsink.
+
+\jvimg{fanless5.jpg, 25%}
+
+- Now get ready to glue the heatsink. First clean both the heatsink and the CPU and RAM chips with an alcohol swab and
+  allow the alcohol to fully dry out. The CPU has a marking of \a A33 on it, and the RAM chip has \a Samsung.
+
+\jvimg{fanless6.jpg, 25%}
+
+- Next, apply a small amount of heatsink glue to the CPU and to the RAM chip. Note that the RAM chip is a bit thinner
+  than the CPU so the contact with the heatsink will not be great, but that is ok as the RAM does not get very hot
+  anyway.
+
+\jvimg{fanless7.jpg, 25%}
+
+- Press the heatsink onto the CPU and clamp in a vise, not too tight so that you will not break the circuit board. Allow
+  to dry for several hours (overnight is recommended).
+
+\jvimg{fanless8.jpg, 25%}
+
+- Ready to go, it does not look too good but let's see if it will work.
+
+\jvimg{fanless9.jpg, 25%}
+
+- Success, in a 20C office, we get about 63C CPU temperature after 30 minutes of running \jvmod{TensorFlowEasy}, which
+  uses about 375% of the CPU (400% would mean loading all 4 CPU cores to the max).
+
+\jvimg{fanlessa.png, 40%}
+
+That camera eventually went up to 66C after two hours.
+
+If CPU temperature goes over 75C, the CPU frequency will automatically reduce from 1.34GHz to 1.2GHz.
+
+You can also reduce the max CPU clock using parameter \p cpumax of JeVois. In the Console of JeVois inventor, type
+`help` and look for parameter \p cpumax which will show you a number of possible frequencies in MHz. You can then pick
+one of those and set it. For example,
+
+\verbatim
+setpar cpumax 1008
+\endverbatim
+
+TensorFlow predict time went up from 25ms/inference to 33ms/inference, but CPU temperature dropped from 66C to 42C on
+our test camera.
+
+You can also add this command to your camera's \b initscript.cfg file to run it each time JeVois starts.
+
+\note Using our \jvmod{BurnTest} module which we use to test the cameras at the factory, we eventually reached 75C, at
+which point the CPU frequency automatically dropped to 1.2GHz. Temperature then oscillated between 72C and 75C while CPU
+frequency oscillated between 1.2GHz and 1.34GHz. \jvmod{BurnTest} is not enabled by default because it is a terminal
+module (you need to reboot JeVois to kill it). If you look for BurnTest in \b videomappings.cfg, you will find a
+commented-out entry. Remove the comment character and restart JeVois to enable it. As noted, once you launch BurnTest,
+you will need to reboot JeVois to get out of it. While the system remained stable (no crash), we suspect that running
+for extended time periods near 75C will significantly shorten the lifespan of the CPU chip. This is also one of the
+reasons why we eventually decided to use a fan for mass production.
+
+Conclusion
+==========
+
+It looks ugly and is bulky and hot to the touch, but a fanless conversion is possible.
+
+\jvimg{fanlessb.jpg, 25%}
+
+You may be able to use a smaller heatsink if you are ok with running at a lower frequency. See
+http://jevois.org/start/software.html and look for "fanless case" to download STL files of a case that can accomodate a
+heatsink with 30x20mm footprint. You can then 3D print that case. In our early tests with 30x20x6mm heatsinks, JeVois
+would almost immediately overheat under load. But if you can find high-efficiency and taller 30x20mm heatsinks and can
+work with lower CPU frequency, this could be an option. This would have to be tested, though.
+
+*/
+
+
