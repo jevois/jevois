@@ -24,17 +24,18 @@ set(JEVOIS_VENDOR "JeVois")
 ########################################################################################################################
 # Project version:
 set(JEVOIS_VERSION_MAJOR  1)
-set(JEVOIS_VERSION_MINOR  12)
+set(JEVOIS_VERSION_MINOR  13)
 set(JEVOIS_VERSION_PATCH  0)
 set(JEVOIS_SOVERSION "${JEVOIS_VERSION_MAJOR}.${JEVOIS_VERSION_MINOR}.${JEVOIS_VERSION_PATCH}" )
 
 ########################################################################################################################
 # Python version to use for python modules:
-
-# FIXME: On Ubuntu 16.04 and 17.04, we use python 3.5 on host (max supported by boost 1.62 on Ubuntu 17.04) but python
-# 3.6 on platform (supported by boost 1.64 on platform). On later Ubuntu (if libboost_python-py36.so is found), we use
-# python 3.6 on both host and platform. There is also a difference of which package provides turbojpeg.h:
-if (EXISTS "/usr/lib/x86_64-linux-gnu/libboost_python-py36.so")
+if (EXISTS "/usr/lib/x86_64-linux-gnu/libboost_python-py37.so")
+  set(JEVOIS_HOST_PYTHON_MAJOR 3)
+  set(JEVOIS_HOST_PYTHON_MINOR 7)
+  set(JEVOIS_HOST_PYTHON_M "m")
+  set(TURBOJPEG_PKG "libjpeg-turbo8-dev, libturbojpeg-dev")
+elseif (EXISTS "/usr/lib/x86_64-linux-gnu/libboost_python-py36.so")
   set(JEVOIS_HOST_PYTHON_MAJOR 3)
   set(JEVOIS_HOST_PYTHON_MINOR 6)
   set(JEVOIS_HOST_PYTHON_M "m")
@@ -47,14 +48,14 @@ else()
 endif()
 
 set(JEVOIS_PLATFORM_PYTHON_MAJOR 3)
-set(JEVOIS_PLATFORM_PYTHON_MINOR 6)
+set(JEVOIS_PLATFORM_PYTHON_MINOR 7)
 set(JEVOIS_PLATFORM_PYTHON_M "m")
 
 ########################################################################################################################
 # OpenCV version to use with JeVois:
 set(JEVOIS_OPENCV_MAJOR 4)
-set(JEVOIS_OPENCV_MINOR 0)
-set(JEVOIS_OPENCV_PATCH 1)
+set(JEVOIS_OPENCV_MINOR 1)
+set(JEVOIS_OPENCV_PATCH 0)
 set(JEVOIS_OPENCV_VERSION "${JEVOIS_OPENCV_MAJOR}.${JEVOIS_OPENCV_MINOR}.${JEVOIS_OPENCV_PATCH}")
 
 ########################################################################################################################
@@ -161,7 +162,7 @@ set(JEVOIS_TBB_INCLUDE "-I${JEVOIS_BUILDROOT_BASE}/build/opencv3-${JEVOIS_OPENCV
 # platform version which has to be done by hand here.
 set(JEVOIS_PLATFORM_PYTHON_INCLUDE
   "-I${JEVOIS_BUILDROOT_BASE}/host/usr/arm-buildroot-linux-gnueabihf/sysroot/usr/include/python${JEVOIS_PLATFORM_PYTHON_MAJOR}.${JEVOIS_PLATFORM_PYTHON_MINOR}${JEVOIS_PLATFORM_PYTHON_M} -I${JEVOIS_BUILDROOT_BASE}/target/usr/lib/python${JEVOIS_PLATFORM_PYTHON_MAJOR}.${JEVOIS_PLATFORM_PYTHON_MINOR}/site-packages/numpy/core/include/")
-set(JEVOIS_PLATFORM_PYTHON_LIBS "-lpython${JEVOIS_PLATFORM_PYTHON_MAJOR}.${JEVOIS_PLATFORM_PYTHON_MINOR}${JEVOIS_PLATFORM_PYTHON_M} -lboost_python${JEVOIS_PLATFORM_PYTHON_MAJOR}")
+set(JEVOIS_PLATFORM_PYTHON_LIBS "-lpython${JEVOIS_PLATFORM_PYTHON_MAJOR}.${JEVOIS_PLATFORM_PYTHON_MINOR}${JEVOIS_PLATFORM_PYTHON_M} -lboost_python${JEVOIS_PLATFORM_PYTHON_MAJOR}${JEVOIS_PLATFORM_PYTHON_MINOR}")
 
 set(JEVOIS_HOST_PYTHON_INCLUDE
   "-I/usr/include/python${JEVOIS_HOST_PYTHON_MAJOR}.${JEVOIS_HOST_PYTHON_MINOR}${JEVOIS_HOST_PYTHON_M}")

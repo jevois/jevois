@@ -36,10 +36,11 @@ jevois::Serial for full documentation of the serial interface):
 - \b serial:mode - Terminal emulation mode for input, should be \b Plain or \b VT100. Default is \b Plain.
 
 - \b serial:baudrate - baud rate to use. Should be one of 110, 300, 600, 1200, 2400, 4800, 9600, 14400, 19200, 38400,
-  57600, 115200, 230400, 460800, 921600, 1000000, 1152000, 1500000, 2000000, 2500000, 3000000, 3500000, 4000000. Default
-  is \b 115200. Note that some of the values listed here, which are supported by the hardware in theory, do not seem to
-  work. Some tuning of the serial drivers for Allwinner chips in the Linux kernel may be required. The value \b 9600 has
-  been confirmed to work and it what you should use if piping the serial data over a Bluetooth BLE link.
+  57600, 115200, 230400, 380400, 460800, 921600, 1000000, 1152000, 1500000, 2000000, 2500000, 3000000, 3500000,
+  4000000. Default is \b 115200. Note that some of the values listed here, which are supported by the hardware in
+  theory, do not seem to work. Some tuning of the serial drivers for Allwinner chips in the Linux kernel may be
+  required. The values \b 9600, \b 115200, and \b 1500000 (1.5 Mbps) have been confirmed to work. You should use \b 9600
+  if piping the serial data over a Bluetooth BLE link.
 
 - \b serial:linestyle - End of line style: should be
   + \b LF for 0x0a [\\n];
