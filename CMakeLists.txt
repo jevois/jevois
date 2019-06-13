@@ -30,12 +30,12 @@ set(JEVOIS_SOVERSION "${JEVOIS_VERSION_MAJOR}.${JEVOIS_VERSION_MINOR}.${JEVOIS_V
 
 ########################################################################################################################
 # Python version to use for python modules:
-if (EXISTS "/usr/lib/x86_64-linux-gnu/libboost_python-py37.so")
+if (EXISTS "/usr/lib/x86_64-linux-gnu/libboost_python3-py37.so")
   set(JEVOIS_HOST_PYTHON_MAJOR 3)
   set(JEVOIS_HOST_PYTHON_MINOR 7)
   set(JEVOIS_HOST_PYTHON_M "m")
   set(TURBOJPEG_PKG "libjpeg-turbo8-dev, libturbojpeg-dev")
-elseif (EXISTS "/usr/lib/x86_64-linux-gnu/libboost_python-py36.so")
+elseif (EXISTS "/usr/lib/x86_64-linux-gnu/libboost_python3-py36.so")
   set(JEVOIS_HOST_PYTHON_MAJOR 3)
   set(JEVOIS_HOST_PYTHON_MINOR 6)
   set(JEVOIS_HOST_PYTHON_M "m")
@@ -166,7 +166,7 @@ set(JEVOIS_PLATFORM_PYTHON_LIBS "-lpython${JEVOIS_PLATFORM_PYTHON_MAJOR}.${JEVOI
 
 set(JEVOIS_HOST_PYTHON_INCLUDE
   "-I/usr/include/python${JEVOIS_HOST_PYTHON_MAJOR}.${JEVOIS_HOST_PYTHON_MINOR}${JEVOIS_HOST_PYTHON_M}")
-set(JEVOIS_HOST_PYTHON_LIBS "-lpython${JEVOIS_HOST_PYTHON_MAJOR}.${JEVOIS_HOST_PYTHON_MINOR}${JEVOIS_HOST_PYTHON_M} -lboost_python-py${JEVOIS_HOST_PYTHON_MAJOR}${JEVOIS_HOST_PYTHON_MINOR}")
+set(JEVOIS_HOST_PYTHON_LIBS "-lpython${JEVOIS_HOST_PYTHON_MAJOR}.${JEVOIS_HOST_PYTHON_MINOR}${JEVOIS_HOST_PYTHON_M} -lboost_python3-py${JEVOIS_HOST_PYTHON_MAJOR}${JEVOIS_HOST_PYTHON_MINOR}")
   
 ########################################################################################################################
 # Include path:
