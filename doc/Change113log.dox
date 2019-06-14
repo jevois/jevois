@@ -14,7 +14,7 @@ JeVois 1.13 brings the following new features:
   + \a UPGRADED \b python-numpy-1.16.3
   + \a NEW \b python-scipy-1.3.0
   + \a NEW \b python-pip-19.1 which can be invoked to install new python packages (for now, only pure-python packages
-    with no compiled dependencies can be easilyinstalled. We are working on a variant of piwheels to allow one to
+    with no compiled dependencies can be easily installed. We are working on a variant of piwheels to allow one to
     install any available python packages, coming soon!)
 
 - This update also provides more pre-installed python packages and other libraries and utilities. The full list is:
