@@ -16,6 +16,27 @@ JeVois 1.13 brings the following new features:
   + \a NEW \b python-pip-19.1 which can be invoked to install new python packages (for now, only pure-python packages
     with no compiled dependencies can be easily installed. We are working on a variant of piwheels to allow one to
     install any available python packages, coming soon!)
+    
+- For the impatients, here is a mini tutorial for \a pip:
+  + Copy a wheel that does not have any compiled C++ code to your microSD card somewhere (e.g., in
+    <b>JEVOIS:/packages/</b>). For example, \c jsondiff-1.1.2-py3-none-any.whl from http://piwheels.org (see JeVois User
+    Tutorials for how to copy the file to microSD). A wheel that does not say \b none-any in its name will likely NOT
+    work.
+  + In the Console of JeVois Inventor, type:
+  \verbatim
+shell pip install /jevois/packages/jsondiff-1.1.2-py3-none-any.whl
+  \endverbatim
+  You should see something like this:
+  \verbatim
+shell pip install /jevois/packages/jsondiff-1.1.2-py3-none-any.whl
+
+Processing ./packages/jsondiff-1.1.2-py3-none-any.whl
+Installing collected packages: jsondiff
+Successfully installed jsondiff-1.1.2
+OK
+  \endverbatim
+  + and that's it! You can now `import jsondiff` in your python modules.
+  Again, this will fail if your wheel has dependencies, especially compiled ones. We are working on it.
 
 - This update also provides more pre-installed python packages and other libraries and utilities. The full list is:
   + attr-2.4.48
