@@ -5,7 +5,7 @@
 ##############################################################################################################
 
 CAMERA=ov9650
-if [ -f /boot/sensor ]; then CAMERA=`tail -1 /boot/sensor`; fi
+if [ -f /boot/sensor ]; then CAMERA=$(tail -1 /boot/sensor | tr -d '\r\n'); fi
 
 use_usbserial=1    # Allow using a serial-over-USB to communicate with JeVois command-line interface
 use_usbsd=1        # Allow exposing the JEVOIS partition of the microSD as a USB drive
@@ -37,10 +37,18 @@ elif [ -f /boot/usbserialtty ]; then use_usbserialtty=1; echo "Using tty on JeVo
 cd /lib/modules/3.4.39
 
 for m in videobuf-core videobuf-dma-contig videodev vfe_os vfe_subdev v4l2-common v4l2-int-device \
-		       cci ${CAMERA} vfe_v4l2 ump disp mali ; do
+		       cci vfe_v4l2 ump disp mali ; do
     if [ $m = "vfe_v4l2" ]; then
-	    echo "### insmod ${m}.ko sensor=${CAMERA} ###"
-	    insmod ${m}.ko sensor="${CAMERA}"
+        # Try to detect the sensor. Start with the one that was selected, and, if that fails, try all others:
+        for s in ${CAMERA} ov7725 ov2640 ar0135 ov9650; do
+	        echo "### insmod ${s}.ko ###"
+	        insmod ${s}.ko
+	        echo "### insmod ${m}.ko sensor=${s} ###"
+	        insmod ${m}.ko sensor="${s}"
+            if [ $? -eq 0 ]; then CAMERA="${s}"; break; fi
+	        echo "### rmmod ${s}.ko ###"
+            rmmod ${s}.ko
+        done
     else
 	    echo "### insmod ${m}.ko ###"
 	    insmod ${m}.ko

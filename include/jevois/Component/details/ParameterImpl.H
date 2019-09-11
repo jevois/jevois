@@ -161,6 +161,11 @@ void jevois::ParameterCore<T>::changeParameterDef(jevois::ParameterDef<T> const 
 
 // ######################################################################
 template <typename T> inline
+void jevois::ParameterCore<T>::reset()
+{ jevois::ParameterCore<T>::set(itsDef.defaultValue()); }
+
+// ######################################################################
+template <typename T> inline
 void jevois::ParameterCore<T>::callbackInitCall()
 {
   boost::shared_lock<boost::shared_mutex> _(itsMutex);

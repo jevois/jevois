@@ -1,0 +1,39 @@
+/*! \page Change114log Changes and new features in JeVois 1.14
+
+
+JeVois 1.14 brings the following new features:
+
+- Bumped to OpenCV 4.1.1 with all contrib modules including deep neural networks (DNN) and non-free.
+
+- New automatic camera sensor detection. It is now optional to write a file \b BOOT:sensor with the name of the sensor
+  installed in your JeVois smart camera (ov9650, ov7725, ov2640, ar0135, etc). You will still speed-up your JeVois boot
+  time if you have the correct sensor in \b BOOT:sensor, but JeVois will now try all supported sensors in turn until one
+  that works is found. The Allwinner kernel video capture driver has been modified to allow proper unloading and
+  re-loading (unloading used to hang and crash with the manufacturer's code), and to detect the sensor synchronously at
+  load time (as opposed to delegating detection to a kernel thread).
+
+- Currently, the order of detection is: sensor specified in \b BOOT:sensor or ov9650 if there is no \b BOOT:sensor file,
+  ov7725, ov2640, ar0135, ov9650. You will see one orange LED flash for each sensor that the JeVois smart camera tries
+  to detect at boot up. Once the correct sensor is found, the LED will turn solid orange after a few seconds.
+
+- Global JeVois parameter \p camerasens allows one to know which sensor is installed. Just type:
+\verbatim
+getpar camerasens
+\endverbatim
+  in the JeVois Inventor console to get the value.
+
+- New deep networks:
+  + MnasNet optimized autoML networks supported in \jvmod{TensorFlowEasy}
+  + inception_v1_224_quant_20181026 high accuracy (but slow) network supported in \jvmod{TensorFlowEasy}
+  + new parameter \p model in \jvmod{DetectionDNN} to allow one to select a network easily at runtime,
+    without needing to edit the module's \b params.cfg file.
+
+- Improved ov2640 image capture for low resolutions (CIF and lower). The captured images at low-resolution previously
+  were very dark and zoomed-in compared to higher resolutions. This is now fixed. This is true hardware CIF (plus
+  DSP-based scaling down for even lower resolutions), so it supports the hardware-advertized max frame rate of 60fps (as
+  opposed to approaches used in other drivers found on the web which capture at VGA with max 30fps and then use the
+  on-board DSP to scale down).
+
+- For C++ programmers: new Parameter<T>::reset() resets a parameter to its default value.
+
+*/

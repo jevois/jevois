@@ -24,7 +24,7 @@ set(JEVOIS_VENDOR "JeVois")
 ########################################################################################################################
 # Project version:
 set(JEVOIS_VERSION_MAJOR  1)
-set(JEVOIS_VERSION_MINOR  13)
+set(JEVOIS_VERSION_MINOR  14)
 set(JEVOIS_VERSION_PATCH  0)
 set(JEVOIS_SOVERSION "${JEVOIS_VERSION_MAJOR}.${JEVOIS_VERSION_MINOR}.${JEVOIS_VERSION_PATCH}" )
 
@@ -55,7 +55,7 @@ set(JEVOIS_PLATFORM_PYTHON_M "m")
 # OpenCV version to use with JeVois:
 set(JEVOIS_OPENCV_MAJOR 4)
 set(JEVOIS_OPENCV_MINOR 1)
-set(JEVOIS_OPENCV_PATCH 0)
+set(JEVOIS_OPENCV_PATCH 1)
 set(JEVOIS_OPENCV_VERSION "${JEVOIS_OPENCV_MAJOR}.${JEVOIS_OPENCV_MINOR}.${JEVOIS_OPENCV_PATCH}")
 
 ########################################################################################################################
@@ -155,7 +155,7 @@ set(JEVOIS_HOST_OPENCV_LIBS "-L${JEVOIS_HOST_OPENCV_PREFIX}/lib ${OPENCV_LIBS_FO
 # Use TBB and kernel includes for platform from the buildroot installation.  On the host, we may have local packages,
 # eg, latest opencv compiled from source:
 set(JEVOIS_KERNEL_INCLUDE "-I${JEVOIS_BUILDROOT_BASE}/build/linux-headers-3.4.113/usr/include")
-set(JEVOIS_TBB_INCLUDE "-I${JEVOIS_BUILDROOT_BASE}/build/opencv3-${JEVOIS_OPENCV_VERSION}/buildroot-build/3rdparty/tbb/tbb-2018_U1/include")
+set(JEVOIS_TBB_INCLUDE "-I${JEVOIS_BUILDROOT_BASE}/build/opencv3-${JEVOIS_OPENCV_VERSION}/buildroot-build/3rdparty/tbb/tbb-2019_U8/include")
 
 # Find python 3.x on host and platform:
 # NOTE: it is too early here to try to use standard find_package() of CMake. In any case, that will not find the

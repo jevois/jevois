@@ -149,6 +149,9 @@ namespace jevois
 
       //! Unfreeze this parameter, it becomes read-write and will show up in the help message
       void unFreeze();
+
+      //! Reset this parameter to its default value
+      virtual void reset() = 0;
       
     protected:
       mutable boost::shared_mutex itsMutex; //!< Mutex to protect the parameter value
@@ -214,6 +217,9 @@ namespace jevois
       //! Get summary info about this parameter
       virtual ParameterSummary const summary() const override;
 
+      //! Reset this parameter to its default value
+      virtual void reset() override;
+      
       //! Change the ParameterDef of this parameter
       /*! Use with caution, only people who know what they are doing should use this function. Its thread safety and
           possible side effects are dubious. */

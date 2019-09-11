@@ -48,6 +48,10 @@ This requires some skills but can be done in less than 5 minutes. See the video 
 JeVois smart camera configuration
 ---------------------------------
 
+\note With JeVois software \jvversion{1.14} and later, this is optional: the sensor type is automatically detected
+at start up. But you may still want to select it as described below, as this will accelerate the JeVois start up time a
+bit, by avoiding that JeVois tries all known sensors one after the other.
+
 To let your JeVois smart camera know that you have installed a new sensor, you need to indicate the sensor's name in a
 special configuration file on the microSD of your JeVois unit.
 
@@ -62,7 +66,17 @@ For example (after installing an ov7725 sensor):
 
 - \b Linux: `echo ov7725 > /media/${USER}/BOOT/sensor`
 - \b Mac: `echo ov7725 > /Volumes/BOOT/sensor`
-- \b Windows: use TextEdit to create and save the file.
+- \b Windows: use Notepad to create and save the file. Make sure there is no extension
+(i.e., it is named \a sensor and not <em>sensor.txt</em>).
+
+Which sensor does my JeVois camera have?
+----------------------------------------
+
+In the Console of JeVois Inventor, type:
+
+\code{.py}
+getpar camerasens
+\endcode
 
 Sensor specific information
 ===========================
@@ -198,6 +212,10 @@ This sensor supports: YUYV, BAYER, RGB565
     + QQVGA ( 160 x  120): up to 60 fps
     + QQCIF (  88 x   72): up to 60 fps
 
+
+\note The housing for this sensor is 1mm larger than for the ov9650 and ov7725. Hence, the case of your JeVois smart
+caera will not fully close in the front after this sensor is installed. This is to be expected, there will be an
+approximately 1mm gap between the top and bottom of the plastic JeVois camera case.
 
 Which one is which?
 -------------------
