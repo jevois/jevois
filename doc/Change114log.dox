@@ -34,6 +34,8 @@ getpar camerasens
   opposed to approaches used in other drivers found on the web which capture at VGA with max 30fps and then use the
   on-board DSP to scale down).
 
+- Minor improvement to color balance with AR0135 sensor.
+
 - For C++ programmers: new Parameter<T>::reset() resets a parameter to its default value.
 
 */
