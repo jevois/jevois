@@ -98,8 +98,11 @@
 #define ICM20948_BIT_INT_ACTL            0x80                        /**< Active low setting bit                                 */
 #define ICM20948_BIT_INT_OPEN            0x40                        /**< Open collector onfiguration bit                        */
 #define ICM20948_BIT_INT_LATCH_EN        0x20                        /**< Latch enable bit                                       */
- 
+#define ICM20948_BIT_INT_ACTL_FSYNC      0x08
+#define ICM20948_BIT_INT_FSYNC_EN        0x04
+
 #define ICM20948_REG_INT_ENABLE          (ICM20948_BANK_0 | 0x10)    /**< Interrupt Enable register                              */
+#define ICM20948_BIT_FSYNC_INT_EN        0x80                        /**< FSYNC interrupt enable bit                             */
 #define ICM20948_BIT_WOM_INT_EN          0x08                        /**< Wake-up On Motion enable bit                           */
 #define ICM20948_BIT_DMP_INT_EN          0x02
 
@@ -268,6 +271,19 @@
  
 #define ICM20948_REG_ACCEL_CONFIG_2      (ICM20948_BANK_2 | 0x15)    /**< Accelerometer Configuration 2 register              */
 #define ICM20948_BIT_ACCEL_CTEN          0x1C                        /**< Accelerometer Self-Test Enable bits                 */
+
+#define ICM20948_REG_FSYNC_CONFIG        (ICM20948_BANK_2 | 0x52)    /**< FSYNC Configuration register              */
+#define ICM20948_BIT_FSYNC_TIME_EN       0x80
+#define ICM20948_BIT_FSYNC_DEGLITCH_EN   0x20
+#define ICM20948_BIT_FSYNC_EDGE_EN       0x10
+#define ICM20948_BITS_FSYNC_SET_NONE     0x00
+#define ICM20948_BITS_FSYNC_SET_TEMP     0x01
+#define ICM20948_BITS_FSYNC_SET_GX       0x02
+#define ICM20948_BITS_FSYNC_SET_GY       0x03
+#define ICM20948_BITS_FSYNC_SET_GZ       0x04
+#define ICM20948_BITS_FSYNC_SET_AX       0x05
+#define ICM20948_BITS_FSYNC_SET_AY       0x06
+#define ICM20948_BITS_FSYNC_SET_AZ       0x07
 
 /***********************/
 /* Bank 3 register map */

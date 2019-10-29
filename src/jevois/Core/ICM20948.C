@@ -58,7 +58,6 @@
 #define JEVOIS_DMP_NINE_AXIS_EN             0x0040
 #define JEVOIS_DMP_BRING_AND_LOOK_T0_SEE_EN 0x0004
 
-
 // ####################################################################################################
 void jevois::ICM20948::selectBank(unsigned short reg)
 {
@@ -234,6 +233,12 @@ void jevois::ICM20948::preInit()
 
   // Enable 0x80 in ICM20948_REG_PWR_MGMT_2, needed by DMP:
   writeRegister(ICM20948_REG_PWR_MGMT_2, readRegister(ICM20948_REG_PWR_MGMT_2) | 0x80);
+
+  // Enable FSYNC time counting:
+  writeRegister(ICM20948_REG_FSYNC_CONFIG, ICM20948_BIT_FSYNC_TIME_EN | ICM20948_BIT_FSYNC_DEGLITCH_EN |
+                ICM20948_BIT_FSYNC_EDGE_EN | ICM20948_BITS_FSYNC_SET_TEMP);
+  writeRegister(ICM20948_REG_INT_PIN_CFG, ICM20948_BIT_INT_FSYNC_EN /*| ICM20948_BIT_INT_ACTL_FSYNC*/);
+  writeRegister(ICM20948_REG_INT_ENABLE, ICM20948_BIT_FSYNC_INT_EN);
 }
 
 // ####################################################################################################
@@ -262,7 +267,7 @@ void jevois::ICM20948::postInit()
     writeRegister(ICM20948_REG_SINGLE_FIFO_PRIORITY_SEL, 0xe4); // Use a single interrupt for FIFO
 
     // Enable DMP interrupts:
-    writeRegister(ICM20948_REG_INT_ENABLE, ICM20948_BIT_DMP_INT_EN); // Enable DMP Interrupt
+    writeRegister(ICM20948_REG_INT_ENABLE, ICM20948_BIT_FSYNC_INT_EN | ICM20948_BIT_DMP_INT_EN); // Enable DMP Interrupt
     writeRegister(ICM20948_REG_INT_ENABLE_1, ICM20948_BIT_RAW_DATA_0_RDY_EN | ICM20948_BIT_RAW_DATA_1_RDY_EN |
                   ICM20948_BIT_RAW_DATA_2_RDY_EN | ICM20948_BIT_RAW_DATA_3_RDY_EN); // Enable raw data ready Interrupt
     writeRegister(ICM20948_REG_INT_ENABLE_2, ICM20948_BIT_FIFO_OVERFLOW_EN_0); // Enable FIFO Overflow Interrupt
@@ -796,6 +801,7 @@ void jevois::ICM20948::onParamChange(imu::dmp const & JEVOIS_UNUSED_PARAM(param)
       mec |= JEVOIS_DMP_SMD_EN | JEVOIS_DMP_BTS_EN | JEVOIS_DMP_PEDOMETER_EN |
         JEVOIS_DMP_BRING_AND_LOOK_T0_SEE_EN; break;
     case 'w': mec |= JEVOIS_DMP_BAC_WEARABLE_EN; break;
+    case 'F': h2 = true; ctl2 |= JEVOIS_DMP_FSYNC; break;
 
     default: LERROR("Phony character '" << c << "' ignored while parsing parameter dmp.");
     }

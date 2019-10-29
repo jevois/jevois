@@ -70,10 +70,10 @@ size_t jevois::DMPpacketSize(unsigned short ctl1, unsigned short ctl2)
   if (ctl2 & JEVOIS_DMP_ACCEL_ACCURACY) ret += JEVOIS_DMP_ACCEL_ACCURACY_SZ;
   if (ctl2 & JEVOIS_DMP_GYRO_ACCURACY) ret += JEVOIS_DMP_GYRO_ACCURACY_SZ;
   if (ctl2 & JEVOIS_DMP_CPASS_ACCURACY) ret += JEVOIS_DMP_CPASS_ACCURACY_SZ;
+  if (ctl2 & JEVOIS_DMP_FSYNC) ret += JEVOIS_DMP_FSYNC_SZ;
   if (ctl2 & JEVOIS_DMP_FLIP_PICKUP) ret += JEVOIS_DMP_FLIP_PICKUP_SZ;
   if (ctl2 & JEVOIS_DMP_BATCH_MODE_EN) ret += JEVOIS_DMP_ODR_CNT_GYRO_SZ; // is this correct?
   if (ctl2 & JEVOIS_DMP_ACT_RECOG) ret += JEVOIS_DMP_ACT_RECOG_SZ;
-  // missing FSYNC
 
   ret += JEVOIS_DMP_FOOTER_SZ;
 
@@ -198,6 +198,12 @@ void jevois::DMPdata::parsePacket(unsigned char const * packet, size_t siz)
     off += JEVOIS_DMP_CPASS_ACCURACY_SZ;
   }
 
+  if (header2 & JEVOIS_DMP_FSYNC)
+  {
+    fsync = (packet[off + 0] << 8) | packet[off + 1];
+    off += JEVOIS_DMP_FSYNC_SZ;
+  }
+
   if (header2 & JEVOIS_DMP_FLIP_PICKUP)
   {
     pickup = (packet[off + 0] << 8) | packet[off + 1];
@@ -215,6 +221,12 @@ void jevois::DMPdata::parsePacket(unsigned char const * packet, size_t siz)
   off += JEVOIS_DMP_FOOTER_SZ;
 
   if (off != siz) LERROR("Decoded " << off << " bytes from " << siz << " bytes of IMU packet");
+}
+
+// ####################################################################################################
+float jevois::DMPdata::fsync_us() const
+{
+  return float(fsync) * 0.9645F;
 }
 
 // ####################################################################################################

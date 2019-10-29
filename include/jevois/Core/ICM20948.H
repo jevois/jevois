@@ -78,6 +78,7 @@ namespace jevois
                                            "P=flip/pickup detection, "
                                            "S=step detection, "
                                            "T=activity recognition, "
+                                           "F=frame sync from video sensor, "
                                            "w=configure activity recognition for wearable, "
                                            "g=gyro calibration (always on when gyro used), "
                                            "m=compass calibration (always on when compass used), "

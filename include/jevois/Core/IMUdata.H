@@ -113,6 +113,7 @@ namespace jevois
 #define JEVOIS_DMP_ACCEL_ACCURACY  0x4000 /*!< accel accuracy when changes (HEADER2) */
 #define JEVOIS_DMP_GYRO_ACCURACY   0x2000 /*!< gyro accuracy when changes (HEADER2) */
 #define JEVOIS_DMP_CPASS_ACCURACY  0x1000 /*!< compass accuracy when changes (HEADER2) */
+#define JEVOIS_DMP_FSYNC           0x0800 /*!< frame sync from camera sensor (HEADER2) */
 #define JEVOIS_DMP_FLIP_PICKUP     0x0400 /*!< Flip/pick-up gesture detector (HEADER2) */
 #define JEVOIS_DMP_BATCH_MODE_EN   0x0100 /*!< enable batching (HEADER2) */
 #define JEVOIS_DMP_ACT_RECOG       0x0080 /*!< Activity recognition engine (HEADER2)*/
@@ -153,6 +154,9 @@ namespace jevois
       short gyroacc; //!< Gyro accuracy data (when JEVOIS_DMP_GYRO_ACCURACY in header2)
       short cpassacc; //!< Compass accuracy data (when JEVOIS_DMP_CPASS_ACCURACY in header2)
 
+      unsigned short fsync; //!< Delay between FSYNC received from camera and first subsequent IMU data generated
+      float fsync_us() const; //!< Delay between FSYNC and next IMU data, in microseconds
+      
       short pickup; //!< Flip/pickup detection (when JEVOIS_DMP_FLIP_PICKUP in header2)
 
       unsigned short bacstate; //!< Activity recognition state (when JEVOIS_DMP_ACT_RECOG in header2)
