@@ -150,6 +150,36 @@ namespace jevois
           operation, it can crash your system. Memory for vals should have been allocated by the caller with at least
           num bytes. num must be less than 32. */
       void readIMUregisterArray(unsigned short reg, unsigned char * vals, size_t num) override;
+      
+      //! Write a value to one of the camera's DMP registers
+      /*! This very low-level access is for development of optimal DMP settings only and should not be used in normal
+          operation, it can crash your system. Note that the value will be converted to big endian, as required by the
+          DMP processor. */
+      void writeDMPregister(unsigned short reg, unsigned short val) override;
+
+      //! Read a value from one of the camera's DMP registers
+      /*! This very low-level access is for development of optimal DMP settings only and should not be used in normal
+          operation, it can crash your system. Note that the value will be converted from big endian of DMP processor to
+          little endian of the JeVois processor.*/
+      unsigned short readDMPregister(unsigned short reg) override;
+
+      //! Write an array of values to the camera's DMP registers
+      /*! This very low-level access is for development of optimal DMP settings only and should not be used in normal
+          operation, it can crash your system. Memory for vals should have been allocated by the caller with at least
+          num bytes. num must be less than 32. This function does not handle crossing of memory banks, so the caller
+          should segment the calls to match memory bank boundaries. Finally, this function does not perform any endian
+          conversion. Callers should be aware that the DMP is a 16-bit big endian system while the JeVois processor is
+          little endian. */
+      void writeDMPregisterArray(unsigned short reg, unsigned char const * vals, size_t num) override;
+
+      //! Read an array of values from the camera's DMP registers
+      /*! This very low-level access is for development of optimal DMP settings only and should not be used in normal
+          operation, it can crash your system. Memory for vals should have been allocated by the caller with at least
+          num bytes. num must be less than 32. This function does not handle crossing of memory banks, so the caller
+          should segment the calls to match memory bank boundaries. Finally, this function does not perform any endian
+          conversion. Callers should be aware that the DMP is a 16-bit big endian system while the JeVois processor is
+          little endian. */
+      void readDMPregisterArray(unsigned short reg, unsigned char * vals, size_t num) override;
 
     protected:
       //! Sensor flags
@@ -184,6 +214,9 @@ namespace jevois
 
       mutable std::timed_mutex itsMtx;
       int itsFlags;
+
+      uint8_t itsIMUbank;
+      void selectIMUbank(unsigned short reg);
   };
 
 } // namespace jevois

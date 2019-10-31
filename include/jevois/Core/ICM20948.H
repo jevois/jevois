@@ -299,8 +299,6 @@ namespace jevois
       void computeFIFOpktSize(float ar, float gr, int mm);
       size_t getDMPsome(bool blocking, size_t desired);
       
-      uint8_t itsBank = 0;
-
       unsigned short itsFIFOpktSiz = 0; // Cached size of a FIFO-mode packet
 
       unsigned char itsDMPpacket[1024]; // fixme max packet size...

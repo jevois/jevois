@@ -59,87 +59,51 @@
 #define JEVOIS_DMP_BRING_AND_LOOK_T0_SEE_EN 0x0004
 
 // ####################################################################################################
-void jevois::ICM20948::selectBank(unsigned short reg)
-{
-  uint8_t const bank = (reg >> 7) & 0x03;
-  if (itsBank == bank) return;
-  
-  engine()->writeIMUregister(ICM20948_REG_BANK_SEL, bank << 4);
-  itsBank = bank;
-}
- 
-// ####################################################################################################
 void jevois::ICM20948::writeRegister(unsigned short reg, unsigned char val)
 {
-  selectBank(reg);
-  engine()->writeIMUregister(reg & 0x7f, val);
+  engine()->writeIMUregister(reg, val);
 }
 
 // ####################################################################################################
 unsigned char jevois::ICM20948::readRegister(unsigned short reg)
 {
-  selectBank(reg);
-  return engine()->readIMUregister(reg & 0x7f);
+  return engine()->readIMUregister(reg);
 }
 
 // ####################################################################################################
 void jevois::ICM20948::writeRegisterArray(unsigned short reg, unsigned char const * vals, size_t num)
 {
-  selectBank(reg);
-  engine()->writeIMUregisterArray(reg & 0x7f, vals, num);
+  engine()->writeIMUregisterArray(reg, vals, num);
 }
 
 // ####################################################################################################
 void jevois::ICM20948::readRegisterArray(unsigned short reg, unsigned char * vals, size_t num)
 {
-  selectBank(reg);
-  return engine()->readIMUregisterArray(reg & 0x7f, vals, num);
+  return engine()->readIMUregisterArray(reg, vals, num);
 }
+
 // ####################################################################################################
 void jevois::ICM20948::writeDMP(unsigned short reg, unsigned short val)
 {
-  // Write the data in big endian:
-  unsigned char data[2];
-  data[0] = val >> 8;
-  data[1] = val & 0xff;
-  
-  writeDMParray(reg, &data[0], 2);
+  engine()->writeDMPregister(reg, val);
 }
 
 // ####################################################################################################
 void jevois::ICM20948::writeDMParray(unsigned short reg, unsigned char const * vals, size_t num)
 {
-  // Select MEMs bank from the 8 MSBs of reg:
-  writeRegister(ICM20948_REG_MEM_BANK_SEL, reg >> 8);
-
-  // Set address:
-  writeRegister(ICM20948_REG_MEM_START_ADDR, reg & 0xff);
-
-  // Write data:
-  writeRegisterArray(ICM20948_REG_MEM_R_W, vals, num);
+  engine()->writeDMPregisterArray(reg, vals, num);
 }
 
 // ####################################################################################################
 unsigned short jevois::ICM20948::readDMP(unsigned short reg)
 {
-  // Read data in big endian:
-  unsigned char data[2];
-  readDMParray(reg, &data[0], 2);
-
-  return (data[0] << 8) | data[1];
+  return engine()->readDMPregister(reg);
 }
 
 // ####################################################################################################
 void jevois::ICM20948::readDMParray(unsigned short reg, unsigned char * vals, size_t num)
 {
-  // Select MEMs bank from the 8 MSBs of reg:
-  writeRegister(ICM20948_REG_MEM_BANK_SEL, reg >> 8);
-
-  // Set address:
-  writeRegister(ICM20948_REG_MEM_START_ADDR, reg & 0xff);
-  
-  // Write data:
-  readRegisterArray(ICM20948_REG_MEM_R_W, vals, num);
+  engine()->readDMPregisterArray(reg, vals, num);
 }
 
 // ####################################################################################################
@@ -608,15 +572,15 @@ void jevois::ICM20948::onParamChange(jevois::imu::mrate const & JEVOIS_UNUSED_PA
   writeMagRegister(REG_AK09916_CNTL2, VAL_AK09916_CNTL2_PD);
 
   // Set the mode value:
-  unsigned char mode;
+  unsigned char mod;
   switch (newval)
   {
-  case jevois::imu::MagRate::Off: mode = VAL_AK09916_CNTL2_PD; break;
-  case jevois::imu::MagRate::Once: mode = VAL_AK09916_CNTL2_SNGL; break;
-  case jevois::imu::MagRate::M10Hz: mode = VAL_AK09916_CNTL2_MOD1; break;
-  case jevois::imu::MagRate::M20Hz: mode = VAL_AK09916_CNTL2_MOD2; break;
-  case jevois::imu::MagRate::M50Hz: mode = VAL_AK09916_CNTL2_MOD3; break;
-  case jevois::imu::MagRate::M100Hz: mode = VAL_AK09916_CNTL2_MOD4; break;
+  case jevois::imu::MagRate::Off: mod = VAL_AK09916_CNTL2_PD; break;
+  case jevois::imu::MagRate::Once: mod = VAL_AK09916_CNTL2_SNGL; break;
+  case jevois::imu::MagRate::M10Hz: mod = VAL_AK09916_CNTL2_MOD1; break;
+  case jevois::imu::MagRate::M20Hz: mod = VAL_AK09916_CNTL2_MOD2; break;
+  case jevois::imu::MagRate::M50Hz: mod = VAL_AK09916_CNTL2_MOD3; break;
+  case jevois::imu::MagRate::M100Hz: mod = VAL_AK09916_CNTL2_MOD4; break;
   default: LFATAL("Invalid mode value: " << newval);
   }
 
@@ -624,7 +588,7 @@ void jevois::ICM20948::onParamChange(jevois::imu::mrate const & JEVOIS_UNUSED_PA
   std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
   // Now turn it back on in the specified mode:
-  writeMagRegister(REG_AK09916_CNTL2, mode);
+  writeMagRegister(REG_AK09916_CNTL2, mod);
 
   // Set output data rate (but is overridden by gyro ODR wen gyro is on):
   writeRegister(ICM20948_REG_I2C_MST_ODR_CONFIG, 0x04); // Rate is 1.1kHz/(2^value)
@@ -632,7 +596,7 @@ void jevois::ICM20948::onParamChange(jevois::imu::mrate const & JEVOIS_UNUSED_PA
   // Wait for magnetometer to be on:
   std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
-  computeFIFOpktSize(-1.0F, -1.0F, mode);
+  computeFIFOpktSize(-1.0F, -1.0F, mod);
 
   // Setup to transfer 8 bytes (RAW, FIFO) or 6 bytes (DMP) of data from magnetometer to ICM20948 main:
   writeRegister(ICM20948_REG_I2C_SLV0_ADDR, ICM20948_BIT_I2C_READ | COMPASS_SLAVEADDR);

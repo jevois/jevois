@@ -949,6 +949,30 @@ void jevois::Engine::readIMUregisterArray(unsigned short reg, unsigned char * va
 }
 
 // ####################################################################################################
+void jevois::Engine::writeDMPregister(unsigned short reg, unsigned short val)
+{
+  itsCamera->writeDMPregister(reg, val);
+}
+
+// ####################################################################################################
+unsigned short jevois::Engine::readDMPregister(unsigned short reg)
+{
+  return itsCamera->readDMPregister(reg);
+}
+
+// ####################################################################################################
+void jevois::Engine::writeDMPregisterArray(unsigned short reg, unsigned char const * vals, size_t num)
+{
+  itsCamera->writeDMPregisterArray(reg, vals, num);
+}
+
+// ####################################################################################################
+void jevois::Engine::readDMPregisterArray(unsigned short reg, unsigned char * vals, size_t num)
+{
+  itsCamera->readDMPregisterArray(reg, vals, num);
+}
+
+// ####################################################################################################
 jevois::VideoMapping const & jevois::Engine::getCurrentVideoMapping() const
 {
   return itsCurrentMapping;
@@ -1281,6 +1305,10 @@ void jevois::Engine::cmdInfo(std::shared_ptr<UserInterface> s, bool showAll, std
     s->writeString(pfx, "getimureg <reg> - get value of raw IMU register <reg>");
     s->writeString(pfx, "setimuregs <reg> <num> <val1> ... <valn> - set array of raw IMU register values");
     s->writeString(pfx, "getimuregs <reg> <num> - get array of raw IMU register values");
+    s->writeString(pfx, "setdmpreg <reg> <val> - set raw DMP register <reg> to value <val>");
+    s->writeString(pfx, "getdmpreg <reg> - get value of raw DMP register <reg>");
+    s->writeString(pfx, "setdmpregs <reg> <num> <val1> ... <valn> - set array of raw DMP register values");
+    s->writeString(pfx, "getdmpregs <reg> <num> - get array of raw DMP register values");
   }
 
   s->writeString(pfx, "listmappings - list all available video mappings");
@@ -1744,6 +1772,82 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
         }
       }
       else errmsg = "Access to camera's IMU registers is disabled, enable with: setpar camreg true";
+    }
+    
+    // ----------------------------------------------------------------------------------------------------
+    if (cmd == "setdmpreg")
+    {
+      if (camreg::get())
+      {
+        // Read register and value as strings, then std::stoi to convert to int, supports 0x (and 0 for octal, caution)
+        std::istringstream ss(rem); std::string reg, val; ss >> reg >> val;
+        itsCamera->writeDMPregister(std::stoi(reg, nullptr, 0), std::stoi(val, nullptr, 0));
+        return true;
+      }
+      errmsg = "Access to camera's DMP registers is disabled, enable with: setpar camreg true";
+    }
+
+    // ----------------------------------------------------------------------------------------------------
+    if (cmd == "getdmpreg")
+    {
+      if (camreg::get())
+      {
+        unsigned int val = itsCamera->readDMPregister(std::stoi(rem, nullptr, 0));
+        std::ostringstream os; os << std::hex << val;
+        s->writeString(pfx, os.str());
+        return true;
+      }
+      errmsg = "Access to camera's DMP registers is disabled, enable with: setpar camreg true";
+    }
+    
+    // ----------------------------------------------------------------------------------------------------
+    if (cmd == "setdmpregs")
+    {
+      if (camreg::get())
+      {
+        // Read register and value as strings, then std::stoi to convert to int, supports 0x (and 0 for octal, caution)
+        std::vector<std::string> v = jevois::split(rem);
+        if (v.size() < 3) errmsg = "Malformed arguments, need at least 3"; 
+        else
+        {
+          unsigned short reg = std::stoi(v[0], nullptr, 0);
+          size_t num = std::stoi(v[1], nullptr, 0);
+          if (num > 32) errmsg = "Maximum transfer size is 32 bytes";
+          else if (num != v.size() - 2) errmsg = "Incorrect number of data bytes, should pass " + v[1] + " values.";
+          else
+          {
+            unsigned char data[32];
+            for (size_t i = 2; i < v.size(); ++i) data[i-2] = std::stoi(v[i], nullptr, 0) & 0xff;
+            
+            itsCamera->writeDMPregisterArray(reg, data, num);
+            return true;
+          }
+        }
+      }
+      else errmsg = "Access to camera's DMP registers is disabled, enable with: setpar camreg true";
+    }
+
+    // ----------------------------------------------------------------------------------------------------
+    if (cmd == "getdmpregs")
+    {
+      if (camreg::get())
+      {
+        std::istringstream ss(rem); std::string reg, num; ss >> reg >> num;
+        int n = std::stoi(num, nullptr, 0);
+
+        if (n > 32) errmsg = "Maximum transfer size is 32 bytes";
+        else
+        {
+          unsigned char data[32];
+          itsCamera->readDMPregisterArray(std::stoi(reg, nullptr, 0), data, n);
+
+          std::ostringstream os; os << std::hex;
+          for (int i = 0; i < n; ++i) os << (unsigned int)(data[i]) << ' ';
+          s->writeString(pfx, os.str());
+          return true;
+        }
+      }
+      else errmsg = "Access to camera's DMP registers is disabled, enable with: setpar camreg true";
     }
 
     // ----------------------------------------------------------------------------------------------------

@@ -20,6 +20,7 @@
 #include <jevois/Util/Utils.H>
 #include <jevois/Core/VideoMapping.H>
 #include <jevois/Image/RawImageOps.H>
+#include <jevois/Core/ICM20948_regs.H>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -57,7 +58,7 @@ namespace
 // ##############################################################################################################
 jevois::Camera::Camera(std::string const & devname, jevois::CameraSensor s, unsigned int const nbufs) :
     jevois::VideoInput(devname, nbufs), itsSensor(s), itsFd(-1), itsBuffers(nullptr), itsFormat(),
-    itsStreaming(false), itsFps(0.0F), itsFlags(JEVOIS_SENSOR_COLOR)
+    itsStreaming(false), itsFps(0.0F), itsFlags(JEVOIS_SENSOR_COLOR), itsIMUbank(0xff)
 {
   JEVOIS_TRACE(1);
 
@@ -553,10 +554,26 @@ unsigned short jevois::Camera::readRegister(unsigned short reg)
   return data[1];
 }
 
+// ####################################################################################################
+void jevois::Camera::selectIMUbank(unsigned short reg)
+{
+  uint8_t const bank = (reg >> 7) & 0x03;
+  if (itsIMUbank == bank) return;
+  
+  unsigned short data[2] = { ICM20948_REG_BANK_SEL, static_cast<unsigned short>(bank << 4) };
+
+  LDEBUG("Writing 0x" << std::hex << data[1] << " to 0x" << data[0]);
+  XIOCTL(itsFd, _IOW('V', 194, int), data);
+
+  itsIMUbank = bank;
+}
+
 // ##############################################################################################################
 void jevois::Camera::writeIMUregister(unsigned short reg, unsigned short val)
 {
-  unsigned short data[2] = { reg, val };
+  selectIMUbank(reg);
+
+  unsigned short data[2] = { static_cast<unsigned short>(reg & 0x7f), val };
 
   LDEBUG("Writing 0x" << std::hex << val << " to 0x" << reg);
   XIOCTL(itsFd, _IOW('V', 194, int), data);
@@ -565,7 +582,9 @@ void jevois::Camera::writeIMUregister(unsigned short reg, unsigned short val)
 // ##############################################################################################################
 unsigned short jevois::Camera::readIMUregister(unsigned short reg)
 {
-  unsigned short data[2] = { reg, 0 };
+  selectIMUbank(reg);
+
+  unsigned short data[2] = { static_cast<unsigned short>(reg & 0x7f), 0 };
 
   XIOCTL(itsFd, _IOWR('V', 195, int), data);
   LDEBUG("Register 0x" << std::hex << reg << " has value 0x" << data[1]);
@@ -593,10 +612,12 @@ jevois::Camera::Flags jevois::Camera::readFlags()
 // ##############################################################################################################
 void jevois::Camera::writeIMUregisterArray(unsigned short reg, unsigned char const * vals, size_t num)
 {
+  selectIMUbank(reg);
+
   if (num > 32) LFATAL("Maximum allowed size is 32 bytes. You must break down larger transfers into 32 byte chunks.");
 
   static jevois_data d;
-  d.addr = reg & 0xff;
+  d.addr = reg & 0x7f;
   d.size = num;
   memcpy(d.data, vals, num);
 
@@ -607,13 +628,63 @@ void jevois::Camera::writeIMUregisterArray(unsigned short reg, unsigned char con
 // ##############################################################################################################
 void jevois::Camera::readIMUregisterArray(unsigned short reg, unsigned char * vals, size_t num)
 {
+  selectIMUbank(reg);
+
   if (num > 32) LFATAL("Maximum allowed size is 32 bytes. You must break down larger transfers into 32 byte chunks.");
 
   static jevois_data d;
-  d.addr = reg & 0xff;
+  d.addr = reg & 0x7f;
   d.size = num;
 
   XIOCTL(itsFd, _IOWR('V', 197, struct jevois_data), &d);
   LDEBUG("Received " << num <<" values from register 0x" << std::hex << reg);
   memcpy(vals, d.data, num);
+}
+
+// ####################################################################################################
+void jevois::Camera::writeDMPregister(unsigned short reg, unsigned short val)
+{
+  // Write the data in big endian:
+  unsigned char data[2];
+  data[0] = val >> 8;
+  data[1] = val & 0xff;
+  
+  writeDMPregisterArray(reg, &data[0], 2);
+}
+
+// ####################################################################################################
+void jevois::Camera::writeDMPregisterArray(unsigned short reg, unsigned char const * vals, size_t num)
+{
+  // Select MEMs bank from the 8 MSBs of reg:
+  writeIMUregister(ICM20948_REG_MEM_BANK_SEL, reg >> 8);
+
+  // Set address:
+  writeIMUregister(ICM20948_REG_MEM_START_ADDR, reg & 0xff);
+
+  // Write data:
+  writeIMUregisterArray(ICM20948_REG_MEM_R_W, vals, num);
+}
+
+// ####################################################################################################
+unsigned short jevois::Camera::readDMPregister(unsigned short reg)
+{
+  // Read data in big endian:
+  unsigned char data[2];
+  readDMPregisterArray(reg, &data[0], 2);
+
+  // Return it in little endian:
+  return (data[0] << 8) | data[1];
+}
+
+// ####################################################################################################
+void jevois::Camera::readDMPregisterArray(unsigned short reg, unsigned char * vals, size_t num)
+{
+  // Select MEMs bank from the 8 MSBs of reg:
+  writeIMUregister(ICM20948_REG_MEM_BANK_SEL, reg >> 8);
+
+  // Set address:
+  writeIMUregister(ICM20948_REG_MEM_START_ADDR, reg & 0xff);
+  
+  // Write data:
+  readIMUregisterArray(ICM20948_REG_MEM_R_W, vals, num);
 }

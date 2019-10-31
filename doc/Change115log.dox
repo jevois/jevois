@@ -1,0 +1,35 @@
+/*! \page Change115log Changes and new features in JeVois 1.15
+
+
+JeVois 1.15 brings the following new features:
+
+- Updated ArUco module to use new dictionaries now supported: ATAG_16h5, ATAG_25h9, ATAG_36h10 and ATAG_36h11. Also now
+  supporting the AprilTag config parameters when parsing the optional parameter config file.
+
+- Added support for modes other than YUYV in headless ARtoolkit. This is useful to support 15fps operation at 1280x1024
+  by using raw BAYER image format from the camera sensor.
+
+- Improved ICM-20948 IMU (inertial measurement unit) and DMP (digital motion processor) support:
+  + new support for FSYNC input, where the IMU and DMP can signal when they receive a frame sync pulse from the camera
+    sensor (one pulse is emitted by the camera sensor before teh start of each new frame). In addition to getting the
+    pulse, we also get the delay in microseconds between the last IMU measurement and the FSYNC pulse. This is very
+    useful for applications that require tight coupling between the IMU and the video sensor, such as visual-inertial
+    odometry.
+  + new functions on the command-line interface to allow users to tinker with low-level IMU and DMP registers:
+    - setimureg <reg> <val> - set raw IMU register <reg> to value <val>
+    - getimureg <reg> - get value of raw IMU register <reg>
+    - setimuregs <reg> <num> <val1> ... <valn> - set array of raw IMU register values
+    - getimuregs <reg> <num> - get array of raw IMU register values
+    - setdmpreg <reg> <val> - set raw DMP register <reg> to value <val>
+    - getdmpreg <reg> - get value of raw DMP register <reg>
+    - setdmpregs <reg> <num> <val1> ... <valn> - set array of raw DMP register values
+    - getdmpregs <reg> <num> - get array of raw DMP register values
+
+    The registers and values can be specified in decimal, hex (with prefix 0x), or octal (with prefix 0 - beware of this
+    and be careful). The values returned are always in hex (with no prefix). Note that the above functions are not
+    activated by default, to prevent mistakes by rookie users. To activate them, issue a `setpar camreg 1` on the JeVois
+    console.
+
+- Minor improvement to color balance with AR0135 sensor.
+
+*/
