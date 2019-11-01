@@ -37,8 +37,13 @@ namespace
 // ####################################################################################################
 std::string jevois::getSysInfoCPU()
 {
-  int freq = std::stoi(getFileString("/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq")) / 1000;
-  int temp = std::stoi(getFileString("/sys/class/thermal/thermal_zone0/temp"));
+  int freq = 1344;
+  try { freq = std::stoi(getFileString("/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq")) / 1000; }
+  catch (...) { } // silently ignore any errors
+  
+  int temp = 30;
+  try { temp = std::stoi(getFileString("/sys/class/thermal/thermal_zone0/temp")); }
+  catch (...) { } // silently ignore any errors
 
   // On some hosts, temp is in millidegrees:
   if (temp > 200) temp /= 1000;

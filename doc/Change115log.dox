@@ -32,4 +32,7 @@ JeVois 1.15 brings the following new features:
 
 - Minor improvement to color balance with AR0135 sensor.
 
+- New exception handing to avoid obscure stoi() exception on host version of jevois-daemon if temperature system file is
+  ill-formed. Thanks Marc!
+
 */

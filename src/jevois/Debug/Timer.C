@@ -101,8 +101,10 @@ std::string const & jevois::Timer::stop()
     // Get the CPU temperature:
     int temp = 30;
     std::ifstream ifs("/sys/class/thermal/thermal_zone0/temp");
-    if (ifs.is_open()) { std::string t; std::getline(ifs, t); temp = std::stoi(t); ifs.close(); }
-
+    if (ifs.is_open())
+      try { std::string t; std::getline(ifs, t); temp = std::stoi(t); ifs.close(); }
+      catch (...) { } // silently ignore any exception and keep default temp if any
+    
     // Most hosts report milli-degrees, platform reports straight degrees:
 #ifndef JEVOIS_PLATFORM
     temp /= 1000;
@@ -111,8 +113,10 @@ std::string const & jevois::Timer::stop()
     // Finally get the CPU frequency:
     int freq = 1344;
     std::ifstream ifs2("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_cur_freq");
-    if (ifs2.is_open()) { std::string f; std::getline(ifs2, f); freq = std::stoi(f) / 1000; ifs2.close(); }
-
+    if (ifs2.is_open())
+      try { std::string f; std::getline(ifs2, f); freq = std::stoi(f) / 1000; ifs2.close(); }
+      catch (...) { }  // silently ignore any exception and keep default freq if any
+    
     // Ready to return all that info:
     std::ostringstream os; os << std::fixed << std::setprecision(1) << fps << " fps, " << cpu << "% CPU, "
                               << temp << "C, " << freq << " MHz";
