@@ -21,6 +21,7 @@
 #include <vector>
 #include <memory>
 #include <linux/videodev2.h>
+#include <string>
 
 namespace jevois
 {

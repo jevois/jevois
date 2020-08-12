@@ -3,6 +3,19 @@
 
 JeVois 1.15 brings the following new features:
 
+- Updated to OpenCV 4.4.0
+
+- Updated Darknet and NNPACK to latest from github.
+
+- Updated to TensorFlow 1.15.3, which runs about 25% faster on mobilenet.
+
+- Updated tutorial on how to train custom TensorFlow models at http://jevois.org/tutorials/UserTensorFlowTraining.html
+
+- Fixed GPU drivers which had been disabled in earlier builds.
+
+- Add support for YUYV output in DemoGPU, so that it can be used in JeVois Inventor. Note that the conversion from
+  native RGB565 to YUYV is done on the JeVois CPU and hence uses some cycles.
+
 - Updated ArUco module to use new dictionaries now supported: ATAG_16h5, ATAG_25h9, ATAG_36h10 and ATAG_36h11. Also now
   supporting the AprilTag config parameters when parsing the optional parameter config file.
 
@@ -11,7 +24,7 @@ JeVois 1.15 brings the following new features:
 
 - Improved ICM-20948 IMU (inertial measurement unit) and DMP (digital motion processor) support:
   + new support for FSYNC input, where the IMU and DMP can signal when they receive a frame sync pulse from the camera
-    sensor (one pulse is emitted by the camera sensor before teh start of each new frame). In addition to getting the
+    sensor (one pulse is emitted by the camera sensor before the start of each new frame). In addition to getting the
     pulse, we also get the delay in microseconds between the last IMU measurement and the FSYNC pulse. This is very
     useful for applications that require tight coupling between the IMU and the video sensor, such as visual-inertial
     odometry.
@@ -26,9 +39,11 @@ JeVois 1.15 brings the following new features:
     - getdmpregs <reg> <num> - get array of raw DMP register values
 
     The registers and values can be specified in decimal, hex (with prefix 0x), or octal (with prefix 0 - beware of this
-    and be careful). The values returned are always in hex (with no prefix). Note that the above functions are not
-    activated by default, to prevent mistakes by rookie users. To activate them, issue a `setpar camreg 1` on the JeVois
-    console.
+    and be careful - if you write 010 it will be octal 10). The values returned are always in hex (with no prefix).
+    Note that the above functions are not activated by default, to prevent mistakes by rookie users. To activate them,
+    issue a `setpar camreg 1` on the JeVois console.
+
+- Added more python bindings to our C++ internal functions.
 
 - Minor improvement to color balance with AR0135 sensor.
 

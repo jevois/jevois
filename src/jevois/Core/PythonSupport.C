@@ -128,6 +128,18 @@ namespace
     if (jevois::python::engineForPythonModule == nullptr) LFATAL("internal error");
     return jevois::python::engineForPythonModule->readIMUregister(reg);
   }
+
+  void pythonWriteDMPregister(unsigned short reg, unsigned short val)
+  {
+    if (jevois::python::engineForPythonModule == nullptr) LFATAL("internal error");
+    jevois::python::engineForPythonModule->writeDMPregister(reg, val);
+  }
+  
+  unsigned short pythonReadDMPregister(unsigned short reg)
+  {
+    if (jevois::python::engineForPythonModule == nullptr) LFATAL("internal error");
+    return jevois::python::engineForPythonModule->readDMPregister(reg);
+  }
   
 #ifdef JEVOIS_LDEBUG_ENABLE
   void pythonLDEBUG(std::string const & logmsg) { LDEBUG(logmsg); }
@@ -166,6 +178,8 @@ BOOST_PYTHON_MODULE(libjevois)
   boost::python::def("readCamRegister", pythonReadCamRegister);
   boost::python::def("writeIMUregister", pythonWriteIMUregister);
   boost::python::def("readIMUregister", pythonReadIMUregister);
+  boost::python::def("writeDMPregister", pythonWriteDMPregister);
+  boost::python::def("readDMPregister", pythonReadDMPregister);
   
   // #################### Log.H
   JEVOIS_PYTHON_CONSTANT(LOG_DEBUG);
@@ -180,6 +194,7 @@ BOOST_PYTHON_MODULE(libjevois)
   
   // #################### Utils.H
   JEVOIS_PYTHON_FUNC(fccstr);
+  JEVOIS_PYTHON_FUNC(cvtypestr);
   JEVOIS_PYTHON_FUNC(strfcc);
   JEVOIS_PYTHON_FUNC(v4l2BytesPerPix);
   JEVOIS_PYTHON_FUNC(v4l2ImageSize);
@@ -340,19 +355,24 @@ BOOST_PYTHON_MODULE(libjevois)
   JEVOIS_PYTHON_RAWIMAGE_FUNC(convertCvRGBAtoRawImage);
   JEVOIS_PYTHON_RAWIMAGE_FUNC(unpackCvRGBAtoGrayRawImage);
   JEVOIS_PYTHON_RAWIMAGE_FUNC(hFlipYUYV);
+  JEVOIS_PYTHON_RAWIMAGE_FUNC(convertCvRGBtoCvYUYV);
+  JEVOIS_PYTHON_RAWIMAGE_FUNC(convertCvBGRtoCvYUYV);
+  JEVOIS_PYTHON_RAWIMAGE_FUNC(convertCvGRAYtoCvYUYV);
+  JEVOIS_PYTHON_RAWIMAGE_FUNC(convertCvRGBAtoCvYUYV);
+  JEVOIS_PYTHON_RAWIMAGE_FUNC(convertBayerToYUYV);
+  JEVOIS_PYTHON_RAWIMAGE_FUNC(convertGreyToYUYV);
+  boost::python::def("rescaleCv", jevois::rescaleCv);
 
   // #################### Timer.H
   boost::python::class_<jevois::Timer>("Timer", boost::python::init<char const *, size_t, int>())
     .def("start", &jevois::Timer::start)
-    .def("stop", &jevois::Timer::stop, boost::python::return_value_policy<boost::python::copy_const_reference>())
-    ;
+    .def("stop", &jevois::Timer::stop, boost::python::return_value_policy<boost::python::copy_const_reference>());
 
   // #################### Profiler.H
   boost::python::class_<jevois::Profiler>("Profiler", boost::python::init<char const *, size_t, int>())
     .def("start", &jevois::Profiler::start)
     .def("checkpoint", &jevois::Profiler::checkpoint)
-    .def("stop", &jevois::Profiler::stop, boost::python::return_value_policy<boost::python::copy_const_reference>())
-    ;
+    .def("stop", &jevois::Profiler::stop, boost::python::return_value_policy<boost::python::copy_const_reference>());
 
   // #################### SysInfo.H
   JEVOIS_PYTHON_FUNC(getSysInfoCPU);

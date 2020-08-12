@@ -30,21 +30,32 @@ set(JEVOIS_SOVERSION "${JEVOIS_VERSION_MAJOR}.${JEVOIS_VERSION_MINOR}.${JEVOIS_V
 
 ########################################################################################################################
 # Python version to use for python modules:
-if (EXISTS "/usr/lib/x86_64-linux-gnu/libboost_python3-py37.so")
+if (EXISTS "/usr/lib/x86_64-linux-gnu/libboost_python38.so")
+  set(JEVOIS_HOST_PYTHON_MAJOR 3)
+  set(JEVOIS_HOST_PYTHON_MINOR 8)
+  set(JEVOIS_HOST_PYTHON_M "")
+  set(JEVOIS_HOST_BOOST_PYTHON "boost_python38")
+  set(TURBOJPEG_PKG "libjpeg-turbo8-dev, libturbojpeg-dev")
+elseif (EXISTS "/usr/lib/x86_64-linux-gnu/libboost_python3-py37.so")
   set(JEVOIS_HOST_PYTHON_MAJOR 3)
   set(JEVOIS_HOST_PYTHON_MINOR 7)
   set(JEVOIS_HOST_PYTHON_M "m")
+  set(JEVOIS_HOST_BOOST_PYTHON "boost_python3-py37")
   set(TURBOJPEG_PKG "libjpeg-turbo8-dev, libturbojpeg-dev")
 elseif (EXISTS "/usr/lib/x86_64-linux-gnu/libboost_python3-py36.so")
   set(JEVOIS_HOST_PYTHON_MAJOR 3)
   set(JEVOIS_HOST_PYTHON_MINOR 6)
   set(JEVOIS_HOST_PYTHON_M "m")
+  set(JEVOIS_HOST_BOOST_PYTHON "boost_python3-py36")
   set(TURBOJPEG_PKG "libjpeg-turbo8-dev, libturbojpeg-dev")
-else()
+elseif (EXISTS "/usr/lib/x86_64-linux-gnu/libboost_python3-py35.so")
   set(JEVOIS_HOST_PYTHON_MAJOR 3)
   set(JEVOIS_HOST_PYTHON_MINOR 5)
   set(JEVOIS_HOST_PYTHON_M "m")
+  set(JEVOIS_HOST_BOOST_PYTHON "boost_python3-py35")
   set(TURBOJPEG_PKG "libjpeg-turbo8-dev")
+else()
+  message(FATAL_ERROR "Cannot find libboost-python, please apt install libboost-all-dev")
 endif()
 
 set(JEVOIS_PLATFORM_PYTHON_MAJOR 3)
@@ -54,8 +65,8 @@ set(JEVOIS_PLATFORM_PYTHON_M "m")
 ########################################################################################################################
 # OpenCV version to use with JeVois:
 set(JEVOIS_OPENCV_MAJOR 4)
-set(JEVOIS_OPENCV_MINOR 1)
-set(JEVOIS_OPENCV_PATCH 1)
+set(JEVOIS_OPENCV_MINOR 4)
+set(JEVOIS_OPENCV_PATCH 0)
 set(JEVOIS_OPENCV_VERSION "${JEVOIS_OPENCV_MAJOR}.${JEVOIS_OPENCV_MINOR}.${JEVOIS_OPENCV_PATCH}")
 
 ########################################################################################################################
@@ -154,8 +165,8 @@ set(JEVOIS_HOST_OPENCV_LIBS "-L${JEVOIS_HOST_OPENCV_PREFIX}/lib ${OPENCV_LIBS_FO
 
 # Use TBB and kernel includes for platform from the buildroot installation.  On the host, we may have local packages,
 # eg, latest opencv compiled from source:
-set(JEVOIS_KERNEL_INCLUDE "-I${JEVOIS_BUILDROOT_BASE}/build/linux-headers-3.4.113/usr/include")
-set(JEVOIS_TBB_INCLUDE "-I${JEVOIS_BUILDROOT_BASE}/build/opencv3-${JEVOIS_OPENCV_VERSION}/buildroot-build/3rdparty/tbb/tbb-2019_U8/include")
+set(JEVOIS_PLATFORM_KERNEL_INCLUDE "-I${JEVOIS_BUILDROOT_BASE}/build/linux-headers-3.4.113/usr/include")
+set(JEVOIS_PLATFORM_TBB_INCLUDE "-I${JEVOIS_BUILDROOT_BASE}/build/opencv3-${JEVOIS_OPENCV_VERSION}/buildroot-build/3rdparty/tbb/oneTBB-2020.2/include")
 
 # Find python 3.x on host and platform:
 # NOTE: it is too early here to try to use standard find_package() of CMake. In any case, that will not find the
@@ -166,11 +177,11 @@ set(JEVOIS_PLATFORM_PYTHON_LIBS "-lpython${JEVOIS_PLATFORM_PYTHON_MAJOR}.${JEVOI
 
 set(JEVOIS_HOST_PYTHON_INCLUDE
   "-I/usr/include/python${JEVOIS_HOST_PYTHON_MAJOR}.${JEVOIS_HOST_PYTHON_MINOR}${JEVOIS_HOST_PYTHON_M}")
-set(JEVOIS_HOST_PYTHON_LIBS "-lpython${JEVOIS_HOST_PYTHON_MAJOR}.${JEVOIS_HOST_PYTHON_MINOR}${JEVOIS_HOST_PYTHON_M} -lboost_python3-py${JEVOIS_HOST_PYTHON_MAJOR}${JEVOIS_HOST_PYTHON_MINOR}")
+set(JEVOIS_HOST_PYTHON_LIBS "-lpython${JEVOIS_HOST_PYTHON_MAJOR}.${JEVOIS_HOST_PYTHON_MINOR}${JEVOIS_HOST_PYTHON_M} -l${JEVOIS_HOST_BOOST_PYTHON}")
   
 ########################################################################################################################
 # Include path:
-set(JEVOIS_PLATFORM_INCLUDE "-I${JEVOIS_BUILDROOT_BASE}/host/arm-buildroot-linux-gnueabihf/sysroot/usr/include/opencv4 ${JEVOIS_KERNEL_INCLUDE} ${JEVOIS_TBB_INCLUDE} ${JEVOIS_PLATFORM_PYTHON_INCLUDE}")
+set(JEVOIS_PLATFORM_INCLUDE "-I${JEVOIS_BUILDROOT_BASE}/host/arm-buildroot-linux-gnueabihf/sysroot/usr/include/opencv4 ${JEVOIS_PLATFORM_KERNEL_INCLUDE} ${JEVOIS_PLATFORM_TBB_INCLUDE} ${JEVOIS_PLATFORM_PYTHON_INCLUDE}")
 set(JEVOIS_HOST_INCLUDE "-I${JEVOIS_HOST_OPENCV_PREFIX}/include/opencv4 ${JEVOIS_HOST_PYTHON_INCLUDE}")
 
 ########################################################################################################################
