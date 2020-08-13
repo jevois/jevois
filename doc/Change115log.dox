@@ -11,6 +11,8 @@ JeVois 1.15 brings the following new features:
 
 - Updated tutorial on how to train custom TensorFlow models at http://jevois.org/tutorials/UserTensorFlowTraining.html
 
+- Updated to Dlib 19.20 in jevoisextra.
+
 - Fixed GPU drivers which had been disabled in earlier builds.
 
 - Add support for YUYV output in DemoGPU, so that it can be used in JeVois Inventor. Note that the conversion from
