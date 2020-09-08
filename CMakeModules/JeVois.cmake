@@ -325,3 +325,16 @@ macro(jevois_setup_cpack packagename)
   include(CPack)
 
 endmacro()
+
+####################################################################################################
+# Check that jevois-sdk version matches the version of dependent projects (jevois, jevoisbase, etc)
+macro(jevois_check_sdk_version ver)
+  file (STRINGS "/var/lib/jevois-build/jevois-sdk-version.txt" SDK_VERSION)
+  if (NOT (${SDK_VERSION} VERSION_EQUAL ${ver}))
+    message("You are tring to compile jevois software ${ver} against mismatched jevois-sdk ${SDK_VERSION}")
+    message("This will likely fail. If using jevois-sdk from deb and jevois/jevoisbase/etc from github, then try:")
+    message("    git checkout ${SDK_VERSION}")
+    message("inside your directory from github to roll it to the same version as jevois-sdk.")
+    message(FATAL_ERROR "Compilation aborted due to jevois-sdk version mismatch.")
+  endif()
+endmacro()
