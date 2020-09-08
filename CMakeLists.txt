@@ -78,7 +78,7 @@ else (DEFINED ENV{JEVOIS_SDK_ROOT})
 endif (DEFINED ENV{JEVOIS_SDK_ROOT})
 
 # Check that we are not trying to compile a newer jevois against an older jevois-sdk, which would typically fail:
-#jevois_check_sdk_version(${JEVOIS_SOVERSION})
+jevois_check_sdk_version(${JEVOIS_SOVERSION})
 
 # Locate buildroot base so we can use the compilers provided there to cross-compile for the platform:
 set(JEVOIS_BUILDROOT_BASE "${JEVOIS_SDK_ROOT}/out/sun8iw5p1/linux/common/buildroot")
