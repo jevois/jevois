@@ -77,9 +77,6 @@ else (DEFINED ENV{JEVOIS_SDK_ROOT})
   set(JEVOIS_SDK_ROOT "/usr/share/jevois-sdk")
 endif (DEFINED ENV{JEVOIS_SDK_ROOT})
 
-# Check that we are not trying to compile a newer jevois against an older jevois-sdk, which would typically fail:
-jevois_check_sdk_version(${JEVOIS_SOVERSION})
-
 # Locate buildroot base so we can use the compilers provided there to cross-compile for the platform:
 set(JEVOIS_BUILDROOT_BASE "${JEVOIS_SDK_ROOT}/out/sun8iw5p1/linux/common/buildroot")
 
@@ -204,6 +201,9 @@ ${JEVOIS_PLATFORM_INCLUDE} -fPIC -Wno-deprecated-declarations -Wno-psabi")
 # Include our helper functions, this will allow selection of host or platform and set variables accordingly:
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules")
 include(JeVois)
+
+# Check that we are not trying to compile a newer jevois against an older jevois-sdk, which would typically fail:
+jevois_check_sdk_version(${JEVOIS_SOVERSION})
 
 ########################################################################################################################
 # Project name, detects compiler (which has been set by our helper module) and general setup
