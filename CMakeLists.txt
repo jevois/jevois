@@ -343,11 +343,11 @@ set(CPACK_DEBIAN_PACKAGE_DEPENDS "build-essential, cmake (>= 3.1), gcc (>= 5.2),
 guvcview, subversion, cmake, git, mercurial, doxygen-gui, graphviz, libboost-all-dev, ${TURBOJPEG_PKG}, \
 autoconf, libeigen3-dev, screen, libgtk2.0-dev, libdc1394-22, libdc1394-22-dev, libjpeg-dev, libpng-dev, libtiff5-dev, \
 libavcodec-dev, libavformat-dev, libswscale-dev, libxine2-dev, libgstreamer1.0-dev, libgstreamer-plugins-base1.0-dev, \
-libv4l-dev, libtbb2, libtbb-dev, libqt4-dev, libfaac-dev, libmp3lame-dev, libopencore-amrnb-dev, \
+libv4l-dev, libtbb2, libtbb-dev, libfaac-dev, libmp3lame-dev, libopencore-amrnb-dev, \
 libopencore-amrwb-dev, libtheora-dev, libvorbis-dev, libxvidcore-dev, x264, v4l-utils, unzip, qt5-default, \
 libgtk-3-dev, libatlas-base-dev, libturbojpeg, libtbb2, \
 python${JEVOIS_HOST_PYTHON_MAJOR}.${JEVOIS_HOST_PYTHON_MINOR}-dev, python${JEVOIS_HOST_PYTHON_MAJOR}-numpy, \
-python${JEVOIS_HOST_PYTHON_MAJOR}-pip, python-serial, jevois-opencv (>=${JEVOIS_OPENCV_VERSION})")
+python${JEVOIS_HOST_PYTHON_MAJOR}-pip, jevois-opencv (>=${JEVOIS_OPENCV_VERSION})")
 
 # Use helper from JeVois.cmake for all other settings:
 jevois_setup_cpack("jevois")
