@@ -20,6 +20,7 @@ New users, be sure to check out [JeVois Start](/start/start.html).
 - \subpage UserCli
 - \subpage ArduinoTutorial
 - \subpage CaseMounting
+- \subpage HardwareFiles
 - \subpage Lenses
 - \subpage Sensors
 - \subpage Fanless

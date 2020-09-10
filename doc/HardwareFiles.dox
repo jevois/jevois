@@ -1,0 +1,44 @@
+/*! \page HardwareFiles Hardware: Schematics, case STL files, etc
+\tableofcontents
+
+
+JeVois-A33 Schematics
+=====================
+
+- [JeVois-A33 CPU board](http://jevois.org/data/JeVois-A33-CPU-Board-Schematics.pdf)
+- [JeVois-A33 Power board](http://jevois.org/data/JeVois-A33-Power-Board-Schematics.pdf)
+
+JeVois-A33 Plastic case STL files
+=================================
+
+Note that those do not print well with filament-based 3D
+printers. They print ok with laser sintering printers, though you may
+lose many of the details in the extruded logos.
+
+Standard case
+-------------
+
+- [JeVois-A33 top case STL](http://jevois.org/data/JeVois-A33-Case-Top.STL)
+- [JeVois-A33 bottom case STL](http://jevois.org/data/JeVois-A33-Case-Bottom.STL)
+
+Fanless case
+------------
+
+This case was designed for a heatsink with 30x20mm footprint. Note that
+in our tests, a 30x20x6mm heatsink is too small to provide adequate
+cooling. JeVois overheats over immediately under load. This is why we
+decided to use a fan for production. See \ref Fanless for more information on fanless mods.
+
+- [JeVois-A33 fanless top case STL](http://jevois.org/data/fanless/JeVoisA33-fanless-case-top.STL)
+- [JeVois-A33 fanless bottom case STL](http://jevois.org/data/fanless/JeVoisA33-fanless-case-bottom.STL)
+
+Case for modified units with AR0135 global shutter sensor
+---------------------------------------------------------
+
+- [JeVois-A33-AR0135 top case STL](http://jevois.org/data/JeVois-A33-AR0135-Case-Top.STL)
+- [JeVois-A33-AR0135 bottom case STL](http://jevois.org/data/JeVois-A33-AR0135-Case-Bottom.STL)
+
+
+
+
+*/

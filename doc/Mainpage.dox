@@ -22,7 +22,7 @@ which an object of interest was found in the camera video stream. These are inte
 including Arduino or any other that supports serial communications (UART with TTL levels at 3.3V or 5V). Users or
 micro-controllers can also send simple text commands to the smart camera over the serial ports.
 
-\image html hardware-proto.jpg "Early JeVois platform prototype with quad-core ARM processor inside. Back view shows Mini-USB port, serial port, Micro-SD slot, and status LED."
+\image html hardware-proto.jpg "Early JeVois platform prototype with quad-core ARM processor inside. Back view shows Mini-USB port, serial port, Micro-SD slot, and status LED." width=\textwidth
 
 The JeVois smart camera is a compact (39mm x 32mm x 19mm, or 1.5" x 1.25" x 0.75"), USB-powered, self-contained and
 powerful quad-core ARM computer running the Linux operating system. For ease of programming and configuration, all of
@@ -39,7 +39,7 @@ makes it easy to create new vision processing modules, and which allows simultan
 for a host computer (e.g., Intel-based Linux desktop used for development, debugging and testing) and for the platform
 hardware (ARM processor).
 
-\image html frameworks.png "Hardware and software JeVois frameworks"
+\image html frameworks.png "Hardware and software JeVois frameworks" width=\textwidth
 
 \section contents Table of contents
 

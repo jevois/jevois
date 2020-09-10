@@ -674,6 +674,23 @@ This command simply restarts the JeVois smart camera.
 When running in host mode, one can quit \c jevois-daemon by simply typing 'quit' in the terminal in which it was
 started.
 
+\subsubsection cmdshell shell <command> - execute a Unix command on JeVois
+
+Use this with caution as you could corrupt the operating system of
+JeVois. This is useful mainly for debugging. For example, try:
+
+\verbatim
+shell dmesg
+\endverbatim
+
+to see the boot log of JeVois.
+
+\subsubsection moreclicmds More commands may be available
+
+As this documentation may fall behind of the actual software running on JeVois,
+check `help` in the JeVois console for any new commands not yet
+documented here.
+
 \subsection cmdpar General parameters available on the command line
 
 As mentioned above, different machine vision modules will add parameters (and possibly new commands) available to users
@@ -761,6 +778,16 @@ When parameter \c camreg is set to true, two new commands become available:
 
 In both cases, \c reg and \c val are unsigned 8-bit values. For convenience, both decimal values and hexadecimal values
 (using a prefix \c 0x to indicate hexadecimal) are supported.
+
+On modified JeVois units with the AR0135 global shutter and ICM-20948 IMU, the following commands also become available:
+- setimureg <reg> <val> - set raw IMU register <reg> to value <val>
+- getimureg <reg> - get value of raw IMU register <reg>
+- setimuregs <reg> <num> <val1> ... <valn> - set array of raw IMU register values
+- getimuregs <reg> <num> - get array of raw IMU register values
+- setdmpreg <reg> <val> - set raw DMP register <reg> to value <val>
+- getdmpreg <reg> - get value of raw DMP register <reg>
+- setdmpregs <reg> <num> <val1> ... <valn> - set array of raw DMP register values
+- getdmpregs <reg> <num> - get array of raw DMP register values
 
 // ##############################################################################################################
 \section cmdscr Command-line scripts

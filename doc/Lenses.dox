@@ -60,8 +60,17 @@ Recommendations and usage scenarios
 
 These sensors and lenses are available at https://jevoisinc.com
 
-Installing a new sensor and lens
---------------------------------
+Adjusting or swapping lens on special JeVois units with no lens glue
+--------------------------------------------------------------------
+
+Special JeVois units with no lens glue and either ov9653 or ov7725 sensors are available at https://jevoisinc.com
+
+These units come in a kit with the standard lens installed, and extra 90deg, 120deg, and NoIR lenses.
+
+\jvimg{lens-adjust.png, 40%}
+
+Installing a new sensor and lens in a standard JeVois unit
+----------------------------------------------------------
 
 This requires some skills but can be done in less than 5 minutes. See the video below for full details.
 

@@ -63,4 +63,64 @@ Here are summary instructions on how to do this with the free Virtualbox softwar
 
   \image html vbox8.png Above: guvcview working inside virtualbox
 
+Headless VirtualBox
+-------------------
+
+When using a Linux host, it is often more convenient to just run the
+JeVois SDK virtual machine in a terminal, without the whole graphical
+interface. This allows you to simply copy/paste commands from another
+terminal to the one that runs your virtual machine. You cannot run
+jevois-inventor in that headless machine, so this is more for C++
+development and compilation.
+
+To enable headless mode, you need to enable an SSH port forwarding rule on your virtual machine, as follows:
+
+- in a terminal on your host machine, create a key with empty password, if you do not already have one:
+  \verbatim
+  ssh-keygen -t rsa
+  \endverbatim
+  When prompted for a passphrase, just press ENTER.
+
+- on the virtual machine, install openssh-server:
+  \verbatim
+  sudo apt install openssh-server
+  \endverbatim
+
+- in VirtualBox, select \a Settings for your virtual machine, then \a Network, click on \a Advanced, and then <em>Port
+  Forwarding</em>. Click on the little icon with a green plus sign to add a rule, as follows:
+  + name: ssh
+  + protocol: TCP
+  + Host IP: leave blank
+  + Host port: 3000 (or any unused port over 1000)
+  + Guest IP: leave blank
+  + Guest port: 22
+
+  And click Ok. This will forward connections made to your host
+  machine on port 3000 to the virtual machine port 22 (ssh).
+
+- Copy your key from the host to the virtual machine:
+  \verbatim
+  ssh-copy-id -p 3000 jevois@localhost
+  \endverbatim
+  When asked, type password \a jevois
+  
+- You can now shutdown your virtual machine and close VirtualBox.
+
+- To start the virtual machine headless and log into it:
+  \verbatim
+  VBoxManage startvm UbuSdk2004 --type headless
+  sleep 20
+  ssh -p 3000 jevois@localhost
+  \endverbatim
+
+  Replace \a UbuSdk2004 above by the name you have chosen when
+  creating your virtual machine (this is the name that appears on the
+  sidebar with the list of machines in the VirtualBox graphical
+  interface).
+
+  All done, you should now be logged into your virtual
+  machine. Remember to shut it down with `sudo shutdown -h now` when
+  finished.
+
+
 */

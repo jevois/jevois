@@ -113,7 +113,7 @@ It looks ugly and is bulky and hot to the touch, but a fanless conversion is pos
 \jvimg{fanlessb.jpg, 25%}
 
 You may be able to use a smaller heatsink if you are ok with running at a lower frequency. See
-http://jevois.org/start/software.html and look for "fanless case" to download STL files of a case that can accomodate a
+http://jevois.org/start/software.html and look for "fanless case" to download STL files of a case that can accommodate a
 heatsink with 30x20mm footprint. You can then 3D print that case. In our early tests with 30x20x6mm heatsinks, JeVois
 would almost immediately overheat under load. But if you can find high-efficiency and taller 30x20mm heatsinks and can
 work with lower CPU frequency, this could be an option. This would have to be tested, though.

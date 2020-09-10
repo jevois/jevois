@@ -25,7 +25,7 @@ Installing JeVois Inventor
   + If the JeVois camera is not detected, see below, under "Troubleshooting"
       
 - Linux:
-  + Available and tested for 18.04 amd64 (bionic) and 16.04 amd64 (xenial)
+  + Available and tested for 20.04 (focal), 18.04 amd64 (bionic), and (older versions only) for 16.04 amd64 (xenial)
   + Download <b>jevois-inventor_XXX.deb</b> from http://jevois.org/start (XXX will vary depending on version)
   + `sudo dpkg -i jevois-inventor_XXX.deb`  # (XXX will vary depending on version)
   + `sudo killall ModemManager`  # (ModemManager interferes with JeVois)
@@ -41,8 +41,8 @@ Installing JeVois Inventor
 
 
 - MacOS:
-  + Tested on High Sierra and Mojave. Does not work on Snow Leopard, which is too old. Sorry we do not have versions in
-    between to test...
+  + Tested on Catalina, Mojave, High Sierra. Does not work on Snow Leopard, which is too old.
+    Sorry we do not have versions in between to test...
   + Download <b>jevois-inventor_XXX.dmg</b> from http://jevois.org/start (XXX will vary depending on version)
   + Double-click on the DMG file to open it
   + Drag jevois-inventor to your desktop or Applications folder
@@ -250,6 +250,11 @@ Select <b>New Python Module...</b> from the <b>Vision Module</b> pull-down menu.
 
 Enter the data. <b>All fields are required.</b> The \b Finish button will not be enabled until you have entered
 acceptable data. Hover your mouse over each field to see tips.
+
+\note Module Name and Module Vendor must start with an uppercase
+letter. You will not be able to type anything in these boxes until you
+have typed at least one uppercase letter. Be sure to hover over each
+field and read the tooltips for more info.
 
 For simple modules, you would typically select the same resolution for USB output and camera sensor. For more complex
 modules, for example showing a side-by-side output with the original video frame at left and the machine vision results

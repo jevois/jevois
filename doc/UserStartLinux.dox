@@ -1,6 +1,10 @@
 /*! \page UserStartLinux Getting started with Linux host computer
 \tableofcontents
 
+The easiest to get started is to use \ref JeVoisInventor
+
+Below are alternative approaches.
+
 The JeVois smart camera is used like a regular USB camera. To get started with a Linux host computer:
 
 <ul>
@@ -8,9 +12,9 @@ The JeVois smart camera is used like a regular USB camera. To get started with a
 
 <li>Insert MicroSD card into JeVois smart camera, with the MicroSD contacts pointing up as shown below.
 
-\image html sd-insert.png
+\jvimg{sd-insert.png, 40%}
 
-\image html microsd-fully-inserted.jpg
+\jvimg{microsd-fully-inserted.jpg, 60%}
 
 <li>Connect camera to a host computer. The smart camera requires up to 3.5 Watts of power, which is above the limit of
 what a single USB 2.0 port is designed to supply, but is within the limits of a single USB 3.0 port. It is important to
