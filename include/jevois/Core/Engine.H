@@ -22,6 +22,7 @@
 #include <jevois/Types/Enum.H>
 #include <jevois/Image/RawImage.H>
 #include <jevois/Core/CameraSensor.H>
+#include <jevois/Debug/Watchdog.H>
 
 #include <memory>
 #include <mutex>
@@ -29,9 +30,14 @@
 #include <list>
 #include <atomic>
 
+// #################### Platform mode config:
 #ifdef JEVOIS_PLATFORM
-// On the platform (JeVois hardware), we use a gadget driver by default to send output frames over USB, one hardware
-// serial driver, and one serial-over-USB driver:
+
+#if defined(JEVOIS_A33)
+// ########## JeVois-A33 platform:
+
+// On the JeVois-A33 platform, we use a gadget driver by default to send output frames over USB, one hardware serial
+// driver, and one serial-over-USB driver:
 
 //! On platform hardware, device for the camera sensor
 #define JEVOIS_CAMERA_DEFAULT "/dev/video0"
@@ -45,7 +51,44 @@
 //! On platform hardware, device for serial-over-USB port
 #define JEVOIS_USBSERIAL_DEFAULT "/dev/ttyGS0"
 
+//! Default camera sensor
+#define JEVOIS_CAMERASENS_DEFAULT CameraSensor::ov9650
+
+//! Default IMU spi device
+#define JEVOIS_IMUSPI_DEFAULT ""
+
+#elif defined(JEVOIS_PRO)
+// ########## JeVois-Pro platform:
+
+// On the JeVois-Pro platform, we have no gadget for now (which will trigger displaying output frames to a window), one
+// hardware serial driver, and not yet one serial-over-USB driver:
+
+//! On platform hardware, device for the camera sensor
+#define JEVOIS_CAMERA_DEFAULT "/dev/video0"
+
+//! On platform hardware, device for the USB gadget driver (which sends video frames over USB to a host computer)
+#define JEVOIS_GADGET_DEFAULT ""
+
+//! On platform hardware, device for the 4-pin hardware serial port
+#define JEVOIS_SERIAL_DEFAULT "/dev/ttyS4"
+
+//! On platform hardware, device for serial-over-USB port
+#define JEVOIS_USBSERIAL_DEFAULT ""
+//#define JEVOIS_USBSERIAL_DEFAULT "/dev/ttyGS0"
+
+//! Default camera sensor
+#define JEVOIS_CAMERASENS_DEFAULT CameraSensor::imx290
+
+//! Default IMU spi device
+#define JEVOIS_IMUSPI_DEFAULT "/dev/spidev32766.0"
+
 #else
+#error "Neither JEVOIS_A33 nor JEVOIS_PRO defined -- ABORT"
+#endif
+
+#else // JEVOIS_PLATFORM
+// #################### Host mode config:
+
 // On the host, we have no gadget (which will trigger displaying output frames to a window) and we use the terminal in
 // which jevois-daemon was started for serial commands:
 
@@ -61,7 +104,18 @@
 //! On generic computer hardware, device for the serial-over-USB port should always be empty
 #define JEVOIS_USBSERIAL_DEFAULT ""
 
+//! Default IMU spi device
+#define JEVOIS_IMUSPI_DEFAULT ""
+
+#ifdef JEVOIS_PRO
+//! Default camera sensor
+#define JEVOIS_CAMERASENS_DEFAULT CameraSensor::imx290
+#else
+//! Default camera sensor
+#define JEVOIS_CAMERASENS_DEFAULT CameraSensor::ov9650
 #endif
+
+#endif // JEVOIS_PLATFORM
 
 namespace jevois
 {
@@ -70,6 +124,10 @@ namespace jevois
   class Module;
   class DynamicLoader;
   class UserInterface;
+  class GUIhelper;
+  class GUIconsole;
+  class Camera;
+  class IMU;
   
   namespace engine
   {
@@ -84,8 +142,12 @@ namespace jevois
     //! Parameter \relates jevois::Engine
     JEVOIS_DECLARE_PARAMETER(camerasens, CameraSensor, "Camera sensor. Users would usually not set this parameter "
                              "manually, it is set through boot-time configuration.",
-                             CameraSensor::ov9650, CameraSensor_Values, ParamCateg);
+                             JEVOIS_CAMERASENS_DEFAULT, CameraSensor_Values, ParamCateg);
 
+    JEVOIS_DECLARE_PARAMETER(imudev, std::string, "IMU SPI device name, typically starting with /dev/spidev..., "
+                             "or empty if device does not have an IMU with SPI interface.",
+                             JEVOIS_IMUSPI_DEFAULT, ParamCateg);
+    
     //! Parameter \relates jevois::Engine
     JEVOIS_DECLARE_PARAMETER(cameranbuf, unsigned int, "Number of video input (camera) buffers, or 0 for automatic.",
                              0, ParamCateg);
@@ -122,6 +184,10 @@ namespace jevois
                              false, ParamCateg);
 
     //! Parameter \relates jevois::Engine
+    JEVOIS_DECLARE_PARAMETER(imureg, bool, "Enable raw access to IMU registers through setimureg and getimureg",
+                             false, ParamCateg);
+
+    //! Parameter \relates jevois::Engine
     JEVOIS_DECLARE_PARAMETER(camturbo, bool, "Enable camera turbo mode by relaxing the need for DMA-coherent video "
                              "buffer memory. This can accelerate severalfolds access to the captured image data, but "
                              "it may also yield stripe artifacts with some modules, such as PassThrough. The stripes "
@@ -144,21 +210,54 @@ namespace jevois
     //! Parameter \relates jevois::Engine
     JEVOIS_DECLARE_PARAMETER(serout, SerPort, "Send module serial messages to selected serial port(s)",
                              SerPort::None, SerPort_Values, ParamCateg);
-
+   
     //! Enum for Parameter \relates jevois::Engine
     JEVOIS_DEFINE_ENUM_CLASS(CPUmode, (PowerSave) (Conservative) (OnDemand) (Interactive) (Performance) );
 
     //! Parameter \relates jevois::Engine
-    JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(cpumode, CPUmode, "CPU frequency modulation mode",
-                                           CPUmode::Performance, CPUmode_Values, ParamCateg);
+    JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(cpumode, CPUmode, "CPU frequency modulation mode"
+#ifdef JEVOIS_PRO
+                                           " for A73 big cores"
+#endif
+                                           , CPUmode::Performance, CPUmode_Values, ParamCateg);
 
-    // keep this in sync with sunxi-cpufreq.c
+#ifdef JEVOIS_PRO
     //! Parameter \relates jevois::Engine
-    JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(cpumax, unsigned int, "CPU maximum frequency in MHz",
-                                           1344, { 120, 240, 312, 408, 480, 504, 600, 648, 720, 816, 912, 1008,
-                                               1044, 1056, 1080, 1104, 1116, 1152, 1200, 1224, 1248, 1296, 1344 },
-                                           ParamCateg);
+    JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(cpumodel, CPUmode, "CPU frequency modulation mode for A53 little cores",
+                                           CPUmode::Performance, CPUmode_Values, ParamCateg);
+#endif
 
+    //! Parameter \relates jevois::Engine
+    JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(cpumax, unsigned int, "CPU maximum frequency in MHz"
+#ifdef JEVOIS_PRO
+                                           ". To enable overclock frequencies above 2208 MHz, you need to first edit "
+                                           "/boot/env.txt and change max_freq_a73, then reboot. Use with caution!"
+#endif
+#ifdef JEVOIS_A33
+                                           // keep this in sync with sunxi-cpufreq.c
+                                           , 1344, { 120, 240, 312, 408, 480, 504, 600, 648, 720, 816, 912, 1008,
+                                                   1044, 1056, 1080, 1104, 1116, 1152, 1200, 1224, 1248, 1296, 1344 },
+#else
+                                           // keep this in sync with device tree
+                                           // A73 cores
+                                           , 2208, { 500, 667, 1000, 1200, 1398, 1512, 1608, 1704, 1800, 1908, 2016,
+                                                   2100, 2208, 2304, 2400 },
+                                           // A53 cores
+                                           //1800, { 500, 667, 1000, 1200, 1398, 1512, 1608, 1704, 1800, 1908, 2016,
+                                           //        2100, 2208 },
+#endif
+                                           ParamCateg);
+#ifdef JEVOIS_PRO
+     //! Parameter \relates jevois::Engine
+    JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(cpumaxl, unsigned int, "CPU maximum frequency in MHz, for A53 little cores. "
+                                           "To enable overclock frequencies above 1800 MHz, you need to first edit "
+                                           "/boot/env.txt and change max_freq_a53, then reboot. Use with caution!",
+                                           // keep this in sync with device tree
+                                           1800, { 500, 667, 1000, 1200, 1398, 1512, 1608, 1704, 1800, 1908, 2016,
+                                                   2100, 2208 },
+                                           ParamCateg);
+#endif
+    
     //! Parameter \relates jevois::Engine
     JEVOIS_DECLARE_PARAMETER(multicam, bool, "Allow up to 3 JeVois cameras on one USB bus. Enabling this "
 			     "reduces the amount of USB bandwidth used by each JeVois camera, from 3kb "
@@ -186,8 +285,25 @@ namespace jevois
 			     "overloading the serial link, for example in case one is running a ArUco detector and "
 			     "a large number of ArUco tags are present in the field of view of JeVois.",
 			     0, ParamCateg);
+
+#ifdef JEVOIS_PRO
+    //! Parameter \relates jevois::Engine
+    JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(gui, bool, "Use a graphical user interface instead of plain display "
+                                           "when true",
+                                           true, ParamCateg);
+    //! Parameter \relates jevois::Engine
+    JEVOIS_DECLARE_PARAMETER(conslock, bool, "Lock the console and capture the keyboard and mouse to avoid "
+                             "interference, only effective on JeVois-Pro Platform, otherwise ignored. Set conslock "
+                             "to false if you are experiencing hard crashes and want to run jevoispro-daemon in gdb.",
+                             true, ParamCateg);
+
+    //! Parameter \relates jevois::Engine
+    JEVOIS_DECLARE_PARAMETER(watchdog, double, "Timeout in seconds after which we kill this process if the main loop "
+                             "is stuck somehow, or 0.0 for no watchdog",
+                             10.0, ParamCateg);
+#endif
   }
-  
+
   //! JeVois processing engine - gets images from camera sensor, processes them, and sends results over USB
   /*! The Engine is orchestrating the execution of vision processing software. It is a Manager, i.e., it is the root of
       a hierarchy of Component objects and it handles access to their Parameter settings and their construction, init(),
@@ -264,10 +380,14 @@ namespace jevois
      \ingroup core */
   class Engine : public Manager,
                  public Parameter<engine::cameradev, engine::camerasens, engine::cameranbuf, engine::gadgetdev,
-                                  engine::gadgetnbuf, engine::videomapping, engine::serialdev, engine::usbserialdev,
-                                  engine::camreg, engine::camturbo, engine::serlog, engine::videoerrors, engine::serout,
-                                  engine::cpumode, engine::cpumax, engine::multicam, engine::quietcmd,
-                                  engine::python, engine::serlimit>
+                                  engine::gadgetnbuf, engine::imudev, engine::videomapping, engine::serialdev,
+                                  engine::usbserialdev, engine::camreg, engine::imureg, engine::camturbo,
+                                  engine::serlog, engine::videoerrors, engine::serout, engine::cpumode, engine::cpumax,
+                                  engine::multicam, engine::quietcmd, engine::python, engine::serlimit
+#ifdef JEVOIS_PRO
+                                  , engine::gui, engine::conslock, engine::cpumaxl, engine::cpumodel, engine::watchdog
+#endif
+                                  >
   {
     public:
       //! Constructor
@@ -279,6 +399,14 @@ namespace jevois
       //! Destructor
       ~Engine();
 
+      //! Re-load video mappings from videomappings.cfg
+      /*! Mappings are automatically loaded on startup so this should only be used if the file has been modified and the
+          mappings need to be refreshed. Note that this will not refresh the available resolutions for USB output, which
+          requires a full reboot to re-initialize the kernel Gadget module. Also beware of possible state inconsistency
+          (e.g., if external code is holding a reference previously returned by findVideoMapping(). So, use with
+          caution. Basically, only GUIhelper should use this. */
+      void reloadVideoMappings();
+      
       //! Find the VideoMapping that has the given output specs, or throw if not found
       VideoMapping const & findVideoMapping(unsigned int oformat, unsigned int owidth, unsigned int oheight,
                                             float oframespersec) const;
@@ -302,6 +430,28 @@ namespace jevois
 
       //! Allow access to the default video mapping index
       size_t getDefaultVideoMappingIdx() const;
+
+      //! Run a function on every video mapping
+      /*! The first mapping your function will be called on is for mapping with index 0, and so on until index
+          numVideoMappings()-1. If your function throws, we report the exception and then ignore it, then we move on to
+          the next mapping. */
+      void foreachVideoMapping(std::function<void(VideoMapping const & m)> && func);
+
+      //! Use this to request a format change from within process()
+      /*! This should only be used on JeVois-Pro in GUI mode. The engine is locked up hence and setFormat() cannot be
+          called from within a Module's process function, to avoid possible disasters of changing format while we
+          process. Modules or the GUI can use requestSetFormat() to request a format change in between two calls to
+          process(). Note special values: -1 to just reload the current format (e.g., after editing code), -2 does
+          nothing. */
+      void requestSetFormat(int idx);
+
+      //! Terminate the program
+      void quit();
+
+      //! Request a reboot
+      /*! On JeVois-A33 Platform, trigger a hard reset. On JeVois-Pro Platform or JeVois-Host, just terminate the
+          program. */
+      void reboot();
       
       //! Callback for when the user selects a new output video format
       /*! Here, we stop streaming, nuke any current processing module, set the camera format, set the gadget output
@@ -316,7 +466,7 @@ namespace jevois
       void streamOff();
       
       //! Main loop: grab, process, send over USB. Should be called by main application thread
-      void mainLoop();
+      int mainLoop();
 
       //! Send a string to all serial ports
       /*! \note When islog is true, this is assumes to be a log message, and it will be sent to the port(s) specified by
@@ -333,68 +483,20 @@ namespace jevois
           load). The counter is reset to zero each time a new module is loaded. */
       size_t frameNum() const;
 
-      //! Write a value of one of the camera's registers
-      /*! This very low-level access is for development of optimal camera settings only and should not be used in normal
-          operation, it can crash your system. */
-      void writeCamRegister(unsigned short reg, unsigned short val);
+      //! Get a pointer to our current module (may be null)
+      std::shared_ptr<Module> module() const;
 
-      //! Read a value from one of the camera's registers
-      /*! This very low-level access is for development of optimal camera settings only and should not be used in normal
-          operation, it can crash your system. */
-      unsigned short readCamRegister(unsigned short reg);
+      //! Get a pointer to our IMU (may be null)
+      std::shared_ptr<IMU> imu() const;
 
-      //! Write a value to one of the camera's IMU registers
-      /*! This very low-level access is for development of optimal IMU settings only and should not be used in normal
-          operation, it can crash your system. */
-      void writeIMUregister(unsigned short reg, unsigned short val);
-
-      //! Read a value from one of the camera's IMU registers
-      /*! This very low-level access is for development of optimal IMU settings only and should not be used in normal
-          operation, it can crash your system. */
-      unsigned short readIMUregister(unsigned short reg);
-
-      //! Write an array of values to the camera's IMU registers
-      /*! This very low-level access is for development of optimal IMU settings only and should not be used in normal
-          operation, it can crash your system. Memory for vals should have been allocated by the caller with at least
-          num bytes. num must be less than 32. */
-      void writeIMUregisterArray(unsigned short reg, unsigned char const * vals, size_t num);
-
-      //! Read an array of values from the camera's IMU registers
-      /*! This very low-level access is for development of optimal IMU settings only and should not be used in normal
-          operation, it can crash your system. Memory for vals should have been allocated by the caller with at least
-          num bytes. num must be less than 32. */
-      void readIMUregisterArray(unsigned short reg, unsigned char * vals, size_t num);
-
-      //! Write a value to one of the camera's DMP registers
-      /*! This very low-level access is for development of optimal DMP settings only and should not be used in normal
-          operation, it can crash your system. Note that the value will be converted to big endian, as required by the
-          DMP processor. */
-      void writeDMPregister(unsigned short reg, unsigned short val);
-
-      //! Read a value from one of the camera's DMP registers
-      /*! This very low-level access is for development of optimal DMP settings only and should not be used in normal
-          operation, it can crash your system. Note that the value will be converted from big endian of DMP processor to
-          little endian of the JeVois processor.*/
-      unsigned short readDMPregister(unsigned short reg);
-
-      //! Write an array of values to the camera's DMP registers
-      /*! This very low-level access is for development of optimal DMP settings only and should not be used in normal
-          operation, it can crash your system. Memory for vals should have been allocated by the caller with at least
-          num bytes. num must be less than 32. This function does not handle crossing of memory banks, so the caller
-          should segment the calls to match memory bank boundaries. Finally, this function does not perform any endian
-          conversion. Callers should be aware that the DMP is a 16-bit big endian system while the JeVois processor is
-          little endian. */
-      void writeDMPregisterArray(unsigned short reg, unsigned char const * vals, size_t num);
-
-      //! Read an array of values from the camera's DMP registers
-      /*! This very low-level access is for development of optimal DMP settings only and should not be used in normal
-          operation, it can crash your system. Memory for vals should have been allocated by the caller with at least
-          num bytes. num must be less than 32. This function does not handle crossing of memory banks, so the caller
-          should segment the calls to match memory bank boundaries. Finally, this function does not perform any endian
-          conversion. Callers should be aware that the DMP is a 16-bit big endian system while the JeVois processor is
-          little endian. */
-      void readDMPregisterArray(unsigned short reg, unsigned char * vals, size_t num);
-
+      //! Get a pointer to our Camera (may be null, especially if not using a camera but, eg, movie input)
+      std::shared_ptr<Camera> camera() const;
+     
+#ifdef JEVOIS_PRO
+      //! Draw all camera controls into our GUI
+      void drawCameraGUI();
+#endif
+      
     protected:
       //! Run a script from file
       /*! The filename should be absolute. The file should have any of the commands supported by Engine, one per
@@ -403,31 +505,37 @@ namespace jevois
                              bool throw_no_file);
       
       //! Parameter callback
-      void onParamChange(engine::cameradev const & param, std::string const & newval);
+      void onParamChange(engine::serialdev const & param, std::string const & newval) override;
       
       //! Parameter callback
-      void onParamChange(engine::gadgetdev const & param, std::string const & newval);
+      void onParamChange(engine::usbserialdev const & param, std::string const & newval) override;
+
+      //! Parameter callback
+      void onParamChange(engine::cpumode const & param, engine::CPUmode const & newval) override;
+
+      //! Parameter callback
+      void onParamChange(engine::cpumax const & param, unsigned int const & newval) override;
+
+      //! Parameter callback
+      void onParamChange(engine::videoerrors const & param, bool const & newval) override;
+
+#ifdef JEVOIS_PRO
+      //! Parameter callback
+      void onParamChange(engine::gui const & param, bool const & newval) override;
+
+      //! Parameter callback
+      void onParamChange(engine::cpumaxl const & param, unsigned int const & newval) override;
+
+      //! Parameter callback
+      void onParamChange(engine::cpumodel const & param, engine::CPUmode const & newval) override;
+#endif
       
-      //! Parameter callback
-      void onParamChange(engine::serialdev const & param, std::string const & newval);
-      
-      //! Parameter callback
-      void onParamChange(engine::usbserialdev const & param, std::string const & newval);
-
-      //! Parameter callback
-      void onParamChange(engine::cpumode const & param, engine::CPUmode const & newval);
-
-      //! Parameter callback
-      void onParamChange(engine::cpumax const & param, unsigned int const & newval);
-
-      //! Parameter callback
-      void onParamChange(engine::videoerrors const & param, bool const & newval);
-
       size_t itsDefaultMappingIdx; //!< Index of default mapping
       std::vector<VideoMapping> itsMappings; //!< All our mappings from videomappings.cfg
-      VideoMapping itsCurrentMapping; //!< Current video mapping, may not match any in itsMappings if setmapping2 used
+      VideoMapping itsCurrentMapping { }; //!< Current mapping, may not match any in itsMappings if setmapping2 used
 
       std::shared_ptr<VideoInput> itsCamera; //!< Our camera
+      std::shared_ptr<IMU> itsIMU; //! Our IMU
       std::shared_ptr<VideoOutput> itsGadget; //!< Our gadget
 
       std::unique_ptr<DynamicLoader> itsLoader; //!< Our module loader
@@ -453,6 +561,9 @@ namespace jevois
       
       void setFormatInternal(size_t idx); // itsMtx should be locked by caller
       void setFormatInternal(jevois::VideoMapping const & m, bool reload = false); // itsMtx should be locked by caller
+
+      // Loop over all available camera controls and run a function on each:
+      void foreachCamCtrl(std::function<void(struct v4l2_queryctrl & qc, std::set<int> & doneids)> && func);
       
       // Return help string for a camera control or throw
       std::string camCtrlHelp(struct v4l2_queryctrl & qc, std::set<int> & doneids);
@@ -471,14 +582,19 @@ namespace jevois
       
       // Get V4L2 ID from short name
       int camctrlid(std::string const & shortname);
-      
+
+      // Report an error to console, video frame, or GUI
+      /*! Call this from within catch. */
+      void reportError(std::string const & err = "");
+
+      bool itsShellMode; // When true, pass any CLI command to the Linux shell
       bool itsTurbo;
       bool itsManualStreamon; // allow manual streamon when outputing video to None or file
       std::atomic<bool> itsVideoErrors; // fast cached value for engine::videoerrors
       jevois::RawImage itsVideoErrorImage;
       std::string itsModuleConstructionError; // Non-empty error message if module constructor threw
       
-#ifdef JEVOIS_PLATFORM
+#ifdef JEVOIS_PLATFORM_A33
       // Things related to mass storage gadget to export our /jevois partition as a virtual USB flash drive:
       void checkMassStorage(); // thread to check mass storage gadget status
       std::future<void> itsCheckMassStorageFut;
@@ -486,11 +602,21 @@ namespace jevois
       std::atomic<bool> itsMassStorageMode;
       void startMassStorageMode();
       void stopMassStorageMode();
-      void reboot();
 #endif
 
       std::atomic<size_t> itsFrame; // Master frame counter, can be used by modules
       std::atomic<size_t> itsNumSerialSent; // Number of serial messages sent this frame; see serlimit
+      std::atomic<int> itsRequestedFormat; // Set by requestSetFormat(), could be -1 to reload, otherwise -2
+      
+#ifdef JEVOIS_PRO
+      std::shared_ptr<GUIhelper> itsGUIhelper;
+      
+      // Draw ImGui widgets for all camera controls
+      void camCtrlGUI(struct v4l2_queryctrl & qc, std::set<int> & doneids);
+
+      std::shared_ptr<jevois::Watchdog> itsWatchdog;
+#endif
+
   };
 
 } // namespace jevois

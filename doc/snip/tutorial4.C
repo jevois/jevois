@@ -44,7 +44,7 @@ class TutorialEdgeDetectionX4 : public jevois::Module,
       std::vector<std::future<void> > fut;
       
       for (int i = 0; i < 3; ++i)
-        fut.push_back(std::async(std::launch::async, [&](int i) {
+        fut.push_back(jevois::async([&](int i) {
               // Compute Canny edges directly into the output image, offset by i images down. The last argument of the
               // cv::Mat constructor below is the address of an already-allocated pixel buffer for the cv::Mat:
               cv::Mat edges(grayimg.rows, grayimg.cols, CV_8UC1, outimg.pixelsw<unsigned char>() + i * grayimg.total());

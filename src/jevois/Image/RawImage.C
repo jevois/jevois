@@ -53,13 +53,22 @@ void jevois::RawImage::clear()
 
   switch (fmt)
   {
-  case V4L2_PIX_FMT_YUYV: std::fill(pixelsw<unsigned short>(), pixelsw<unsigned short>() + width * height,
-                                    jevois::yuyv::Black); break;
-  case V4L2_PIX_FMT_GREY: memset(pixelsw<void>(), 0, bytesize()); break;
-  case V4L2_PIX_FMT_SRGGB8: memset(pixelsw<void>(), 0, bytesize()); break;
-  case V4L2_PIX_FMT_RGB565: memset(pixelsw<void>(), 0, bytesize()); break;
-  case V4L2_PIX_FMT_MJPEG: break;
-  case V4L2_PIX_FMT_BGR24: memset(pixelsw<void>(), 0, bytesize()); break;
+  case V4L2_PIX_FMT_YUYV:
+    std::fill(pixelsw<unsigned short>(), pixelsw<unsigned short>() + width * height, jevois::yuyv::Black);
+    break;
+
+  case V4L2_PIX_FMT_MJPEG:
+    break;
+
+  case V4L2_PIX_FMT_GREY:
+  case V4L2_PIX_FMT_SRGGB8:
+  case V4L2_PIX_FMT_SBGGR16:
+  case V4L2_PIX_FMT_RGB565:
+  case V4L2_PIX_FMT_BGR24:
+  case V4L2_PIX_FMT_RGB24:
+  case V4L2_PIX_FMT_RGB32:
+    memset(pixelsw<void>(), 0, bytesize());
+    break;
   default: LFATAL("Unsupported pixel format " << jevois::fccstr(fmt));
   }
 }

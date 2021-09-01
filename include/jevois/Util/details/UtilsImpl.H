@@ -91,3 +91,10 @@ dest_type jevois::clamped_convert(source_type source)
     do { result = ioctl(dev, req, mem); } while ((result < 0) && (errno == EINTR)); \
     if (result < 0) throw std::runtime_error(#req " failed");           \
   } while (false)
+
+// ####################################################################################################
+#define XIOCTL_QUIET_ONCE(dev, req, mem)                                \
+  do {                                                                  \
+    int result = ioctl(dev, req, mem);                                  \
+    if (result < 0) throw std::runtime_error(#req " failed");           \
+  } while (false)

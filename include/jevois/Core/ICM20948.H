@@ -43,6 +43,7 @@
 #pragma once
 
 #include <jevois/Component/Component.H>
+#include <jevois/Core/IMU.H>
 #include <jevois/Core/IMUdata.H>
 #include <jevois/Types/Enum.H>
 
@@ -143,8 +144,8 @@ namespace jevois
   
   //! TDK InvenSense ICM-20948 9DOF IMU high-level driver
   /*! This driver communicates with a kernel-side driver that is integrated with the camera sensor driver on some
-      optional JeVois sensors only. Currently, only the OnSemi (Aptina) AR0135 global shutter optional camera sensor is
-      equipped with an IMU.
+      optional JeVois sensors only. Currently, on JeVois-A33, only the OnSemi (Aptina) AR0135 global shutter optional
+      camera sensor is equipped with an IMU. On JeVois-Pro, all camera sensors are equipped with an IMU.
 
       The specifications of this chip are quite impressive:
       - 3-axis 16-bit accelerometer with full-range sensitivity selectable to +/-2g, +/-4g, +/-8g, and +/-16g.
@@ -169,8 +170,8 @@ namespace jevois
       applies various calibrations, drift corrections, and compensations on the fly, one gets highly accurate real-time
       estimate of the sensor's pose in the 3D world and of how it is moving.
 
-      Note that communication with the IMU is over a 400kHz I2C bus, which may limit data readout rate depending on
-      which data is requested from the IMU.
+      Note that on JeVois-A33 communication with the IMU is over a 400kHz I2C bus, which may limit data readout rate
+      depending on which data is requested from the IMU. On JeVois-Pro, communication is over SPI at 7MHz.
 
       This IMU has 3 basic modes of operation (parameter mode, which can only be set in params.cfg):
 
@@ -194,14 +195,14 @@ namespace jevois
       concurrently. Because we assume this will not be the case in normal operation, we do not protect chip access with
       a mutex. Users should use an external mutex to protect this class if used in a multithreaded manner.
 
-      \ingroup core.*/
+      \ingroup imu */
   class ICM20948 : public Component,
                    public Parameter<imu::mode, imu::dmp, imu::arate, imu::grate, imu::mrate, imu::abw, imu::gbw,
                                     imu::tbw, imu::arange, imu::grange, imu::pktdbg>
   {
     public:
-      //! Base class constructor ok
-      using jevois::Component::Component;
+      //! Constructor, low-level communication driver is null
+      ICM20948(std::string const & instance);
 
       //! Virtual destructor for safe inheritance
       virtual ~ICM20948();
@@ -240,58 +241,23 @@ namespace jevois
       //! Unfreeze any previously frozen parameters
       void preUninit() override;
      
-      //! Write a value to one of the camera's IMU registers
-      /*! This very low-level access is for development of optimal IMU settings only and should not be used in normal
-          operation, it can crash your system. Bank selection is included in this function. */
-      void writeRegister(unsigned short reg, unsigned char val);
-
-      //! Read a value from one of the camera's IMU registers
-      /*! This very low-level access is for development of optimal IMU settings only and should not be used in normal
-          operation, it can crash your system. Bank selection is included in this function. */
-      unsigned char readRegister(unsigned short reg);
-
-      //! Write an array of values to the camera's IMU registers
-      /*! This very low-level access is for development of optimal IMU settings only and should not be used in normal
-          operation, it can crash your system. Memory for vals should have been allocated by the caller with at least
-          num bytes. num must be less than 32. Bank selection is included in this function. */
-      void writeRegisterArray(unsigned short reg, unsigned char const * vals, size_t num);
-
-      //! Read an array of values from the camera's IMU registers
-      /*! This very low-level access is for development of optimal IMU settings only and should not be used in normal
-          operation, it can crash your system. Memory for vals should have been allocated by the caller with at least
-          num bytes. num must be less than 32. Bank selection is included in this function. */
-      void readRegisterArray(unsigned short reg, unsigned char * vals, size_t num);
- 
-      void selectBank(unsigned short reg); //!< Select a register bank (0..3) based on high bits of register address
       void reset(); //!< Reset the IMU chip - not recommended in normal operation
       void sleep(bool enable); //!< Turn on/off sleep mode
       void cycle(bool enable); //!< Turn on/off cycle mode vs continuous for accel, gyro and compass
       uint32_t devid(); //!< Read device ID
 
-      //! Write a value to a DMP register (data will be written in big endian)
-      void writeDMP(unsigned short reg, unsigned short val);
-      
-      //! Write values to DMP
-      /*! Caution: this code is not handling bank crossings. */
-      void writeDMParray(unsigned short reg, unsigned char const * vals, size_t num);
-      
-      //! Read a value from a DMP register
-      unsigned short readDMP(unsigned short reg);
-
-      //! Read values from DMP
-      void readDMParray(unsigned short reg, unsigned char * vals, size_t num);
-
     private:
-      // Parameter callbacks:
-      void onParamChange(imu::arate const & param, float const & newval);
-      void onParamChange(imu::grate const & param, float const & newval);
-      void onParamChange(imu::mrate const & param, imu::MagRate const & newval);
-      void onParamChange(imu::abw const & param, unsigned int const & newval);
-      void onParamChange(imu::gbw const & param, unsigned int const & newval);
-      void onParamChange(imu::tbw const & param, unsigned int const & newval);
-      void onParamChange(imu::arange const & param, unsigned int const & newval);
-      void onParamChange(imu::grange const & param, unsigned int const & newval);
-      void onParamChange(imu::dmp const & param, std::string const & newval);
+      std::shared_ptr<IMU> itsIMU;
+
+      void onParamChange(imu::arate const & param, float const & newval) override;
+      void onParamChange(imu::grate const & param, float const & newval) override;
+      void onParamChange(imu::mrate const & param, imu::MagRate const & newval) override;
+      void onParamChange(imu::abw const & param, unsigned int const & newval) override;
+      void onParamChange(imu::gbw const & param, unsigned int const & newval) override;
+      void onParamChange(imu::tbw const & param, unsigned int const & newval) override;
+      void onParamChange(imu::arange const & param, unsigned int const & newval) override;
+      void onParamChange(imu::grange const & param, unsigned int const & newval) override;
+      void onParamChange(imu::dmp const & param, std::string const & newval) override;
 
       unsigned char readMagRegister(unsigned char magreg);
       void writeMagRegister(unsigned char magreg, unsigned char val);

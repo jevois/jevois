@@ -86,7 +86,7 @@ namespace jevois
       \endcode
 
       \note This function throws! So obviously it only makes sense to use it inside a catch block. \ingroup debugging */
-  void warnAndRethrowException[[noreturn]]();
+  void warnAndRethrowException[[noreturn]](std::string const & prefix = "");
 
   //! Convenience function to catch an exception, issue some LERROR (depending on type), and ignore it
   /*! User code can use this function as follows, to log some trace of the exception that was thrown, and then swallow
@@ -99,7 +99,7 @@ namespace jevois
 
       Note that the message that is logged to console is also returned as a string, in case one wants to report it in
       some other way (e.g., in a GUI or in a video frame using drawErrorImage()). \ingroup debugging */
-  std::string warnAndIgnoreException();
+  std::string warnAndIgnoreException(std::string const & prefix = "");
 
   //! Display an error message into a RawImage
   /*! The error message should consist of a string where multiple lines may be separated by \\n characters, such as the
@@ -111,6 +111,11 @@ namespace jevois
   /*! This function is not intended for general use, Engine uses it internally when users set one of its
       parameters to enable forwarding of log messages to serial ports. \ingroup debugging*/
   void logSetEngine(Engine * e);
+
+  //! Terminate log service
+  /*! You must call this once you a ready to end a program, to stop the logger thread. Otherwise the ThreadPool will be
+      stuck with one running thread and will never exit. */
+  void logEnd();
   
 } // namespace jevois
 
@@ -243,11 +248,11 @@ namespace jevois
         //! Constructor, logs "file:function Enter"
         inline TraceObject(int level, char const * file, char const * func) :
             itsLevel(level), itsFile(file), itsFunc(func)
-        { if (jevois::traceLevel >= itsLevel) jevois::Log<LOG_DEBUG>(file, func) << "Enter"; }
+        { if (jevois::traceLevel >= itsLevel) jevois::Log<LOG_DEBUG>(file, func) << ">>> TRACE: Enter >>>"; }
 
         //! Destructor, logs "file:function Exit"
         inline ~TraceObject()
-        { if (jevois::traceLevel >= itsLevel) jevois::Log<LOG_DEBUG>(itsFile, itsFunc) << "Exit"; }
+        { if (jevois::traceLevel >= itsLevel) jevois::Log<LOG_DEBUG>(itsFile, itsFunc) << "<<< TRACE: Exit <<<"; }
 
       private:
         int const itsLevel;
@@ -298,3 +303,13 @@ namespace jevois
     guard will unlock the mutex upon destruction. \ingroup debugging */
 #define JEVOIS_TIMED_LOCK(mtx) jevois::timed_lock_guard __jevois_timed_lock_guard_reserved(mtx, __FILE__, __FUNCTION__)
   
+// ##############################################################################################################
+//! Wait for a future to become ready, throws after 5 seconds
+#define JEVOIS_WAIT_FOR_FUTURE(f) do { if (f.valid() && f.wait_for(std::chrono::seconds(2)) == \
+std::future_status::timeout) LFATAL("Timeout waiting for future " #f); } while(false)
+
+//! Wait for a future to become ready for 5 seconds, get(), warn and ignore exception, report on timeout
+#define JEVOIS_WAIT_GET_FUTURE(f) do { if (f.valid()) { \
+  if (f.wait_for(std::chrono::seconds(5)) == std::future_status::timeout) LERROR("Timeout waiting for future " #f); \
+  try { f.get(); } catch (...) { jevois::warnAndIgnoreException(); } } } while(false)
+

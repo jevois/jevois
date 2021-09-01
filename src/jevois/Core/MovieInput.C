@@ -74,7 +74,7 @@ void jevois::MovieInput::get(RawImage & img)
   }
   
   // Reset our VideoBuf:
-  itsBuf.reset(new jevois::VideoBuf(-1, itsMapping.csize(), 0));
+  itsBuf.reset(new jevois::VideoBuf(-1, itsMapping.csize(), 0, -1));
 
   // Set the fields in our output RawImage:
   img.width = itsMapping.cw;

@@ -19,6 +19,7 @@
 #include <jevois/Debug/Log.H>
 #include <jevois/Core/VideoInput.H>
 #include <jevois/Util/Utils.H>
+#include <jevois/Util/Async.H>
 #include <jevois/Core/VideoBuffers.H>
 #include <jevois/Core/Engine.H>
 
@@ -149,7 +150,7 @@ jevois::Gadget::Gadget(std::string const & devname, jevois::VideoInput * camera,
   fillStreamingControl(&itsCommit, m);
 
   // Get our run() thread going and wait until it is cranking, it will flip itsRunning to true as it starts:
-  itsRunFuture = std::async(std::launch::async, &jevois::Gadget::run, this);
+  itsRunFuture = jevois::async_little(std::bind(&jevois::Gadget::run, this));
   while (itsRunning.load() == false) std::this_thread::sleep_for(std::chrono::milliseconds(5));
 
   // Open the device:

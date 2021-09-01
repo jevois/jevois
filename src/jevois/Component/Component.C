@@ -515,18 +515,7 @@ void jevois::Component::setPath(std::string const & path)
 std::string jevois::Component::absolutePath(std::string const & path)
 {
   JEVOIS_TRACE(6);
-
-  // If path is empty, return itsPath (be it empty of not):
-  if (path.empty()) return itsPath;
-
-  // no-op if the given path is already absolute:
-  if (path[0] == '/') return path;
-
-  // no-op if itsPath is empty:
-  if (itsPath.empty()) return path;
-
-  // We know itsPath is not empty and path does not start with a / and is not empty; concatenate both:
-  return itsPath + '/' + path;
+  return jevois::absolutePath(itsPath, path);
 }
 
 // ######################################################################
@@ -574,6 +563,25 @@ void jevois::Component::paramInfo(std::shared_ptr<UserInterface> s, std::map<std
       s->writeString(pfx, c.second);
     }
   }
+}
+
+// ######################################################################
+void jevois::Component::foreachParam(std::function<void(std::string const & compname, jevois::ParameterBase * p)> func,
+                                     std::string const & cname)
+{
+  JEVOIS_TRACE(9);
+
+  std::string const compname = cname.empty() ? itsInstanceName : cname + ':' + itsInstanceName;
+
+  // First process our own params:
+  {
+    boost::shared_lock<boost::shared_mutex> lck(itsParamMtx);
+    for (auto const & p : itsParameterList) func(compname, p.second);
+  }
+
+  // Then recurse through our subcomponents:
+  boost::shared_lock<boost::shared_mutex> lck(itsSubMtx);
+  for (std::shared_ptr<jevois::Component> c : itsSubComponents) c->foreachParam(func, compname);
 }
 
 // ######################################################################

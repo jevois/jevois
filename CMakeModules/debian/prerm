@@ -1,0 +1,3 @@
+/bin/rm -f /etc/ld.so.conf.d/jevoispro.conf
+
+/usr/sbin/ldconfig

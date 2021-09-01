@@ -18,6 +18,7 @@
 #include <jevois/Image/RawImageOps.H>
 #include <jevois/Core/VideoBuf.H>
 #include <jevois/Util/Utils.H>
+#include <jevois/Util/Async.H>
 #include <jevois/Debug/Log.H>
 #include <jevois/Image/Jpeg.H>
 #include <future>
@@ -249,6 +250,8 @@ cv::Mat jevois::rawimage::convertToCvGray(jevois::RawImage const & src)
   
   switch (src.fmt)
   {
+  case V4L2_PIX_FMT_GREY: return rawimgcv;
+
   case V4L2_PIX_FMT_YUYV:
 #if 0
     //#ifdef JEVOIS_PLATFORM
@@ -258,8 +261,6 @@ cv::Mat jevois::rawimage::convertToCvGray(jevois::RawImage const & src)
     cv::cvtColor(rawimgcv, result, cv::COLOR_YUV2GRAY_YUYV);
 #endif
     return result;
-
-  case V4L2_PIX_FMT_GREY: return rawimgcv;
 
   case V4L2_PIX_FMT_SRGGB8: cv::cvtColor(rawimgcv, result, cv::COLOR_BayerBG2GRAY); return result;
 
@@ -271,8 +272,10 @@ cv::Mat jevois::rawimage::convertToCvGray(jevois::RawImage const & src)
   case V4L2_PIX_FMT_MJPEG: LFATAL("MJPEG not supported");
 
   case V4L2_PIX_FMT_BGR24: cv::cvtColor(rawimgcv, result, cv::COLOR_BGR2GRAY); return result;
+
+  case V4L2_PIX_FMT_RGB24: cv::cvtColor(rawimgcv, result, cv::COLOR_RGB2GRAY); return result;
   }
-   LFATAL("Unknown RawImage pixel format");
+  LFATAL("Unknown RawImage pixel format");
 }
 
 // ####################################################################################################
@@ -283,6 +286,8 @@ cv::Mat jevois::rawimage::convertToCvBGR(jevois::RawImage const & src)
   
   switch (src.fmt)
   {
+  case V4L2_PIX_FMT_BGR24: return rawimgcv;
+
   case V4L2_PIX_FMT_YUYV: cv::cvtColor(rawimgcv, result, cv::COLOR_YUV2BGR_YUYV); return result;
   case V4L2_PIX_FMT_GREY: cv::cvtColor(rawimgcv, result, cv::COLOR_GRAY2BGR); return result;
   case V4L2_PIX_FMT_SRGGB8: cv::cvtColor(rawimgcv, result, cv::COLOR_BayerBG2BGR); return result;
@@ -293,7 +298,7 @@ cv::Mat jevois::rawimage::convertToCvBGR(jevois::RawImage const & src)
     return result;
 
   case V4L2_PIX_FMT_MJPEG: LFATAL("MJPEG not supported");
-  case V4L2_PIX_FMT_BGR24: return rawimgcv;
+  case V4L2_PIX_FMT_RGB24: cv::cvtColor(rawimgcv, result, cv::COLOR_RGB2BGR); return result;
   }
   LFATAL("Unknown RawImage pixel format");
 }
@@ -306,6 +311,8 @@ cv::Mat jevois::rawimage::convertToCvRGB(jevois::RawImage const & src)
   
   switch (src.fmt)
   {
+  case V4L2_PIX_FMT_RGB24: return rawimgcv;
+
   case V4L2_PIX_FMT_YUYV: cv::cvtColor(rawimgcv, result, cv::COLOR_YUV2RGB_YUYV); return result;
   case V4L2_PIX_FMT_GREY: cv::cvtColor(rawimgcv, result, cv::COLOR_GRAY2RGB); return result;
   case V4L2_PIX_FMT_SRGGB8: cv::cvtColor(rawimgcv, result, cv::COLOR_BayerBG2RGB); return result;
@@ -351,6 +358,8 @@ cv::Mat jevois::rawimage::convertToCvRGBA(jevois::RawImage const & src)
   case V4L2_PIX_FMT_MJPEG: LFATAL("MJPEG not supported");
 
   case V4L2_PIX_FMT_BGR24: cv::cvtColor(rawimgcv, result, cv::COLOR_BGR2RGBA); return result;
+
+  case V4L2_PIX_FMT_RGB24: cv::cvtColor(rawimgcv, result, cv::COLOR_RGB2RGBA); return result;
   }
   LFATAL("Unknown RawImage pixel format");
 }
@@ -362,7 +371,7 @@ void jevois::rawimage::byteSwap(jevois::RawImage & img)
 
 #ifdef JEVOIS_PLATFORM
   // Use neon acceleration, in parallel threads:
-  unsigned int ncores = std::min(4U, std::thread::hardware_concurrency());
+  unsigned int ncores = 4; //std::min(4U, std::thread::hardware_concurrency());
   size_t const nbc = img.bytesize() / ncores;
   unsigned char * ptr = img.pixelsw<unsigned char>();
 
@@ -371,7 +380,7 @@ void jevois::rawimage::byteSwap(jevois::RawImage & img)
   // Launch ncores-1 threads and we will do the last chunk in the current thread:
   std::vector<std::future<void> > fut;
   for (unsigned int core = 0; core < ncores-1; ++core)
-    fut.push_back(std::async(std::launch::async, [&ptr, &nbc](int core) -> void {
+    fut.push_back(jevois::async([&ptr, &nbc](int core) -> void {
           unsigned char * cptr = ptr + core * nbc;
           for (size_t i = 0; i < nbc; i += 16) vst1q_u8(cptr + i, vrev16q_u8(vld1q_u8(cptr + i)));
         }, core));
@@ -555,6 +564,9 @@ bool jevois::rawimage::clipLine(int wxmin, int wymin, int wxmax, int wymax, int 
 void jevois::rawimage::drawLine(jevois::RawImage & img, int x1, int y1, int x2, int y2, unsigned int thick,
                                 unsigned int col)
 {
+  // If thickness is very large, refuse to draw, as it will hang for a very long time and be confusing:
+  if (thick > 500) LFATAL("Thickness " << thick << " too large. Did you mistakenly swap thick and col?");
+  
   // First clip the line so we don't waste time trying to sometimes draw very long lines that may result from singular
   // 3D projections:
   if (jevois::rawimage::clipLine(0, 0, img.width, img.height, x1, y1, x2, y2) == false) return; // line fully outside
@@ -614,8 +626,8 @@ void jevois::rawimage::drawRect(jevois::RawImage & img, int x, int y, unsigned i
 {
   if (w == 0) w = 1;
   if (h == 0) h = 1;
-  if (x > int(img.width)) x = img.width;
-  if (y > int(img.height)) y = img.height;
+  if (x >= int(img.width)) x = img.width - 1;
+  if (y >= int(img.height)) y = img.height - 1;
   if (x + w > img.width) w = img.width - x;
   if (y + h > img.height) h = img.height - y;
 
@@ -636,8 +648,8 @@ void jevois::rawimage::drawFilledRect(jevois::RawImage & img, int x, int y, unsi
 {
   if (w == 0) w = 1;
   if (h == 0) h = 1;
-  if (x > int(img.width)) x = img.width;
-  if (y > int(img.height)) y = img.height;
+  if (x >= int(img.width)) x = img.width - 1;
+  if (y >= int(img.height)) y = img.height - 1;
   if (x + w > img.width) w = img.width - x;
   if (y + h > img.height) h = img.height - y;
   
@@ -1268,6 +1280,7 @@ void jevois::rawimage::convertCvBGRtoRawImage(cv::Mat const & src, RawImage & ds
   case V4L2_PIX_FMT_RGB565: cv::cvtColor(src, dstcv, cv::COLOR_BGR2BGR565); break;
   case V4L2_PIX_FMT_MJPEG: jevois::compressBGRtoJpeg(src, dst, quality); break;
   case V4L2_PIX_FMT_BGR24: memcpy(dst.pixelsw<void>(), src.data, dst.width * dst.height * dst.bytesperpix()); break;
+  case V4L2_PIX_FMT_RGB24: cv::cvtColor(src, dstcv, cv::COLOR_RGB2GRAY); break;
   default: LFATAL("Unsupported output pixel format " << jevois::fccstr(dst.fmt) << std::hex <<' '<< dst.fmt);
   }
 }
@@ -1289,7 +1302,8 @@ void jevois::rawimage::convertCvRGBtoRawImage(cv::Mat const & src, RawImage & ds
   case V4L2_PIX_FMT_GREY: cv::cvtColor(src, dstcv, cv::COLOR_RGB2GRAY); break;
   case V4L2_PIX_FMT_RGB565: cv::cvtColor(src, dstcv, cv::COLOR_RGB2BGR565); break;
   case V4L2_PIX_FMT_MJPEG: jevois::compressRGBtoJpeg(src, dst, quality); break;
-  case V4L2_PIX_FMT_BGR24:  cv::cvtColor(src, dstcv, cv::COLOR_RGB2BGR); break;
+  case V4L2_PIX_FMT_BGR24: cv::cvtColor(src, dstcv, cv::COLOR_RGB2BGR); break;
+  case V4L2_PIX_FMT_RGB24: memcpy(dst.pixelsw<void>(), src.data, dst.width * dst.height * dst.bytesperpix()); break;
   default: LFATAL("Unsupported output pixel format " << jevois::fccstr(dst.fmt) << std::hex <<' '<< dst.fmt);
   }
 }
@@ -1308,7 +1322,7 @@ void jevois::rawimage::unpackCvRGBAtoGrayRawImage(cv::Mat const & src, RawImage 
   
   // Do R, G, B in 3 threads then A in the current thread:
   std::vector<std::future<void> > fut;
-  for (int i = 0; i < 3; ++i) fut.push_back(std::async(std::launch::async, [&](int offset) {
+  for (int i = 0; i < 3; ++i) fut.push_back(jevois::async([&](int offset) {
           unsigned char const * s = sptr + offset; unsigned char * d = dptr + offset * w * h;
           for (int y = 0; y < h; ++y) { for (int x = 0; x < w; ++x) { *d++ = *s; s += 4; } d += stride; } }, i));
 
@@ -1336,6 +1350,7 @@ void jevois::rawimage::convertCvRGBAtoRawImage(cv::Mat const & src, RawImage & d
   case V4L2_PIX_FMT_RGB565: cv::cvtColor(src, dstcv, cv::COLOR_BGRA2BGR565); break;
   case V4L2_PIX_FMT_MJPEG: jevois::compressRGBAtoJpeg(src, dst, quality); break;
   case V4L2_PIX_FMT_BGR24: cv::cvtColor(src, dstcv, cv::COLOR_RGBA2BGR); break;
+  case V4L2_PIX_FMT_RGB24: cv::cvtColor(src, dstcv, cv::COLOR_RGBA2RGB); break;
   default: LFATAL("Unsupported output pixel format " << jevois::fccstr(dst.fmt) << std::hex <<' '<< dst.fmt);
   }
 }
@@ -1357,6 +1372,7 @@ void jevois::rawimage::convertCvGRAYtoRawImage(cv::Mat const & src, RawImage & d
   case V4L2_PIX_FMT_RGB565: cv::cvtColor(src, dstcv, cv::COLOR_GRAY2BGR565); break;
   case V4L2_PIX_FMT_MJPEG: jevois::compressGRAYtoJpeg(src, dst, quality); break;
   case V4L2_PIX_FMT_BGR24: cv::cvtColor(src, dstcv, cv::COLOR_GRAY2BGR); break;
+  case V4L2_PIX_FMT_RGB24: cv::cvtColor(src, dstcv, cv::COLOR_GRAY2RGB); break;
   default: LFATAL("Unsupported output pixel format " << jevois::fccstr(dst.fmt) << std::hex <<' '<< dst.fmt);
   }
 }

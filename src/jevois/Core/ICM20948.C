@@ -59,52 +59,9 @@
 #define JEVOIS_DMP_BRING_AND_LOOK_T0_SEE_EN 0x0004
 
 // ####################################################################################################
-void jevois::ICM20948::writeRegister(unsigned short reg, unsigned char val)
-{
-  engine()->writeIMUregister(reg, val);
-}
-
-// ####################################################################################################
-unsigned char jevois::ICM20948::readRegister(unsigned short reg)
-{
-  return engine()->readIMUregister(reg);
-}
-
-// ####################################################################################################
-void jevois::ICM20948::writeRegisterArray(unsigned short reg, unsigned char const * vals, size_t num)
-{
-  engine()->writeIMUregisterArray(reg, vals, num);
-}
-
-// ####################################################################################################
-void jevois::ICM20948::readRegisterArray(unsigned short reg, unsigned char * vals, size_t num)
-{
-  return engine()->readIMUregisterArray(reg, vals, num);
-}
-
-// ####################################################################################################
-void jevois::ICM20948::writeDMP(unsigned short reg, unsigned short val)
-{
-  engine()->writeDMPregister(reg, val);
-}
-
-// ####################################################################################################
-void jevois::ICM20948::writeDMParray(unsigned short reg, unsigned char const * vals, size_t num)
-{
-  engine()->writeDMPregisterArray(reg, vals, num);
-}
-
-// ####################################################################################################
-unsigned short jevois::ICM20948::readDMP(unsigned short reg)
-{
-  return engine()->readDMPregister(reg);
-}
-
-// ####################################################################################################
-void jevois::ICM20948::readDMParray(unsigned short reg, unsigned char * vals, size_t num)
-{
-  engine()->readDMPregisterArray(reg, vals, num);
-}
+jevois::ICM20948::ICM20948(std::string const & instance) :
+    jevois::Component(instance)
+{ }
 
 // ####################################################################################################
 jevois::ICM20948::~ICM20948(void)
@@ -114,29 +71,29 @@ jevois::ICM20948::~ICM20948(void)
 unsigned char jevois::ICM20948::readMagRegister(unsigned char magreg)
 {
   // We use slave4, which is oneshot:
-  writeRegister(ICM20948_REG_I2C_SLV4_ADDR, ICM20948_BIT_I2C_READ | COMPASS_SLAVEADDR);
-  writeRegister(ICM20948_REG_I2C_SLV4_REG, magreg);
-  writeRegister(ICM20948_REG_I2C_SLV4_CTRL, ICM20948_BIT_I2C_SLV_EN);
+  itsIMU->writeRegister(ICM20948_REG_I2C_SLV4_ADDR, ICM20948_BIT_I2C_READ | COMPASS_SLAVEADDR);
+  itsIMU->writeRegister(ICM20948_REG_I2C_SLV4_REG, magreg);
+  itsIMU->writeRegister(ICM20948_REG_I2C_SLV4_CTRL, ICM20948_BIT_I2C_SLV_EN);
 
   waitForSlave4();
   
-  return readRegister(ICM20948_REG_I2C_SLV4_DI);
+  return itsIMU->readRegister(ICM20948_REG_I2C_SLV4_DI);
 }
 
 // ####################################################################################################
 void jevois::ICM20948::waitForSlave4()
 {
   // Wait until the data is ready:
-  auto tooLate = std::chrono::high_resolution_clock::now() + std::chrono::milliseconds(300);
+  auto tooLate = std::chrono::steady_clock::now() + std::chrono::milliseconds(300);
 
   do
   {
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    unsigned char status = readRegister(ICM20948_REG_I2C_MST_STATUS);
+    unsigned char status = itsIMU->readRegister(ICM20948_REG_I2C_MST_STATUS);
     if (status & ICM20948_BIT_SLV4_NACK) LFATAL("Failed to communicate with compass: NACK");
     if (status & ICM20948_BIT_SLV4_DONE) return; // Transaction to slave is complete
   }
-  while (std::chrono::high_resolution_clock::now() < tooLate);
+  while (std::chrono::steady_clock::now() < tooLate);
 
   LFATAL("Failed to communicate with compass: timeout");
 }
@@ -145,10 +102,10 @@ void jevois::ICM20948::waitForSlave4()
 void jevois::ICM20948::writeMagRegister(unsigned char magreg, unsigned char val)
 {
   // We use slave4, which is oneshot:
-  writeRegister(ICM20948_REG_I2C_SLV4_ADDR, COMPASS_SLAVEADDR);
-  writeRegister(ICM20948_REG_I2C_SLV4_REG, magreg);
-  writeRegister(ICM20948_REG_I2C_SLV4_DO, val);
-  writeRegister(ICM20948_REG_I2C_SLV4_CTRL, ICM20948_BIT_I2C_SLV_EN);
+  itsIMU->writeRegister(ICM20948_REG_I2C_SLV4_ADDR, COMPASS_SLAVEADDR);
+  itsIMU->writeRegister(ICM20948_REG_I2C_SLV4_REG, magreg);
+  itsIMU->writeRegister(ICM20948_REG_I2C_SLV4_DO, val);
+  itsIMU->writeRegister(ICM20948_REG_I2C_SLV4_CTRL, ICM20948_BIT_I2C_SLV_EN);
 
   waitForSlave4();
 }
@@ -156,39 +113,37 @@ void jevois::ICM20948::writeMagRegister(unsigned char magreg, unsigned char val)
 // ####################################################################################################
 void jevois::ICM20948::preInit()
 {
-  // Make sure the chip is on:
-  try
-  {
-    writeRegister(ICM20948_REG_PWR_MGMT_1, 0x01); // Auto clock selection as recommended by datasheet
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    
-    if (ready() == false) throw std::runtime_error("not ready");
-  }
-  catch (...)
-  {
-    LFATAL("Cannot access ICM20948 inertial measurement unit (IMU) chip. This chip is only "
-           "available with a modified Global Shutter OnSemi (Aptina) AR0135 camera sensor. "
-           "It is not included with standard JeVois cameras.");
-  }
+  // Make sure we have an IMU low-level driver:
+  itsIMU = engine()->imu();
+  if (!itsIMU) LFATAL("IMU chip was not detected but is required for this module -- ABORT");
+
+  // Warm up the connection...
+  ready(); ready();
+  
+  // Make sure the chip has been detected:
+  if (ready() == false)
+    LFATAL("Cannot access ICM20948 inertial measurement unit (IMU) chip. This chip is only available on JeVois-A33 "
+           "with a modified Global Shutter OnSemi (Aptina) AR0135 camera sensor. It is not included with standard "
+           "JeVois-A33 cameras. It is included in JeVois-Pro.");
   
   // Configure the compass:
-
+  
   // First, disable slaves:
-  writeRegister(ICM20948_REG_I2C_SLV0_CTRL, 0);
-  writeRegister(ICM20948_REG_I2C_SLV1_CTRL, 0);
-  writeRegister(ICM20948_REG_I2C_SLV2_CTRL, 0);
-  writeRegister(ICM20948_REG_I2C_SLV3_CTRL, 0);
-  writeRegister(ICM20948_REG_I2C_SLV4_CTRL, 0);
+  itsIMU->writeRegister(ICM20948_REG_I2C_SLV0_CTRL, 0);
+  itsIMU->writeRegister(ICM20948_REG_I2C_SLV1_CTRL, 0);
+  itsIMU->writeRegister(ICM20948_REG_I2C_SLV2_CTRL, 0);
+  itsIMU->writeRegister(ICM20948_REG_I2C_SLV3_CTRL, 0);
+  itsIMU->writeRegister(ICM20948_REG_I2C_SLV4_CTRL, 0);
 
   // Recommended target for I2C master clock:
-  writeRegister(ICM20948_REG_I2C_MST_CTRL, 0x07 | ICM20948_BIT_I2C_MST_P_NSR);
+  itsIMU->writeRegister(ICM20948_REG_I2C_MST_CTRL, 0x07 | ICM20948_BIT_I2C_MST_P_NSR);
 
   // Enable master I2C:
-  unsigned char v = readRegister(ICM20948_REG_USER_CTRL);
+  unsigned char v = itsIMU->readRegister(ICM20948_REG_USER_CTRL);
   v |= ICM20948_BIT_I2C_MST_EN;
-  writeRegister(ICM20948_REG_USER_CTRL, v);
-
-  std::this_thread::sleep_for(std::chrono::milliseconds(30));
+  if (itsIMU->isSPI()) v |= ICM20948_BIT_I2C_IF_DIS;
+  itsIMU->writeRegister(ICM20948_REG_USER_CTRL, v);
+  std::this_thread::sleep_for(std::chrono::milliseconds(1));
 
   // Check the who-am-I of the magnetometer, to make sure I2C master is working:
   unsigned char wia2 = readMagRegister(REG_AK09916_WIA);
@@ -196,13 +151,13 @@ void jevois::ICM20948::preInit()
   LINFO("AK09916 magnetometer ok.");
 
   // Enable 0x80 in ICM20948_REG_PWR_MGMT_2, needed by DMP:
-  writeRegister(ICM20948_REG_PWR_MGMT_2, readRegister(ICM20948_REG_PWR_MGMT_2) | 0x80);
-
+  itsIMU->writeRegister(ICM20948_REG_PWR_MGMT_2, itsIMU->readRegister(ICM20948_REG_PWR_MGMT_2) | 0x80);
+  
   // Enable FSYNC time counting:
-  writeRegister(ICM20948_REG_FSYNC_CONFIG, ICM20948_BIT_FSYNC_TIME_EN | ICM20948_BIT_FSYNC_DEGLITCH_EN |
-                ICM20948_BIT_FSYNC_EDGE_EN | ICM20948_BITS_FSYNC_SET_TEMP);
-  writeRegister(ICM20948_REG_INT_PIN_CFG, ICM20948_BIT_INT_FSYNC_EN /*| ICM20948_BIT_INT_ACTL_FSYNC*/);
-  writeRegister(ICM20948_REG_INT_ENABLE, ICM20948_BIT_FSYNC_INT_EN);
+  itsIMU->writeRegister(ICM20948_REG_FSYNC_CONFIG, ICM20948_BIT_FSYNC_TIME_EN | ICM20948_BIT_FSYNC_DEGLITCH_EN |
+                        ICM20948_BIT_FSYNC_EDGE_EN | ICM20948_BITS_FSYNC_SET_TEMP);
+  itsIMU->writeRegister(ICM20948_REG_INT_PIN_CFG, ICM20948_BIT_INT_FSYNC_EN); //| ICM20948_BIT_INT_ACTL_FSYNC);
+  itsIMU->writeRegister(ICM20948_REG_INT_ENABLE, ICM20948_BIT_FSYNC_INT_EN);
 }
 
 // ####################################################################################################
@@ -216,33 +171,36 @@ void jevois::ICM20948::postInit()
   {
     // The DMP code was loaded by the kernel driver, which also has set the start address. So here we just need to
     // launch the DMP. First, disable FIFO and DMP:
-    unsigned char v = readRegister(ICM20948_REG_USER_CTRL);
+    unsigned char v = itsIMU->readRegister(ICM20948_REG_USER_CTRL);
     v &= ~(ICM20948_BIT_DMP_EN | ICM20948_BIT_FIFO_EN); v |= ICM20948_BIT_DMP_RST;
-    writeRegister(ICM20948_REG_USER_CTRL, v);
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    if (itsIMU->isSPI()) v |= ICM20948_BIT_I2C_IF_DIS;
+    itsIMU->writeRegister(ICM20948_REG_USER_CTRL, v);
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
     
     // Reset / setup the FIFO:
-    writeRegister(ICM20948_REG_FIFO_CFG, ICM20948_BIT_MULTI_FIFO_CFG); // FIFO Config
-    writeRegister(ICM20948_REG_FIFO_RST, 0x1f); // Reset all FIFOs.
-    writeRegister(ICM20948_REG_FIFO_RST, 0x1e); // Keep all but Gyro FIFO in reset.
-    writeRegister(ICM20948_REG_FIFO_EN_1, 0x0); // Slave FIFO turned off.
-    writeRegister(ICM20948_REG_FIFO_EN_2, 0x0); // Hardware FIFO turned off.
+    itsIMU->writeRegister(ICM20948_REG_FIFO_CFG, ICM20948_BIT_MULTI_FIFO_CFG); // FIFO Config
+    itsIMU->writeRegister(ICM20948_REG_FIFO_RST, 0x1f); // Reset all FIFOs.
+    itsIMU->writeRegister(ICM20948_REG_FIFO_RST, 0x1e); // Keep all but Gyro FIFO in reset.
+    itsIMU->writeRegister(ICM20948_REG_FIFO_EN_1, 0x0); // Slave FIFO turned off.
+    itsIMU->writeRegister(ICM20948_REG_FIFO_EN_2, 0x0); // Hardware FIFO turned off.
 
-    writeRegister(ICM20948_REG_SINGLE_FIFO_PRIORITY_SEL, 0xe4); // Use a single interrupt for FIFO
+    itsIMU->writeRegister(ICM20948_REG_SINGLE_FIFO_PRIORITY_SEL, 0xe4); // Use a single interrupt for FIFO
 
     // Enable DMP interrupts:
-    writeRegister(ICM20948_REG_INT_ENABLE, ICM20948_BIT_FSYNC_INT_EN | ICM20948_BIT_DMP_INT_EN); // Enable DMP Interrupt
-    writeRegister(ICM20948_REG_INT_ENABLE_1, ICM20948_BIT_RAW_DATA_0_RDY_EN | ICM20948_BIT_RAW_DATA_1_RDY_EN |
-                  ICM20948_BIT_RAW_DATA_2_RDY_EN | ICM20948_BIT_RAW_DATA_3_RDY_EN); // Enable raw data ready Interrupt
-    writeRegister(ICM20948_REG_INT_ENABLE_2, ICM20948_BIT_FIFO_OVERFLOW_EN_0); // Enable FIFO Overflow Interrupt
-
-    // Enable DMP:
-    v |= ICM20948_BIT_DMP_EN | ICM20948_BIT_FIFO_EN; v &= ~ICM20948_BIT_DMP_RST;
-    writeRegister(ICM20948_REG_USER_CTRL, v);
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    itsIMU->writeRegister(ICM20948_REG_INT_ENABLE,
+                          ICM20948_BIT_FSYNC_INT_EN | ICM20948_BIT_DMP_INT_EN); // Enable DMP Interrupt
+    itsIMU->writeRegister(ICM20948_REG_INT_ENABLE_1, ICM20948_BIT_RAW_DATA_0_RDY_EN | ICM20948_BIT_RAW_DATA_1_RDY_EN |
+                          ICM20948_BIT_RAW_DATA_2_RDY_EN |
+                          ICM20948_BIT_RAW_DATA_3_RDY_EN); // Enable raw data ready Interrupt
+    itsIMU->writeRegister(ICM20948_REG_INT_ENABLE_2, ICM20948_BIT_FIFO_OVERFLOW_EN_0); // Enable FIFO Overflow Interrupt
 
     // Force an execution of our dmp callback:
     dmp::set(dmp::get());
+    
+    // Enable DMP:
+    v |= ICM20948_BIT_DMP_EN | ICM20948_BIT_FIFO_EN; v &= ~ICM20948_BIT_DMP_RST;
+    if (itsIMU->isSPI()) v |= ICM20948_BIT_I2C_IF_DIS;
+    itsIMU->writeRegister(ICM20948_REG_USER_CTRL, v);
     
     LINFO("IMU Digital Motion Processor (DMP) enabled.");
   }
@@ -251,9 +209,10 @@ void jevois::ICM20948::postInit()
   case jevois::imu::Mode::FIFO:
   {
     // Disable the DMP:
-    unsigned char v = readRegister(ICM20948_REG_USER_CTRL);
+    unsigned char v = itsIMU->readRegister(ICM20948_REG_USER_CTRL);
     v &= ~ICM20948_BIT_DMP_EN; v |= ICM20948_BIT_DMP_RST;
-    writeRegister(ICM20948_REG_USER_CTRL, v);
+    if (itsIMU->isSPI()) v |= ICM20948_BIT_I2C_IF_DIS;
+    itsIMU->writeRegister(ICM20948_REG_USER_CTRL, v);
 
     // Enable FIFO, set packet size, nuke any old FIFO data:
     computeFIFOpktSize(-1.0F, -1.0F, -1);
@@ -268,9 +227,10 @@ void jevois::ICM20948::postInit()
   case jevois::imu::Mode::RAW:
   {
     // Disable the DMP and FIFO:
-    unsigned char v = readRegister(ICM20948_REG_USER_CTRL);
+    unsigned char v = itsIMU->readRegister(ICM20948_REG_USER_CTRL);
     v &= ~(ICM20948_BIT_DMP_EN | ICM20948_BIT_FIFO_EN); v |= ICM20948_BIT_DMP_RST;
-    writeRegister(ICM20948_REG_USER_CTRL, v);
+    if (itsIMU->isSPI()) v |= ICM20948_BIT_I2C_IF_DIS;
+    itsIMU->writeRegister(ICM20948_REG_USER_CTRL, v);
 
     // DMP is not available:
     dmp::freeze();
@@ -291,7 +251,7 @@ void jevois::ICM20948::preUninit()
 // ####################################################################################################
 bool jevois::ICM20948::ready()
 {
-  return (readRegister(ICM20948_REG_WHO_AM_I) == ICM20948_DEVICE_ID);
+  return (itsIMU->readRegister(ICM20948_REG_WHO_AM_I) == ICM20948_DEVICE_ID);
 }
 
 // ####################################################################################################
@@ -303,13 +263,12 @@ int jevois::ICM20948::dataReady()
   case jevois::imu::Mode::DMP:
   {
     unsigned char datalen[2];
-    readRegisterArray(ICM20948_REG_FIFO_COUNT_H, &datalen[0], 2);
-    short dlen = (datalen[0] << 8) + datalen[1];
-    return dlen;
+    itsIMU->readRegisterArray(ICM20948_REG_FIFO_COUNT_H, &datalen[0], 2);
+    return (datalen[0] << 8) + datalen[1];
   }
   case jevois::imu::Mode::RAW:
   {
-    unsigned char val = readRegister(ICM20948_REG_INT_STATUS_1);
+    unsigned char val = itsIMU->readRegister(ICM20948_REG_INT_STATUS_1);
     if (val & ICM20948_BIT_RAW_DATA_0_RDY_INT) return 1;
     return 0;
   }
@@ -336,7 +295,7 @@ jevois::IMUrawData jevois::ICM20948::getRaw(bool blocking)
       while (siz > 100)
       {
         unsigned char trash[itsFIFOpktSiz];
-        readRegisterArray(ICM20948_REG_FIFO_R_W, &trash[0], itsFIFOpktSiz);
+        itsIMU->readRegisterArray(ICM20948_REG_FIFO_R_W, &trash[0], itsFIFOpktSiz);
         siz = dataReady();
       }
     }
@@ -345,11 +304,11 @@ jevois::IMUrawData jevois::ICM20948::getRaw(bool blocking)
     {
       if (blocking == false) return d;
 
-      auto tooLate = std::chrono::high_resolution_clock::now() + std::chrono::seconds(2);
+      auto tooLate = std::chrono::steady_clock::now() + std::chrono::seconds(2);
       do
       {
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
-        if (std::chrono::high_resolution_clock::now() > tooLate)
+        if (std::chrono::steady_clock::now() > tooLate)
         { LERROR("TIMEOUT waiting for IMU FIFO data - RETURNING BLANK"); return d; }
         siz = dataReady();
       }
@@ -358,7 +317,7 @@ jevois::IMUrawData jevois::ICM20948::getRaw(bool blocking)
 
     // Read the packet:
     unsigned char packet[itsFIFOpktSiz];
-    readRegisterArray(ICM20948_REG_FIFO_R_W, &packet[0], itsFIFOpktSiz);
+    itsIMU->readRegisterArray(ICM20948_REG_FIFO_R_W, &packet[0], itsFIFOpktSiz);
   
     // Decode the packet:
     int off = 0;
@@ -401,7 +360,7 @@ jevois::IMUrawData jevois::ICM20948::getRaw(bool blocking)
   case jevois::imu::Mode::DMP:
   {
     // Grab the raw data register contents:
-    readRegisterArray(ICM20948_REG_ACCEL_XOUT_H_SH, reinterpret_cast<unsigned char *>(&d.v[0]), 11*2);
+    itsIMU->readRegisterArray(ICM20948_REG_ACCEL_XOUT_H_SH, reinterpret_cast<unsigned char *>(&d.v[0]), 11*2);
 
     // The data from the sensor is in big endian, convert to little endian:
     for (short & s : d.v) { short hi = (s & 0xff00) >> 8; short lo = s & 0x00ff; s = (lo << 8) | hi; }
@@ -470,7 +429,7 @@ jevois::DMPdata jevois::ICM20948::getDMP(bool blocking)
 }
 
 // ####################################################################################################
-  size_t jevois::ICM20948::getDMPsome(bool blocking, size_t desired)
+size_t jevois::ICM20948::getDMPsome(bool blocking, size_t desired)
 {
   size_t siz = dataReady();
   
@@ -478,12 +437,12 @@ jevois::DMPdata jevois::ICM20948::getDMP(bool blocking)
   {
     if (blocking == false) return 0;
 
-    auto tooLate = std::chrono::high_resolution_clock::now() + std::chrono::seconds(2);
+    auto tooLate = std::chrono::steady_clock::now() + std::chrono::seconds(2);
     do
     {
       std::this_thread::sleep_for(std::chrono::milliseconds(1));
 
-      if (std::chrono::high_resolution_clock::now() >= tooLate)
+      if (std::chrono::steady_clock::now() >= tooLate)
       { LERROR("TIMEOUT waiting for IMU DMP data - RETURNING BLANK"); return 0; }
 
       siz = dataReady();
@@ -492,7 +451,7 @@ jevois::DMPdata jevois::ICM20948::getDMP(bool blocking)
   }
 
   // We have enough data in the FIFO, read out what we wanted:
-  readRegisterArray(ICM20948_REG_FIFO_R_W, &itsDMPpacket[itsDMPsz], desired);
+  itsIMU->readRegisterArray(ICM20948_REG_FIFO_R_W, &itsDMPpacket[itsDMPsz], desired);
   itsDMPsz += desired;
   
   return desired;
@@ -503,19 +462,19 @@ jevois::DMPdata jevois::ICM20948::getDMP(bool blocking)
 void jevois::ICM20948::reset(void)
 {
   // Set H_RESET bit to initiate soft reset:
-  writeRegister(ICM20948_REG_PWR_MGMT_1, ICM20948_BIT_H_RESET);
+  itsIMU->writeRegister(ICM20948_REG_PWR_MGMT_1, ICM20948_BIT_H_RESET | ICM20948_BIT_CLK_PLL);
  
-  // Wait 100ms to complete the reset sequence:
-  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  // Wait a bit to complete the reset sequence:
+  std::this_thread::sleep_for(std::chrono::milliseconds(30));
 }
 
 // ####################################################################################################
 void jevois::ICM20948::onParamChange(jevois::imu::arate const & JEVOIS_UNUSED_PARAM(param), float const & newval)
 {
   // Disable or enable accelerometer:
-  uint8_t pwr = readRegister(ICM20948_REG_PWR_MGMT_2);
+  uint8_t pwr = itsIMU->readRegister(ICM20948_REG_PWR_MGMT_2);
   if (newval == 0.0F) pwr |= ICM20948_BIT_PWR_ACCEL_STBY; else pwr &= ~ICM20948_BIT_PWR_ACCEL_STBY;
-  writeRegister(ICM20948_REG_PWR_MGMT_2, pwr);
+  itsIMU->writeRegister(ICM20948_REG_PWR_MGMT_2, pwr);
 
   if (newval)
   {
@@ -527,8 +486,8 @@ void jevois::ICM20948::onParamChange(jevois::imu::arate const & JEVOIS_UNUSED_PA
  
     // Write the value to the registers:
     uint16_t const accelDiv = uint16_t(accelSampleRate);
-    writeRegister(ICM20948_REG_ACCEL_SMPLRT_DIV_1, uint8_t(accelDiv >> 8) );
-    writeRegister(ICM20948_REG_ACCEL_SMPLRT_DIV_2, uint8_t(accelDiv & 0xFF) );
+    itsIMU->writeRegister(ICM20948_REG_ACCEL_SMPLRT_DIV_1, uint8_t(accelDiv >> 8) );
+    itsIMU->writeRegister(ICM20948_REG_ACCEL_SMPLRT_DIV_2, uint8_t(accelDiv & 0xFF) );
  
     // Calculate the actual sample rate from the divider value:
     LINFO("Accelerometer sampling rate set to " << 1125.0F / (accelDiv + 1.0F) << " Hz");
@@ -541,9 +500,9 @@ void jevois::ICM20948::onParamChange(jevois::imu::arate const & JEVOIS_UNUSED_PA
 void jevois::ICM20948::onParamChange(jevois::imu::grate const & JEVOIS_UNUSED_PARAM(param), float const & newval)
 {
   // Disable or enable gyro:
-  uint8_t pwr = readRegister(ICM20948_REG_PWR_MGMT_2);
+  uint8_t pwr = itsIMU->readRegister(ICM20948_REG_PWR_MGMT_2);
   if (newval == 0.0F) pwr |= ICM20948_BIT_PWR_GYRO_STBY; else pwr &= ~ICM20948_BIT_PWR_GYRO_STBY;
-  writeRegister(ICM20948_REG_PWR_MGMT_2, pwr);
+  itsIMU->writeRegister(ICM20948_REG_PWR_MGMT_2, pwr);
 
   if (newval)
   {
@@ -555,11 +514,12 @@ void jevois::ICM20948::onParamChange(jevois::imu::grate const & JEVOIS_UNUSED_PA
  
     // Write the value to the register:
     uint8_t const gyroDiv = uint8_t(gyroSampleRate);
-    writeRegister(ICM20948_REG_GYRO_SMPLRT_DIV, gyroDiv);
+    itsIMU->writeRegister(ICM20948_REG_GYRO_SMPLRT_DIV, gyroDiv);
  
     // Calculate the actual sample rate from the divider value:
     LINFO("Gyroscope sampling rate set to " << 1125.0F / (gyroDiv + 1.0F) << " Hz");
   }
+  else std::this_thread::sleep_for(std::chrono::microseconds(22)); // Per datasheet: wait 22us after disabling gyro
 
   computeFIFOpktSize(-1.0F, newval, -1);
 }
@@ -591,7 +551,7 @@ void jevois::ICM20948::onParamChange(jevois::imu::mrate const & JEVOIS_UNUSED_PA
   writeMagRegister(REG_AK09916_CNTL2, mod);
 
   // Set output data rate (but is overridden by gyro ODR wen gyro is on):
-  writeRegister(ICM20948_REG_I2C_MST_ODR_CONFIG, 0x04); // Rate is 1.1kHz/(2^value)
+  itsIMU->writeRegister(ICM20948_REG_I2C_MST_ODR_CONFIG, 0x04); // Rate is 1.1kHz/(2^value)
 
   // Wait for magnetometer to be on:
   std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -599,18 +559,18 @@ void jevois::ICM20948::onParamChange(jevois::imu::mrate const & JEVOIS_UNUSED_PA
   computeFIFOpktSize(-1.0F, -1.0F, mod);
 
   // Setup to transfer 8 bytes (RAW, FIFO) or 6 bytes (DMP) of data from magnetometer to ICM20948 main:
-  writeRegister(ICM20948_REG_I2C_SLV0_ADDR, ICM20948_BIT_I2C_READ | COMPASS_SLAVEADDR);
-  writeRegister(ICM20948_REG_I2C_SLV0_REG, REG_AK09916_HXL);
+  itsIMU->writeRegister(ICM20948_REG_I2C_SLV0_ADDR, ICM20948_BIT_I2C_READ | COMPASS_SLAVEADDR);
+  itsIMU->writeRegister(ICM20948_REG_I2C_SLV0_REG, REG_AK09916_HXL);
   int siz = (mode::get() == jevois::imu::Mode::DMP) ? 6 : 8;
-  writeRegister(ICM20948_REG_I2C_SLV0_CTRL, // Enable, byteswap, odd-grouping, and read 8 or 6 bytes
-                ICM20948_BIT_I2C_SLV_EN | ICM20948_BIT_I2C_BYTE_SW | ICM20948_BIT_I2C_GRP | siz);
+  itsIMU->writeRegister(ICM20948_REG_I2C_SLV0_CTRL, // Enable, byteswap, odd-grouping, and read 8 or 6 bytes
+                        ICM20948_BIT_I2C_SLV_EN | ICM20948_BIT_I2C_BYTE_SW | ICM20948_BIT_I2C_GRP | siz);
 }
 
 // ####################################################################################################
 void jevois::ICM20948::onParamChange(jevois::imu::abw const & JEVOIS_UNUSED_PARAM(param),
                                      unsigned int const & newval)
 {
-  uint8_t reg = readRegister(ICM20948_REG_ACCEL_CONFIG);
+  uint8_t reg = itsIMU->readRegister(ICM20948_REG_ACCEL_CONFIG);
 
   switch (newval)
   {
@@ -626,14 +586,14 @@ void jevois::ICM20948::onParamChange(jevois::imu::abw const & JEVOIS_UNUSED_PARA
   default: LFATAL("Invalid value");
   }
   
-  writeRegister(ICM20948_REG_ACCEL_CONFIG, reg);
+  itsIMU->writeRegister(ICM20948_REG_ACCEL_CONFIG, reg);
 }
  
 // ####################################################################################################
 void jevois::ICM20948::onParamChange(jevois::imu::gbw const & JEVOIS_UNUSED_PARAM(param),
                                      unsigned int const & newval)
 {
-  uint8_t reg = readRegister(ICM20948_REG_GYRO_CONFIG_1);
+  uint8_t reg = itsIMU->readRegister(ICM20948_REG_GYRO_CONFIG_1);
 
   switch (newval)
   {
@@ -650,7 +610,7 @@ void jevois::ICM20948::onParamChange(jevois::imu::gbw const & JEVOIS_UNUSED_PARA
   default: LFATAL("Invalid value");
   }
   
-  writeRegister(ICM20948_REG_GYRO_CONFIG_1, reg);
+  itsIMU->writeRegister(ICM20948_REG_GYRO_CONFIG_1, reg);
 }
 
 // ####################################################################################################
@@ -658,21 +618,21 @@ void jevois::ICM20948::onParamChange(jevois::imu::tbw const & JEVOIS_UNUSED_PARA
                                      unsigned int const & newval)
 {
   // Disable or enable temperature:
-  uint8_t pwr = readRegister(ICM20948_REG_PWR_MGMT_1);
+  uint8_t pwr = itsIMU->readRegister(ICM20948_REG_PWR_MGMT_1);
   if (newval == 0) pwr |= ICM20948_BIT_TEMP_DIS; else pwr &= ~ICM20948_BIT_TEMP_DIS;
-  writeRegister(ICM20948_REG_PWR_MGMT_1, pwr);
+  itsIMU->writeRegister(ICM20948_REG_PWR_MGMT_1, pwr);
 
   if (newval == 0) return;
 
   switch (newval)
   {
-  case 9: writeRegister(ICM20948_REG_TEMP_CONFIG, 6); break;
-  case 17: writeRegister(ICM20948_REG_TEMP_CONFIG, 5); break;
-  case 34: writeRegister(ICM20948_REG_TEMP_CONFIG, 4); break;
-  case 66: writeRegister(ICM20948_REG_TEMP_CONFIG, 3); break;
-  case 123: writeRegister(ICM20948_REG_TEMP_CONFIG, 2); break;
-  case 218: writeRegister(ICM20948_REG_TEMP_CONFIG, 1); break;
-  case 7932: writeRegister(ICM20948_REG_TEMP_CONFIG, 0); break;
+  case 9: itsIMU->writeRegister(ICM20948_REG_TEMP_CONFIG, 6); break;
+  case 17: itsIMU->writeRegister(ICM20948_REG_TEMP_CONFIG, 5); break;
+  case 34: itsIMU->writeRegister(ICM20948_REG_TEMP_CONFIG, 4); break;
+  case 66: itsIMU->writeRegister(ICM20948_REG_TEMP_CONFIG, 3); break;
+  case 123: itsIMU->writeRegister(ICM20948_REG_TEMP_CONFIG, 2); break;
+  case 218: itsIMU->writeRegister(ICM20948_REG_TEMP_CONFIG, 1); break;
+  case 7932: itsIMU->writeRegister(ICM20948_REG_TEMP_CONFIG, 0); break;
   default: LFATAL("Invalid value");
   }
 }
@@ -681,7 +641,7 @@ void jevois::ICM20948::onParamChange(jevois::imu::tbw const & JEVOIS_UNUSED_PARA
 void jevois::ICM20948::onParamChange(jevois::imu::arange const & JEVOIS_UNUSED_PARAM(param),
                                      unsigned int const & newval)
 {
-  uint8_t reg = readRegister(ICM20948_REG_ACCEL_CONFIG) & ~ICM20948_MASK_ACCEL_FULLSCALE;
+  uint8_t reg = itsIMU->readRegister(ICM20948_REG_ACCEL_CONFIG) & ~ICM20948_MASK_ACCEL_FULLSCALE;
 
   switch (newval)
   {
@@ -691,14 +651,14 @@ void jevois::ICM20948::onParamChange(jevois::imu::arange const & JEVOIS_UNUSED_P
   case 16: reg |= ICM20948_ACCEL_FULLSCALE_16G; break;
   default: LFATAL("Invalid value");
   }
-  writeRegister(ICM20948_REG_ACCEL_CONFIG, reg);
+  itsIMU->writeRegister(ICM20948_REG_ACCEL_CONFIG, reg);
 }
 
 // ####################################################################################################
 void jevois::ICM20948::onParamChange(jevois::imu::grange const & JEVOIS_UNUSED_PARAM(param),
                                      unsigned int const & newval)
 {
-  uint8_t reg = readRegister(ICM20948_REG_GYRO_CONFIG_1) & ~ICM20948_MASK_GYRO_FULLSCALE;
+  uint8_t reg = itsIMU->readRegister(ICM20948_REG_GYRO_CONFIG_1) & ~ICM20948_MASK_GYRO_FULLSCALE;
 
   switch (newval)
   {
@@ -708,18 +668,22 @@ void jevois::ICM20948::onParamChange(jevois::imu::grange const & JEVOIS_UNUSED_P
   case 2000: reg |= ICM20948_GYRO_FULLSCALE_2000DPS; break;
   default: LFATAL("Invalid value");
   }
-  writeRegister(ICM20948_REG_GYRO_CONFIG_1, reg);
+  itsIMU->writeRegister(ICM20948_REG_GYRO_CONFIG_1, reg);
 }
 
 // ####################################################################################################
 void jevois::ICM20948::sleep(bool enable)
 {
-  uint8_t reg = readRegister(ICM20948_REG_PWR_MGMT_1);
+  uint8_t reg = itsIMU->readRegister(ICM20948_REG_PWR_MGMT_1);
 
   if (enable) reg |= ICM20948_BIT_SLEEP;
   else reg &= ~(ICM20948_BIT_SLEEP);
 
-  writeRegister(ICM20948_REG_PWR_MGMT_1, reg);
+  reg |= ICM20948_BIT_CLK_PLL;
+  
+  itsIMU->writeRegister(ICM20948_REG_PWR_MGMT_1, reg);
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(2));
 }
 
 // ####################################################################################################
@@ -730,12 +694,12 @@ void jevois::ICM20948::cycle(bool enable)
 
   if (enable) reg |= mask; else reg &= ~mask;
  
-  writeRegister(ICM20948_REG_LP_CONFIG, reg);
+  itsIMU->writeRegister(ICM20948_REG_LP_CONFIG, reg);
 }
 
 // ####################################################################################################
 uint32_t jevois::ICM20948::devid()
-{ return readRegister(ICM20948_REG_WHO_AM_I); }
+{ return itsIMU->readRegister(ICM20948_REG_WHO_AM_I); }
 
 // ####################################################################################################
 void jevois::ICM20948::onParamChange(imu::dmp const & JEVOIS_UNUSED_PARAM(param), std::string const & newval)
@@ -777,14 +741,14 @@ void jevois::ICM20948::onParamChange(imu::dmp const & JEVOIS_UNUSED_PARAM(param)
   if (h2) ctl1 |= JEVOIS_DMP_HEADER2;
   
   // Set the two control parameters in the IMU:
-  writeDMP(DMP_DATA_OUT_CTL1, ctl1);
-  writeDMP(DMP_DATA_OUT_CTL2, ctl2);
-  writeDMP(DMP_FIFO_WATERMARK, 800);
+  itsIMU->writeDMPregister(DMP_DATA_OUT_CTL1, ctl1);
+  itsIMU->writeDMPregister(DMP_DATA_OUT_CTL2, ctl2);
+  itsIMU->writeDMPregister(DMP_FIFO_WATERMARK, 800);
 
   // Setup the DMP:
-  writeDMP(DMP_DATA_INTR_CTL, ctl1);
-  writeDMP(DMP_MOTION_EVENT_CTL, mec);
-  writeDMP(DMP_DATA_RDY_STATUS, (a ? 0x02 : 0x00) | (g ? 0x01 : 0x00) | (m ? 0x08 : 0x00));
+  itsIMU->writeDMPregister(DMP_DATA_INTR_CTL, ctl1);
+  itsIMU->writeDMPregister(DMP_MOTION_EVENT_CTL, mec);
+  itsIMU->writeDMPregister(DMP_DATA_RDY_STATUS, (a ? 0x02 : 0x00) | (g ? 0x01 : 0x00) | (m ? 0x08 : 0x00));
 }
 
 // ####################################################################################################
@@ -801,42 +765,44 @@ void jevois::ICM20948::computeFIFOpktSize(float ar, float gr, int mm)
     jevois::imu::MagRate mag; if (mm == -1) mag = mrate::get(); else mag = jevois::imu::MagRate::M100Hz; // any value ok
     
     // Packet size may change. We need to nuke the FIFO to avoid mixed packets:
-    unsigned char ctl = readRegister(ICM20948_REG_USER_CTRL);
+    unsigned char ctl = itsIMU->readRegister(ICM20948_REG_USER_CTRL);
     ctl &= ~ICM20948_BIT_FIFO_EN;
-    writeRegister(ICM20948_REG_USER_CTRL, ctl);
+    if (itsIMU->isSPI()) ctl |= ICM20948_BIT_I2C_IF_DIS;
+    itsIMU->writeRegister(ICM20948_REG_USER_CTRL, ctl);
 
-    writeRegister(ICM20948_REG_FIFO_CFG, ICM20948_BIT_SINGLE_FIFO_CFG); // FIFO Config
-    writeRegister(ICM20948_REG_FIFO_RST, 0x1f); // Reset all FIFOs.
-    writeRegister(ICM20948_REG_FIFO_EN_1, 0x0); // Slave FIFO turned off.
-    writeRegister(ICM20948_REG_FIFO_EN_2, 0x0); // Hardware FIFO turned off.
+    itsIMU->writeRegister(ICM20948_REG_FIFO_CFG, ICM20948_BIT_SINGLE_FIFO_CFG); // FIFO Config
+    itsIMU->writeRegister(ICM20948_REG_FIFO_RST, 0x1f); // Reset all FIFOs.
+    itsIMU->writeRegister(ICM20948_REG_FIFO_EN_1, 0x0); // Slave FIFO turned off.
+    itsIMU->writeRegister(ICM20948_REG_FIFO_EN_2, 0x0); // Hardware FIFO turned off.
 
     std::this_thread::sleep_for(std::chrono::milliseconds(100)); // FIXME: should wait more at low rates...
     
     int siz = dataReady(); unsigned char trash[16];
     while (siz)
     {
-      readRegisterArray(ICM20948_REG_FIFO_R_W, &trash[0], std::min(siz, 16));
+      itsIMU->readRegisterArray(ICM20948_REG_FIFO_R_W, &trash[0], std::min(siz, 16));
       siz = dataReady();
     }
 
-    writeRegister(ICM20948_REG_FIFO_RST, 0x00); // Stop FIFO reset
+    itsIMU->writeRegister(ICM20948_REG_FIFO_RST, 0x00); // Stop FIFO reset
 
-    unsigned char v = readRegister(ICM20948_REG_FIFO_EN_2);
+    unsigned char v = itsIMU->readRegister(ICM20948_REG_FIFO_EN_2);
     if (acc > 0.0F) { v |= ICM20948_BIT_ACCEL_FIFO_EN; itsFIFOpktSiz += 6; } // 3 axes, short int values
     else v &= ~ICM20948_BIT_ACCEL_FIFO_EN;
     if (gyr > 0.0F) { v |= ICM20948_BITS_GYRO_FIFO_EN; itsFIFOpktSiz += 6; } // 3 axes, short int values
     else v &= ~ICM20948_BITS_GYRO_FIFO_EN;
-    writeRegister(ICM20948_REG_FIFO_EN_2, v);
+    itsIMU->writeRegister(ICM20948_REG_FIFO_EN_2, v);
 
-    v = readRegister(ICM20948_REG_FIFO_EN_1);
+    v = itsIMU->readRegister(ICM20948_REG_FIFO_EN_1);
     if (mag != jevois::imu::MagRate::Off && mag != jevois::imu::MagRate::Once)
     { v |= ICM20948_BIT_SLV_0_FIFO_EN; itsFIFOpktSiz += 8; } // 3 axes, short int values + short status
     else v &= ~ICM20948_BIT_SLV_0_FIFO_EN;
-    writeRegister(ICM20948_REG_FIFO_EN_1, v);
+    itsIMU->writeRegister(ICM20948_REG_FIFO_EN_1, v);
 
     // Enable FIFO:
     ctl |= ICM20948_BIT_FIFO_EN;
-    writeRegister(ICM20948_REG_USER_CTRL, ctl);
+    if (itsIMU->isSPI()) ctl |= ICM20948_BIT_I2C_IF_DIS;
+    itsIMU->writeRegister(ICM20948_REG_USER_CTRL, ctl);
   }
 }
 

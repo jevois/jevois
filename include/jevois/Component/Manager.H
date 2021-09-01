@@ -165,10 +165,10 @@ namespace jevois
       // BEGIN_JEVOIS_CODE_SNIPPET manager2.C
 
       //! Parameter callback
-      void onParamChange(manager::loglevel const & param, manager::LogLevel const & newval);
+      void onParamChange(manager::loglevel const & param, manager::LogLevel const & newval) override;
 
       //! Parameter callback
-      void onParamChange(manager::tracelevel const & param, unsigned int const & newval);
+      void onParamChange(manager::tracelevel const & param, unsigned int const & newval) override;
       // END_JEVOIS_CODE_SNIPPET
       
       //! Calls parseCommandLine()

@@ -56,7 +56,7 @@ namespace jevois
       virtual void writeString(std::string const & prefix, std::string const & str);
 
       //! Enum for the interface type
-      enum class Type { Hard, USB, Stdio };
+      enum class Type { Hard, USB, Stdio, GUI };
 
       //! Derived classes must implement this and return their interface type
       virtual Type type() const = 0;

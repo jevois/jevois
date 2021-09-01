@@ -31,6 +31,8 @@
 #include <jevois/Debug/Timer.H>
 #include <jevois/Debug/Profiler.H>
 #include <jevois/Debug/SysInfo.H>
+#include <jevois/Core/Camera.H>
+#include <jevois/Core/IMU.H>
 
 #define PY_ARRAY_UNIQUE_SYMBOL pbcvt_ARRAY_API
 #include <jevois/Core/PythonOpenCV.H>
@@ -108,37 +110,49 @@ namespace
   void pythonWriteCamRegister(unsigned short reg, unsigned short val)
   {
     if (jevois::python::engineForPythonModule == nullptr) LFATAL("internal error");
-    jevois::python::engineForPythonModule->writeCamRegister(reg, val);
+    auto cam = jevois::python::engineForPythonModule->camera();
+    if (!cam) LFATAL("Not using a Camera for video input");
+    cam->writeRegister(reg, val);
   }
 
   unsigned short pythonReadCamRegister(unsigned short reg)
   {
     if (jevois::python::engineForPythonModule == nullptr) LFATAL("internal error");
-    return jevois::python::engineForPythonModule->readCamRegister(reg);
+    auto cam = jevois::python::engineForPythonModule->camera();
+    if (!cam) LFATAL("Not using a Camera for video input");
+    return cam->readRegister(reg);
   }
 
   void pythonWriteIMUregister(unsigned short reg, unsigned short val)
   {
     if (jevois::python::engineForPythonModule == nullptr) LFATAL("internal error");
-    jevois::python::engineForPythonModule->writeIMUregister(reg, val);
+    auto imu = jevois::python::engineForPythonModule->imu();
+    if (!imu) LFATAL("No IMU driver loaded");
+    imu->writeRegister(reg, val);
   }
   
   unsigned short pythonReadIMUregister(unsigned short reg)
   {
     if (jevois::python::engineForPythonModule == nullptr) LFATAL("internal error");
-    return jevois::python::engineForPythonModule->readIMUregister(reg);
+    auto imu = jevois::python::engineForPythonModule->imu();
+    if (!imu) LFATAL("No IMU driver loaded");
+    return imu->readRegister(reg);
   }
 
   void pythonWriteDMPregister(unsigned short reg, unsigned short val)
   {
     if (jevois::python::engineForPythonModule == nullptr) LFATAL("internal error");
-    jevois::python::engineForPythonModule->writeDMPregister(reg, val);
+    auto imu = jevois::python::engineForPythonModule->imu();
+    if (!imu) LFATAL("No IMU driver loaded");
+    imu->writeDMPregister(reg, val);
   }
   
   unsigned short pythonReadDMPregister(unsigned short reg)
   {
     if (jevois::python::engineForPythonModule == nullptr) LFATAL("internal error");
-    return jevois::python::engineForPythonModule->readDMPregister(reg);
+    auto imu = jevois::python::engineForPythonModule->imu();
+    if (!imu) LFATAL("No IMU driver loaded");
+    return imu->readDMPregister(reg);
   }
   
 #ifdef JEVOIS_LDEBUG_ENABLE
@@ -165,7 +179,11 @@ namespace jevois
 }
 
 // ####################################################################################################
+#ifdef JEVOIS_PRO
+BOOST_PYTHON_MODULE(libjevoispro)
+#else
 BOOST_PYTHON_MODULE(libjevois)
+#endif
 {
   // #################### Initialize converters for cv::Mat support:
   boost::python::to_python_converter<cv::Mat, pbcvt::matToNDArrayBoostConverter>();
@@ -195,6 +213,7 @@ BOOST_PYTHON_MODULE(libjevois)
   // #################### Utils.H
   JEVOIS_PYTHON_FUNC(fccstr);
   JEVOIS_PYTHON_FUNC(cvtypestr);
+  JEVOIS_PYTHON_FUNC(cvBytesPerPix);
   JEVOIS_PYTHON_FUNC(strfcc);
   JEVOIS_PYTHON_FUNC(v4l2BytesPerPix);
   JEVOIS_PYTHON_FUNC(v4l2ImageSize);
@@ -271,7 +290,17 @@ BOOST_PYTHON_MODULE(libjevois)
          boost::python::return_value_policy<boost::python::reference_existing_object>())
     .def("get", &jevois::InputFramePython::get,
          boost::python::return_value_policy<boost::python::reference_existing_object>())
+    .def("hasScaledImage", &jevois::InputFramePython::hasScaledImage)
+    .def("get2", &jevois::InputFramePython::get21,
+         boost::python::return_value_policy<boost::python::reference_existing_object>())
+    .def("get2", &jevois::InputFramePython::get2,
+         boost::python::return_value_policy<boost::python::reference_existing_object>())
+    .def("getp", &jevois::InputFramePython::getp1,
+         boost::python::return_value_policy<boost::python::reference_existing_object>())
+    .def("getp", &jevois::InputFramePython::getp,
+         boost::python::return_value_policy<boost::python::reference_existing_object>())
     .def("done", &jevois::InputFramePython::done)
+    .def("done2", &jevois::InputFramePython::done2)
     .def("getCvGRAY",  &jevois::InputFramePython::getCvGRAY1)
     .def("getCvGRAY",  &jevois::InputFramePython::getCvGRAY)
     .def("getCvBGR",  &jevois::InputFramePython::getCvBGR1)
@@ -280,6 +309,11 @@ BOOST_PYTHON_MODULE(libjevois)
     .def("getCvRGB",  &jevois::InputFramePython::getCvRGB)
     .def("getCvRGBA",  &jevois::InputFramePython::getCvRGBA1)
     .def("getCvRGBA",  &jevois::InputFramePython::getCvRGBA)
+
+    .def("getCvGRAYp",  &jevois::InputFramePython::getCvGRAYp)
+    .def("getCvBGRp",  &jevois::InputFramePython::getCvBGRp)
+    .def("getCvRGBp",  &jevois::InputFramePython::getCvRGBp)
+    .def("getCvRGBAp",  &jevois::InputFramePython::getCvRGBAp)
     ;
   
   boost::python::class_<jevois::OutputFramePython>("OutputFrame")
@@ -364,9 +398,10 @@ BOOST_PYTHON_MODULE(libjevois)
   boost::python::def("rescaleCv", jevois::rescaleCv);
 
   // #################### Timer.H
+  std::string const & (jevois::Timer::*timer_stop)() = &jevois::Timer::stop; // select overload with no args
   boost::python::class_<jevois::Timer>("Timer", boost::python::init<char const *, size_t, int>())
     .def("start", &jevois::Timer::start)
-    .def("stop", &jevois::Timer::stop, boost::python::return_value_policy<boost::python::copy_const_reference>());
+    .def("stop", timer_stop, boost::python::return_value_policy<boost::python::copy_const_reference>());
 
   // #################### Profiler.H
   boost::python::class_<jevois::Profiler>("Profiler", boost::python::init<char const *, size_t, int>())
@@ -379,4 +414,39 @@ BOOST_PYTHON_MODULE(libjevois)
   JEVOIS_PYTHON_FUNC(getSysInfoMem);
   JEVOIS_PYTHON_FUNC(getSysInfoVersion);
 
+#ifdef JEVOIS_PRO
+  // #################### GUIhelper.H
+  boost::python::class_<ImVec2>("ImVec2");
+  boost::python::class_<ImColor>("ImColor");
+
+  boost::python::class_<jevois::GUIhelperPython>("GUIhelper")
+    .def("startFrame", &jevois::GUIhelperPython::startFrame)
+    .def("frameStarted", &jevois::GUIhelperPython::frameStarted)
+    .def("drawImage", &jevois::GUIhelperPython::drawImage)
+    .def("drawImage", &jevois::GUIhelperPython::drawImage1)
+    .def("drawInputFrame", &jevois::GUIhelperPython::drawInputFrame)
+    .def("drawInputFrame2", &jevois::GUIhelperPython::drawInputFrame2)
+    .def("i2d", &jevois::GUIhelperPython::i2d)
+    .def("i2d", &jevois::GUIhelperPython::i2d1)
+    .def("i2ds", &jevois::GUIhelperPython::i2ds)
+    .def("i2ds", &jevois::GUIhelperPython::i2ds1)
+    .def("drawLine", &jevois::GUIhelperPython::drawLine)
+    .def("drawRect", &jevois::GUIhelperPython::drawRect)
+    .def("drawPoly", &jevois::GUIhelperPython::drawPoly)
+    .def("drawPoly", &jevois::GUIhelperPython::drawPoly1)
+    .def("drawPoly", &jevois::GUIhelperPython::drawPoly2)
+    .def("drawCircle", &jevois::GUIhelperPython::drawCircle)
+    .def("drawText", &jevois::GUIhelperPython::drawText)
+    .def("iline", &jevois::GUIhelperPython::iline)
+    .def("itext", &jevois::GUIhelperPython::itext)
+    .def("iinfo", &jevois::GUIhelperPython::iinfo)
+    .def("releaseImage", &jevois::GUIhelperPython::releaseImage)
+    .def("releaseImage2", &jevois::GUIhelperPython::releaseImage2)
+    .def("endFrame", &jevois::GUIhelperPython::endFrame)
+    .def("reportError", &jevois::GUIhelperPython::reportError)
+    .def("reportAndIgnoreException", &jevois::GUIhelperPython::reportAndIgnoreException)
+    .def("reportAndRethrowException", &jevois::GUIhelperPython::reportAndRethrowException)
+    ;
+#endif
+  
 }

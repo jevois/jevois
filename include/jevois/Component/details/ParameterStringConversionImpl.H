@@ -116,6 +116,27 @@ void jevois::paramStringToVal(std::string const & valstring, cv::Scalar_<T> & re
   s >> result[0] >> std::skipws >> result[1] >> std::skipws >> result[2] >> std::skipws >> result[3];
 }
 
+#ifdef JEVOIS_PRO
+
+// ######################################################################
+inline void jevois::paramValToString(ImColor const & val, std::string & result)
+{
+  std::stringstream s;
+  s << int(val.Value.x * 255.0F) << ' ' << int(val.Value.y * 255.0F) << ' '
+    << int(val.Value.z * 255.0F) << ' ' << int(val.Value.w * 255.0F);
+  result = s.str();
+}
+
+// ######################################################################
+inline void jevois::paramStringToVal(std::string const & valstring, ImColor & result)
+{
+  std::stringstream s(valstring); int r, g, b, a;
+  s >> r >> std::skipws >> g >> std::skipws >> b >> std::skipws >> a;
+  result = ImColor(r, g, b, a);
+}
+
+#endif
+
 // ######################################################################
 template <typename K, typename V> inline
 void jevois::paramValToString(std::map<K,V> const & val, std::string & result) 

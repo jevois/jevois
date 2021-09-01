@@ -17,23 +17,13 @@
 
 #include <jevois/Debug/Profiler.H>
 #include <jevois/Debug/Log.H>
+#include <jevois/Util/Utils.H>
 #include <sstream>
-
-namespace
-{
-  void secs2str(std::ostringstream & ss, double secs)
-  {
-    if (secs < 1.0e-6) ss << secs * 1.0e9 << "ns";
-    else if (secs < 1.0e-3) ss << secs * 1.0e6 << "us";
-    else if (secs < 1.0) ss << secs * 1.0e3 << "ms";
-    else ss << secs << 's';
-  }
-}
 
 // ####################################################################################################
 jevois::Profiler::Profiler(char const * prefix, size_t interval, int loglevel) :
     itsPrefix(prefix), itsInterval(interval), itsLogLevel(loglevel),
-    itsStartTime(std::chrono::high_resolution_clock::now())
+    itsStartTime(std::chrono::steady_clock::now())
 {
   itsData = { "", 0, 0.0, 1.0e30, -1.0e30, itsStartTime };
   if (interval == 0) LFATAL("Interval must be > 0");
@@ -42,13 +32,13 @@ jevois::Profiler::Profiler(char const * prefix, size_t interval, int loglevel) :
 // ####################################################################################################
 void jevois::Profiler::start()
 {
-  itsStartTime = std::chrono::high_resolution_clock::now();
+  itsStartTime = std::chrono::steady_clock::now();
 }
 
 // ####################################################################################################
 void jevois::Profiler::checkpoint(char const * desc)
 {
-  std::chrono::time_point<std::chrono::high_resolution_clock> now = std::chrono::high_resolution_clock::now();
+  std::chrono::time_point<std::chrono::steady_clock> now = std::chrono::steady_clock::now();
 
   // See if we already have that desc:
   size_t const sz = itsCheckpointData.size();
@@ -83,7 +73,7 @@ void jevois::Profiler::checkpoint(char const * desc)
 // ####################################################################################################
 void jevois::Profiler::stop()
 {
-  std::chrono::duration<double> const dur = std::chrono::high_resolution_clock::now() - itsStartTime;
+  std::chrono::duration<double> const dur = std::chrono::steady_clock::now() - itsStartTime;
   double secs = dur.count();
   
   // Update average duration computation:
@@ -98,8 +88,8 @@ void jevois::Profiler::stop()
     // First the overall start-to-stop report, include fps:
     double const avgsecs = itsData.secs / itsData.count;
     std::ostringstream ss;
-    ss << itsPrefix << " overall average (" << itsData.count << ") duration "; secs2str(ss, avgsecs);
-    ss << " ["; secs2str(ss, itsData.minsecs); ss << " .. "; secs2str(ss, itsData.maxsecs); ss<< ']'; 
+    ss << itsPrefix << " overall average (" << itsData.count << ") duration "; jevois::secs2str(ss, avgsecs);
+    ss << " ["; jevois::secs2str(ss, itsData.minsecs); ss << " .. "; jevois::secs2str(ss, itsData.maxsecs); ss<< ']'; 
 
     if (avgsecs > 0.0) ss << " (" << 1.0 / avgsecs << " fps)";
 
@@ -117,8 +107,8 @@ void jevois::Profiler::stop()
       double const cpavgsecs = cpd.count ? cpd.secs / cpd.count : 0.0;
       std::ostringstream cpss;
       cpss << itsPrefix << " - " << cpd.desc << " average (" << cpd.count << ") delta duration ";
-      secs2str(cpss, cpavgsecs); cpss << " ["; secs2str(cpss, cpd.minsecs); cpss << " .. ";
-      secs2str(cpss, cpd.maxsecs); cpss<< ']'; 
+      jevois::secs2str(cpss, cpavgsecs); cpss << " ["; jevois::secs2str(cpss, cpd.minsecs); cpss << " .. ";
+      jevois::secs2str(cpss, cpd.maxsecs); cpss<< ']'; 
 
       if (cpavgsecs > 0.0) cpss << " (" << 1.0 / cpavgsecs << " fps)";
 

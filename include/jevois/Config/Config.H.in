@@ -32,8 +32,33 @@
 #define JEVOIS_PYTHON_MAJOR @JEVOIS_PYTHON_MAJOR@
 #define JEVOIS_PYTHON_MINOR @JEVOIS_PYTHON_MINOR@
 
+//! Target hardware selection:
+#cmakedefine JEVOIS_A33
+#cmakedefine JEVOIS_PRO
+
+//! Shortcuts to allow detection of a specific platform instead of testing JEVOIS_PLATFORM and JEVOIS_[A33|PRO|...]
+/*! Use #ifdef JEVOIS_PLATFORM_A33 as you would #if defined(JEVOIS_PLATFORM) && defined(JEVOIS_A33).
+    Use #ifdef JEVOIS_HOST_A33 as you would #if !defined(JEVOIS_PLATFORM) && defined(JEVOIS_A33) */
+#if defined(JEVOIS_PLATFORM)
+#  if defined(JEVOIS_PRO)
+#    define JEVOIS_PLATFORM_PRO
+#  else
+#    define JEVOIS_PLATFORM_A33
+#  endif
+#else
+#define JEVOIS_HOST
+#  if defined(JEVOIS_PRO)
+#    define JEVOIS_HOST_PRO
+#  else
+#    define JEVOIS_HOST_A33
+#  endif
+#endif
+
+//! Helper string that evaluates to "jevois" or "jevoispro" depending on values of JEVOIS_A33 and JEVOIS_PRO:
+#define JEVOIS "@JEVOIS@"
+
 //! Software version, combined
-#define JEVOIS_VERSION ( (JEVOIS_VERSION_MAJOR << 16) + JEVOIS_VERSION_MINOR )
+#define JEVOIS_VERSION ( ((JEVOIS_VERSION_MAJOR) << 16) + ((JEVOIS_VERSION_MINOR) << 8) + (JEVOIS_VERSION_PATCH) )
 
 //! Macro to stringify a value
 #define JEVOIS_MACRO_STRING(s) JEVOIS_MACRO_STR(s)
@@ -56,6 +81,12 @@
 //! Base path for shared files (e.g., neural network weights, etc)
 #define JEVOIS_SHARE_PATH JEVOIS_ROOT_PATH "/share"
 
+//! Directory where custom DNN models are stored:
+#define JEVOIS_CUSTOM_DNN_PATH JEVOIS_SHARE_PATH "/dnn/custom"
+
+//! URL where custom converted DNN models can be downloaded:
+#define JEVOIS_CUSTOM_DNN_URL "https://jevois.usc.edu/mc/d"
+
 //! Location of the engine videomappings.cfg definition file
 #define JEVOIS_ENGINE_CONFIG_FILE JEVOIS_CONFIG_PATH "/videomappings.cfg"
 
@@ -74,8 +105,8 @@
 //! Sysfs location to change the exported partition or file over USB using Engine command 'usbsd"
 #define JEVOIS_USBSD_SYS "/sys/devices/platform/sunxi_usb_udc/gadget/lun0/file"
 
-//! Installed location of OpenCV copiled for JeVois, needed for Python to find cv2 module:
-#ifdef JEVOIS_PLATFORM
+//! Installed location of OpenCV compiled for JeVois, needed for Python to find cv2 module:
+#ifdef JEVOIS_PLATFORM_A33
 #define JEVOIS_OPENCV_PREFIX "@JEVOIS_PLATFORM_OPENCV_PREFIX@"
 #define JEVOIS_OPENCV_PYTHON_PATH JEVOIS_OPENCV_PREFIX "/lib/python" JEVOIS_MACRO_STRING(JEVOIS_PYTHON_MAJOR) "." \
   JEVOIS_MACRO_STRING(JEVOIS_PYTHON_MINOR) "/site-packages"
@@ -91,7 +122,7 @@
 #define JEVOIS_UNUSED_FUNC(x) x
 #else
 
-//! Helper to avoid compiler warnings about unused parameters, we explicitly marked them unused in implementation
+//! Helper to avoid compiler warnings about unused parameters, we explicitly mark them unused in implementation
 /*! This is from here: http://stackoverflow.com/questions/3599160/unused-parameter-warnings-in-c-code */
 #ifdef __GNUC__
 #  define JEVOIS_UNUSED_PARAM(x) JEVOIS_UNUSED_ ## x __attribute__((__unused__))

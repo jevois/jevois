@@ -1,0 +1,63 @@
+diff --git a/tensorflow/lite/core/api/op_resolver.h b/tensorflow/lite/core/api/op_resolver.h
+index b6a8171d2a3..f8fade23461 100644
+--- a/tensorflow/lite/core/api/op_resolver.h
++++ b/tensorflow/lite/core/api/op_resolver.h
+@@ -40,7 +40,7 @@ class OpResolver {
+   // lookup for graph resolution.
+   using TfLiteDelegatePtrVector =
+       std::vector<std::unique_ptr<TfLiteDelegate, void (*)(TfLiteDelegate*)>>;
+-  virtual TfLiteDelegatePtrVector GetDelegates(int num_threads) const {
++  virtual TfLiteDelegatePtrVector GetDelegates(int) const {
+     return TfLiteDelegatePtrVector();
+   }
+ 
+diff --git a/tensorflow/lite/core/api/profiler.h b/tensorflow/lite/core/api/profiler.h
+index 897efbe1438..99916195d69 100644
+--- a/tensorflow/lite/core/api/profiler.h
++++ b/tensorflow/lite/core/api/profiler.h
+@@ -70,8 +70,8 @@ class Profiler {
+   // Signals an end to the specified profile event with 'event_metadata's, This
+   // is useful when 'event_metadata's are not available when the event begins
+   // or when one wants to overwrite the 'event_metadata's set at the beginning.
+-  virtual void EndEvent(uint32_t event_handle, int64_t event_metadata1,
+-                        int64_t event_metadata2) {}
++  virtual void EndEvent(uint32_t , int64_t ,
++                        int64_t ) {}
+   // Signals an end to the specified profile event.
+   virtual void EndEvent(uint32_t event_handle) = 0;
+ 
+@@ -88,9 +88,9 @@ class Profiler {
+              /*event_metadata2*/ 0);
+   }
+ 
+-  virtual void AddEvent(const char* tag, EventType event_type, uint64_t start,
+-                        uint64_t end, int64_t event_metadata1,
+-                        int64_t event_metadata2) {}
++  virtual void AddEvent(const char* , EventType , uint64_t ,
++                        uint64_t , int64_t ,
++                        int64_t ) {}
+ 
+  protected:
+   friend class ScopedProfile;
+diff --git a/tensorflow/lite/core/subgraph.h b/tensorflow/lite/core/subgraph.h
+index 14b4f068a11..67955453ee2 100644
+--- a/tensorflow/lite/core/subgraph.h
++++ b/tensorflow/lite/core/subgraph.h
+@@ -356,7 +356,7 @@ class Subgraph {
+ 
+     uint32_t BeginEvent(const char* tag, EventType event_type,
+                         int64_t event_metadata1,
+-                        int64_t event_metadata2) override {
++                        int64_t ) override {
+       if (!profiler_) return 0;
+       return profiler_->BeginEvent(tag, event_type, event_metadata1,
+                                    subgraph_index_);
+@@ -375,7 +375,7 @@ class Subgraph {
+ 
+     void AddEvent(const char* tag, EventType event_type, uint64_t start,
+                   uint64_t end, int64_t event_metadata1,
+-                  int64_t event_metadata2) override {
++                  int64_t ) override {
+       if (!profiler_) return;
+       profiler_->AddEvent(tag, event_type, start, end, event_metadata1,
+                           subgraph_index_);

@@ -15,6 +15,10 @@
 // ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /*! \file */
 
+// Direction bit to be or'd with register address when using SPI:
+#define ICM20948_SPI_READ  0x80
+#define ICM20948_SPI_WRITE 0x00
+
 // This code inspired by:
 
 /***************************************************************************//**
@@ -271,6 +275,9 @@
  
 #define ICM20948_REG_ACCEL_CONFIG_2      (ICM20948_BANK_2 | 0x15)    /**< Accelerometer Configuration 2 register              */
 #define ICM20948_BIT_ACCEL_CTEN          0x1C                        /**< Accelerometer Self-Test Enable bits                 */
+
+#define ICM20948_REG_PRGM_START_ADDRH    (ICM20948_BANK_2 | 0x50)    /**< DMP program start address              */
+
 
 #define ICM20948_REG_FSYNC_CONFIG        (ICM20948_BANK_2 | 0x52)    /**< FSYNC Configuration register              */
 #define ICM20948_BIT_FSYNC_TIME_EN       0x80

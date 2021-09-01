@@ -33,4 +33,16 @@ namespace jevois
   /*! \ingroup debugging */
   std::string getSysInfoVersion();
 
+  //! Get the number of Coral TPUs present on this system
+  size_t getNumInstalledTPUs();
+
+  //! Get the number of Myriad-X VPUs present on this system
+  size_t getNumInstalledVPUs();
+  
+  //! Get the number of JeVois-Pro NPUs present on this system
+  size_t getNumInstalledNPUs();
+
+  //! Get fan speed in percent, only meaningful on JeVois-Pro Platform, all others return 0
+  int getFanSpeed();
+  
 } // namespace jevois

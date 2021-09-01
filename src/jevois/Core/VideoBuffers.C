@@ -42,12 +42,47 @@ jevois::VideoBuffers::VideoBuffers(char const * name, int const fd, v4l2_buf_typ
   for (unsigned int i = 0; i < req.count; ++i)
   {
     struct v4l2_buffer buf = { };
+    struct v4l2_plane plane = { };
     buf.type = type;
     buf.memory = V4L2_MEMORY_MMAP;
     buf.index = i;
-    try { XIOCTL(fd, VIDIOC_QUERYBUF, &buf); } catch (...) { FDLFATAL("Failed to request buffers"); }
+    // Note: guvcview adds: buf.flags=V4L2_BUF_FLAG_TIMESTAMP_MONOTONIC
+    if (type == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE)
+    {
+      // In multi-plane mode, allocate a struct for the planes:
+      buf.length = 1; // FIXME only 1 plane supported
+      buf.m.planes = &plane;
+      
+      try { XIOCTL(fd, VIDIOC_QUERYBUF, &buf); } catch (...) { FDLFATAL("Failed to request buffers"); }
+      if (buf.length != 1) LFATAL("Only one V4L2 plane is supported for now, i.e., only packed video formats.");
+    }
+    else
+    {
+      // Standard single-plane mode:
+      try { XIOCTL(fd, VIDIOC_QUERYBUF, &buf); } catch (...) { FDLFATAL("Failed to request buffers"); }
+    }
 
-    itsBuffers.push_back(std::make_shared<jevois::VideoBuf>(fd, buf.length, buf.m.offset));
+    int dmafd = -1;
+
+#ifdef JEVOIS_PRO
+    // Try to get a dma_buf fd, if kernel driver supports it:
+    struct v4l2_exportbuffer ex_buf = { };
+    ex_buf.type = type;
+    ex_buf.index = i;
+    ex_buf.plane = 0; // FIXME only 1 plane supported
+    ex_buf.flags = 0;
+    ex_buf.fd = -1;
+      
+    try { XIOCTL(fd, VIDIOC_EXPBUF, &ex_buf); } catch (...) { FDLDEBUG("Could not get dma_buf fd for buffer " << i); }
+    dmafd = ex_buf.fd;
+#endif
+    
+    if (type == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE)
+      itsBuffers.push_back(std::make_shared<jevois::VideoBuf>(fd, buf.m.planes[0].length,
+                                                              buf.m.planes[0].m.mem_offset, dmafd));
+    else
+      itsBuffers.push_back(std::make_shared<jevois::VideoBuf>(fd, buf.length, buf.m.offset, dmafd));
+    
     FDLDEBUG("Added mmap'd buffer " << i << " of size " << buf.length);
   }
 }
@@ -100,25 +135,33 @@ std::shared_ptr<jevois::VideoBuf> jevois::VideoBuffers::get(size_t const index) 
 void jevois::VideoBuffers::qbuf(size_t const index)
 {
   if (itsType == V4L2_BUF_TYPE_VIDEO_OUTPUT) FDLFATAL("Cannot enqueue output buffers by index");
-  if (itsNqueued == itsBuffers.size()) FDLFATAL("All buffers have already been queued");
+  if (itsNqueued == itsBuffers.size())
+    throw std::runtime_error('[' + std::to_string(itsFd) + ':' + itsName + "] All buffers have already been queued");
 
   struct v4l2_buffer buf = { };
-    
   buf.type = itsType;
   buf.memory = V4L2_MEMORY_MMAP;
   buf.index = index;
-  
-  XIOCTL(itsFd, VIDIOC_QBUF, &buf);
 
+  if (itsType == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE)
+  {
+    struct v4l2_plane plane = { };
+    buf.length = 1; // FIXME only one plane supported.
+    buf.m.planes = &plane;
+  }
+
+  XIOCTL_QUIET(itsFd, VIDIOC_QBUF, &buf);
+  
   ++itsNqueued;
 }
 
 // ####################################################################################################
 void jevois::VideoBuffers::qbuf(struct v4l2_buffer & buf)
 {
-  if (itsNqueued == itsBuffers.size()) FDLFATAL("All buffers have already been queued");
+  if (itsNqueued == itsBuffers.size())
+    throw std::runtime_error('[' + std::to_string(itsFd) + ':' + itsName + "] All buffers have already been queued");
   
-  XIOCTL(itsFd, VIDIOC_QBUF, &buf);
+  XIOCTL_QUIET(itsFd, VIDIOC_QBUF, &buf);
 
   ++itsNqueued;
 }
@@ -130,6 +173,13 @@ void jevois::VideoBuffers::qbufall()
 }
 
 // ####################################################################################################
+void jevois::VideoBuffers::qbufallbutone(size_t const index)
+{
+  for (unsigned int i = 0; i < itsBuffers.size(); ++i)
+    if (i != index) try { qbuf(i); } catch (...) { }
+}
+
+// ####################################################################################################
 void jevois::VideoBuffers::dqbuf(struct v4l2_buffer & buf)
 {
   if (itsNqueued == 0) FDLFATAL("No buffer is currently queued");
@@ -138,8 +188,19 @@ void jevois::VideoBuffers::dqbuf(struct v4l2_buffer & buf)
   buf.type = itsType;
   buf.memory = V4L2_MEMORY_MMAP;
     
-  XIOCTL(itsFd, VIDIOC_DQBUF, &buf);
-
+  if (itsType == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE)
+  {
+    struct v4l2_plane plane = { };
+    buf.length = 1; // FIXME only one plane supported.
+    buf.m.planes = &plane;
+  
+    XIOCTL_QUIET_ONCE(itsFd, VIDIOC_DQBUF, &buf);
+  }
+  else
+  {
+    XIOCTL_QUIET_ONCE(itsFd, VIDIOC_DQBUF, &buf);
+  }
+  
   --itsNqueued;
 }
 

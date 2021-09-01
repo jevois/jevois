@@ -42,6 +42,10 @@ inline void jevois::ParameterBase::unFreeze()
 { itsFrozen = false; }
 
 // ######################################################################
+inline void jevois::ParameterBase::freeze(bool doit)
+{ itsFrozen = doit; }
+
+// ######################################################################
 template <typename T> inline
 jevois::ParameterCore<T>::ParameterCore(jevois::ParameterDef<T> const & def) :
     jevois::ParameterBase(), itsCallback(), itsVal(def.defaultValue()), itsDef(def)

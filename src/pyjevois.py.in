@@ -1,0 +1,9 @@
+pro = True if "@JEVOIS_PRO@" == "ON" else False
+platform = True if "@JEVOIS_PLATFORM@" == "ON" else False
+
+version_major=@JEVOIS_VERSION_MAJOR@
+version_minor=@JEVOIS_VERSION_MINOR@
+version_patch=@JEVOIS_VERSION_PATCH@
+
+# Location of our shared files:
+share = '/jevoispro/share' if pro else '/jevois/share'

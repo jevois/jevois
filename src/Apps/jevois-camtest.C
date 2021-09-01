@@ -29,7 +29,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #endif
 
-// Uncomment this to use th eopencv camera driver instead of the JeVois one:
+// Comment this out to use the jevois::Camera driver instead of low-level V4L2 code:
 #define USE_RAW_CAMERA
 
 #ifdef USE_RAW_CAMERA
@@ -41,7 +41,7 @@
 #include <fcntl.h>
 #endif
 
-//! Main daemon that grabs video frames from the camera, sends them to processing, and sends the results out over USB
+//! Grabs video frames from the camera, and write them to disk as PNG files
 int main(int argc, char const* argv[])
 {
   jevois::logLevel = LOG_DEBUG;
@@ -202,5 +202,9 @@ int main(int argc, char const* argv[])
   cam.reset();
   
 #endif // USE_RAW_CAMERA
+
+  // Terminate logger:
+  jevois::logEnd();
+
   return 0;
 }

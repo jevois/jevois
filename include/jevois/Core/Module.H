@@ -17,261 +17,29 @@
 
 #pragma once
 
-#include <memory>
 #include <jevois/Image/RawImage.H>
+#include <jevois/Core/InputFrame.H>
+#include <jevois/Core/OutputFrame.H>
 #include <jevois/Core/VideoBuf.H>
 #include <jevois/Core/UserInterface.H> // not strictly needed but derived classes will want to use it
 #include <jevois/Component/Component.H>
 #include <jevois/Types/ObjReco.H>
+#include <jevois/Types/ObjDetect.H>
 #include <jevois/Types/Enum.H>
 #include <opencv2/core/core.hpp>
+#include <memory>
 #include <ostream>
+
+#ifdef JEVOIS_PRO
+#include <jevois/GPU/GUIhelper.H> // not strictly required but derived classes may want to use it
+#include <glm/gtc/matrix_transform.hpp> // glm::translate, glm::rotate, glm::scale, glm::perspective
+#endif
 
 namespace jevois
 {
-  class VideoInput;
   class VideoOutput;
   class Engine;
   
-  //! Exception-safe wrapper around a raw camera input frame
-  /*! This wrapper operates much like std:future in standard C++11. Users can get the next image captured by the camera
-      by calling get(), which may block if the capture is not complete yet, or may throw if the capture fails for some
-      reason (e.g., the camera is not streaming). The image size and pixel type are as defined by the current
-      VideoMapping, camera section. In addition, a done() function is provided which users may use as soon as they are
-      finished with the pixel data in the image obtained via get(), to allow the camera driver to setup the underlying
-      memory buffer again for capture. If done() has not been called by the time the InputFrame is destroyed, it will be
-      called automatically, if get() had been called. It may in some cases improve your frame rate to call done()
-      manually as early as possible instead of letting the InputFrame destructor do it.
-
-      InputFrame implements a zero-copy, zero-wait access to input video frames, that is:
-
-      1. the pixel data of the image you obtain via get() is directly the memory-mapped pixel buffer that the silicon
-         hardware on the JeVois chip uses via direct-memory-access (DMA) to stream the pixel data from the camera chip
-         to processor memory;
-      2. as soon as an image is captured by the camera hardware, get() unblocks and returns it (as opposed to having a
-         fixed, regular interval at which images may be available). Camera has several image buffers, allowing one to be
-         captured while another is being handed over for processing via get(). These buffers are recycled, i.e., once
-         done() is called, the underlying buffer is sent back to the camera hardware for future capture.
-
-      \ingroup core */
-  class InputFrame
-  {
-    public:
-      //! Move constructor
-      InputFrame(InputFrame && other) = default;
-      
-      //! Get the next captured camera image
-      /*! Throws if we the camera is not streaming or blocks until an image is available (has been captured). */
-      RawImage const & get(bool casync = false) const;
-
-      //! Indicate that user processing is done with the image previously obtained via get()
-      /*! You should call this as soon after get() as possible, once you are finished with the RawImage data so that it
-          can be recycled and sent back to the camera driver for video capture. */
-      void done() const;
-
-      //! Shorthand to get the input image as a GRAY cv::Mat and release the raw buffer
-      /*! This is mostly intended for Python module writers, as they will likely use OpenCV for all their image
-          processing. C++ module writers should stick to the get()/done() pair as this provides better fine-grained
-          control. Note that the raw image from the camera will always be copied or converted to cv::Mat and will then
-          be released by calling done(), so users should not call done() after using this function. This function is
-          basically equivalent to calling get(), converting to cv::Mat, and calling done(). */
-      cv::Mat getCvGRAY(bool casync = false) const;
-
-      //! Shorthand to get the input image as a BGR cv::Mat and release the raw buffer
-      /*! This is mostly intended for Python module writers, as they will likely use OpenCV for all their image
-          processing. C++ module writers should stick to the get()/done() pair as this provides better fine-grained
-          control. Note that the raw image from the camera will always be copied or converted to cv::Mat and will then
-          be released by calling done(), so users should not call done() after using this function. This function is
-          basically equivalent to calling get(), converting to cv::Mat, and calling done(). */
-      cv::Mat getCvBGR(bool casync = false) const;
-
-      //! Shorthand to get the input image as a RGB cv::Mat and release the raw buffer
-      /*! This is mostly intended for Python module writers, as they will likely use OpenCV for all their image
-          processing. C++ module writers should stick to the get()/done() pair as this provides better fine-grained
-          control. Note that the raw image from the camera will always be copied or converted to cv::Mat and will then
-          be released by calling done(), so users should not call done() after using this function. This function is
-          basically equivalent to calling get(), converting to cv::Mat, and calling done(). */
-      cv::Mat getCvRGB(bool casync = false) const;
-
-      //! Shorthand to get the input image as a RGBA cv::Mat and release the raw buffer
-      /*! This is mostly intended for Python module writers, as they will likely use OpenCV for all their image
-          processing. C++ module writers should stick to the get()/done() pair as this provides better fine-grained
-          control. Note that the raw image from the camera will always be copied or converted to cv::Mat and will then
-          be released by calling done(), so users should not call done() after using this function. This function is
-          basically equivalent to calling get(), converting to cv::Mat, and calling done(). */
-      cv::Mat getCvRGBA(bool casync = false) const;
-
-      //! Destructor, returns the buffers to the driver as needed
-      ~InputFrame();
-      
-    private:
-      InputFrame() = delete;
-      InputFrame(InputFrame const & other) = delete;
-      InputFrame & operator=(InputFrame const & other) = delete;
-
-      friend class Engine;
-      InputFrame(std::shared_ptr<VideoInput> const & cam, bool turbo); // Only our friends can construct us
-
-      std::shared_ptr<VideoInput> itsCamera;
-      mutable bool itsDidGet;
-      mutable bool itsDidDone;
-      mutable RawImage itsImage;
-      bool const itsTurbo;
-  };
-
-  //! Exception-safe wrapper around a raw image to be sent over USB
-  /*! This wrapper operates much like std:future in standard C++11. Users can get the next memory-allocated but blank
-      image to be sent over USB by calling get(), which may block if all buffers are still being sent over USB by Gadget
-      and no blank one is available, or may throw if getting that buffer fails for some reason (e.g., usb disconnect,
-      user just changed video mode in their webcam software or closed it). The allocated image size and pixel type is as
-      defined by the current VideoMapping, USB section, i.e., it is the USB video mode currently selected by the
-      user. To save time, image buffers are not zeroed out, so you should not assume that the image is filled with black
-      pixels, it could contain random pixels, or previous output frames.  In addition, a send() function is provided
-      which users may use as soon as they are finished with writing the pixel data into the image obtained via get(), to
-      allow the USB driver to send that image to the connected host computer. If send() has not been called by the time
-      the OutputFrame is destroyed, it will be called automatically, if get() had been called.
-
-      OutputFrame implements a zero-copy, zero-wait access to output video frames, that is:
-
-      1. the pixel data of the image you obtain via get() is directly the memory-mapped pixel buffer that the silicon
-         hardware on the JeVois chip will use via direct-memory-access (DMA) to stream the data out over the USB link;
-      2. as soon as you call send() that buffer will be queued for sending over USB (as opposed to having a fixed,
-         regular interval at which images may be streamed out). Gadget has several image buffers, allowing one to be
-         streamed out over USB while another is being handed over for filling by your application via get(). These
-         buffers are recycled, i.e., once send() is called, the underlying buffer is streamed over USB and then sent
-         back to the Gadget for future access by your code.
-
-      \ingroup core */
-  class OutputFrame
-  {
-    public:
-      //! Move constructor
-      OutputFrame(OutputFrame && other) = default;
-      
-      //! Get a pre-allocated image so that we can fill the pixel data and later send out over USB using send()
-      /*! May throw if not buffer is available, i.e., all have been queued to send to the host but have not yet been
-          sent. Application code must balance exactly one send() for each get(). */
-      RawImage const & get() const;
-
-      //! Send an image out over USB to the host computer
-      /*! May throw if the format is incorrect or std::overflow_error if we have not yet consumed the previous image. */
-      void send() const;
-
-      //! Shorthand to send a cv::Mat after converting / scaling it to the current output format
-      /*! This is mostly intended for Python module writers, as they will likely use OpenCV for all their image
-          processing. The cv::Mat will be rescaled to the same dims as the output frame.
-
-	  The pixel format of the given cv::Mat is guessed as follows:
-	  - if img.type() == CV_8UC3, assume BGR pixels
-	  - if img.type() == CV_8UC1, assume GRAY pixels
-	  - if img.type() == CV_8UC4, assume RGBA pixels
-
-	  C++ module writers should stick to the get()/send() pair as this provides better fine-grained control. Note
-          that the cv::Mat image will always be copied or converted to the destination RawImage and will then be sent
-          out immediately by calling send(), so users should not call send() after using this function. This function is
-          basically equivalent to calling get(), converting the given cv::Mat to the proper output format, and calling
-          send(). quality is used only if the output format is MJPEG and should be between 1 and 100.*/
-      void sendCv(cv::Mat const & img, int quality = 75) const;
-
-      //! Shorthand to send a GRAY cv::Mat after converting it to the current output format
-      /*! This is mostly intended for Python module writers, as they will likely use OpenCV for all their image
-          processing. The cv::Mat must have same dims as the output frame. C++ module writers should stick to the
-          get()/send() pair as this provides better fine-grained control. Note that the cv::Mat image will always be
-          copied or converted to the destination RawImage and will then be sent out immediately by calling send(), so
-          users should not call send() after using this function. This function is basically equivalent to calling
-          get(), converting the given cv::Mat to the proper output format, and calling send(). quality is used only if
-          the output format is MJPEG and should be between 1 and 100. */
-      void sendCvGRAY(cv::Mat const & img, int quality = 75) const;
-
-      //! Shorthand to send a BGR cv::Mat after converting it to the current output format
-      /*! This is mostly intended for Python module writers, as they will likely use OpenCV for all their image
-          processing. The cv::Mat must have same dims as the output frame. C++ module writers should stick to the
-          get()/send() pair as this provides better fine-grained control. Note that the cv::Mat image will always be
-          copied or converted to the destination RawImage and will then be sent out immediately by calling send(), so
-          users should not call send() after using this function. This function is basically equivalent to calling
-          get(), converting the given cv::Mat to the proper output format, and calling send(). quality is used only if
-          the output format is MJPEG and should be between 1 and 100.*/
-      void sendCvBGR(cv::Mat const & img, int quality = 75) const;
-
-      //! Shorthand to send a RGB cv::Mat after converting it to the current output format
-      /*! This is mostly intended for Python module writers, as they will likely use OpenCV for all their image
-          processing. The cv::Mat must have same dims as the output frame. C++ module writers should stick to the
-          get()/send() pair as this provides better fine-grained control. Note that the cv::Mat image will always be
-          copied or converted to the destination RawImage and will then be sent out immediately by calling send(), so
-          users should not call send() after using this function. This function is basically equivalent to calling
-          get(), converting the given cv::Mat to the proper output format, and calling send(). quality is used only if
-          the output format is MJPEG and should be between 1 and 100.*/
-      void sendCvRGB(cv::Mat const & img, int quality = 75) const;
-
-      //! Shorthand to send a RGBA cv::Mat after converting it to the current output format
-      /*! This is mostly intended for Python module writers, as they will likely use OpenCV for all their image
-          processing. The cv::Mat must have same dims as the output frame. C++ module writers should stick to the
-          get()/send() pair as this provides better fine-grained control. Note that the cv::Mat image will always be
-          copied or converted to the destination RawImage and will then be sent out immediately by calling send(), so
-          users should not call send() after using this function. This function is basically equivalent to calling
-          get(), converting the given cv::Mat to the proper output format, and calling send(). quality is used only if
-          the output format is MJPEG and should be between 1 and 100.*/
-      void sendCvRGBA(cv::Mat const & img, int quality = 75) const;
-
-      //! Shorthand to send a GRAY cv::Mat after converting it to the current output format
-      /*! This is mostly intended for Python module writers, as they will likely use OpenCV for all their image
-          processing. The cv::Mat will be rescaled to the same dims as the output frame. C++ module writers should stick
-          to the get()/send() pair as this provides better fine-grained control. Note that the cv::Mat image will always
-          be copied or converted to the destination RawImage and will then be sent out immediately by calling send(), so
-          users should not call send() after using this function. This function is basically equivalent to calling
-          get(), converting the given cv::Mat to the proper output format, and calling send(). quality is used only if
-          the output format is MJPEG and should be between 1 and 100. */
-      void sendScaledCvGRAY(cv::Mat const & img, int quality = 75) const;
-
-      //! Shorthand to send a BGR cv::Mat after converting it to the current output format
-      /*! This is mostly intended for Python module writers, as they will likely use OpenCV for all their image
-          processing. The cv::Mat will be rescaled to the same dims as the output frame. C++ module writers should stick
-          to the get()/send() pair as this provides better fine-grained control. Note that the cv::Mat image will always
-          be copied or converted to the destination RawImage and will then be sent out immediately by calling send(), so
-          users should not call send() after using this function. This function is basically equivalent to calling
-          get(), converting the given cv::Mat to the proper output format, and calling send(). quality is used only if
-          the output format is MJPEG and should be between 1 and 100.*/
-      void sendScaledCvBGR(cv::Mat const & img, int quality = 75) const;
-
-      //! Shorthand to send a RGB cv::Mat after converting it to the current output format
-      /*! This is mostly intended for Python module writers, as they will likely use OpenCV for all their image
-          processing. The cv::Mat will be rescaled to the same dims as the output frame. C++ module writers should stick
-          to the get()/send() pair as this provides better fine-grained control. Note that the cv::Mat image will always
-          be copied or converted to the destination RawImage and will then be sent out immediately by calling send(), so
-          users should not call send() after using this function. This function is basically equivalent to calling
-          get(), converting the given cv::Mat to the proper output format, and calling send(). quality is used only if
-          the output format is MJPEG and should be between 1 and 100.*/
-      void sendScaledCvRGB(cv::Mat const & img, int quality = 75) const;
-
-      //! Shorthand to send a RGBA cv::Mat after converting it to the current output format
-      /*! This is mostly intended for Python module writers, as they will likely use OpenCV for all their image
-          processing. The cv::Mat will be rescaled to the same dims as the output frame. C++ module writers should stick
-          to the get()/send() pair as this provides better fine-grained control. Note that the cv::Mat image will always
-          be copied or converted to the destination RawImage and will then be sent out immediately by calling send(), so
-          users should not call send() after using this function. This function is basically equivalent to calling
-          get(), converting the given cv::Mat to the proper output format, and calling send(). quality is used only if
-          the output format is MJPEG and should be between 1 and 100.*/
-      void sendScaledCvRGBA(cv::Mat const & img, int quality = 75) const;
-      
-      //! Destructor, returns the buffers to the driver as needed
-      ~OutputFrame();
-      
-    private:
-      OutputFrame() = delete;
-      OutputFrame(OutputFrame const & other) = delete;
-      OutputFrame & operator=(OutputFrame const & other) = delete;
-
-      // Only our friends can construct us:
-      friend class Engine;
-      OutputFrame(std::shared_ptr<VideoOutput> const & gad, RawImage * excimg = nullptr);
-
-      std::shared_ptr<VideoOutput> itsGadget;
-      mutable bool itsDidGet;
-      mutable bool itsDidSend;
-      mutable RawImage itsImage;
-      jevois::RawImage * itsImagePtrForException;
-  };
-
   //! Virtual base class for a vision processing module
   /*! Module is the base class to implement camera-to-USB frame-by-frame video processing. The Engine instantiates one
       class derived from Module, according to the current VideoMapping selected by the end user (e.g., current image
@@ -368,6 +136,20 @@ namespace jevois
           Default implementation in the base class just throws. Derived classes should override it. */
       virtual void process(InputFrame && inframe);
 
+#ifdef JEVOIS_PRO
+      //! Processing function, version that receives a frame from camera, no USB, but GUI output on JeVois-Pro
+      /*! This function is called once for each grabbed video frame from the camera, and it should complete within the
+          camera's frame period in order to avoid dropping frames. The InputFrame object is a simple wrapper to ensure
+          that the low-level video buffers will always be returned to the low-level camera driver even if the process
+          function throws at any point during the processing. If any error occurs, it is hence ok to throw from within
+          process() at any time, just make sure your locally allocated resources will be freed, which is usually best
+          achieved by using shared_ptr and similar wrappers around them. The Engine (which calls process() on your
+          module for every frame) will catch any exception an proceed to the next frame.
+
+          Default implementation in the base class just throws. Derived classes should override it. */
+      virtual void process(InputFrame && inframe, GUIhelper & helper);
+#endif
+      
       //! Send a string over the 'serout' serial port
       /*! The default implementation just sends the string to the serial port specified by the 'serout' Parameter in
           Engine (which could be the hardware serial port, the serial-over-USB port, both, or none; see \ref UserCli for
@@ -408,38 +190,6 @@ namespace jevois
 	  call succeeds. The counter is not incremented when a module has not been loaded (e.g., failed to load). The
 	  counter is reset to zero each time a new module is loaded. */
       size_t frameNum() const;
-
-      //! Write a value of one of the camera's registers
-      /*! This very low-level access is for development of optimal camera settings only and should not be used in normal
-          operation, it can crash your system. */
-      void writeCamRegister(unsigned short reg, unsigned short val);
-
-      //! Read a value from one of the camera's registers
-      /*! This very low-level access is for development of optimal camera settings only and should not be used in normal
-          operation, it can crash your system. */
-      unsigned short readCamRegister(unsigned short reg);
-
-      //! Write a value to one of the camera's IMU registers
-      /*! This very low-level access is for development of optimal IMU settings only and should not be used in normal
-          operation, it can crash your system. */
-      void writeIMUregister(unsigned short reg, unsigned short val);
-
-      //! Read a value from one of the camera's IMU registers
-      /*! This very low-level access is for development of optimal IMU settings only and should not be used in normal
-          operation, it can crash your system. */
-      unsigned short readIMUregister(unsigned short reg);
-
-      //! Write an array of values to the camera's IMU registers
-      /*! This very low-level access is for development of optimal IMU settings only and should not be used in normal
-          operation, it can crash your system. Memory for vals should have been allocated by the caller with at least
-          num bytes. num must be less than 32. */
-      void writeIMUregisterArray(unsigned short reg, unsigned char const * vals, size_t num);
-
-      //! Read an array of values from the camera's IMU registers
-      /*! This very low-level access is for development of optimal IMU settings only and should not be used in normal
-          operation, it can crash your system. Memory for vals should have been allocated by the caller with at least
-          num bytes. num must be less than 32. */
-      void readIMUregisterArray(unsigned short reg, unsigned char * vals, size_t num);
   };
 
   namespace module
@@ -573,7 +323,12 @@ namespace jevois
           is sent if the vector is empty. See sendSerialImg2D() for info about the object box. */
       void sendSerialObjDetImg2D(unsigned int camw, unsigned int camh, float x, float y, float w, float h,
 				 std::vector<ObjReco> const & res);
-      
+
+      //! Send a standardized object detection + recognition message
+      /*! \param res should be a list of scores and category names, in descending order of scores. Note that no message
+          is sent if the vector is empty. See sendSerialImg2D() for info about the object box. */
+      void sendSerialObjDetImg2D(unsigned int camw, unsigned int camh, ObjDetect const & det);
+     
     protected:
       friend class jevois::Engine;
       
@@ -607,4 +362,32 @@ namespace jevois
   extern "C" int MODULENAME##_version_major() { return JEVOIS_VERSION_MAJOR; } \
   extern "C" int MODULENAME##_version_minor() { return JEVOIS_VERSION_MINOR; } \
 
+//! Create and register a disabled module, allowing it to be dynamically loaded from a .so file
+/* \def JEVOIS_DISABLED_MODULE(MODULENAME)
+   \hideinitializer 
+
+   Use this macro when creating modules that only work on a given host/platform A33/Pro configuration. For example,
+   modules using the A311D NPU can only be compiled on jevois-pro platform. Typically, you would then do:
+   \code
+#include <jevois/Core/Module.H>
+
+#ifdef JEVOIS_PLATFORM_PRO
+  class MyModule { ... };
+
+  JEVOIS_REGISTER_MODULE(MyModule);
+#else
+  JEVOIS_DISABLED_MODULE(MyModule);
+#endif
+  \endcode
+  \relates Module */
+#define JEVOIS_DISABLED_MODULE(MODULENAME)                              \
+  class MODULENAME : public jevois::Module {                            \
+    public:                                                             \
+      MODULENAME(std::string const & instancename) : jevois::Module(instancename) \
+        { throw std::runtime_error("This module is disabled on your hardware configuration"); } \
+  };                                                                    \
+  extern "C" std::shared_ptr<jevois::Module> MODULENAME##_create(std::string const & instanceid) \
+  { return std::shared_ptr<jevois::Module>(new MODULENAME(instanceid)); } \
+  extern "C" int MODULENAME##_version_major() { return JEVOIS_VERSION_MAJOR; } \
+  extern "C" int MODULENAME##_version_minor() { return JEVOIS_VERSION_MINOR; } \
 

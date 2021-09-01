@@ -1,0 +1,159 @@
+/*! \page ProStatus JeVois-Pro Development Status
+
+Updated: July 28, 2021
+
+Legend
+------
+
+- Implemented, tested and working: \image{inline} html checkmark.png
+- Not yet implemented, or not working: \image{inline} html crossmark.png
+
+
+Current development status
+--------------------------
+
+Feature                                                                               | Status | Notes
+--------------------------------------------------------------------------------------|:------:|------
+\jvth{Hardware Design}                                                                | -      | -
+All 19 internal power supplies operational from single 12-24 VDC input                | \jvok  | -
+4x A73 big cores running at full speed with no errors under full load                 | \jvok  | -
+2x A53 little cores running at full speed with no errors under full load              | \jvok  | -
+4GB LPDDR4 working with no error at full DDR4-3200 speed                              | \jvok  | -
+ARM NEON accelerated multimedia processor instructions tested and working             | \jvok  | -
+A311D MALI GPU OpenGL-ES 3.2 working using ARM demos (framebuffer mode)               | \jvok  | -
+Micro-SD / TF card working at SDR104 (104 MBytes/s) speed                             | \jvok  | -
+HDMI output, video + sound                                                            | \jvok  | -
+2x USB 2.0 type-A ports at top of camera provide power and are working                | \jvok  | -
+Mini-USB 2.0 OTG port working, both in host and in device modes                       | \jvok  | -
+4-pin micro-serial port working                                                       | \jvok  | -
+6-pin AUX power port working (outputs 5V, 3.3V, 1.8V for accessories)                 | \jvok  | -
+8-pin GPIO port working (configurable as SPI+I2C, or general GPIO)                    | ?      | (12)
+Thermally stable operation under full load                                            | \jvok  | -
+Camera sensor connector working, camera functionality                                 | \jvok  | -
+Camera sensor connector working, dual-camera functionality                            | ?      | (10)
+Camera sensor connector working, SPI inertial measurement unit (IMU) functionality    | \jvok  | -
+M.2 E-Key connector working with PCIe M.2 cards (Coral TPU, Wifi cards)               | \jvok  | -
+M.2 E-Key connector working with USB/SDIO M.2 cards (Wifi/bluetooth cards)            | \jvok  | -
+Wired ethernet using add-on USB-to-RJ45 converter                                     | \jvok  | -
+Variable-speed cooling fan control                                                    | \jvok  | -
+\jvth{Base System}                                                                    | -      | -
+Bootloader, Linux Kernel 4.9.x, partitions, Ubuntu 20.04                              | \jvok  | -
+Custom kernel device tree                                                             | \jvok  | -
+Boot to X-windows and use as a regular computer when connecting keyboard/mouse        | \jvok  | -
+Play Youtube videos with sound over HDMI                                              | \jvok  | -
+Boot to console                                                                       | \jvok  | -
+Boot to JeVois software                                                               | \jvok  | -
+JeVois-Pro video + serial + storage over mini-USB OTG, kernel Gadget driver           | \jvno  | (13)
+JeVois-Pro control via JeVois Inventor                                                | \jvno  | (14)
+\jvth{Camera Sensor}                                                                  | -      | -
+Sony IMX-290 2MP camera sensor detection and basic 1080p @ 30fps operation            | \jvok  | -
+Sony IMX-290 use 4x MIPI-CSI lanes for lowest latency                                 | \jvok  | -
+Sony IMX-290 hardware-accelerated conversion from Bayer to YUYV, RGB, RGBA, GREY      | \jvok  | -
+Sony IMX-290 support for basic controls (brightness, exposure, gain, etc)             | \jvok  | -
+Sony IMX-290 frame cropping support, any size from native 1080p                       | \jvok  | (11)
+Sony IMX-290 ISP-based hardware-accelerated frame scaling support, any size           | \jvok  | (11)
+Sony IMX-290 ISP-based dual-stream capture, e.g., YUYV 1920x1080 + RGB 512x288        | \jvok  | -
+Sony IMX-290 native 720p support                                                      | \jvno  | (1)
+Sony IMX-290 frame rate control                                                       | \jvno  | (2)
+\jvth{IMU Sensor}                                                                     | -      | -
+TDK ICM-29048 inertial measurement uint (IMU) detection over 7MHz SPI bus             | \jvok  | -
+TDK ICM-29048 IMU basic operation, accel, gyro, compass, temperature over 7MHz SPI    | \jvok  | -
+TDK ICM-29048 IMU upload digital motion processor (DMP) code                          | \jvok  | -
+TDK ICM-29048 IMU run digital motion processor (DMP) code                             | \jvno  | (3)
+\jvth{Machine Vision Base Software}                                                   | -      | -
+OpenCV 4.5.3 + OpenVino 2021.4 + all OpenCV-Contrib + Python3 bindings                | \jvok  | -
+OpenGL-ES 3.2 framebuffer                                                             | \jvok  | -
+OpenCL 1.2                                                                            | \jvok  | -
+Python 3.8 + numpy + scipy + any aarch64 python packages                              | \jvok  | -
+TensorFlow Lite 2.5                                                                   | \jvok  | -
+Mediapipe 0.8 python                                                                  | \jvok  | -
+Vulkan, hardware H.265 encode/decode, etc                                             | ?      | (4)
+\jvth{JeVois Base Software}                                                           | -      | -
+JeVois use OpenGL for 1080p display @ 30fps over HDMI                                 | \jvok  | -
+JeVois OpenGL support for zero-copy video display using DMABUF, EGLImageKHR           | \jvok  | -
+JeVois OpenGL DMABUF, EGLImageKHR support for RGB, RGBA, YUYV, GREY direct display    | \jvok  | -
+JeVois OpenGL support for DMABUF display of YUYV, RGB, RGBA, GREY from camera         | \jvok  | -
+JeVois OpenGL support for display of processed YUYV, RGB, RGBA, GREY using shaders    | \jvok  | (7)
+JeVois capture fullsize+scaled streams from camera, display fullsize, process scaled  | \jvok  | -
+JeVois new on-screen graphical user interface using Dear ImGui 1.83                   | \jvok  | -
+JeVois new ImGui backend for MALI OpenGL-ES GPU in framebuffer mode                   | \jvok  | -
+JeVois new drivers to capture console keyboard/mouse events and pass to ImGui         | \jvok  | -
+JeVois run OpenCV machine vision algorithms written in C++                            | \jvok  | -
+JeVois run other machine vision algorithms written in C++                             | \jvok  | -
+JeVois run OpenCV machine vision algorithms written in Python                         | \jvok  | -
+JeVois run other machine vision algorithms written in Python                          | \jvok  | -
+JeVois support for Python modules to draw OpenGL overlays (box, text, etc)            | \jvok  | -
+JeVois-Pro run machine vision algorithms developed for JeVois-A33, C++ and Python     | \jvok  | -
+JeVois-Pro enhance some JeVois-A33 algorithms to use DMABUF zero-copy + OpenGL        | \jvok  | -
+JeVois new dual threadpool with user-selectable big/little affinity                   | \jvok  | -
+JeVois new async_big() and async_little() thread launching functions                  | \jvok  | -
+\jvth{JeVois New DNN Software}                                                        | -      | -
+New JeVois deep neural network (DNN) framework                                        | \jvok  | -
+JeVois DNN framework support for classification, detection, semantic segmentation     | \jvok  | -
+JeVois DNN framework hierarchical model zoo with 30+ pre-trained models               | \jvok  | -
+JeVois DNN framework download and run custom models                                   | \jvok  | -
+JeVois DNN run models on CPU using OpenCV DNN module                                  | \jvok  | -
+JeVois DNN run models on A311D 5-TOPS integrated neural processing uint (NPU)         | \jvok  | -
+JeVois custom kernel driver to enable Coral 4-TOPS accelerator over PCIe-2.1 (5 Gbps) | \jvok  | -
+JeVois DNN run models on Coral 4-TOPS accelerator, PCIe-2.1 (5 Gbps) M.2 card         | \jvok  | -
+JeVois DNN run models on Coral 4-TOPS accelerator, USB-2.0 (480 Mbps) dongle          | \jvok  | -
+JeVois DNN run models on Myriad-X 1-TOPS accelerator with OpenVino, PCIe-2.1 M.2 card | \jvok  | -
+JeVois DNN run models on Myriad-X 1-TOPS accelerator with OpenVino, USB-2.0 dongle    | \jvok  | -
+JeVois DNN run models on CPU, A311D NPU, Coral TPU, Myriad-X VPU in parallel          | \jvok  | -
+JeVois DNN run multiple models on one CPU, NPU, TPU, VPU hardware, time multiplexed   | \jvok  | -
+Support for Coral M.2 board with 2xTPU chips using 2xPCIe lanes, made by Google       | \jvno  | (5)
+Support for custom JeVois 2xTPU board with 1 TPU on PCIe and the other on USB         | \jvok  | -
+Support for custom JeVois 2xTPU + eMMC board with PCIe hub + 2 TPUs on PCIe           | \jvok  | -
+
+Notes:
+------
+
+1. ARM ISP hardware reports frame collision when using IMX-290 datasheet's 720p settings. May be hardware
+incompatibility between ISP and sensor running at 720p, or bug in ARM's ISP kernel driver. Can still capture at 1080p
+and use hardware-accelerated rescaling to 720p.
+
+2. Need to add support for VIDIOC_S_PARM and VIDIOC_G_PARM in the ARM ISP kernel driver for V4L2. Currently frame rate
+is determined by the chosen IMX290 operation mode and sensor settings (default 1080p @ 30fps).
+
+3. May be a voltage translation issue on our prototype boards, or may be a software issue. A311D chip may be too weak to
+drive resistor-based voltage divider at 7MHz SPI speed. Hardware revision of our sensor board in progress using active
+voltage translator chip. For early prototypes, assume that DMP is not operational.
+
+4. These features have been shown to work on other development boards using the A311D chip, so they should work,
+possibly after instaling necessary drivers and other software.
+
+5. A331D only has 1x PCIe lane. Beware that you will only be able to access one TPU on JeVois if you use the Coral
+dual-TPU board developed and sold by the Coral team. We designed a dual-TPU board that connects both TPUs to the 1x PCIe
+bus of the A311D using a PCIe switch. The board works great.
+
+7. Some aliasing issues in the shaders, which seem to only exist on the A311D and not on our desktop GPUs, require that
+processed images be displayed with an integer scaling factor, likely due to lower precision of the A311D OpenGL-ES
+processor compared to desktop full OpenGL. For example, a 640x480 YUYV processing output will show aliasing artifacts if
+scaled to fit full screen height (from 640x480 to 1440x1080 pixels, scaling factor 2.25), but displays ok if scaled by a
+factor 2 (1280x960). This only affects "old-style" JeVois machine vision modules that created a new output image with
+the processing results drawn using pixel-based drawing functions into a copy of an input image. The preferred new style
+of processing on JeVois-Pro is to simply display the 1080p raw image captured from the camera using zero-copy DMABUF,
+then have machine vision modules draw ImGui/OpenGL overlays on top of it, letting OpenGL render the image plus overlays
+(with possible alpha blending). In such scenario, no aliasing issues exist.
+
+10. Required signals for dual camera sensors have been routed but not yet tested as we do not yet have a dual-sensor
+prototype board. Dual camera sensor boards can use 2 separate MIPI-CSI clocks, and up to 2 MIPI lanes for each
+sensor. Single camera sensor boards (e.g., default Sony IMX290 board) use one MIPI-CSI clock and up to 4 MIPI lanes.
+
+11. Supports cropping or scaling of camera frames to any size, but OpenGL, OpenCV, and others often require image width
+and height to be multiples of 32.
+
+12. Not yet tested, hopefully no error in our design.
+
+13. Since JeVois-Pro has an HDMI output, emulating a USB webcam like we did on JeVois-A33 is of lesser interest. During
+development of algorithms, you can just connect JeVois-Pro directly to display, keyboard, and mouse, and JeVois-Pro has
+a full graphical user interface that allows you to tweak parameters, run various machine vision modules, edit Python
+code, etc. For headless operation once an algorithm is finalized, use the 4-pin micro-serial port to output machine
+vision results as text strings (e.g., "face detected at X,Y", or "QRcode decoded value is Z", etc).
+
+14. JeVois-Inventor is a desktop app that allows one to control a JeVois-A33 smart camera, which has no display or
+keyboard/mouse. Since JeVois-Pro has display and keyboard/mouse, the functionality of JeVois-Inventor has been converted
+into a full graphical user interface that runs directly in JeVois-Pro, thereby eliminating the need for a host
+computer entirely.
+
+*/

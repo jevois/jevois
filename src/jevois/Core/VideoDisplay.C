@@ -21,8 +21,8 @@
 
 #include <linux/videodev2.h>
 
-// Do not compile any highgui-dependent code on the JeVois platform, since it does not have a display.
-#ifndef JEVOIS_PLATFORM
+// Do not compile any highgui-dependent code on the JeVois-A33 platform, since it does not have a display.
+#ifndef JEVOIS_PLATFORM_A33
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -49,7 +49,7 @@ void jevois::VideoDisplay::setFormat(jevois::VideoMapping const & m)
 
   for (size_t i = 0; i < nbufs; ++i)
   {
-    itsBuffers.push_back(std::make_shared<jevois::VideoBuf>(-1, imsize, 0));
+    itsBuffers.push_back(std::make_shared<jevois::VideoBuf>(-1, imsize, 0, -1));
 
     jevois::RawImage img;
     img.width = m.ow;
@@ -160,7 +160,7 @@ void jevois::VideoDisplay::abortStream()
 void jevois::VideoDisplay::streamOff()
 { }
 
-#else //  JEVOIS_PLATFORM
+#else //  JEVOIS_PLATFORM_A33
 
 // OpenCV is not compiled with HighGui support by buildroot by default, and anyway we can't use it on the platform since
 // it has no display, so let's not waste resources linking to it:
@@ -189,5 +189,5 @@ void jevois::VideoDisplay::abortStream()
 void jevois::VideoDisplay::streamOff()
 { LFATAL("VideoDisplay is not supported on JeVois hardware platform"); }
 
-#endif //  JEVOIS_PLATFORM
+#endif //  JEVOIS_PLATFORM_A33
 

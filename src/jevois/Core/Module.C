@@ -16,8 +16,6 @@
 /*! \file */
 
 #include <jevois/Core/Module.H>
-#include <jevois/Core/VideoInput.H>
-#include <jevois/Core/VideoOutput.H>
 #include <jevois/Core/Engine.H>
 #include <jevois/Core/UserInterface.H>
 #include <jevois/Image/RawImageOps.H>
@@ -28,202 +26,7 @@
 #include <cmath>
 #include <sstream>
 #include <iomanip>
-
-// ####################################################################################################
-jevois::InputFrame::InputFrame(std::shared_ptr<jevois::VideoInput> const & cam, bool turbo) :
-    itsCamera(cam), itsDidGet(false), itsDidDone(false), itsTurbo(turbo)
-{ }
-
-// ####################################################################################################
-jevois::InputFrame::~InputFrame()
-{
-  // If itsCamera is invalidated, we have been moved to another object, so do not do anything here:
-  if (itsCamera.get() == nullptr) return;
-  
-  // If we did not yet get(), just end now, camera will drop this frame:
-  if (itsDidGet == false) return;
-  
-  // If we did get() but not done(), signal done now:
-  if (itsDidDone == false) try { itsCamera->done(itsImage); } catch (...) { }
-}
-
-// ####################################################################################################
-jevois::RawImage const & jevois::InputFrame::get(bool casync) const
-{
-  itsCamera->get(itsImage);
-  itsDidGet = true;
-  if (casync && itsTurbo) itsImage.buf->sync();
-  return itsImage;
-}
-
-// ####################################################################################################
-void jevois::InputFrame::done() const
-{
-  itsCamera->done(itsImage);
-  itsDidDone = true;
-}
-
-// ####################################################################################################
-cv::Mat jevois::InputFrame::getCvGRAY(bool casync) const
-{
-  jevois::RawImage const & rawimg = get(casync);
-  cv::Mat cvimg = jevois::rawimage::convertToCvGray(rawimg);
-  done();
-  return cvimg;
-}
-
-// ####################################################################################################
-cv::Mat jevois::InputFrame::getCvBGR(bool casync) const
-{
-  jevois::RawImage const & rawimg = get(casync);
-  cv::Mat cvimg = jevois::rawimage::convertToCvBGR(rawimg);
-  done();
-  return cvimg;
-}
-
-// ####################################################################################################
-cv::Mat jevois::InputFrame::getCvRGB(bool casync) const
-{
-  jevois::RawImage const & rawimg = get(casync);
-  cv::Mat cvimg = jevois::rawimage::convertToCvRGB(rawimg);
-  done();
-  return cvimg;
-}
-
-// ####################################################################################################
-cv::Mat jevois::InputFrame::getCvRGBA(bool casync) const
-{
-  jevois::RawImage const & rawimg = get(casync);
-  cv::Mat cvimg = jevois::rawimage::convertToCvRGBA(rawimg);
-  done();
-  return cvimg;
-}
-
-// ####################################################################################################
-// ####################################################################################################
-jevois::OutputFrame::OutputFrame(std::shared_ptr<jevois::VideoOutput> const & gad, jevois::RawImage * excimg) :
-    itsGadget(gad), itsDidGet(false), itsDidSend(false), itsImagePtrForException(excimg)
-{ }
-
-// ####################################################################################################
-jevois::OutputFrame::~OutputFrame()
-{
-  // If itsGadget is invalidated, we have been moved to another object, so do not do anything here:
-  if (itsGadget.get() == nullptr) return;
-
-  // If we did not get(), just end now:
-  if (itsDidGet == false) return;
-  
-  // If Engine gave us a non-zero image pointer for exceptions, and we did get(), pass down the buffer we did get, so
-  // that Engine can write exception text into it, unless it is too late (exception occurred after send()) or too early
-  // (before get()), in which case Engine will get its own buffer:
-  if (itsImagePtrForException)
-  {
-    if (itsDidSend == false) { *itsImagePtrForException = itsImage; }
-    // Engine will be responsible for the final send()
-  }
-  else
-  {
-    // If we did get() but not send(), send now (the image will likely contain garbage):
-    if (itsDidSend == false) try { itsGadget->send(itsImage); } catch (...) { }
-  }
-}
-
-// ####################################################################################################
-jevois::RawImage const & jevois::OutputFrame::get() const
-{
-  itsGadget->get(itsImage);
-  itsDidGet = true;
-  return itsImage;
-}
-
-// ####################################################################################################
-void jevois::OutputFrame::send() const
-{
-  itsGadget->send(itsImage);
-  itsDidSend = true;
-  if (itsImagePtrForException) itsImagePtrForException->invalidate();
-}
-
-// ####################################################################################################
-void jevois::OutputFrame::sendCv(cv::Mat const & img, int quality) const
-{
-  switch(img.type())
-  {
-  case CV_8UC3: sendScaledCvBGR(img, quality); break;
-  case CV_8UC1: sendScaledCvGRAY(img, quality); break;
-  case CV_8UC4: sendScaledCvRGBA(img, quality); break;
-  default: LFATAL("cv::Mat of type " << cvtypestr(img.type()) << " not supported.");
-  }
-}
-
-// ####################################################################################################
-void jevois::OutputFrame::sendCvGRAY(cv::Mat const & img, int quality) const
-{
-  jevois::RawImage rawimg = get();
-  jevois::rawimage::convertCvGRAYtoRawImage(img, rawimg, quality);
-  send();
-}
-
-// ####################################################################################################
-void jevois::OutputFrame::sendCvBGR(cv::Mat const & img, int quality) const
-{
-  jevois::RawImage rawimg = get();
-  jevois::rawimage::convertCvBGRtoRawImage(img, rawimg, quality);
-  send();
-}
-// ####################################################################################################
-void jevois::OutputFrame::sendCvRGB(cv::Mat const & img, int quality) const
-{
-  jevois::RawImage rawimg = get();
-  jevois::rawimage::convertCvRGBtoRawImage(img, rawimg, quality);
-  send();
-}
-
-// ####################################################################################################
-void jevois::OutputFrame::sendCvRGBA(cv::Mat const & img, int quality) const
-{
-  jevois::RawImage rawimg = get();
-  jevois::rawimage::convertCvRGBAtoRawImage(img, rawimg, quality);
-  send();
-}
-
-// ####################################################################################################
-void jevois::OutputFrame::sendScaledCvGRAY(cv::Mat const & img, int quality) const
-{
-  jevois::RawImage rawimg = get();
-  jevois::rawimage::convertCvGRAYtoRawImage(jevois::rescaleCv(img, cv::Size(rawimg.width, rawimg.height)),
-                                            rawimg, quality);
-  send();
-}
-
-// ####################################################################################################
-void jevois::OutputFrame::sendScaledCvBGR(cv::Mat const & img, int quality) const
-{
-  jevois::RawImage rawimg = get();
-  jevois::rawimage::convertCvBGRtoRawImage(jevois::rescaleCv(img, cv::Size(rawimg.width, rawimg.height)),
-                                           rawimg, quality);
-  send();
-}
-// ####################################################################################################
-void jevois::OutputFrame::sendScaledCvRGB(cv::Mat const & img, int quality) const
-{
-  jevois::RawImage rawimg = get();
-  jevois::rawimage::convertCvRGBtoRawImage(jevois::rescaleCv(img, cv::Size(rawimg.width, rawimg.height)),
-                                           rawimg, quality);
-  send();
-}
-
-// ####################################################################################################
-void jevois::OutputFrame::sendScaledCvRGBA(cv::Mat const & img, int quality) const
-{
-  jevois::RawImage rawimg = get();
-  jevois::rawimage::convertCvRGBAtoRawImage(jevois::rescaleCv(img, cv::Size(rawimg.width, rawimg.height)),
-                                            rawimg, quality);
-  send();
-}
-
-// ####################################################################################################
+ 
 // ####################################################################################################
 jevois::Module::Module(std::string const & instance) :
     jevois::Component(instance)
@@ -240,6 +43,12 @@ void jevois::Module::process(InputFrame && JEVOIS_UNUSED_PARAM(inframe), OutputF
 // ####################################################################################################
 void jevois::Module::process(InputFrame && JEVOIS_UNUSED_PARAM(inframe))
 { LFATAL("Not implemented in this module"); }
+
+#ifdef JEVOIS_PRO
+// ####################################################################################################
+void jevois::Module::process(InputFrame && JEVOIS_UNUSED_PARAM(inframe), GUIhelper & JEVOIS_UNUSED_PARAM(helper))
+{ LFATAL("Not implemented in this module, and only available on JeVois-Pro"); }
+#endif
 
 // ####################################################################################################
 void jevois::Module::sendSerial(std::string const & str)
@@ -262,30 +71,6 @@ void jevois::Module::supportedCommands(std::ostream & os)
 // ####################################################################################################
 size_t jevois::Module::frameNum() const
 { return engine()->frameNum(); }
-
-// ####################################################################################################
-void jevois::Module::writeCamRegister(unsigned short reg, unsigned short val)
-{ engine()->writeCamRegister(reg, val); }
-
-// ####################################################################################################
-unsigned short jevois::Module::readCamRegister(unsigned short reg)
-{ return engine()->readCamRegister(reg); }
-
-// ####################################################################################################
-void jevois::Module::writeIMUregister(unsigned short reg, unsigned short val)
-{ engine()->writeIMUregister(reg, val); }
-
-// ####################################################################################################
-unsigned short jevois::Module::readIMUregister(unsigned short reg)
-{ return engine()->readIMUregister(reg); }
-
-// ####################################################################################################
-void jevois::Module::writeIMUregisterArray(unsigned short reg, unsigned char const * vals, size_t num)
-{ engine()->writeIMUregisterArray(reg, vals, num); }
-
-// ####################################################################################################
-void jevois::Module::readIMUregisterArray(unsigned short reg, unsigned char * vals, size_t num)
-{ return engine()->readIMUregisterArray(reg, vals, num); }
 
 // ####################################################################################################
 // ####################################################################################################
@@ -818,3 +603,8 @@ void jevois::StdModule::sendSerialObjDetImg2D(unsigned int camw, unsigned int ca
   sendSerialImg2D(camw, camh, x, y, w, h, best, extra);
 }
 
+// ####################################################################################################
+void jevois::StdModule::sendSerialObjDetImg2D(unsigned int camw, unsigned int camh, jevois::ObjDetect const & det)
+{
+  sendSerialObjDetImg2D(camw, camh, det.tlx, det.tly, det.brx - det.tlx, det.bry - det.tly, det.reco);
+}

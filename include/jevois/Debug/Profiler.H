@@ -56,7 +56,7 @@ namespace jevois
       size_t const itsInterval;
       int const itsLogLevel;
       
-      std::chrono::time_point<std::chrono::high_resolution_clock> itsStartTime;
+      std::chrono::time_point<std::chrono::steady_clock> itsStartTime;
 
       struct data
       {
@@ -65,7 +65,7 @@ namespace jevois
           double secs;
           double minsecs;
           double maxsecs;
-          std::chrono::time_point<std::chrono::high_resolution_clock> lasttime;
+          std::chrono::time_point<std::chrono::steady_clock> lasttime;
       };
       
       data itsData; // for the stop() checkpoint

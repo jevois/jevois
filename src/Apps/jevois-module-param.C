@@ -38,7 +38,13 @@ int main(int argc, char const * argv[])
   size_t defidx;
   std::ifstream ifs(JEVOIS_ENGINE_CONFIG_FILE);
   if (ifs.is_open() == false) LFATAL("Could not open [" << JEVOIS_ENGINE_CONFIG_FILE << ']');
-  std::vector<jevois::VideoMapping> mappings = jevois::videoMappingsFromStream(sens, ifs, defidx);
+  std::vector<jevois::VideoMapping> mappings = jevois::videoMappingsFromStream(sens, ifs, defidx, true,
+#ifdef JEVOIS_PRO
+                                                                               true
+#else
+                                                                               false
+#endif
+                                                                               );
 
   // First, the default index (0-based), but we need to skip over the no-usb mappings:
   size_t uvcdefidx = 0;
@@ -56,7 +62,10 @@ int main(int argc, char const * argv[])
     std::cout << ':' << jevois::VideoMapping::fpsToUvc(m.ofps);
   }
   std::cout << std::endl;
-  
+
+  // Terminate logger:
+  jevois::logEnd();
+
   return 0;
 }
 

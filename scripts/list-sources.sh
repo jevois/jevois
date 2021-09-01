@@ -1,10 +1,10 @@
 #!/bin/sh
 
-# Just print a list of all source files to stdout, for use in other
-# scripts.
+# Just print a list of all source files to stdout, for use in other scripts.
 
 flz=$(find `dirname $0`/.. \
     \! -path \*build\* -a \
+    \! -path \*Contrib\* -a \
     \( -name \*.H \
     -o -name \*.C \
     -o -name \*.cc \

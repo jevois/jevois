@@ -279,27 +279,8 @@ else
 # Extract the description and authors:
 ##############################################################################################################
 my @detailed = @{$class{detailed}{doc}};
-my $description = "";
 my @authors;
-foreach my $d (@detailed)
-{
-  my %hash = %{$d};
-  if ($hash{type} eq "text") { $description = $description . $hash{content}; }
-  elsif ($hash{type} eq "url") { $description = $description . $hash{content}; }
-  elsif ($hash{type} eq "parbreak") { $description = $description . "<p>"; }
-  
-  # Extract the authors
-  if (exists $hash{author})
-  {
-      my @authorsArray = @{$hash{author}};
-      foreach my $authorHashRef (@authorsArray)
-      {
-          my %authorHash = %{$authorHashRef};
-          if ($authorHash{type} eq "text") { push(@authors, trim($authorHash{content})); }
-      }
-  }
-}
-
+my $description = traverse(\@detailed, \@authors);
 $description =~ s/'//g;
 if ($description eq "") { $description = "This author is too lazy to write a description!"; }
 
@@ -747,4 +728,38 @@ sub getParams
         push @modparams, $paraminfo;
     }
     close MODOUT;
+}
+
+##############################################################################################################
+sub traverse # detailed, authors returns description
+{
+    my $dref = $_[0]; my $aref = $_[1];
+    my @detailed = @$dref; my $description = "";
+
+    foreach my $d (@detailed)
+    {
+        my %hash = %{$d};
+        
+        if ($hash{type} eq "text") { $description = $description . $hash{content}; }
+        elsif ($hash{type} eq "url") { $description = $description . $hash{content}; }
+        elsif ($hash{type} eq "parbreak") { $description = $description . "<p>"; }
+        elsif ($hash{type} =~ m/sect.*/)
+        {
+            @subdetailed = @{$hash{content}};
+            $description = $description . traverse(\@subdetailed, \@$aref);
+            next;
+        }
+    
+        # Extract the authors
+        if (exists $hash{author})
+        {
+            my @authorsArray = @{$hash{author}};
+            foreach my $authorHashRef (@authorsArray)
+            {
+                my %authorHash = %{$authorHashRef};
+                if ($authorHash{type} eq "text") { push(@$aref, trim($authorHash{content})); }
+            }
+        }
+    }
+    return $description;
 }

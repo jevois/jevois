@@ -19,11 +19,9 @@
 
 #include <jevois/Core/VideoInput.H>
 #include <jevois/Core/VideoBuffers.H>
+#include <jevois/Core/CameraDevice.H>
 
-#include <linux/videodev2.h>
 #include <mutex>
-#include <future>
-#include <atomic>
 
 namespace jevois
 {
@@ -89,6 +87,19 @@ namespace jevois
           device here. */
       void get(RawImage & img) override;
 
+      //! Check whether a second input image scaled by the JeVoisPro Platform ISP is available
+      /*! Returns false unless we are on JeVois-Pro Platform and the camera format modifier jevois::CropType::CropScale
+          is currently in use. */
+      bool hasScaledImage() const override;
+
+      //! Get the next captured buffer, for second ISP-scaled image
+      /*! On JeVois-Pro Platform only, the camera ISP can output 2 frames: 1) raw from sensor, 2) scaled by ISP. This
+          function is to access the ISP scaled frame. Throws if not JeVois-Pro Platform or the camera stream type is not
+          jevois::StreamType::RawAndScaled. Throws if we are not streaming or blocks until an image is available (has
+          been captured). img should have been created by the caller (with no pixel buffer allocated) and will be filled
+          in by what we receive from the device here. */
+      void get2(RawImage & img) override;
+
       //! Indicate that user processing is done with an image previously obtained via get()
       /*! You should call this as soon after get() as possible, once you are finished with the RawImage data so that it
           can be recycled.
@@ -96,6 +107,14 @@ namespace jevois
           Calling done() on a RawImage invalidates the image and in particular its pixel buffer. Users should make sure
           that no attempt to use the image or the pixel buffer will be made after done() is called. */
       void done(RawImage & img) override;
+
+      //! Indicate that user processing is done with an image previously obtained via get2()
+      /*! You should call this as soon after get2() as possible, once you are finished with the RawImage data so that it
+          can be recycled.
+
+          Calling done2() on a RawImage invalidates the image and in particular its pixel buffer. Users should make sure
+          that no attempt to use the image or the pixel buffer will be made after done2() is called. */
+      void done2(RawImage & img) override;
 
       //! Get information about a control, throw if unsupported by hardware
       /*! Caller should zero-out qc and then set the id field to the desired control id. See VIDIOC_QUERYCTRL for more
@@ -122,65 +141,22 @@ namespace jevois
       //! Write a value to one of the camera's registers
       /*! This very low-level access is for development of optimal camera settings only and should not be used in normal
           operation, it can crash your system. */
-      void writeRegister(unsigned short reg, unsigned short val) override;
+      void writeRegister(unsigned short reg, unsigned short val);
 
       //! Read a value from one of the camera's registers
       /*! This very low-level access is for development of optimal camera settings only and should not be used in normal
           operation, it can crash your system. */
-      unsigned short readRegister(unsigned short reg) override;
-    
-      //! Write a value to one of the camera's IMU registers
-      /*! This very low-level access is for development of optimal IMU settings only and should not be used in normal
-          operation, it can crash your system. */
-      void writeIMUregister(unsigned short reg, unsigned short val) override;
+      unsigned short readRegister(unsigned short reg);
 
-      //! Read a value from one of the camera's IMU registers
-      /*! This very low-level access is for development of optimal IMU settings only and should not be used in normal
-          operation, it can crash your system. */
-      unsigned short readIMUregister(unsigned short reg) override;
+      //! Lock the camera and return its file descriptor
+      /*! Used by IMUi2c to access the IMU registers over the I2C bus shared with the camera sensor. Use with caution
+          and make sure you catch exceptions so you can guarantee that you will call unlock(), otherwise your camera
+          will be stuck and enable to stream. */
+      int lock();
 
-      //! Write an array of values to the camera's IMU registers
-      /*! This very low-level access is for development of optimal IMU settings only and should not be used in normal
-          operation, it can crash your system. Memory for vals should have been allocated by the caller with at least
-          num bytes. num must be less than 32. */
-      void writeIMUregisterArray(unsigned short reg, unsigned char const * vals, size_t num) override;
-
-      //! Read an array of values from the camera's IMU registers
-      /*! This very low-level access is for development of optimal IMU settings only and should not be used in normal
-          operation, it can crash your system. Memory for vals should have been allocated by the caller with at least
-          num bytes. num must be less than 32. */
-      void readIMUregisterArray(unsigned short reg, unsigned char * vals, size_t num) override;
+      //! Unlock the camera that was previously locked by lock()
+      void unlock();
       
-      //! Write a value to one of the camera's DMP registers
-      /*! This very low-level access is for development of optimal DMP settings only and should not be used in normal
-          operation, it can crash your system. Note that the value will be converted to big endian, as required by the
-          DMP processor. */
-      void writeDMPregister(unsigned short reg, unsigned short val) override;
-
-      //! Read a value from one of the camera's DMP registers
-      /*! This very low-level access is for development of optimal DMP settings only and should not be used in normal
-          operation, it can crash your system. Note that the value will be converted from big endian of DMP processor to
-          little endian of the JeVois processor.*/
-      unsigned short readDMPregister(unsigned short reg) override;
-
-      //! Write an array of values to the camera's DMP registers
-      /*! This very low-level access is for development of optimal DMP settings only and should not be used in normal
-          operation, it can crash your system. Memory for vals should have been allocated by the caller with at least
-          num bytes. num must be less than 32. This function does not handle crossing of memory banks, so the caller
-          should segment the calls to match memory bank boundaries. Finally, this function does not perform any endian
-          conversion. Callers should be aware that the DMP is a 16-bit big endian system while the JeVois processor is
-          little endian. */
-      void writeDMPregisterArray(unsigned short reg, unsigned char const * vals, size_t num) override;
-
-      //! Read an array of values from the camera's DMP registers
-      /*! This very low-level access is for development of optimal DMP settings only and should not be used in normal
-          operation, it can crash your system. Memory for vals should have been allocated by the caller with at least
-          num bytes. num must be less than 32. This function does not handle crossing of memory banks, so the caller
-          should segment the calls to match memory bank boundaries. Finally, this function does not perform any endian
-          conversion. Callers should be aware that the DMP is a 16-bit big endian system while the JeVois processor is
-          little endian. */
-      void readDMPregisterArray(unsigned short reg, unsigned char * vals, size_t num) override;
-
     protected:
       //! Sensor flags
       /*! Keep this in sync with jevois-sdk/linux-3.4/drivers/media/video/sunxi-vfe/device/camera.h */
@@ -196,27 +172,11 @@ namespace jevois
       
     private:
       jevois::CameraSensor itsSensor;
-      int itsFd;
-      VideoBuffers * itsBuffers;
-      struct v4l2_format itsFormat;
-      std::atomic<bool> itsStreaming;
-      float itsFps;
-
-      mutable std::condition_variable itsOutputCondVar;
-      mutable std::mutex itsOutputMtx;
-      RawImage itsOutputImage;
-      RawImage itsConvertedOutputImage;
-      std::vector<size_t> itsDoneIdx;
-      
-      void run();
-      std::future<void> itsRunFuture;
-      std::atomic<bool> itsRunning;
+      std::vector<std::shared_ptr<jevois::CameraDevice>> itsDev;
+      int itsDevIdx = -1, itsDev2Idx = -1;
+      int itsFd = -1, itsFd2 = -1;
 
       mutable std::timed_mutex itsMtx;
-      int itsFlags;
-
-      uint8_t itsIMUbank;
-      void selectIMUbank(unsigned short reg);
   };
 
 } // namespace jevois

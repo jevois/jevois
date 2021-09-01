@@ -34,12 +34,23 @@ std::string jevois::VideoMapping::sopath() const
 }
 
 // ####################################################################################################
+std::string jevois::VideoMapping::srcpath() const
+{
+  if (ispython) return JEVOIS_MODULE_PATH "/" + vendor + '/' + modulename + '/' + modulename + ".py";
+  else return JEVOIS_MODULE_PATH "/" + vendor + '/' + modulename + '/' + modulename + ".C";
+}
+
+// ####################################################################################################
 unsigned int jevois::VideoMapping::osize() const
 { return jevois::v4l2ImageSize(ofmt, ow, oh); }
 
 // ####################################################################################################
 unsigned int jevois::VideoMapping::csize() const
 { return jevois::v4l2ImageSize(cfmt, cw, ch); }
+
+// ####################################################################################################
+unsigned int jevois::VideoMapping::c2size() const
+{ return jevois::v4l2ImageSize(c2fmt, c2w, c2h); }
 
 // ####################################################################################################
 float jevois::VideoMapping::uvcToFps(unsigned int interval)
@@ -84,14 +95,43 @@ std::string jevois::VideoMapping::cstr() const
 }
 
 // ####################################################################################################
+std::string jevois::VideoMapping::c2str() const
+{
+  std::ostringstream ss;
+  ss << jevois::fccstr(c2fmt) << ' ' << c2w << 'x' << c2h << " @ " << cfps << "fps";
+  return ss.str();
+}
+
+// ####################################################################################################
+std::string jevois::VideoMapping::cstrall() const
+{
+  std::string ret = cstr();
+  if (crop == jevois::CropType::CropScale) ret += " + " + c2str();
+  return ret;
+}
+
+// ####################################################################################################
 std::string jevois::VideoMapping::str() const
 {
   std::ostringstream ss;
 
-  ss << "OUT: " << this->ostr() << " CAM: " << this->cstr();
+  ss << "OUT: " << ostr() << " CAM: " << cstr();
+  if (crop == jevois::CropType::CropScale) ss << " CAM2: " << c2str();
   //ss << " (uvc " << uvcformat << '/' << uvcframe << '/' << jevois::VideoMapping::fpsToUvc(ofps) << ')';
-  ss << " MOD: " << this->vendor << ':' << this->modulename << ' ' << (ispython ? "Python" : "C++");
+  ss << " MOD: " << vendor << ':' << modulename << ' ' << (ispython ? "Python" : "C++");
   //ss << ' ' << this->sopath();
+  return ss.str();
+}
+
+// ####################################################################################################
+std::string jevois::VideoMapping::menustr() const
+{
+  std::ostringstream ss;
+
+  ss << modulename << (ispython ? " (Py)" : " (C++)");
+  ss << " CAM: " << cstr();
+  if (crop == jevois::CropType::CropScale) ss << " + " << c2str();
+  if (ofmt != 0 && ofmt != JEVOISPRO_FMT_GUI) ss << ", OUT: " << ostr() << ' ';
   return ss.str();
 }
 
@@ -99,33 +139,113 @@ std::string jevois::VideoMapping::str() const
 bool jevois::VideoMapping::hasSameSpecsAs(VideoMapping const & other) const
 {
   return (ofmt == other.ofmt && ow == other.ow && oh == other.oh && std::abs(ofps - other.ofps) < 0.01F &&
-          cfmt == other.cfmt && cw == other.cw && ch == other.ch && std::abs(cfps - other.cfps) < 0.01F);
+          cfmt == other.cfmt && cw == other.cw && ch == other.ch && std::abs(cfps - other.cfps) < 0.01F &&
+          crop == other.crop &&
+          (crop != jevois::CropType::CropScale ||
+           (c2fmt == other.c2fmt && c2w == other.c2w && c2h == other.c2h && std::abs(cfps - other.cfps) < 0.01F)));
 }
 
 // ####################################################################################################
 bool jevois::VideoMapping::isSameAs(VideoMapping const & other) const
 {
-  return (hasSameSpecsAs(other) && vendor == other.vendor && modulename == other.modulename &&
+  return (hasSameSpecsAs(other) && wdr == other.wdr && vendor == other.vendor && modulename == other.modulename &&
           ispython == other.ispython);
 }
 
 // ####################################################################################################
 std::ostream & jevois::operator<<(std::ostream & out, jevois::VideoMapping const & m)
 {
-  out << jevois::fccstr(m.ofmt) << ' ' << m.ow << ' ' << m.oh << ' ' << m.ofps << ' '
-      << jevois::fccstr(m.cfmt) << ' ' << m.cw << ' ' << m.ch << ' ' << m.cfps << ' '
+  out << jevois::fccstr(m.ofmt) << ' ' << m.ow << ' ' << m.oh << ' ' << m.ofps << ' ';
+
+  if (m.wdr != jevois::WDRtype::Linear)
+    out << m.wdr << ':';
+
+  switch (m.crop)
+  {
+  case jevois::CropType::Scale:
+    break;
+  case jevois::CropType::Crop:
+    out << m.crop << ':'; break;
+  case jevois::CropType::CropScale:
+    out << m.crop << '=' << jevois::fccstr(m.c2fmt) << '@' << m.c2w << 'x' << m.c2h << ':'; break;
+  }
+  
+  out << jevois::fccstr(m.cfmt) << ' ' << m.cw << ' ' << m.ch << ' ' << m.cfps << ' '
       << m.vendor << ' ' << m.modulename;
   return out;
+}
+
+namespace
+{
+  // Return either the absolute value in str, or c +/- stoi(str)
+  int parse_relative_dim(std::string const & str, int c)
+  {
+    if (str.empty()) throw std::range_error("Invalid empty output width");
+    if (str[0] == '+') return c + std::stoi(str.substr(1));
+    else if (str[0] == '-') return c - std::stoi(str.substr(1));
+    return std::stoi(str);
+  }
+  
+  void parse_cam_format(std::string const & str, unsigned int & fmt, jevois::WDRtype & wdr, jevois::CropType & crop,
+                        unsigned int & c2fmt, unsigned int & c2w, unsigned int & c2h)
+  {
+    // Set the defaults in case no qualifier is given:
+    wdr = jevois::WDRtype::Linear;
+    crop = jevois::CropType::Scale;
+    
+    // Parse:
+    auto tok = jevois::split(str, ":");
+    if (tok.empty()) throw std::range_error("Empty camera format is not allowed");
+    fmt = jevois::strfcc(tok.back()); tok.pop_back();
+    for (std::string & t : tok)
+    {
+      // WDR, crop type can be specified in any order. So try to get each and see if we succeed:
+      try { wdr = jevois::from_string<jevois::WDRtype>(t); continue; } catch (...) { }
+
+      // If not WDR, then it should be Crop|Scale|CropScale=FCC@WxH
+      auto ttok = jevois::split(t, "[=@x]");
+      if (ttok.empty()) throw std::range_error("Invalid empty camera format modifier: " + t);
+
+      try
+      {
+        crop = jevois::from_string<jevois::CropType>(ttok[0]);
+        
+        switch (crop)
+        {
+        case jevois::CropType::Crop: if (ttok.size() == 1) continue; break;
+        case jevois::CropType::Scale: if (ttok.size() == 1) continue; break;
+        case jevois::CropType::CropScale:
+          if (ttok.size() == 4)
+          {
+            c2fmt = jevois::strfcc(ttok[1]);
+            c2w = std::stoi(ttok[2]);
+            c2h = std::stoi(ttok[3]);
+            continue;
+          }
+        }
+      } catch (...) { }
+      
+      throw std::range_error("Invalid camera format modifier [" + t +
+                             "] - must be Linear|DOL or Crop|Scale|CropScale=FCC@WxH");
+    }
+  }
 }
 
 // ####################################################################################################
 std::istream & jevois::operator>>(std::istream & in, jevois::VideoMapping & m)
 {
-  std::string of, cf;
-  in >> of >> m.ow >> m.oh >> m.ofps >> cf >> m.cw >> m.ch >> m.cfps >> m.vendor >> m.modulename;
+  std::string of, cf, ows, ohs;
+  in >> of >> ows >> ohs >> m.ofps >> cf >> m.cw >> m.ch >> m.cfps >> m.vendor >> m.modulename;
 
+  // Output width and height can be either absolute or relative to camera width and height; for relative values, they
+  // must start with either a + or - symbol:
+  m.ow = parse_relative_dim(ows, m.cw);
+  m.oh = parse_relative_dim(ohs, m.ch);
+  
   m.ofmt = jevois::strfcc(of);
-  m.cfmt = jevois::strfcc(cf);
+
+  // Parse any wdr, crop, or stream modulators on camera format, and the format itself:
+  parse_cam_format(cf, m.cfmt, m.wdr, m.crop, m.c2fmt, m.c2w, m.c2h);
 
   m.setModuleType(); // set python vs C++, check that file is here, and throw otherwise
   
@@ -133,21 +253,22 @@ std::istream & jevois::operator>>(std::istream & in, jevois::VideoMapping & m)
 }
 
 // ####################################################################################################
-std::vector<jevois::VideoMapping> jevois::loadVideoMappings(jevois::CameraSensor s, size_t & defidx, bool checkso)
+std::vector<jevois::VideoMapping> jevois::loadVideoMappings(jevois::CameraSensor s, size_t & defidx, bool checkso,
+                                                            bool hasgui)
 {
   std::ifstream ifs(JEVOIS_ENGINE_CONFIG_FILE);
   if (ifs.is_open() == false) LFATAL("Could not open [" << JEVOIS_ENGINE_CONFIG_FILE << ']');
-  return jevois::videoMappingsFromStream(s, ifs, defidx, checkso);
+  return jevois::videoMappingsFromStream(s, ifs, defidx, checkso, hasgui);
 }
 
 // ####################################################################################################
 std::vector<jevois::VideoMapping> jevois::videoMappingsFromStream(jevois::CameraSensor s, std::istream & is,
-                                                                  size_t & defidx, bool checkso)
+                                                                  size_t & defidx, bool checkso, bool hasgui)
 {
   size_t linenum = 1;
   std::vector<jevois::VideoMapping> mappings;
   jevois::VideoMapping defmapping = { };
-
+  
   for (std::string line; std::getline(is, line); ++linenum)
   {
     std::vector<std::string> tok = jevois::split(line);
@@ -160,17 +281,18 @@ std::vector<jevois::VideoMapping> jevois::videoMappingsFromStream(jevois::Camera
     try
     {
       m.ofmt = jevois::strfcc(tok[0]);
-      m.ow = std::stoi(tok[1]);
-      m.oh = std::stoi(tok[2]);
       m.ofps = std::stof(tok[3]);
 
-      m.cfmt = jevois::strfcc(tok[4]);
+      parse_cam_format(tok[4], m.cfmt, m.wdr, m.crop, m.c2fmt, m.c2w, m.c2h);
       m.cw = std::stoi(tok[5]);
       m.ch = std::stoi(tok[6]);
       m.cfps = std::stof(tok[7]);
+
+      m.ow = parse_relative_dim(tok[1], m.cw);
+      m.oh = parse_relative_dim(tok[2], m.ch);
     }
-    catch (std::exception const & e) { PERROR("Skipping entry because of parsing error: " << e.what()); }
-    catch (...) { PERROR("Skipping entry because of parsing errors"); }
+    catch (std::exception const & e) { PERROR("Skipping entry because of parsing error: " << e.what()); continue; }
+    catch (...) { PERROR("Skipping entry because of parsing errors"); continue; }
     
     m.vendor = tok[8];
     m.modulename = tok[9];
@@ -184,8 +306,25 @@ std::vector<jevois::VideoMapping> jevois::videoMappingsFromStream(jevois::Camera
     }
 
     // Skip if the sensor cannot support this mapping:
-    if (m.sensorOk(s) == false) { PERROR("Camera video format not supported by sensor -- SKIPPING."); continue; }
+    if (m.sensorOk(s) == false)
+    { PERROR("Camera video format [" << m.cstr() << "] not supported by sensor -- SKIPPING."); continue; }
 
+    // Skip gui modes if we do not have a gui:
+    if (hasgui == false && m.ofmt == JEVOISPRO_FMT_GUI)
+    { PERROR("Graphical user interface not available or disabled -- SKIPPING"); continue; }
+    
+#ifndef JEVOIS_PRO
+    // Skip if not jevois-pro and trying to use GUI output:
+    if (m.ofmt == JEVOISPRO_FMT_GUI)
+    { PERROR("GUI output only supported on JeVois-Pro -- SKIPPING"); continue; }
+
+#ifndef JEVOIS_PLATFORM
+    // Skip if not jevois-pro platform and trying to do dual-frame hardware scaling through the ISP:
+    if (m.crop == jevois::CropType::CropScale || m.crop == jevois::CropType::Scale)
+    { PERROR("Scale or Crop+Scale camera input only supported on JeVois-Pro platform -- SKIPPING"); continue; }
+#endif // JEVOIS_PLATFORM
+#endif // JEVOIS_PRO
+  
     // Handle optional star for default mapping. We tolerate several and pick the first one:
     if (tok.size() > 10)
     {
@@ -198,6 +337,7 @@ std::vector<jevois::VideoMapping> jevois::videoMappingsFromStream(jevois::Camera
     }
 
     mappings.push_back(m);
+    //LINFO("Successfully parsed mapping: " << m.str());
   }
 
   // Sort the array:
@@ -213,11 +353,10 @@ std::vector<jevois::VideoMapping> jevois::videoMappingsFromStream(jevois::Camera
                   if (a.oh == b.oh) {
                     if (a.ofps > b.ofps) return true;
                     if (std::abs(a.ofps - b.ofps) < 0.01F) {
-                      // The two output modes are identical. Warn unless the output format is NONE. We will adjust the
-                      // framerates later to distinguish the offenders:
-                      if (a.ofmt != 0)
-                        PERROR("WARNING: Two modes have identical output format: " <<
-                               jevois::fccstr(a.ofmt) << ' ' << a.ow << 'x' << a.oh << " @ " << a.ofps << "fps");
+                      // The two output modes are identical. Warn unless the output format is NONE or JVUI. We will
+                      // adjust the framerates later to distinguish the offenders:
+                      if (a.ofmt != 0 && a.ofmt != JEVOISPRO_FMT_GUI)
+                        PERROR("WARNING: Two modes have identical output format: " << a.ostr());
 
                       // All right, all USB stuff being equal, just sort according to the camera format:
                       if (a.cfmt < b.cfmt) return true;
@@ -227,8 +366,8 @@ std::vector<jevois::VideoMapping> jevois::videoMappingsFromStream(jevois::Camera
                           if (a.ch > b.ch) return true;
                           if (a.ch == b.ch) {
                             if (a.cfps > b.cfps) return true;
-                            // it's ok to have duplicates here since either those are NONE USB modes that are selected
-                            // manually, or we will adjust below
+                            // it's ok to have duplicates here since either those are NONE USB modes or JVUI that are
+                            // selected manually, or we will adjust below
                           }
                         }
                       }
@@ -239,8 +378,12 @@ std::vector<jevois::VideoMapping> jevois::videoMappingsFromStream(jevois::Camera
               return false;
             });
 
+  // If we are not checking for .so, run the shortcut version where we also do not check for no USB mode, duplicates,
+  // default index, etc. This is used, by, e.g., the jevois-add-videomapping program:
+  if (checkso == false) { defidx = 0; return mappings; }
+  
   // We need at least one mapping to work, and we need at least one with UVC output too keep hosts happy:
-  if (mappings.empty() || mappings.back().ofmt == 0)
+  if (mappings.empty() || mappings.back().ofmt == 0 || mappings.back().ofmt == JEVOISPRO_FMT_GUI)
   {
     PERROR("No valid video mapping with UVC output found -- INSERTING A DEFAULT ONE");
     jevois::VideoMapping m;
@@ -262,7 +405,7 @@ std::vector<jevois::VideoMapping> jevois::videoMappingsFromStream(jevois::Camera
   {
     // Discard exact duplicates, adjust frame rates for matching specs but different modules:
     if (a->isSameAs(*b)) { b = mappings.erase(b); continue; }
-    else if (b->ofmt != 0 && a->ofmt == b->ofmt && a->ow == b->ow && a->oh == b->oh)
+    else if (b->ofmt != 0 && b->ofmt != JEVOISPRO_FMT_GUI && a->ofmt == b->ofmt && a->ow == b->ow && a->oh == b->oh)
     {
       if (std::abs(a->ofps - b->ofps) < 0.01F) b->ofps -= 1.0F; // equal fps, decrease b.ofps by 1fps
       else if (b->ofps > a->ofps) b->ofps = a->ofps - 1.0F; // got out of order because of a previous decrease
@@ -292,7 +435,7 @@ std::vector<jevois::VideoMapping> jevois::videoMappingsFromStream(jevois::Camera
   unsigned int ofmt = ~0U, ow = ~0U, oh = ~0U, iformat = 0, iframe = 0;
   for (jevois::VideoMapping & m : mappings)
   {
-    if (m.ofmt == 0) { m.uvcformat = 0; m.uvcframe = 0; LDEBUG(m.str()); continue; }
+    if (m.ofmt == 0 || m.ofmt == JEVOISPRO_FMT_GUI) { m.uvcformat = 0; m.uvcframe = 0; LDEBUG(m.str()); continue; }
     if (m.ofmt != ofmt) { ofmt = m.ofmt; ow = ~0U; oh = ~0U; ++iformat; iframe = 0; } // Switch to the next format
     if (m.ow != ow || m.oh != oh) { ow = m.ow; oh = m.oh; ++iframe; } // Switch to the next frame size
     m.uvcformat = iformat; m.uvcframe = iframe;

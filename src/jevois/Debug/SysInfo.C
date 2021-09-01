@@ -16,39 +16,36 @@
 /*! \file */
 
 #include <jevois/Debug/SysInfo.H>
-#include <jevois/Debug/Log.H>
+#include <jevois/Util/Utils.H>
 #include <fstream>
 #include <algorithm>
-
-namespace
-{
-  std::string getFileString(char const * fname, int skip = 0)
-  {
-    std::ifstream ifs(fname);
-    if (ifs.is_open() == false) LFATAL("Cannot read file: " << fname);
-    std::string str;
-    while (skip-- >= 0) std::getline(ifs, str);
-    ifs.close();
-    
-    return str;
-  }
-}
 
 // ####################################################################################################
 std::string jevois::getSysInfoCPU()
 {
-  int freq = 1344;
-  try { freq = std::stoi(getFileString("/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq")) / 1000; }
+#ifdef JEVOIS_PLATFORM_PRO
+  // One JeVois Pro, use cpu 2 (big core) and thermal zone 1:
+  int freq = 2208;
+  try { freq = std::stoi(jevois::getFileString("/sys/devices/system/cpu/cpu2/cpufreq/scaling_cur_freq")) / 1000; }
   catch (...) { } // silently ignore any errors
   
   int temp = 30;
-  try { temp = std::stoi(getFileString("/sys/class/thermal/thermal_zone0/temp")); }
+  try { temp = std::stoi(jevois::getFileString("/sys/class/thermal/thermal_zone1/temp")); }
   catch (...) { } // silently ignore any errors
-
+#else
+  int freq = 1344;
+  try { freq = std::stoi(jevois::getFileString("/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq")) / 1000; }
+  catch (...) { } // silently ignore any errors
+  
+  int temp = 30;
+  try { temp = std::stoi(jevois::getFileString("/sys/class/thermal/thermal_zone0/temp")); }
+  catch (...) { } // silently ignore any errors
+#endif
+  
   // On some hosts, temp is in millidegrees:
   if (temp > 200) temp /= 1000;
   
-  std::string load = getFileString("/proc/loadavg");
+  std::string load = jevois::getFileString("/proc/loadavg");
   return "CPU: " + std::to_string(freq) + "MHz, " + std::to_string(temp) + "C, load: " + load;
 }
 
@@ -68,15 +65,15 @@ namespace
 // ####################################################################################################
 std::string jevois::getSysInfoMem()
 {
-  std::string memtotal = getFileString("/proc/meminfo"); cleanSpaces(memtotal);
-  std::string memfree = getFileString("/proc/meminfo", 1); cleanSpaces(memfree);
+  std::string memtotal = jevois::getFileString("/proc/meminfo"); cleanSpaces(memtotal);
+  std::string memfree = jevois::getFileString("/proc/meminfo", 1); cleanSpaces(memfree);
   return memtotal + ", " + memfree;
 }
 
 // ####################################################################################################
 std::string jevois::getSysInfoVersion()
 {
-  std::string ver = getFileString("/proc/version");
+  std::string ver = jevois::getFileString("/proc/version");
 
   // Truncate at "Linux Version XXX":
   size_t pos = ver.find(' ');
@@ -84,4 +81,72 @@ std::string jevois::getSysInfoVersion()
   pos = ver.find(' ', pos + 1);
 
   return ver.substr(0, pos);
+}
+
+// ####################################################################################################
+size_t jevois::getNumInstalledTPUs()
+{
+  size_t n = 0;
+
+  // First detect any PCIe accelerators:
+  while (true)
+  {
+    try { jevois::getFileString(("/sys/class/apex/apex_" + std::to_string(n) + "/temp").c_str()); }
+    catch (...) { break; }
+    ++n;
+  }
+
+  // Then detect any USB accelerators:
+  // Note: reported name and USB ID in lsusb changes once we start using the device...
+  // Before running a network: ID 1a6e:089a Global Unichip Corp. 
+  // After running a network: ID 18d1:9302 Google Inc. 
+
+  try { n += std::stoi(jevois::system("/usr/bin/lsusb | /usr/bin/grep 1a6e:089a | /usr/bin/wc -l")); } catch (...) { }
+
+  try { n += std::stoi(jevois::system("/usr/bin/lsusb | /usr/bin/grep 18d1:9302 | /usr/bin/wc -l")); } catch (...) { }
+
+  return n;
+}
+
+// ####################################################################################################
+size_t jevois::getNumInstalledVPUs()
+{
+  // Note: reported name and USB ID in lsusb changes once we start using the device...
+  // Before running a network: ID 03e7:2485 Intel Movidius MyriadX
+  // After running a network: ID 03e7:f63b Myriad VPU [Movidius Neural Compute Stick]
+  size_t n = 0;
+
+  try { n += std::stoi(jevois::system("/usr/bin/lsusb | /usr/bin/grep 03e7:2485 | /usr/bin/wc -l")); } catch (...) { }
+
+  try { n += std::stoi(jevois::system("/usr/bin/lsusb | /usr/bin/grep 03e7:f63b | /usr/bin/wc -l")); } catch (...) { }
+
+  return n;
+}
+
+// ####################################################################################################
+size_t jevois::getNumInstalledNPUs()
+{
+  // Note: could also check /proc/cpuinfo to get the NPU hardware version
+#ifdef JEVOIS_PLATFORM_PRO
+  return 1;
+#else
+  return 0;
+#endif
+}
+
+// ####################################################################################################
+int jevois::getFanSpeed()
+{
+#ifdef JEVOIS_PLATFORM_PRO
+  try
+  {
+    int period = std::stoi(jevois::getFileString("/sys/class/pwm/pwmchip8/pwm0/period"));
+    int duty = std::stoi(jevois::getFileString("/sys/class/pwm/pwmchip8/pwm0/duty_cycle"));
+    if (period == 0) return 100;
+    return 100 * duty / period;
+  }
+  catch (...) { }
+#endif
+
+  return 0;
 }

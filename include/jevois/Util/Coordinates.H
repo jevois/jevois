@@ -59,7 +59,11 @@ namespace jevois
 
     //! Aspect ratio of the JeVois camera
     /*! \ingroup coordhelpers */
+#ifdef JEVOIS_PRO
+#define JEVOIS_CAMERA_ASPECT (16.0 / 9.0)
+#else
 #define JEVOIS_CAMERA_ASPECT (4.0 / 3.0)
+#endif
     
     //! Transform coordinates in-place from camera to standardized, using a RawImage to establish image size
     /*! The RawImage from the camera is used to specify pixel width and height of the camera image, and this is the

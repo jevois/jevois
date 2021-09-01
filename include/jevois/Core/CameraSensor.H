@@ -28,12 +28,18 @@ namespace jevois
 
   //! Enum for different sensor models
   /*! Use 'any' when you either don't know (e.g., running in host mode with an unknown dumb USB webcam), or when you
-      don't care (e.g., we use 'any' in jevois-add-videomapping so that it will always succeed). */
-  JEVOIS_DEFINE_ENUM_CLASS(CameraSensor, (any) (ov9650) (ov2640) (ov7725) (ar0135) );
+      don't care (e.g., we use 'any' in jevois-add-videomapping so that it will always succeed).
+      
+      - Parallel CSI sensors are for JeVois-A33 hardware: ov9650, ov2640, ov7725, ar0135
+      - MIPI sensors are for JeVois-Pro hardware: imx290 */
+  JEVOIS_DEFINE_ENUM_CLASS(CameraSensor, (any) (ov9650) (ov2640) (ov7725) (ar0135) (imx290) );
 
   //! Check whether a given resolution and frame rate is supported by a sensor
   /*! Returns true if the sensor is capable of capturing video at the given format, resolution, and frame rate.*/
   bool sensorSupportsFormat(CameraSensor s, unsigned int fmt, unsigned int w, unsigned int h, float fps);
+
+  //! Check whether sensor has an IMU (inertial measurement unit)
+  bool sensorHasIMU(CameraSensor s);
   
   /*! @} */ // **********************************************************************
 }

@@ -17,6 +17,7 @@
 
 #include <jevois/Core/MovieOutput.H>
 #include <jevois/Debug/Log.H>
+#include <jevois/Util/Async.H>
 
 #include <opencv2/imgproc/imgproc.hpp>
 
@@ -25,13 +26,13 @@
 #include <cstdio> // for snprintf()
 #include <fstream>
 
-static char const PATHPREFIX[] = "/jevois/data/movieout/";
+static char const PATHPREFIX[] = JEVOIS_ROOT_PATH "/data/movieout/";
 
 // ####################################################################################################
 jevois::MovieOutput::MovieOutput(std::string const & fn) :
     itsBuf(1000), itsSaving(false), itsFileNum(0), itsRunning(true), itsFilebase(fn)
 {
-  itsRunFut = std::async(std::launch::async, &jevois::MovieOutput::run, this);
+  itsRunFut = jevois::async(std::bind(&jevois::MovieOutput::run, this));
 }
 
 // ####################################################################################################
@@ -64,7 +65,7 @@ void jevois::MovieOutput::get(RawImage & img)
   if (itsSaving.load())
   {
     // Reset our VideoBuf using the current format:
-    itsBuffer.reset(new jevois::VideoBuf(-1, itsMapping.osize(), 0));
+    itsBuffer.reset(new jevois::VideoBuf(-1, itsMapping.osize(), 0, -1));
 
     img.width = itsMapping.ow;
     img.height = itsMapping.oh;

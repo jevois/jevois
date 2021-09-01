@@ -20,10 +20,18 @@
 #include <jevois/Core/Camera.H>
 #include <jevois/Core/MovieInput.H>
 
+#include <jevois/Core/IMU.H>
+#include <jevois/Core/IMUspi.H>
+#include <jevois/Core/IMUi2c.H>
+
 #include <jevois/Core/Gadget.H>
-#include <jevois/Core/VideoDisplay.H>
 #include <jevois/Core/VideoOutputNone.H>
 #include <jevois/Core/MovieOutput.H>
+#include <jevois/Core/VideoDisplay.H>
+#include <jevois/Core/VideoDisplayGL.H>
+#include <jevois/Core/VideoDisplayGUI.H>
+#include <jevois/GPU/GUIhelper.H>
+#include <jevois/GPU/GUIconsole.H>
 
 #include <jevois/Core/Serial.H>
 #include <jevois/Core/StdioInterface.H>
@@ -35,6 +43,7 @@
 
 #include <jevois/Debug/Log.H>
 #include <jevois/Util/Utils.H>
+#include <jevois/Util/Async.H>
 #include <jevois/Debug/SysInfo.H>
 
 #include <cmath> // for fabs
@@ -43,7 +52,11 @@
 #include <cstdlib> // for std::system()
 #include <cstdio> // for std::remove()
 
-// On the older platform kernel, detect class is not defined:
+#ifdef JEVOIS_PRO
+#include <imgui_internal.h>
+#endif
+
+// On the older JeVois-A33 platform kernel, detect class is not defined:
 #ifndef V4L2_CTRL_CLASS_DETECT
 #define V4L2_CTRL_CLASS_DETECT          0x00a30000
 #endif
@@ -199,14 +212,15 @@ namespace
 // ####################################################################################################
 jevois::Engine::Engine(std::string const & instance) :
     jevois::Manager(instance), itsMappings(), itsRunning(false), itsStreaming(false), itsStopMainLoop(false),
-    itsTurbo(false), itsManualStreamon(false), itsVideoErrors(false), itsFrame(0), itsNumSerialSent(0)
+    itsShellMode(false), itsTurbo(false), itsManualStreamon(false), itsVideoErrors(false), itsFrame(0),
+    itsNumSerialSent(0), itsRequestedFormat(-2)
 {
   JEVOIS_TRACE(1);
 
-#ifdef JEVOIS_PLATFORM
+#ifdef JEVOIS_PLATFORM_A33
   // Start mass storage thread:
   itsCheckingMassStorage.store(false); itsMassStorageMode.store(false);
-  itsCheckMassStorageFut = std::async(std::launch::async, &jevois::Engine::checkMassStorage, this);
+  itsCheckMassStorageFut = jevois::async_little(&jevois::Engine::checkMassStorage, this);
   while (itsCheckingMassStorage.load() == false) std::this_thread::sleep_for(std::chrono::milliseconds(5));
 #endif
 }
@@ -214,15 +228,15 @@ jevois::Engine::Engine(std::string const & instance) :
 // ####################################################################################################
 jevois::Engine::Engine(int argc, char const* argv[], std::string const & instance) :
     jevois::Manager(argc, argv, instance), itsMappings(), itsRunning(false), itsStreaming(false),
-    itsStopMainLoop(false), itsTurbo(false), itsManualStreamon(false), itsVideoErrors(false), itsFrame(0),
-    itsNumSerialSent(0)
+    itsStopMainLoop(false), itsShellMode(false), itsTurbo(false), itsManualStreamon(false), itsVideoErrors(false),
+    itsFrame(0), itsNumSerialSent(0), itsRequestedFormat(-2)
 {
   JEVOIS_TRACE(1);
   
-#ifdef JEVOIS_PLATFORM
+#ifdef JEVOIS_PLATFORM_A33
   // Start mass storage thread:
   itsCheckingMassStorage.store(false); itsMassStorageMode.store(false);
-  itsCheckMassStorageFut = std::async(std::launch::async, &jevois::Engine::checkMassStorage, this);
+  itsCheckMassStorageFut = jevois::async_little(&jevois::Engine::checkMassStorage, this);
   while (itsCheckingMassStorage.load() == false) std::this_thread::sleep_for(std::chrono::milliseconds(5));
 #endif
 }
@@ -287,7 +301,11 @@ void jevois::Engine::onParamChange(jevois::engine::usbserialdev const & JEVOIS_U
 void jevois::Engine::onParamChange(jevois::engine::cpumode const & JEVOIS_UNUSED_PARAM(param),
                                    jevois::engine::CPUmode const & newval)
 {
+#ifdef JEVOIS_PRO
+  std::ofstream ofs("/sys/devices/system/cpu/cpu2/cpufreq/scaling_governor");
+#else
   std::ofstream ofs("/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor");
+#endif
   if (ofs.is_open() == false)
   {
 #ifdef JEVOIS_PLATFORM
@@ -306,11 +324,41 @@ void jevois::Engine::onParamChange(jevois::engine::cpumode const & JEVOIS_UNUSED
   }
 }
 
+#ifdef JEVOIS_PRO
+// ####################################################################################################
+void jevois::Engine::onParamChange(jevois::engine::cpumodel const & JEVOIS_UNUSED_PARAM(param),
+                                   jevois::engine::CPUmode const & newval)
+{
+  std::ofstream ofs("/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor");
+  if (ofs.is_open() == false)
+  {
+#ifdef JEVOIS_PLATFORM
+    LERROR("Cannot set cpu frequency governor mode -- IGNORED");
+#endif
+    return;
+  }
+
+  switch (newval)
+  {
+  case engine::CPUmode::PowerSave: ofs << "powersave" << std::endl; break;
+  case engine::CPUmode::Conservative: ofs << "conservative" << std::endl; break;
+  case engine::CPUmode::OnDemand: ofs << "ondemand" << std::endl; break;
+  case engine::CPUmode::Interactive: ofs << "interactive" << std::endl; break;
+  case engine::CPUmode::Performance: ofs << "performance" << std::endl; break;
+  }
+}
+#endif
+
 // ####################################################################################################
 void jevois::Engine::onParamChange(jevois::engine::cpumax const & JEVOIS_UNUSED_PARAM(param),
                                    unsigned int const & newval)
 {
+#ifdef JEVOIS_PRO
+  std::ofstream ofs("/sys/devices/system/cpu/cpu2/cpufreq/scaling_max_freq");
+#else
   std::ofstream ofs("/sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq");
+#endif
+  
   if (ofs.is_open() == false)
   {
 #ifdef JEVOIS_PLATFORM
@@ -329,6 +377,51 @@ void jevois::Engine::onParamChange(jevois::engine::videoerrors const & JEVOIS_UN
   itsVideoErrors.store(newval);
 }
 
+#ifdef JEVOIS_PRO
+// ####################################################################################################
+void jevois::Engine::onParamChange(jevois::engine::gui const & JEVOIS_UNUSED_PARAM(param),
+                                   bool const & newval)
+{
+  JEVOIS_TIMED_LOCK(itsMtx);
+  if (newval)
+  {
+    if (!itsGUIhelper)
+    {
+      itsGUIhelper = addComponent<jevois::GUIhelper>("gui", conslock::get());
+      auto s = addComponent<jevois::GUIconsole>("guiconsole");
+      itsSerials.push_back(s);
+      LINFO("GUI enabled.");
+    }
+  }
+  else if (itsGUIhelper)
+  {
+    for (auto itr = itsSerials.begin(); itr != itsSerials.end(); ++itr)
+      if ((*itr)->instanceName() == "guiconsole") { itsSerials.erase(itr); break; }
+    removeComponent("guiconsole", false);
+    removeComponent(itsGUIhelper);
+    itsGUIhelper.reset();
+    LINFO("GUI disabled.");
+  }
+}
+
+// ####################################################################################################
+void jevois::Engine::onParamChange(jevois::engine::cpumaxl const & JEVOIS_UNUSED_PARAM(param),
+                                   unsigned int const & newval)
+{
+  std::ofstream ofs("/sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq");
+  
+  if (ofs.is_open() == false)
+  {
+#ifdef JEVOIS_PLATFORM
+    LERROR("Cannot set cpu max frequency -- IGNORED");
+#endif
+    return;
+  }
+
+  ofs << newval * 1000U << std::endl;
+}
+#endif
+
 // ####################################################################################################
 void jevois::Engine::preInit()
 {
@@ -338,6 +431,19 @@ void jevois::Engine::preInit()
   
   // Run the Manager version. This parses the command line:
   jevois::Manager::preInit();
+}
+
+// ####################################################################################################
+void jevois::Engine::reloadVideoMappings()
+{
+  // Check iw we want to use GUI mode:
+  bool usegui = false;
+#ifdef JEVOIS_PRO
+  usegui = gui::get();
+#endif
+
+  itsMappings = jevois::loadVideoMappings(camerasens::get(), itsDefaultMappingIdx, true, usegui);
+  LINFO("Loaded " << itsMappings.size() << " vision processing modes.");
 }
 
 // ####################################################################################################
@@ -355,7 +461,9 @@ void jevois::Engine::postInit()
   usbserialdev::freeze();
   for (auto & s : itsSerials) s->freezeAllParams();
   cameradev::freeze();
+  imudev::freeze();
   camerasens::freeze();
+  jevois::CameraSensor const camsens = camerasens::get();
   cameranbuf::freeze();
   camturbo::freeze();
   gadgetdev::freeze();
@@ -365,12 +473,20 @@ void jevois::Engine::postInit()
   quietcmd::freeze();
   python::freeze();
   
+  // Check iw we want to use GUI mode:
+  bool usegui = false;
+#ifdef JEVOIS_PRO
+  gui::freeze();
+  usegui = gui::get();
+  conslock::freeze();
+  watchdog::freeze();
+#endif
+  
   // Grab the log messages, itsSerials is not going to change anymore now that the serial params are frozen:
   jevois::logSetEngine(this);
 
   // Load our video mappings:
-  itsMappings = jevois::loadVideoMappings(camerasens::get(), itsDefaultMappingIdx);
-  LINFO("Loaded " << itsMappings.size() << " vision processing modes.");
+  reloadVideoMappings();
 
   // Get python going, we need to do this here to avoid segfaults on platform when instantiating our first python
   // module. This likely has to do with the fact that the python core is not very thread-safe, and setFormatInternal()
@@ -388,7 +504,7 @@ void jevois::Engine::postInit()
   {
     LINFO("Starting camera device " << camdev);
     
-#ifdef JEVOIS_PLATFORM
+#ifdef JEVOIS_PLATFORM_A33
     // Set turbo mode or not:
     std::ofstream ofs("/sys/module/vfe_v4l2/parameters/turbo");
     if (ofs.is_open())
@@ -400,13 +516,28 @@ void jevois::Engine::postInit()
 #endif
     
     // Now instantiate the camera:
-    itsCamera.reset(new jevois::Camera(camdev, camerasens::get(), cameranbuf::get()));
+    itsCamera.reset(new jevois::Camera(camdev, camsens, cameranbuf::get()));
     
 #ifndef JEVOIS_PLATFORM
-    // No need to confuse people with a non-working camreg param:
-    camreg::set(false);
-    camreg::freeze();
+    // No need to confuse people with a non-working camreg and imureg params:
+    camreg::set(false); camreg::freeze();
+    imureg::set(false); imureg::freeze();
 #endif
+
+    try
+    {
+      // On JeVois-A33 platform, hook up an I2C-based IMU to the camera sensor, if supported:
+#ifdef JEVOIS_PLATFORM_A33
+      if (jevois::sensorHasIMU(camsens))
+        itsIMU.reset(new jevois::IMUi2c(std::dynamic_pointer_cast<jevois::Camera>(itsCamera)));
+#endif
+    
+      // On JeVois-Pro platform, instantiate an SPI-based IMU, if supported:
+#ifdef JEVOIS_PLATFORM_PRO
+      if (jevois::sensorHasIMU(camsens))
+        itsIMU.reset(new jevois::IMUspi(imudev::get()));
+#endif
+    } catch (...) { LERROR("Sensor should have an IMU but we failed to initialize it."); }
   }
   else
   {
@@ -454,19 +585,32 @@ void jevois::Engine::postInit()
   }
   else
   {
-    LINFO("Using display for video output");
-    // Local video display, for use on a host desktop:
-    itsGadget.reset(new jevois::VideoDisplay("jevois", gadgetnbuf::get()));
+    // Local video display, for use on a host desktop or on JeVois-Pro HDMI output:
+#ifdef JEVOIS_PRO
+    // On JevoisPro, use OpenGL or ImGui display:
+    if (usegui)
+    {
+      LINFO("Using OpenGL + ImGui display for video output");
+      itsGadget.reset(new jevois::VideoDisplayGUI(itsGUIhelper, gadgetnbuf::get()));
+    }
+    else
+    {
+      LINFO("Using OpenGL display for video output");
+      itsGadget.reset(new jevois::VideoDisplayGL(gadgetnbuf::get()));
+    }
+#else
+    // On JeVois-A33, use an OpenCV display:
+    LINFO("Using OpenCV display for video output");
+    itsGadget.reset(new jevois::VideoDisplay("JeVois", gadgetnbuf::get()));
+#endif
     itsManualStreamon = true;
   }
   
   // We are ready to run:
   itsRunning.store(true);
 
-#ifndef JEVOIS_PLATFORM
-  // Set initial format when running on host, since we will start streaming immediately:
+  // Set initial format:
   try { setFormatInternal(midx); } catch (...) { jevois::warnAndIgnoreException(); }
-#endif
   
   // Run init script:
   runScriptFromFile(JEVOIS_ENGINE_INIT_SCRIPT, nullptr, false);
@@ -483,7 +627,7 @@ jevois::Engine::~Engine()
   // Tell our run() thread to finish up:
   itsRunning.store(false);
   
-#ifdef JEVOIS_PLATFORM
+#ifdef JEVOIS_PLATFORM_A33
   // Tell checkMassStorage() thread to finish up:
   itsCheckingMassStorage.store(false);
 #endif
@@ -491,7 +635,7 @@ jevois::Engine::~Engine()
   // Nuke our module as soon as we can, hopefully soon now that we turned off streaming and running:
   {
     JEVOIS_TIMED_LOCK(itsMtx);
-    removeComponent(itsModule);
+    if (itsModule) removeComponent(itsModule);
     itsModule.reset();
 
     // Gone, nuke the loader now:
@@ -502,7 +646,7 @@ jevois::Engine::~Engine()
   itsGadget.reset();
   itsCamera.reset();
 
-#ifdef JEVOIS_PLATFORM
+#ifdef JEVOIS_PLATFORM_A33
   // Will block until the checkMassStorage() thread completes:
   if (itsCheckMassStorageFut.valid())
     try { itsCheckMassStorageFut.get(); } catch (...) { jevois::warnAndIgnoreException(); }
@@ -513,7 +657,7 @@ jevois::Engine::~Engine()
 }
 
 // ####################################################################################################
-#ifdef JEVOIS_PLATFORM
+#ifdef JEVOIS_PLATFORM_A33
 void jevois::Engine::checkMassStorage()
 {
   itsCheckingMassStorage.store(true);
@@ -548,8 +692,8 @@ void jevois::Engine::streamOn()
   JEVOIS_TRACE(2);
 
   JEVOIS_TIMED_LOCK(itsMtx);
-  itsCamera->streamOn();
-  itsGadget->streamOn();
+  if (itsCamera) itsCamera->streamOn();
+  if (itsGadget) itsGadget->streamOn();
   itsStreaming.store(true);
 }
 
@@ -559,8 +703,8 @@ void jevois::Engine::streamOff()
   JEVOIS_TRACE(2);
 
   // First, tell both the camera and gadget to abort streaming, this will make get()/done()/send() throw:
-  itsGadget->abortStream();
-  itsCamera->abortStream();
+  if (itsGadget) itsGadget->abortStream();
+  if (itsCamera) itsCamera->abortStream();
 
   // Stop the main loop, which will flip itsStreaming to false and will make it easier for us to lock itsMtx:
   LDEBUG("Stopping main loop...");
@@ -570,8 +714,15 @@ void jevois::Engine::streamOff()
   
   // Lock up and stream off:
   JEVOIS_TIMED_LOCK(itsMtx);
-  itsGadget->streamOff();
-  itsCamera->streamOff();
+  if (itsGadget) itsGadget->streamOff();
+  if (itsCamera) itsCamera->streamOff();
+}
+
+// ####################################################################################################
+void jevois::Engine::requestSetFormat(int idx)
+{
+  JEVOIS_TRACE(2);
+  itsRequestedFormat.store(idx);
 }
 
 // ####################################################################################################
@@ -608,27 +759,48 @@ void jevois::Engine::setFormatInternal(jevois::VideoMapping const & m, bool relo
   LINFO(m.str());
   itsModuleConstructionError = "Unknown error while starting module " + m.modulename + " ...";
 
-#ifdef JEVOIS_PLATFORM
+#ifdef JEVOIS_PLATFORM_A33
   if (itsMassStorageMode.load())
     LFATAL("Cannot setup video streaming while in mass-storage mode. Eject the USB drive on your host computer first.");
 #endif
+
+  // Nuke the processing module, if any, so we can also safely nuke the loader. We always nuke the module instance so we
+  // won't have any issues with latent state even if we re-use the same module but possibly with different input
+  // image resolution, etc:
+  if (itsModule)
+  {
+    LDEBUG("Removing current module " << itsModule->className() << ": " << itsModule->descriptor());
+    try { removeComponent(itsModule); itsModule.reset(); LDEBUG("Current module removed."); }
+    catch (...) { jevois::warnAndIgnoreException(); }
+  }
   
   // Set the format at the camera and gadget levels, unless we are just reloading:
   if (reload == false)
   {
-    itsCamera->setFormat(m);
-    itsGadget->setFormat(m);
+    LDEBUG("Setting camera format: " << m.cstrall());
+    try { itsCamera->setFormat(m); }
+    catch (...)
+    {
+      jevois::warnAndIgnoreException();
+      itsModuleConstructionError = "Camera did not accept format:\n\n" + m.cstrall() +
+        "\n\nCheck videomappings.cfg and camera sensor specifications.";
+      return;
+    }
+    
+    LDEBUG("Setting gadget format: " << m.ostr());
+    try { itsGadget->setFormat(m); }
+    catch (...)
+    {
+      itsModuleConstructionError = "Gadget did not accept format:\n\n" + m.ostr() +
+        "\n\nCheck videomappings.cfg for any unsupported output formats.";
+      jevois::warnAndIgnoreException();
+      return;
+    }
   }
   
   // Keep track of our current mapping:
   itsCurrentMapping = m;
   
-  // Nuke the processing module, if any, so we can also safely nuke the loader. We always nuke the module instance so we
-  // won't have any issues with latent state even if we re-use the same module but possibly with different input
-  // image resolution, etc:
-  if (itsModule)
-    try { removeComponent(itsModule); itsModule.reset(); } catch (...) { jevois::warnAndIgnoreException(); }
-
   // Reset our master frame counter on each module load:
   itsFrame.store(0);
   
@@ -688,9 +860,12 @@ void jevois::Engine::setFormatInternal(jevois::VideoMapping const & m, bool relo
     
     if (itsInitialized) { itsModule->setInitialized(); itsModule->runPostInit(); }
 
-    // And finally run any config script, sending any errors to USB (likely JeVois Inventor):
+    // And finally run any config script, sending any errors to USB (likely JeVois Inventor) and GUI:
     std::shared_ptr<jevois::UserInterface> ser;
-    for (auto & s : itsSerials) if (s->type() == jevois::UserInterface::Type::USB) { ser = s; break; }
+    for (auto & s : itsSerials)
+      if (s->type() == jevois::UserInterface::Type::USB || s->type() == jevois::UserInterface::Type::GUI)
+      { ser = s; break; }
+
     runScriptFromFile(itsModule->absolutePath(JEVOIS_MODULE_SCRIPT_FILENAME), ser, false);
     
     LINFO("Module [" << m.modulename << "] loaded, initialized, and ready.");
@@ -705,16 +880,22 @@ void jevois::Engine::setFormatInternal(jevois::VideoMapping const & m, bool relo
 }
 
 // ####################################################################################################
-void jevois::Engine::mainLoop()
+int jevois::Engine::mainLoop()
 {
   JEVOIS_TRACE(2);
 
+#ifdef JEVOIS_PRO
+  // Start watchdog:
+  itsWatchdog.reset(new jevois::Watchdog(watchdog::get()));
+#endif
+  
   std::string pfx; // optional command prefix
+  int ret = 0; // our return value
   
   // Announce that we are ready to the hardware serial port, if any. Do not use sendSerial() here so we always issue
   // this message irrespectively of the user serial preferences:
   for (auto & s : itsSerials)
-    if (s->instanceName() == "serial")
+    if (s->type() == jevois::UserInterface::Type::Hard)
       try { s->writeString("INF READY JEVOIS " JEVOIS_VERSION_STRING); }
       catch (...) { jevois::warnAndIgnoreException(); }
   
@@ -722,6 +903,87 @@ void jevois::Engine::mainLoop()
   {
     bool dosleep = true;
 
+#ifdef JEVOIS_PRO
+    // Reset the watchdog:
+    itsWatchdog->reset();
+#endif
+    
+    // If we got a format change request through requestSetFormat(), honor it now while we are unlocked:
+    // -2 means no change requested; -1 means reload requested (we do not need to change camera or gadget)
+    int rf = itsRequestedFormat.load();
+    if (rf != -2)
+    {
+      // This format change request is now marked as handled:
+      itsRequestedFormat.store(-2);
+      
+      try
+      {
+        // Stop camera and gadget unless we are just reloading:
+        if (rf != -1 && itsStreaming.load())
+        {
+          // Keep this code in sync with streamOff():
+          if (itsGadget) itsGadget->abortStream();
+          if (itsCamera) itsCamera->abortStream();
+          JEVOIS_TIMED_LOCK(itsMtx);
+          if (itsGadget) itsGadget->streamOff();
+          if (itsCamera) itsCamera->streamOff();
+          itsStreaming.store(false);
+        }
+        
+#ifdef JEVOIS_PRO
+        // Reset the GUI to clear various texture caches and such:
+        if (itsGUIhelper) itsGUIhelper->reset( (rf != -1) );
+#endif
+        // Set new format or reload current module:
+        if (rf == -1)
+        {
+          // Reload the current format, eg, after editing code:
+          JEVOIS_TIMED_LOCK(itsMtx);
+          setFormatInternal(itsCurrentMapping, true);
+        }
+        else setFormat(rf);
+        
+        // Restart camera and gadget if we stopped them:
+        if (rf != -1 && itsCurrentMapping.ofmt != 0)
+        {
+          // Keep this code in sync with streamOn();
+          JEVOIS_TIMED_LOCK(itsMtx);
+          if (itsCamera) itsCamera->streamOn();
+          if (itsGadget) itsGadget->streamOn();
+          itsStreaming.store(true);
+        }
+        
+        // On JeVois Pro running the GUI we need to get the camera and gadget streaming at all times for the GUI to
+        // refresh, so restart them. When not using the GUI, users will have to issue a "streamon" to get going:
+#ifdef JEVOIS_PRO
+        if (itsGUIhelper && itsStreaming.load() == false)
+        {
+          // Keep this code in sync with streamOn();
+          JEVOIS_TIMED_LOCK(itsMtx);
+          if (itsCamera) itsCamera->streamOn();
+          if (itsGadget) itsGadget->streamOn();
+          itsStreaming.store(true);
+        }
+#endif
+      }
+      catch (...)
+      {
+        reportError();
+
+        // Stream off:
+        try
+        {
+          if (itsGadget) itsGadget->abortStream();
+          if (itsCamera) itsCamera->abortStream();
+          JEVOIS_TIMED_LOCK(itsMtx);
+          if (itsGadget) itsGadget->streamOff();
+          if (itsCamera) itsCamera->streamOff();
+          itsStreaming.store(false);
+        }
+        catch (...) { }
+      }
+    }
+    
     if (itsStreaming.load())
     {
       // Lock up while we use the module:
@@ -729,20 +991,12 @@ void jevois::Engine::mainLoop()
 
       if (itsModuleConstructionError.empty() == false)
       {
-        // If we have a module construction error, render it to an image and stream it over USB now (if we are doing USB
-        // and we want to see errors in the video stream):
-        if (itsCurrentMapping.ofmt && itsVideoErrors.load())
-          try
-          {
-            // Get an output image, draw error message, and send to host:
-            itsGadget->get(itsVideoErrorImage);
-            jevois::drawErrorImage(itsModuleConstructionError, itsVideoErrorImage);
-            itsGadget->send(itsVideoErrorImage);
-        
-            // Also get one camera frame to avoid accumulation of stale buffers:
-            (void)jevois::InputFrame(itsCamera, itsTurbo).get();
-          }
-          catch (...) { jevois::warnAndIgnoreException(); }
+        // If we have a module construction error, report it now to GUI/USB/console:
+        reportError(itsModuleConstructionError);
+
+        // Also get one camera frame to avoid accumulation of stale buffers:
+        //try { (void)jevois::InputFrame(itsCamera, itsTurbo).get(); }
+        //catch (...) { jevois::warnAndIgnoreException(); }
       }
       else if (itsModule)
       {
@@ -753,50 +1007,40 @@ void jevois::Engine::mainLoop()
         // We have a module ready for action. Call its process function and handle any exceptions:
         try
         {
-          if (itsCurrentMapping.ofmt) // Process with USB outputs:
+          switch (itsCurrentMapping.ofmt)
+          {
+          case 0:
+          {
+            // Process with no USB outputs:
+            itsModule->process(jevois::InputFrame(itsCamera, itsTurbo));
+
+#ifdef JEVOIS_PRO
+            // We always need startFrame()/endFrame() when using the GUI:
+            if (itsGUIhelper) itsGUIhelper->headlessDisplay();
+#endif
+            break;
+          }
+          
+#ifdef JEVOIS_PRO
+          case JEVOISPRO_FMT_GUI:
+          {
+            // Process with GUI display on JeVois-Pro:
+            itsModule->process(jevois::InputFrame(itsCamera, itsTurbo), *itsGUIhelper);
+            break;
+          }
+#endif
+          default:
+          {
+            // Process with USB outputs:
             itsModule->process(jevois::InputFrame(itsCamera, itsTurbo),
                                jevois::OutputFrame(itsGadget, itsVideoErrors.load() ? &itsVideoErrorImage : nullptr));
-          else  // Process with no USB outputs:
-            itsModule->process(jevois::InputFrame(itsCamera, itsTurbo));
+          }
+          }
+          
+          // If process() did not throw, no need to sleep:
           dosleep = false;
         }
-        catch (...)
-        {
-          // Report exceptions to video if desired: We have to be extra careful here because the exception might have
-          // been called by the input frame (camera not streaming) or the output frame (gadget not streaming), in
-          // addition to exceptions thrown by the module:
-          if (itsCurrentMapping.ofmt && itsVideoErrors.load())
-          {
-            try
-            {
-              // If the module threw before get() or after send() on the output frame, get a buffer from the gadget:
-              if (itsVideoErrorImage.valid() == false)
-                itsGadget->get(itsVideoErrorImage); // could throw when streamoff
-          
-              // Report module exception to serlog and get it back as a string:
-              std::string errstr = jevois::warnAndIgnoreException();
-          
-              // Draw the error message into our video frame:
-              jevois::drawErrorImage(errstr, itsVideoErrorImage);
-            }
-            catch (...) { jevois::warnAndIgnoreException(); }
-        
-            try
-            {
-              // Send the error image over USB:
-              if (itsVideoErrorImage.valid()) itsGadget->send(itsVideoErrorImage); // could throw if gadget stream off
-            }
-            catch (...) { jevois::warnAndIgnoreException(); }
-        
-            // Invalidate the error image so it is clean for the next frame:
-            itsVideoErrorImage.invalidate();
-          }
-          else
-          {
-            // Report module exception to serlog, and ignore:
-            jevois::warnAndIgnoreException();
-          }
-        }
+        catch (...) { reportError(); }
 
         // For standard modules, indicate frame start stop if user wants it:
         if (stdmod) stdmod->sendSerialMarkStop();
@@ -817,7 +1061,7 @@ void jevois::Engine::mainLoop()
     if (dosleep)
     {
       LDEBUG("No processing module loaded or not streaming... Sleeping...");
-      std::this_thread::sleep_for(std::chrono::milliseconds(50));
+      std::this_thread::sleep_for(std::chrono::milliseconds(25));
     }
 
     // Serial input handling. Note that readSome() and writeString() on the serial could throw. The code below is
@@ -831,7 +1075,6 @@ void jevois::Engine::mainLoop()
         if (s->readSome(str))
         {
           JEVOIS_TIMED_LOCK(itsMtx);
-
 
           // If the command starts with our hidden command prefix, set the prefix, otherwise clear it:
           if (jevois::stringStartsWith(str, JEVOIS_JVINV_PREFIX))
@@ -863,12 +1106,13 @@ void jevois::Engine::mainLoop()
           }
           
           // If success, let user know:
-          if (success && quietcmd::get() == false) s->writeString(pfx, "OK");
+          if (success && quietcmd::get() == false && itsShellMode == false) s->writeString(pfx, "OK");
         }
       }
       catch (...) { jevois::warnAndIgnoreException(); }
     }
   }
+  return ret;
 }
 
 // ####################################################################################################
@@ -881,10 +1125,9 @@ void jevois::Engine::sendSerial(std::string const & str, bool islog)
     if (itsNumSerialSent.load() >= slim) return; // limit reached, message dropped
     ++itsNumSerialSent; // increment number of messages sent. It is reset in the main loop on each new frame.
   }
-  
+
   // Decide where to send this message based on the value of islog:
   jevois::engine::SerPort p = islog ? serlog::get() : serout::get();
-
   switch (p)
   {
   case jevois::engine::SerPort::None:
@@ -907,6 +1150,62 @@ void jevois::Engine::sendSerial(std::string const & str, bool islog)
         try { s->writeString(str); } catch (...) { jevois::warnAndIgnoreException(); }
     break;
   }
+
+#ifdef JEVOIS_PRO
+  // If we did not send to All (which includes the GUI), check whether the GUI wants it too:
+  if (itsGUIhelper && ((islog && itsGUIhelper->serlogEnabled()) || (!islog && itsGUIhelper->seroutEnabled())))
+    for (auto & s : itsSerials)
+      if (s->type() == jevois::UserInterface::Type::GUI)
+        try { s->writeString(str); } catch (...) { jevois::warnAndIgnoreException(); }
+#endif
+}
+
+// ####################################################################################################
+void jevois::Engine::reportError(std::string const & err)
+{
+#ifdef JEVOIS_PRO
+  // If using a GUI, report error to GUI:
+  if (itsGUIhelper)
+  {
+    if (itsGUIhelper->frameStarted() == false) { unsigned short w, h; itsGUIhelper->startFrame(w, h); }
+    if (err.empty()) itsGUIhelper->reportError(jevois::warnAndIgnoreException());
+    else itsGUIhelper->reportError(err);
+    itsGUIhelper->endFrame();
+  }
+  else
+#endif
+  // Report exceptions to video if desired: We have to be extra careful here because the exception might have
+  // been called by the input frame (camera not streaming) or the output frame (gadget not streaming), in
+  // addition to exceptions thrown by the module:
+  if (itsCurrentMapping.ofmt != 0 && itsCurrentMapping.ofmt != JEVOISPRO_FMT_GUI && itsVideoErrors.load())
+  {
+    try
+    {
+      // If the module threw before get() or after send() on the output frame, get a buffer from the gadget:
+      if (itsVideoErrorImage.valid() == false) itsGadget->get(itsVideoErrorImage); // could throw if streamoff
+      
+      // Draw the error message into our video frame:
+      if (err.empty()) jevois::drawErrorImage(jevois::warnAndIgnoreException(), itsVideoErrorImage);
+      else jevois::drawErrorImage(err, itsVideoErrorImage);
+    }
+    catch (...) { jevois::warnAndIgnoreException(); }
+    
+    try
+    {
+      // Send the error image over USB:
+      if (itsVideoErrorImage.valid()) itsGadget->send(itsVideoErrorImage); // could throw if gadget stream off
+    }
+    catch (...) { jevois::warnAndIgnoreException(); }
+    
+    // Invalidate the error image so it is clean for the next frame:
+    itsVideoErrorImage.invalidate();
+  }
+  else
+  {
+    // Report module exception to serlog, and ignore:
+    if (err.empty()) jevois::warnAndIgnoreException();
+    else LERROR(err);
+  }
 }
 
 // ####################################################################################################
@@ -914,75 +1213,24 @@ size_t jevois::Engine::frameNum() const
 { return itsFrame; }
 
 // ####################################################################################################
-void jevois::Engine::writeCamRegister(unsigned short reg, unsigned short val)
-{
-  itsCamera->writeRegister(reg, val);
-}
-// ####################################################################################################
-unsigned short jevois::Engine::readCamRegister(unsigned short reg)
-{
-  return itsCamera->readRegister(reg);
-}
+std::shared_ptr<jevois::Module> jevois::Engine::module() const
+{ return itsModule; }
 
 // ####################################################################################################
-void jevois::Engine::writeIMUregister(unsigned short reg, unsigned short val)
-{
-  itsCamera->writeIMUregister(reg, val);
-}
+std::shared_ptr<jevois::IMU> jevois::Engine::imu() const
+{ return itsIMU; }
 
 // ####################################################################################################
-unsigned short jevois::Engine::readIMUregister(unsigned short reg)
-{
-  return itsCamera->readIMUregister(reg);
-}
-
-// ####################################################################################################
-void jevois::Engine::writeIMUregisterArray(unsigned short reg, unsigned char const * vals, size_t num)
-{
-  itsCamera->writeIMUregisterArray(reg, vals, num);
-}
-
-// ####################################################################################################
-void jevois::Engine::readIMUregisterArray(unsigned short reg, unsigned char * vals, size_t num)
-{
-  itsCamera->readIMUregisterArray(reg, vals, num);
-}
-
-// ####################################################################################################
-void jevois::Engine::writeDMPregister(unsigned short reg, unsigned short val)
-{
-  itsCamera->writeDMPregister(reg, val);
-}
-
-// ####################################################################################################
-unsigned short jevois::Engine::readDMPregister(unsigned short reg)
-{
-  return itsCamera->readDMPregister(reg);
-}
-
-// ####################################################################################################
-void jevois::Engine::writeDMPregisterArray(unsigned short reg, unsigned char const * vals, size_t num)
-{
-  itsCamera->writeDMPregisterArray(reg, vals, num);
-}
-
-// ####################################################################################################
-void jevois::Engine::readDMPregisterArray(unsigned short reg, unsigned char * vals, size_t num)
-{
-  itsCamera->readDMPregisterArray(reg, vals, num);
-}
+std::shared_ptr<jevois::Camera> jevois::Engine::camera() const
+{ return std::dynamic_pointer_cast<jevois::Camera>(itsCamera); }
 
 // ####################################################################################################
 jevois::VideoMapping const & jevois::Engine::getCurrentVideoMapping() const
-{
-  return itsCurrentMapping;
-}
+{ return itsCurrentMapping; }
 
 // ####################################################################################################
 size_t jevois::Engine::numVideoMappings() const
-{
-  return itsMappings.size();
-}
+{ return itsMappings.size(); }
 
 // ####################################################################################################
 jevois::VideoMapping const & jevois::Engine::getVideoMapping(size_t idx) const
@@ -1033,6 +1281,13 @@ size_t jevois::Engine::getDefaultVideoMappingIdx() const
 { return itsDefaultMappingIdx; }
 
 // ####################################################################################################
+void jevois::Engine::foreachVideoMapping(std::function<void(jevois::VideoMapping const & m)> && func)
+{
+  for (jevois::VideoMapping const & m : itsMappings)
+    try { func(m); } catch (...) { jevois::warnAndIgnoreException(); }
+}
+
+// ####################################################################################################
 jevois::VideoMapping const &
 jevois::Engine::findVideoMapping(unsigned int oformat, unsigned int owidth, unsigned int oheight,
                                  float oframespersec) const
@@ -1042,6 +1297,30 @@ jevois::Engine::findVideoMapping(unsigned int oformat, unsigned int owidth, unsi
 
   LFATAL("Could not find mapping for output format " << jevois::fccstr(oformat) << ' ' <<
          owidth << 'x' << oheight << " @ " << oframespersec << " fps");
+}
+
+// ####################################################################################################
+void jevois::Engine::foreachCamCtrl(std::function<void(struct v4l2_queryctrl & qc, std::set<int> & doneids)> && func)
+{
+  struct v4l2_queryctrl qc = { }; std::set<int> doneids;
+  for (int cls = V4L2_CTRL_CLASS_USER; cls <= V4L2_CTRL_CLASS_DETECT; cls += 0x10000)
+  {
+    // Enumerate all controls in this class. Looks like there is some spillover between V4L2 classes in the V4L2
+    // enumeration process, we end up with duplicate controls if we try to enumerate all the classes. Hence the
+    // doneids set to keep track of the ones already reported:
+    qc.id = cls | 0x900; unsigned int old_id;
+    while (true)
+    {
+      qc.id |= V4L2_CTRL_FLAG_NEXT_CTRL; old_id = qc.id; bool failed = false;
+      try { func(qc, doneids); } catch (...) { failed = true; }
+      
+      // The camera kernel driver is supposed to pass down the next valid control if the requested one is not
+      // found, but some drivers do not honor that, so let's move on to the next control manually if needed:
+      qc.id |= V4L2_CTRL_FLAG_NEXT_CTRL;
+      if (qc.id == old_id) { ++qc.id; if (qc.id > 100 + (cls | 0x900 | V4L2_CTRL_FLAG_NEXT_CTRL)) break; }
+      else if (failed) break;
+    }
+  }
 }
 
 // ####################################################################################################
@@ -1237,7 +1516,7 @@ std::string jevois::Engine::camCtrlInfo(struct v4l2_queryctrl & qc, std::set<int
   return ss.str();
 }
 
-#ifdef JEVOIS_PLATFORM
+#ifdef JEVOIS_PLATFORM_A33
 // ####################################################################################################
 void jevois::Engine::startMassStorageMode()
 {
@@ -1269,21 +1548,42 @@ void jevois::Engine::stopMassStorageMode()
   LINFO("JeVois virtual USB drive ejected by host -- REBOOTING");
   reboot();
 }
+#endif
 
 // ####################################################################################################
 void jevois::Engine::reboot()
 {
   if (std::system("sync")) LERROR("Disk sync failed -- IGNORED");
+  if (std::system("sync")) LERROR("Disk sync failed -- IGNORED");
+#ifdef JEVOIS_PLATFORM_A33
   itsCheckingMassStorage.store(false);
+#endif
   itsRunning.store(false);
 
+#ifdef JEVOIS_PLATFORM_A33
   // Hard reset to avoid possible hanging during module unload, etc:
   if ( ! std::ofstream("/proc/sys/kernel/sysrq").put('1')) LERROR("Cannot trigger hard reset -- please unplug me!");
   if ( ! std::ofstream("/proc/sysrq-trigger").put('s')) LERROR("Cannot trigger hard reset -- please unplug me!");
   if ( ! std::ofstream("/proc/sysrq-trigger").put('b')) LERROR("Cannot trigger hard reset -- please unplug me!");
-  std::terminate();
-}
 #endif
+
+  this->quit();
+  //std::terminate();
+}
+
+// ####################################################################################################
+void jevois::Engine::quit()
+{
+  // must be locked, camera and gadget must exist:
+  itsGadget->abortStream();
+  itsCamera->abortStream();
+  itsStreaming.store(false);
+  itsGadget->streamOff();
+  itsCamera->streamOff();
+  itsRunning.store(false);
+
+  //std::terminate();
+}
 
 // ####################################################################################################
 void jevois::Engine::cmdInfo(std::shared_ptr<UserInterface> s, bool showAll, std::string const & pfx)
@@ -1339,17 +1639,25 @@ void jevois::Engine::cmdInfo(std::shared_ptr<UserInterface> s, bool showAll, std
     s->writeString(pfx, "fileput <filepath> - put a file from the host to JeVois. Use with caution!");
   }
   
-#ifdef JEVOIS_PLATFORM
+#ifdef JEVOIS_PLATFORM_A33
   s->writeString(pfx, "usbsd - export the JEVOIS partition of the microSD card as a virtual USB drive");
 #endif
   s->writeString(pfx, "sync - commit any pending data write to microSD");
   s->writeString(pfx, "date [date and time] - get or set the system date and time");
 
-  s->writeString(pfx, "shell <string> - execute <string> as a shell command. Use with caution!");
+  s->writeString(pfx, "shell <string> - execute <string> as a Linux shell command. Use with caution!");
+  s->writeString(pfx, "shellstart - execute all subsequent commands as Linux shell commands. Use with caution!");
+  s->writeString(pfx, "shellstop - stop executing all subsequent commands as Linux shell commands.");
 
+#ifdef JEVOIS_PRO
+  s->writeString(pfx, "dnnget <key> - download and install a DNN from JeVois Model Converter");
+#endif
+  
 #ifdef JEVOIS_PLATFORM
   s->writeString(pfx, "restart - restart the JeVois smart camera");
-#else
+#endif
+
+#ifndef JEVOIS_PLATFORM_A33
   s->writeString(pfx, "quit - quit this program");
 #endif
 }
@@ -1370,6 +1678,17 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
   // itsMtx should be locked by caller
 
   std::string errmsg;
+
+  // If we are in shell mode, pass any command to the shell except for 'shellstop':
+  if (itsShellMode)
+  {
+    if (str == "shellstop") { itsShellMode = false; return true; }
+    
+    std::string ret = jevois::system(str, true);
+    std::vector<std::string> rvec = jevois::split(ret, "\n");
+    for (std::string const & r : rvec) s->writeString(pfx, r);
+    return true;
+  }
   
   // Note: ModemManager on Ubuntu sends this on startup, kill ModemManager to avoid:
   // 41 54 5e 53 51 50 4f 52 54 3f 0d 41 54 0d 41 54 0d 41 54 0d 7e 00 78 f0 7e 7e 00 78 f0 7e
@@ -1439,27 +1758,11 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
       s->writeString(pfx, "AVAILABLE CAMERA CONTROLS:");
       s->writeString(pfx, "");
 
-      struct v4l2_queryctrl qc = { }; std::set<int> doneids;
-      for (int cls = V4L2_CTRL_CLASS_USER; cls <= V4L2_CTRL_CLASS_DETECT; cls += 0x10000)
-      {
-        // Enumerate all controls in this class. Looks like there is some spillover between V4L2 classes in the V4L2
-        // enumeration process, we end up with duplicate controls if we try to enumerate all the classes. Hence the
-        // doneids set to keep track of the ones already reported:
-        qc.id = cls | 0x900; unsigned int old_id;
-        while (true)
-        {
-          qc.id |= V4L2_CTRL_FLAG_NEXT_CTRL; old_id = qc.id; bool failed = false;
-          try { std::string hlp = camCtrlHelp(qc, doneids); if (hlp.empty() == false) s->writeString(pfx, hlp); }
-          catch (...) { failed = true; }
-
-          // The camera kernel driver is supposed to pass down the next valid control if the requested one is not
-          // found, but some drivers do not honor that, so let's move on to the next control manually if needed:
-          qc.id |= V4L2_CTRL_FLAG_NEXT_CTRL;
-          if (qc.id == old_id) { ++qc.id; if (qc.id > 100 + (cls | 0x900 | V4L2_CTRL_FLAG_NEXT_CTRL)) break; }
-          else if (failed) break;
-        }
-      }
-
+      foreachCamCtrl([this,&pfx,&s](struct v4l2_queryctrl & qc, std::set<int> & doneids)
+                     {
+                       std::string hlp = camCtrlHelp(qc, doneids);
+                       if (hlp.empty() == false) s->writeString(pfx, hlp);
+                     });
       return true;
     }
 
@@ -1467,27 +1770,11 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
     if (cmd == "caminfo")
     {
       // Machine-readable list of camera parameters:
-      struct v4l2_queryctrl qc = { }; std::set<int> doneids;
-      for (int cls = V4L2_CTRL_CLASS_USER; cls <= V4L2_CTRL_CLASS_DETECT; cls += 0x10000)
-      {
-        // Enumerate all controls in this class. Looks like there is some spillover between V4L2 classes in the V4L2
-        // enumeration process, we end up with duplicate controls if we try to enumerate all the classes. Hence the
-        // doneids set to keep track of the ones already reported:
-        qc.id = cls | 0x900; unsigned int old_id;
-        while (true)
-        {
-          qc.id |= V4L2_CTRL_FLAG_NEXT_CTRL; old_id = qc.id; bool failed = false;
-          try { std::string hlp = camCtrlInfo(qc, doneids); if (hlp.empty() == false) s->writeString(pfx, hlp); }
-          catch (...) { failed = true; }
-
-          // The camera kernel driver is supposed to pass down the next valid control if the requested one is not
-          // found, but some drivers do not honor that, so let's move on to the next control manually if needed:
-          qc.id |= V4L2_CTRL_FLAG_NEXT_CTRL;
-          if (qc.id == old_id) { ++qc.id; if (qc.id > 100 + (cls | 0x900 | V4L2_CTRL_FLAG_NEXT_CTRL)) break; }
-          else if (failed) break;
-        }
-      }
-
+      foreachCamCtrl([this,&pfx,&s](struct v4l2_queryctrl & qc, std::set<int> & doneids)
+                     {
+                       std::string hlp = camCtrlInfo(qc, doneids);
+                       if (hlp.empty() == false) s->writeString(pfx, hlp);
+                     });
       return true;
     }
 
@@ -1677,12 +1964,17 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
     {
       if (camreg::get())
       {
-        // Read register and value as strings, then std::stoi to convert to int, supports 0x (and 0 for octal, caution)
-        std::istringstream ss(rem); std::string reg, val; ss >> reg >> val;
-        itsCamera->writeRegister(std::stoi(reg, nullptr, 0), std::stoi(val, nullptr, 0));
-        return true;
+        auto cam = std::dynamic_pointer_cast<jevois::Camera>(itsCamera);
+        if (cam)
+        {
+          // Read register and value as strings, then std::stoi to int, supports 0x (and 0 for octal, caution)
+          std::istringstream ss(rem); std::string reg, val; ss >> reg >> val;
+          cam->writeRegister(std::stoi(reg, nullptr, 0), std::stoi(val, nullptr, 0));
+          return true;
+        }
+        else errmsg = "Not using a camera for video input";
       }
-      errmsg = "Access to camera registers is disabled, enable with: setpar camreg true";
+      else errmsg = "Access to camera registers is disabled, enable with: setpar camreg true";
     }
 
     // ----------------------------------------------------------------------------------------------------
@@ -1690,101 +1982,126 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
     {
       if (camreg::get())
       {
-        unsigned int val = itsCamera->readRegister(std::stoi(rem, nullptr, 0));
-        std::ostringstream os; os << std::hex << val;
-        s->writeString(pfx, os.str());
-        return true;
+        auto cam = std::dynamic_pointer_cast<jevois::Camera>(itsCamera);
+        if (cam)
+        {
+          unsigned int val = cam->readRegister(std::stoi(rem, nullptr, 0));
+          std::ostringstream os; os << std::hex << val;
+          s->writeString(pfx, os.str());
+          return true;
+        }
+        else errmsg = "Not using a camera for video input";
       }
-      errmsg = "Access to camera registers is disabled, enable with: setpar camreg true";
+      else errmsg = "Access to camera registers is disabled, enable with: setpar camreg true";
     }
 
     // ----------------------------------------------------------------------------------------------------
     if (cmd == "setimureg")
     {
-      if (camreg::get())
+      if (imureg::get())
       {
-        // Read register and value as strings, then std::stoi to convert to int, supports 0x (and 0 for octal, caution)
-        std::istringstream ss(rem); std::string reg, val; ss >> reg >> val;
-        itsCamera->writeIMUregister(std::stoi(reg, nullptr, 0), std::stoi(val, nullptr, 0));
-        return true;
+        if (itsIMU)
+        {
+          // Read register and value as strings, then std::stoi to int, supports 0x (and 0 for octal, caution)
+          std::istringstream ss(rem); std::string reg, val; ss >> reg >> val;
+          itsIMU->writeRegister(std::stoi(reg, nullptr, 0), std::stoi(val, nullptr, 0));
+          return true;
+        }
+        else errmsg = "No IMU driver loaded";
       }
-      errmsg = "Access to camera's IMU registers is disabled, enable with: setpar camreg true";
+      else errmsg = "Access to IMU registers is disabled, enable with: setpar imureg true";
     }
-
+    
     // ----------------------------------------------------------------------------------------------------
     if (cmd == "getimureg")
     {
-      if (camreg::get())
+      if (imureg::get())
       {
-        unsigned int val = itsCamera->readIMUregister(std::stoi(rem, nullptr, 0));
-        std::ostringstream os; os << std::hex << val;
-        s->writeString(pfx, os.str());
-        return true;
+        if (itsIMU)
+        {
+          unsigned int val = itsIMU->readRegister(std::stoi(rem, nullptr, 0));
+          std::ostringstream os; os << std::hex << val;
+          s->writeString(pfx, os.str());
+          return true;
+        }
+        else errmsg = "No IMU driver loaded";
       }
-      errmsg = "Access to camera's IMU registers is disabled, enable with: setpar camreg true";
+      else errmsg = "Access to IMU registers is disabled, enable with: setpar imureg true";
     }
     
     // ----------------------------------------------------------------------------------------------------
     if (cmd == "setimuregs")
     {
-      if (camreg::get())
+      if (imureg::get())
       {
-        // Read register and value as strings, then std::stoi to convert to int, supports 0x (and 0 for octal, caution)
-        std::vector<std::string> v = jevois::split(rem);
-        if (v.size() < 3) errmsg = "Malformed arguments, need at least 3"; 
-        else
+        if (itsIMU)
         {
-          unsigned short reg = std::stoi(v[0], nullptr, 0);
-          size_t num = std::stoi(v[1], nullptr, 0);
-          if (num > 32) errmsg = "Maximum transfer size is 32 bytes";
-          else if (num != v.size() - 2) errmsg = "Incorrect number of data bytes, should pass " + v[1] + " values.";
+          // Read register and value as strings, then std::stoi to int, supports 0x (and 0 for octal, caution)
+          std::vector<std::string> v = jevois::split(rem);
+          if (v.size() < 3) errmsg = "Malformed arguments, need at least 3"; 
           else
           {
-            unsigned char data[32];
-            for (size_t i = 2; i < v.size(); ++i) data[i-2] = std::stoi(v[i], nullptr, 0) & 0xff;
-            
-            itsCamera->writeIMUregisterArray(reg, data, num);
-            return true;
+            unsigned short reg = std::stoi(v[0], nullptr, 0);
+            size_t num = std::stoi(v[1], nullptr, 0);
+            if (num > 32) errmsg = "Maximum transfer size is 32 bytes";
+            else if (num != v.size() - 2) errmsg = "Incorrect number of data bytes, should pass " + v[1] + " values.";
+            else
+            {
+              unsigned char data[32];
+              for (size_t i = 2; i < v.size(); ++i) data[i-2] = std::stoi(v[i], nullptr, 0) & 0xff;
+              
+              itsIMU->writeRegisterArray(reg, data, num);
+              return true;
+            }
           }
         }
+        else errmsg = "No IMU driver loaded";
       }
-      else errmsg = "Access to camera's IMU registers is disabled, enable with: setpar camreg true";
+      else errmsg = "Access to IMU registers is disabled, enable with: setpar imureg true";
     }
 
     // ----------------------------------------------------------------------------------------------------
     if (cmd == "getimuregs")
     {
-      if (camreg::get())
+      if (imureg::get())
       {
-        std::istringstream ss(rem); std::string reg, num; ss >> reg >> num;
-        int n = std::stoi(num, nullptr, 0);
-
-        if (n > 32) errmsg = "Maximum transfer size is 32 bytes";
-        else
+        if (itsIMU)
         {
-          unsigned char data[32];
-          itsCamera->readIMUregisterArray(std::stoi(reg, nullptr, 0), data, n);
-
-          std::ostringstream os; os << std::hex;
-          for (int i = 0; i < n; ++i) os << (unsigned int)(data[i]) << ' ';
-          s->writeString(pfx, os.str());
-          return true;
+          std::istringstream ss(rem); std::string reg, num; ss >> reg >> num;
+          int n = std::stoi(num, nullptr, 0);
+          
+          if (n > 32) errmsg = "Maximum transfer size is 32 bytes";
+          else
+          {
+            unsigned char data[32];
+            itsIMU->readRegisterArray(std::stoi(reg, nullptr, 0), data, n);
+            
+            std::ostringstream os; os << std::hex;
+            for (int i = 0; i < n; ++i) os << (unsigned int)(data[i]) << ' ';
+            s->writeString(pfx, os.str());
+            return true;
+          }
         }
+        else errmsg = "No IMU driver loaded";
       }
-      else errmsg = "Access to camera's IMU registers is disabled, enable with: setpar camreg true";
+      else errmsg = "Access to IMU registers is disabled, enable with: setpar imureg true";
     }
     
     // ----------------------------------------------------------------------------------------------------
     if (cmd == "setdmpreg")
     {
-      if (camreg::get())
+      if (imureg::get())
       {
-        // Read register and value as strings, then std::stoi to convert to int, supports 0x (and 0 for octal, caution)
-        std::istringstream ss(rem); std::string reg, val; ss >> reg >> val;
-        itsCamera->writeDMPregister(std::stoi(reg, nullptr, 0), std::stoi(val, nullptr, 0));
-        return true;
+        if (itsIMU)
+        {
+          // Read register and value as strings, then std::stoi to int, supports 0x (and 0 for octal, caution)
+          std::istringstream ss(rem); std::string reg, val; ss >> reg >> val;
+          itsIMU->writeDMPregister(std::stoi(reg, nullptr, 0), std::stoi(val, nullptr, 0));
+          return true;
+        }
+        else errmsg = "No IMU driver loaded";
       }
-      errmsg = "Access to camera's DMP registers is disabled, enable with: setpar camreg true";
+      else errmsg = "Access to IMU registers is disabled, enable with: setpar imureg true";
     }
 
     // ----------------------------------------------------------------------------------------------------
@@ -1792,12 +2109,16 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
     {
       if (camreg::get())
       {
-        unsigned int val = itsCamera->readDMPregister(std::stoi(rem, nullptr, 0));
-        std::ostringstream os; os << std::hex << val;
-        s->writeString(pfx, os.str());
-        return true;
+        if (itsIMU)
+        {
+          unsigned int val = itsIMU->readDMPregister(std::stoi(rem, nullptr, 0));
+          std::ostringstream os; os << std::hex << val;
+          s->writeString(pfx, os.str());
+          return true;
+        }
+        else errmsg = "No IMU driver loaded";
       }
-      errmsg = "Access to camera's DMP registers is disabled, enable with: setpar camreg true";
+      else errmsg = "Access to IMU registers is disabled, enable with: setpar imureg true";
     }
     
     // ----------------------------------------------------------------------------------------------------
@@ -1805,51 +2126,59 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
     {
       if (camreg::get())
       {
-        // Read register and value as strings, then std::stoi to convert to int, supports 0x (and 0 for octal, caution)
-        std::vector<std::string> v = jevois::split(rem);
-        if (v.size() < 3) errmsg = "Malformed arguments, need at least 3"; 
-        else
+        if (itsIMU)
         {
-          unsigned short reg = std::stoi(v[0], nullptr, 0);
-          size_t num = std::stoi(v[1], nullptr, 0);
-          if (num > 32) errmsg = "Maximum transfer size is 32 bytes";
-          else if (num != v.size() - 2) errmsg = "Incorrect number of data bytes, should pass " + v[1] + " values.";
+          // Read register and value as strings, then std::stoi to int, supports 0x (and 0 for octal, caution)
+          std::vector<std::string> v = jevois::split(rem);
+          if (v.size() < 3) errmsg = "Malformed arguments, need at least 3"; 
           else
           {
-            unsigned char data[32];
-            for (size_t i = 2; i < v.size(); ++i) data[i-2] = std::stoi(v[i], nullptr, 0) & 0xff;
-            
-            itsCamera->writeDMPregisterArray(reg, data, num);
-            return true;
+            unsigned short reg = std::stoi(v[0], nullptr, 0);
+            size_t num = std::stoi(v[1], nullptr, 0);
+            if (num > 32) errmsg = "Maximum transfer size is 32 bytes";
+            else if (num != v.size() - 2) errmsg = "Incorrect number of data bytes, should pass " + v[1] + " values.";
+            else
+            {
+              unsigned char data[32];
+              for (size_t i = 2; i < v.size(); ++i) data[i-2] = std::stoi(v[i], nullptr, 0) & 0xff;
+              
+              itsIMU->writeDMPregisterArray(reg, data, num);
+              return true;
+            }
           }
         }
+        else errmsg = "No IMU driver loaded";
       }
-      else errmsg = "Access to camera's DMP registers is disabled, enable with: setpar camreg true";
+      else errmsg = "Access to IMU registers is disabled, enable with: setpar imureg true";
     }
 
     // ----------------------------------------------------------------------------------------------------
     if (cmd == "getdmpregs")
     {
-      if (camreg::get())
+      if (imureg::get())
       {
-        std::istringstream ss(rem); std::string reg, num; ss >> reg >> num;
-        int n = std::stoi(num, nullptr, 0);
-
-        if (n > 32) errmsg = "Maximum transfer size is 32 bytes";
-        else
+        if (itsIMU)
         {
-          unsigned char data[32];
-          itsCamera->readDMPregisterArray(std::stoi(reg, nullptr, 0), data, n);
-
-          std::ostringstream os; os << std::hex;
-          for (int i = 0; i < n; ++i) os << (unsigned int)(data[i]) << ' ';
-          s->writeString(pfx, os.str());
-          return true;
+          std::istringstream ss(rem); std::string reg, num; ss >> reg >> num;
+          int n = std::stoi(num, nullptr, 0);
+          
+          if (n > 32) errmsg = "Maximum transfer size is 32 bytes";
+          else
+          {
+            unsigned char data[32];
+            itsIMU->readDMPregisterArray(std::stoi(reg, nullptr, 0), data, n);
+            
+            std::ostringstream os; os << std::hex;
+            for (int i = 0; i < n; ++i) os << (unsigned int)(data[i]) << ' ';
+            s->writeString(pfx, os.str());
+            return true;
+          }
         }
+        else errmsg = "No IMU driver loaded";
       }
-      else errmsg = "Access to camera's DMP registers is disabled, enable with: setpar camreg true";
+      else errmsg = "Access to IMU registers is disabled, enable with: setpar imureg true";
     }
-
+    
     // ----------------------------------------------------------------------------------------------------
     if (cmd == "listmappings")
     {
@@ -1912,7 +2241,7 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
     }
 
     // ----------------------------------------------------------------------------------------------------
-    if (itsCurrentMapping.ofmt == 0 || itsManualStreamon)
+    if (itsCurrentMapping.ofmt == 0 || itsCurrentMapping.ofmt == JEVOISPRO_FMT_GUI || itsManualStreamon)
     {
       if (cmd == "streamon")
       {
@@ -1959,7 +2288,7 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
     }
 
     // ----------------------------------------------------------------------------------------------------
-#ifdef JEVOIS_PLATFORM
+#ifdef JEVOIS_PLATFORM_A33
     if (cmd == "usbsd")
     {
       if (itsStreaming.load())
@@ -2010,6 +2339,53 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
     }
 
     // ----------------------------------------------------------------------------------------------------
+    if (cmd == "shellstart")
+    {
+      itsShellMode = true;
+      return true;
+      // note: shellstop is handled above
+    }
+
+#ifdef JEVOIS_PRO
+    // ----------------------------------------------------------------------------------------------------
+    if (cmd == "dnnget")
+    {
+      if (rem.length() != 4 || std::regex_match(rem, std::regex("^[a-zA-Z0-9]+$")) == false)
+        errmsg = "Key must be a 4-character alphanumeric string, as emailed to you by the model converter.";
+      else
+      {
+        // Download the zip using curl:
+        s->writeString(pfx, "Downloading custom DNN model " + rem + " ...");
+        std::string const zip = rem + ".zip";
+        std::string ret = jevois::system("/usr/bin/curl " JEVOIS_CUSTOM_DNN_URL "/" + zip + " -o "
+                                         JEVOIS_CUSTOM_DNN_PATH "/" + zip, true);
+        std::vector<std::string> rvec = jevois::split(ret, "\n");
+        for (std::string const & r : rvec) s->writeString(pfx, r);
+
+        // Check that the file exists:
+        std::ifstream ifs(JEVOIS_CUSTOM_DNN_PATH "/" + zip);
+        if (ifs.is_open() == false)
+          errmsg = "Failed to download. Check network connectivity and available disk space.";
+        else
+        {
+          // Unzip it:
+          s->writeString(pfx, "Unpacking custom DNN model " + rem + " ...");
+          ret = jevois::system("/usr/bin/unzip -o " JEVOIS_CUSTOM_DNN_PATH "/" + zip +
+                               " -d " JEVOIS_CUSTOM_DNN_PATH, true);
+          rvec = jevois::split(ret, "\n"); for (std::string const & r : rvec) s->writeString(pfx, r);
+
+          ret = jevois::system("/bin/rm " JEVOIS_CUSTOM_DNN_PATH "/" + zip, true);
+          rvec = jevois::split(ret, "\n"); for (std::string const & r : rvec) s->writeString(pfx, r);
+          
+          s->writeString(pfx, "Reload your model zoo for changes to take effect.");
+          
+          return true;
+        }
+      }
+    }
+#endif
+    
+    // ----------------------------------------------------------------------------------------------------
     if (cmd == "fileget")
     {
       std::shared_ptr<jevois::Serial> ser = std::dynamic_pointer_cast<jevois::Serial>(s);
@@ -2048,28 +2424,27 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
         s->writeString(pfx, "ERR Video streaming is on - you should quit your video viewer before rebooting");
 
       if (std::system("sync")) s->writeString(pfx, "ERR Disk sync failed -- IGNORED");
-      
+
+#ifdef JEVOIS_PLATFORM_A33
       // Turn off the SD storage if it is there:
       std::ofstream(JEVOIS_USBSD_SYS).put('\n'); // ignore errors
 
       if (std::system("sync")) s->writeString(pfx, "ERR Disk sync failed -- IGNORED");
+#endif
       
       // Hard reboot:
       this->reboot();
       return true;
     }
     // ----------------------------------------------------------------------------------------------------
-#else
+#endif
+
+#ifndef JEVOIS_PLATFORM_A33
     // ----------------------------------------------------------------------------------------------------
     if (cmd == "quit")
     {
       s->writeString(pfx, "Quit command received - bye-bye!");
-      itsGadget->abortStream();
-      itsCamera->abortStream();
-      itsStreaming.store(false);
-      itsGadget->streamOff();
-      itsCamera->streamOff();
-      itsRunning.store(false);
+      this->quit();
       return true;
     }
     // ----------------------------------------------------------------------------------------------------
@@ -2093,11 +2468,12 @@ void jevois::Engine::runScriptFromFile(std::string const & filename, std::shared
   std::ifstream ifs(filename);
   if (!ifs) { if (throw_no_file) LFATAL("Could not open file " << filename); else return; }
 
-  // We need to identify a serial to send any errors to, if none was given to us. Let's use the one in serlog, or, if
-  // none is specified there, the first available serial:
+  // We need to identify a serial to send any errors to, if none was given to us. Let's use the GUI console, or the
+  // serial in serlog, or, if none is specified there, the first available serial:
   if (!ser)
   {
     if (itsSerials.empty()) LFATAL("Need at least one active serial to run script");
+
     switch (serlog::get())
     {
     case jevois::engine::SerPort::Hard:
@@ -2110,6 +2486,12 @@ void jevois::Engine::runScriptFromFile(std::string const & filename, std::shared
       
     default: break;
     }
+
+#ifdef JEVOIS_PRO
+    if (itsGUIhelper)
+      for (auto & s : itsSerials) if (s->type() == jevois::UserInterface::Type::GUI) { ser = s; break; }
+#endif
+    
     if (!ser) ser = itsSerials.front();
   }
   
@@ -2151,3 +2533,140 @@ void jevois::Engine::runScriptFromFile(std::string const & filename, std::shared
     catch (...) { jevois::warnAndIgnoreException(); }
   }
 }
+
+// ####################################################################################################
+#ifdef JEVOIS_PRO
+// ####################################################################################################
+void jevois::Engine::drawCameraGUI()
+{
+  ImGui::Columns(2, "camctrl");
+
+  foreachCamCtrl([this](struct v4l2_queryctrl & qc, std::set<int> & doneids) { camCtrlGUI(qc, doneids); });
+
+  ImGui::Columns(1);
+}
+
+// ####################################################################################################
+void jevois::Engine::camCtrlGUI(struct v4l2_queryctrl & qc, std::set<int> & doneids)
+{
+  // See if we have this control:
+  itsCamera->queryControl(qc);
+  qc.id &= ~V4L2_CTRL_FLAG_NEXT_CTRL;
+
+  // If we have already done this control, just return:
+  if (doneids.find(qc.id) != doneids.end()) return; else doneids.insert(qc.id);
+  
+  // Control exists, let's also get its current value:
+  struct v4l2_control ctrl = { }; ctrl.id = qc.id;
+  itsCamera->getControl(ctrl);
+
+  // Instantiate widgets depending on control type:
+  ImGui::AlignTextToFramePadding();
+  ImGui::TextUnformatted(reinterpret_cast<char const *>(qc.name));
+  ImGui::NextColumn();
+
+  // Grey out the item if it is disabled:
+  if (qc.flags & V4L2_CTRL_FLAG_DISABLED)
+  {
+    ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+    ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+  }
+
+  // We need a unique ID for each ImGui widget, and we will use no visible widget name:
+  static char wname[16]; snprintf(wname, 16, "##c%d", ctrl.id);
+  bool reset = false; // will set to true if we want a reset button
+  
+  switch (qc.type)
+  {
+  case V4L2_CTRL_TYPE_INTEGER:
+  case V4L2_CTRL_TYPE_INTEGER_MENU:
+  {
+    // Do a slider if range is reasonable, otherwise typein:
+    long range = long(qc.maximum) - long(qc.minimum);
+    if (range > 1 && range < 5000)
+    {
+      if (ImGui::SliderInt(wname, &ctrl.value, qc.minimum, qc.maximum)) itsCamera->setControl(ctrl);
+      reset = true;
+    }
+    else
+    {
+      if (ImGui::InputInt(wname, &ctrl.value, qc.step, qc.step * 2)) itsCamera->setControl(ctrl);
+      reset = true;
+    }
+  }
+  break;
+    
+  //case V4L2_CTRL_TYPE_INTEGER64:
+  //{
+  //  double val = ctrl.value64;
+  //  if (ImGui::InputDouble(wname, &val)) { ctrl.value64 = long(val + 0.4999); itsCamera->setControl(ctrl); }
+  //}
+  //break;
+  
+  //case V4L2_CTRL_TYPE_STRING:
+  //  if (ImGui::InputText(wname, ctrl.string, sizeof(ctrl.string))) itsCamera->setControl(ctrl);
+  //  break;
+    
+  case V4L2_CTRL_TYPE_BOOLEAN:
+  {
+    bool checked = (ctrl.value != 0);
+    if (ImGui::Checkbox(wname, &checked)) { ctrl.value = checked ? 1 : 0; itsCamera->setControl(ctrl); }
+  }
+  break;
+
+      
+  case V4L2_CTRL_TYPE_BUTTON:
+    static char bname[16]; snprintf(bname, 16, "Go##%d", ctrl.id);
+    if (ImGui::Button(bname)) { ctrl.value = 1; itsCamera->setControl(ctrl); }
+    break;
+    
+  case V4L2_CTRL_TYPE_BITMASK:
+    ///ss << " K " << qc.maximum << ' ' << qc.default_value << ' ' << ctrl.value;
+    break;
+    
+  case V4L2_CTRL_TYPE_MENU:
+  {
+    struct v4l2_querymenu querymenu = { };
+    querymenu.id = qc.id;
+    char * items[qc.maximum - qc.minimum + 1];
+    
+    for (querymenu.index = qc.minimum; querymenu.index <= (unsigned int)qc.maximum; ++querymenu.index)
+    {
+      try { itsCamera->queryMenu(querymenu); } catch (...) { strncpy((char *)querymenu.name, "fixme", 32); }
+      items[querymenu.index] = new char[32];
+      strncpy(items[querymenu.index], (char const *)querymenu.name, 32);
+    }
+    
+    int idx = ctrl.value - qc.minimum;
+    if (ImGui::Combo(wname, &idx, items, qc.maximum - qc.minimum + 1))
+    { ctrl.value = qc.minimum + idx; itsCamera->setControl(ctrl); }
+    
+    for (int i = qc.minimum; i <= qc.maximum; ++i) delete [] items[i];
+  }
+  break;
+  
+  default: break;
+  }
+
+  // Add a reset button if desired:
+  if (reset)
+  {
+    static char rname[16]; snprintf(rname, 16, "Reset##%d", ctrl.id);
+    ImGui::SameLine();
+    if (ImGui::Button(rname)) { ctrl.value = qc.default_value; itsCamera->setControl(ctrl); }
+  }
+  
+  // Restore any grey out:
+  if (qc.flags & V4L2_CTRL_FLAG_DISABLED)
+  {
+    ImGui::PopItemFlag();
+    ImGui::PopStyleVar();
+  }
+
+  // Ready for next row:
+  ImGui::NextColumn();
+}
+
+// ####################################################################################################
+#endif // JEVOIS_PRO
+// ####################################################################################################

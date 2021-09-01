@@ -20,6 +20,7 @@
 #include <jevois/Core/Module.H>
 #include <jevois/Core/VideoMapping.H>
 #include <boost/python.hpp>
+#include <jevois/GPU/GUIhelper.H>
 
 namespace jevois
 {
@@ -48,7 +49,7 @@ namespace jevois
       //! Default constructor to keep boost::python happy, object is not operational
       InputFramePython() = default;
       
-      //! Construct from a regular (move-only) InputFrame that shoube be coming from Engine
+      //! Construct from a regular (move-only) InputFrame that should be be coming from Engine
       InputFramePython(InputFrame * src);
       
       //! Get the next captured camera image, thin wrapper for default arg value
@@ -57,8 +58,26 @@ namespace jevois
       //! Get the next captured camera image, thin wrapper for default arg value
       RawImage const & get() const;
 
+      //! Check whether a second input image scaled by the JeVoisPro Platform ISP is available
+      bool hasScaledImage() const;
+
       //! Indicate that user processing is done with the image previously obtained via get()
       void done() const;
+
+      //! Indicate that user processing is done with the ISP-scaled image previously obtained via get2()
+      void done2() const;
+
+      //! Get the next captured camera image, ISP-scaled second frame
+      RawImage const & get21(bool casync) const;
+
+      //! Get the next captured camera image, ISP-scaled second frame
+      RawImage const & get2() const;
+
+      //! Get the next captured camera image that is intended for processing
+      RawImage const & getp1(bool casync) const;
+
+      //! Get the next captured camera image that is intended for processing
+      RawImage const & getp() const;
 
       //! Shorthand to get the input image as a GRAY cv::Mat and release the raw buffer
       cv::Mat getCvGRAY1(bool casync) const;
@@ -84,7 +103,20 @@ namespace jevois
       //! Shorthand to get the input image as a RGBA cv::Mat and release the raw buffer
       cv::Mat getCvRGBA() const;
 
+      //! Shorthand to get the input image for processing as a GRAY cv::Mat and release the raw buffer
+      cv::Mat getCvGRAYp() const;
+
+      //! Shorthand to get the input image for processing as a BGR cv::Mat and release the raw buffer
+      cv::Mat getCvBGRp() const;
+
+      //! Shorthand to get the input image for processing as a RGB cv::Mat and release the raw buffer
+      cv::Mat getCvRGBp() const;
+
+      //! Shorthand to get the input image for processing as a RGBA cv::Mat and release the raw buffer
+      cv::Mat getCvRGBAp() const;
+      
     private:
+      friend class GUIhelperPython;
       InputFrame * itsInputFrame;
   };
   
@@ -100,7 +132,7 @@ namespace jevois
       //! Default constructor to keep boost::python happy, object is not operational
       OutputFramePython() = default;
       
-      //! Construct from a regular (move-only) OutputFrame that shoube be coming from Engine
+      //! Construct from a regular (move-only) OutputFrame that should be be coming from Engine
       OutputFramePython(OutputFrame * src);
       
       //! Get the next captured camera image
@@ -182,6 +214,109 @@ namespace jevois
     private:
       OutputFrame * itsOutputFrame;
   };
+
+#ifdef JEVOIS_PRO
+  //! Wrapper around GUIhelper to be used by Python
+  /*! This class is not intended for general use, but only for use by PythonModule. Users of this class must ensure that
+      the original GUIhelper will outlive any and all GUIhelperPython instances, since GUIhelperPython just references
+      to the source GUIhelper by unprotected raw pointer. Although the C++ object is called GUIhelperPython, we will
+      expose it to python under the name GUIhelper (see PythonSupport.C). \ingroup python */
+  class GUIhelperPython
+  {
+    public:
+      //! Default constructor to keep boost::python happy, object is not operational
+      GUIhelperPython() = default;
+      
+      //! Construct from a regular GUIhelper that should be be coming from Engine
+      GUIhelperPython(GUIhelper * src);
+
+      //! Start a new rendering frame
+      boost::python::tuple startFrame();
+
+      //! Helper to indicate that startFrame() was called, and thus endFrame() should be called
+      bool frameStarted() const;
+      
+      //! Draw a RawImage, copying pixel data to an OpenGL texture
+      boost::python::tuple drawImage(char const * name, RawImage const & img,
+                     bool noalias = false, bool isoverlay = false);
+
+      //! Draw an OpenCV image, copying pixel data to an OpenGL texture
+      boost::python::tuple drawImage1(char const * name, cv::Mat const & img, bool rgb,
+                                      bool noalias = false, bool isoverlay = false);
+
+      //! Draw the input video frame from the camera using zero-copy
+      boost::python::tuple drawInputFrame(char const * name, InputFramePython const & frame,
+                                          bool noalias = false, bool casync = false);
+
+      //! Draw the second (scaled) input video frame from the camera using zero-copy
+      boost::python::tuple drawInputFrame2(char const * name, InputFramePython const & frame,
+                                           bool noalias = false, bool casync = false);
+
+      //! Convert coordinates of a point from within a rendered image to on-screen
+      ImVec2 i2d(ImVec2 p, char const * name = nullptr);
+
+      //! Convert coordinates of a point from within a rendered image to on-screen
+      ImVec2 i2d1(float x, float y, char const * name = nullptr);
+
+      //! Convert a 2D size from within a rendered image to on-screen
+      ImVec2 i2ds(ImVec2 p, char const * name = nullptr);
+
+      //! Convert a 2D size from within a rendered image to on-screen
+      ImVec2 i2ds1(float x, float y, char const * name = nullptr);
+
+      //! Draw line over an image
+      void drawLine(float x1, float y1, float x2, float y2, ImU32 col = IM_COL32(128,255,128,255));
+      
+      //! Draw rectangular box over an image
+      void drawRect(float x1, float y1, float x2, float y2, ImU32 col = IM_COL32(128,255,128,255), bool filled = true);
+
+      //! Draw polygon over an image
+      void drawPoly(std::vector<cv::Point> const & pts, ImU32 col = IM_COL32(128,255,128,255), bool filled = true);
+      
+      //! Draw polygon over an image
+      void drawPoly1(std::vector<cv::Point2f> const & pts, ImU32 col = IM_COL32(128,255,128,255), bool filled = true);
+      
+      //! Draw polygon over an image
+      void drawPoly2(cv::Mat const & pts, ImU32 col = IM_COL32(128,255,128,255), bool filled = true);
+      
+      //! Draw circle over an image
+      void drawCircle(float x, float y, float r, ImU32 col = IM_COL32(128,255,128,255), bool filled = true);
+      
+      //! Draw text over an image
+      void drawText(float x, float y, char const * txt, ImU32 col = IM_COL32(128,255,128,255));
+      
+      //! Get coordinates of the start of a given line of text to be drawn as overlay on top of an image
+      ImVec2 iline(int line = -1, char const * name = nullptr);
+
+      //! Draw some overlay text on top of an image
+      void itext(char const * txt, ImU32 const & col = IM_COL32_BLACK_TRANS, int line = -1);
+      
+      //! Display processing and video info at bottom of screen
+      void iinfo(jevois::InputFramePython const & inframe, std::string const & fpscpu,
+                 unsigned short winw = 0, unsigned short winh = 0);
+      
+      //! Release an image
+      void releaseImage(char const * name);
+      
+      //! Release an image, second video stream
+      void releaseImage2(char const * name);
+      
+      //! Finish current frame and render it
+      void endFrame();
+
+      //! Report an error in an overlay window
+      void reportError(std::string const & err);
+
+      //! Report current exception in a modal dialog, then ignore it
+      void reportAndIgnoreException(std::string const & prefix = "");
+
+      //! Report current exception in a modal dialog, then re-throw it
+      void reportAndRethrowException(std::string const & prefix = "");
+      
+    private:
+      GUIhelper * itsGUIhelper;
+  };
+#endif
   
   //! Wrapper module to allow users to develop new modules written in Python
   /*! This wrapper module calls a process function written in Python on every frame. Note how sendSerial() is added
@@ -205,6 +340,11 @@ namespace jevois
       //! Processing function, version that receives a frame from camera and does not use USB
       virtual void process(InputFrame && inframe) override;
 
+#ifdef JEVOIS_PRO
+      //! Processing function, version that receives a frame from camera, no USB, but GUI output on JeVois-Pro
+      virtual void process(InputFrame && inframe, GUIhelper & helper);
+#endif
+      
       //! Receive a string from a serial port which contains a user command
       virtual void parseSerial(std::string const & str, std::shared_ptr<UserInterface> s) override;
 

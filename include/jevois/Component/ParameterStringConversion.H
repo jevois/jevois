@@ -25,6 +25,10 @@
 #include <vector>
 #include <opencv2/core/core.hpp> // for Point_ and Size
 
+#ifdef JEVOIS_PRO
+#include <imgui.h> // for ImColor
+#endif
+
 namespace jevois
 {
   /*! \defgroup parameterstrconv String conversions for Parameter
@@ -94,6 +98,14 @@ namespace jevois
   template <typename T>
   void paramStringToVal(std::string const & valstring, cv::Scalar_<T> & result);
 
+#ifdef JEVOIS_PRO  
+  //! Machine-readable output to a string, for use in jevois::Parameter: outputs \c R \c G \c B \c A, each 0..255
+  void paramValToString(ImColor const & val, std::string & result);
+
+  //! Machine-readable input from a string, for use in jevois::Parameter: reads \c R \c G \c B \c A, each 0..255
+  void paramStringToVal(std::string const & valstring, ImColor & result);
+#endif
+  
   //! Machine-readable output to a string, for use in jevois::Parameter: outputs [\c Key1:Value1, \c Key2:Value2, ...]
    /*! Specialization for std::map which supports nesting of other maps/vectors */
   template <typename K, typename V>

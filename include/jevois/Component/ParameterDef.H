@@ -78,7 +78,7 @@ namespace jevois
   // ######################################################################
   //! A Parameter Definition
   /*! ParameterDef is used to specify the name, description, default value, category, and optionally valid values for a
-      Parameter. The value tye of the parameter is specified by template parameter T.
+      Parameter. The value type of the parameter is specified by template parameter T.
 
       See \ref validvalues for definitions of specifications for valid values, allowing any value, values from a list,
       values in a range, values that match a regex, etc.

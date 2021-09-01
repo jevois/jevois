@@ -18,6 +18,7 @@
 #include <jevois/Debug/Log.H>
 #include <jevois/Debug/PythonException.H>
 #include <jevois/Image/RawImageOps.H>
+#include <jevois/Util/Async.H>
 #include <mutex>
 #include <iostream>
 #include <fstream>
@@ -47,6 +48,8 @@ namespace jevois
 
 void jevois::logSetEngine(Engine * e)
 { LFATAL("Cannot set Engine for logs when JeVois has been compiled with -D JEVOIS_USE_SYNC_LOG"); }
+void jevois::logEnd()
+{ LINFO("Terminating Log service"); }
 
 #else // JEVOIS_USE_SYNC_LOG
 #include <future>
@@ -65,7 +68,7 @@ namespace
 #endif
                 , itsEngine(nullptr)
       {
-        itsRunFuture = std::async(std::launch::async, &LogCore::run, this);
+        itsRunFuture = jevois::async_little(std::bind(&LogCore::run, this));
       }
 
       virtual ~LogCore()
@@ -74,10 +77,10 @@ namespace
         itsRunning = false;
         
         // Push a message so we unblock our run() thread in case the buffer was empty:
-        itsBuffer.push("Terminating Log activity");
+        itsBuffer.push("Terminating Log service");
 
         // Wait for the run() thread to complete:
-        if (itsRunFuture.valid()) try { itsRunFuture.get(); } catch (...) { jevois::warnAndIgnoreException(); }
+        JEVOIS_WAIT_GET_FUTURE(itsRunFuture);
       }
 
       void run()
@@ -101,6 +104,13 @@ namespace
         }
       }
 
+      void abort()
+      {
+        itsRunning = false;
+        // One more message to make sure our run() thread will not be stuck on pop():
+        LINFO("Terminating log facility.");
+      }
+      
       jevois::BoundedBuffer<std::string, jevois::BlockingBehavior::Block, jevois::BlockingBehavior::Block> itsBuffer;
       volatile bool itsRunning;
       std::future<void> itsRunFuture;
@@ -112,7 +122,7 @@ namespace
 }
 
 void jevois::logSetEngine(Engine * e) { LogCore::instance().itsEngine = e; }
-
+void jevois::logEnd() { LogCore::instance().abort(); jevois::logSetEngine(nullptr); }
 #endif // JEVOIS_USE_SYNC_LOG
 
 // ##############################################################################################################
@@ -180,20 +190,23 @@ namespace jevois
 }
 
 // ##############################################################################################################
-void jevois::warnAndRethrowException()
+void jevois::warnAndRethrowException(std::string const & prefix)
 {
+  std::string pfx;
+  if (prefix.empty() == false) pfx = prefix + ": ";
+  
   // great trick to get back the type of an exception caught via a catch(...), just rethrow it and catch again:
   try { throw; }
 
   catch (std::exception const & e)
   {
-    LERROR("Passing through std::exception: " << e.what());
+    LERROR(pfx << "Passing through std::exception: " << e.what());
     throw;
   }
 
   catch (boost::python::error_already_set & e)
   {
-    LERROR("Received exception from the Python interpreter:");
+    LERROR(pfx << "Received exception from the Python interpreter:");
     std::string str = jevois::getPythonExceptionString(e);
     std::vector<std::string> lines = jevois::split(str, "\\n");
     for (std::string const & li : lines) LERROR("   " << li);
@@ -202,14 +215,17 @@ void jevois::warnAndRethrowException()
   
   catch (...)
   {
-    LERROR("Passing through unknown exception");
+    LERROR(pfx << "Passing through unknown exception");
     throw;
   }
 }
 
 // ##############################################################################################################
-std::string jevois::warnAndIgnoreException()
+std::string jevois::warnAndIgnoreException(std::string const & prefix)
 {
+  std::string pfx;
+  if (prefix.empty() == false) pfx = prefix + ": ";
+
   std::vector<std::string> retvec;
 
   // great trick to get back the type of an exception caught via a catch(...), just rethrow it and catch again:
@@ -217,20 +233,20 @@ std::string jevois::warnAndIgnoreException()
 
   catch (std::exception const & e)
   {
-    retvec.push_back("Caught std::exception [" + std::string(e.what()) + ']');
+    retvec.emplace_back(pfx + "Caught std::exception [" + std::string(e.what()) + ']');
   }
 
   catch (boost::python::error_already_set & e)
   {
-    retvec.push_back("Caught exception from the Python interpreter:");
+    retvec.emplace_back(pfx + "Caught exception from the Python interpreter:");
     std::string str = jevois::getPythonExceptionString(e);
     std::vector<std::string> lines = jevois::split(str, "\\n");
-    for (std::string const & li : lines) retvec.push_back("   " + li);
+    for (std::string const & li : lines) retvec.emplace_back("   " + li);
   }
   
   catch (...)
   {
-    retvec.push_back("Caught unknown exception");
+    retvec.emplace_back(pfx + "Caught unknown exception");
   }
 
   // Write out the message:

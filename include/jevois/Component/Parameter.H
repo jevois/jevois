@@ -150,6 +150,9 @@ namespace jevois
       //! Unfreeze this parameter, it becomes read-write and will show up in the help message
       void unFreeze();
 
+      //! Alternate syntax that can be used instead of freeze()/unFreeze(), useful for programmatic freezing
+      void freeze(bool doit);
+
       //! Reset this parameter to its default value
       virtual void reset() = 0;
       

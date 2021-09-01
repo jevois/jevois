@@ -27,53 +27,15 @@ jevois::VideoInput::VideoInput(std::string const & devname, unsigned int const n
 jevois::VideoInput::~VideoInput()
 { }
 
+// ##############################################################################################################
+bool jevois::VideoInput::hasScaledImage() const
+{ throw std::runtime_error("hasScaledImage(): Second ISP-scaled camera image not available on this hardware"); }
 
 // ##############################################################################################################
-void jevois::VideoInput::writeRegister(unsigned short JEVOIS_UNUSED_PARAM(reg), unsigned short JEVOIS_UNUSED_PARAM(val))
-{ throw std::runtime_error("Operation writeRegister() not supported by VideoInput"); }
+void jevois::VideoInput::get2(RawImage & JEVOIS_UNUSED_PARAM(img))
+{ throw std::runtime_error("get2(): Second ISP-scaled camera image not available on this hardware"); }
 
 // ##############################################################################################################
-unsigned short jevois::VideoInput::readRegister(unsigned short JEVOIS_UNUSED_PARAM(reg))
-{ throw std::runtime_error("Operation readRegister() not supported by VideoInput"); }
+void jevois::VideoInput::done2(RawImage & JEVOIS_UNUSED_PARAM(img))
+{ throw std::runtime_error("done2(): Second ISP-scaled camera image not available on this hardware"); }
 
-// ##############################################################################################################
-void jevois::VideoInput::writeIMUregister(unsigned short JEVOIS_UNUSED_PARAM(reg),
-                                          unsigned short JEVOIS_UNUSED_PARAM(val))
-{ throw std::runtime_error("Operation writeIMUregister() not supported by VideoInput"); }
-
-// ##############################################################################################################
-unsigned short jevois::VideoInput::readIMUregister(unsigned short JEVOIS_UNUSED_PARAM(reg))
-{ throw std::runtime_error("Operation readIMUregister() not supported by VideoInput"); }
-
-// ##############################################################################################################
-void jevois::VideoInput::writeIMUregisterArray(unsigned short JEVOIS_UNUSED_PARAM(reg),
-                                               unsigned char const * JEVOIS_UNUSED_PARAM(vals),
-                                               size_t JEVOIS_UNUSED_PARAM(num))
-{ throw std::runtime_error("Operation writeIMUregisterArray() not supported by VideoInput"); }
-
-// ##############################################################################################################
-void jevois::VideoInput::readIMUregisterArray(unsigned short JEVOIS_UNUSED_PARAM(reg),
-                                              unsigned char * JEVOIS_UNUSED_PARAM(vals),
-                                              size_t JEVOIS_UNUSED_PARAM(num))
-{ throw std::runtime_error("Operation readIMUregisterArray() not supported by VideoInput"); }
-
-// ##############################################################################################################
-void jevois::VideoInput::writeDMPregister(unsigned short JEVOIS_UNUSED_PARAM(reg),
-                                          unsigned short JEVOIS_UNUSED_PARAM(val))
-{ throw std::runtime_error("Operation writeDMPregister() not supported by VideoInput"); }
-
-// ##############################################################################################################
-unsigned short jevois::VideoInput::readDMPregister(unsigned short JEVOIS_UNUSED_PARAM(reg))
-{ throw std::runtime_error("Operation readDMPregister() not supported by VideoInput"); }
-
-// ##############################################################################################################
-void jevois::VideoInput::writeDMPregisterArray(unsigned short JEVOIS_UNUSED_PARAM(reg),
-                                               unsigned char const * JEVOIS_UNUSED_PARAM(vals),
-                                               size_t JEVOIS_UNUSED_PARAM(num))
-{ throw std::runtime_error("Operation writeDMPregisterArray() not supported by VideoInput"); }
-
-// ##############################################################################################################
-void jevois::VideoInput::readDMPregisterArray(unsigned short JEVOIS_UNUSED_PARAM(reg),
-                                              unsigned char * JEVOIS_UNUSED_PARAM(vals),
-                                              size_t JEVOIS_UNUSED_PARAM(num))
-{ throw std::runtime_error("Operation readDMPregisterArray() not supported by VideoInput"); }

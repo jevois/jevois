@@ -1,0 +1,7 @@
+
+echo "/jevoispro/modules" > /etc/ld.so.conf.d/jevoispro.conf
+echo "/jevoispro/modules/JeVois" >> /etc/ld.so.conf.d/jevoispro.conf
+echo "/jevoispro/lib" >> /etc/ld.so.conf.d/jevoispro.conf
+echo "/jevoispro/lib/JeVois" >> /etc/ld.so.conf.d/jevoispro.conf
+
+/usr/sbin/ldconfig

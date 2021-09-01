@@ -20,56 +20,54 @@
 #include <jevois/Util/Utils.H>
 #include <fstream>
 #include <iostream>
+#include <sstream>
 
 //! Add a new mapping to videomappings.cfg skipping duplicates
 /*! This little app was created so that we ensure perfect consistency between the kernel driver and the user code by
     using exactly the same config file parsing code (in VideoMapping). */
 int main(int argc, char const* argv[])
 {
-  jevois::logLevel = LOG_CRIT;
+  jevois::logLevel = LOG_INFO;//CRIT;
 
   if (argc != 11)
     LFATAL("USAGE: jevois-add-videomapping <USBmode> <USBwidth> <USBheight> <USBfps> <CAMmode> "
            "<CAMwidth> <CAMheight> <CAMfps> <Vendor> <Module>");
 
-  // Create the new mapping. Here we are lenient and do not check for existence of the .so or .py file, as it may get
-  // installed later:
-  jevois::VideoMapping m;
-  try
-  {
-    m.ofmt = jevois::strfcc(argv[1]);
-    m.ow = std::stoi(argv[2]);
-    m.oh = std::stoi(argv[3]);
-    m.ofps = std::stof(argv[4]);
-
-    m.cfmt = jevois::strfcc(argv[5]);
-    m.cw = std::stoi(argv[6]);
-    m.ch = std::stoi(argv[7]);
-    m.cfps = std::stof(argv[8]);
-  }
-  catch (std::exception const & e) { LFATAL("Parsing error: " << e.what()); }
-  catch (...) { LFATAL("Unknown parsing error"); }
-    
-  m.vendor = argv[9];
-  m.modulename = argv[10];
+  std::string args;
+  for (int i = 1; i < argc; ++i) { args += argv[i]; args += ' '; }
+  args += "\n";
+  std::stringstream ss(args);
   
-  // Parse the videomappings.cfg file and create the mappings, do not check for .so/.py existence:
+  // Create the new mapping by parsing the command-line args. Here we are lenient and do not check for existence of the
+  // .so or .py file, as it may get installed later, and we assume GUI is available:
   size_t defidx;
+  std::vector<jevois::VideoMapping> vm =
+    jevois::videoMappingsFromStream(jevois::CameraSensor::any, ss, defidx, false, true);
+  if (vm.size() != 1)
+    LFATAL("Could not parse input args into a valid video mapping: [" << ss.str() << ']');
+  jevois::VideoMapping & m = vm[0];
+
+  // Parse the videomappings.cfg file and create the mappings, do not check for .so/.py existence, assume GUI exists:
   std::ifstream ifs(JEVOIS_ENGINE_CONFIG_FILE);
   if (ifs.is_open() == false) LFATAL("Could not open [" << JEVOIS_ENGINE_CONFIG_FILE << ']');
   std::vector<jevois::VideoMapping> mappings =
-    jevois::videoMappingsFromStream(jevois::CameraSensor::any, ifs, defidx, false);
+    jevois::videoMappingsFromStream(jevois::CameraSensor::any, ifs, defidx, false, true);
   ifs.close();
   
   // Check for match, ignoring the python field since we did not set it:
   for (jevois::VideoMapping const & mm : mappings)
-    if (m.hasSameSpecsAs(mm) && m.vendor == mm.vendor && m.modulename == mm.modulename)
+    if (m.hasSameSpecsAs(mm) && m.wdr == mm.wdr && m.vendor == mm.vendor && m.modulename == mm.modulename)
       return 0; // We found it. Nothing to add and we are done.
 
   // Not found, so add one line to videomappings.cfg with the new mapping:
   std::ofstream ofs(JEVOIS_ENGINE_CONFIG_FILE, std::ios_base::app);
   if (ofs.is_open() == false) LFATAL("Could not write to [" << JEVOIS_ENGINE_CONFIG_FILE << ']');
   ofs << std::endl << m << std::endl;
+
+  LINFO("Added [" << m.str() << "] to [" << JEVOIS_ENGINE_CONFIG_FILE << ']');
+  
+  // Terminate logger:
+  jevois::logEnd();
 
   return 0;
 }

@@ -54,12 +54,32 @@ namespace jevois
           have been allocated by the caller and will be filled in by what we receive from the device here. */
       virtual void get(RawImage & img) = 0;
 
+      //! Check whether a second input image scaled by the JeVoisPro Platform ISP is available
+      /*! Returns false unless we are on JeVois-Pro Platform and the camera format modifier jevois::CropType::CropScale
+          is currently in use. */
+      virtual bool hasScaledImage() const;
+
+      //! Get the next captured ISP-scaled secondary buffer
+      /*! On JeVois-Pro Platform only, the camera ISP can output 2 frames: 1) raw from sensor, 2) scaled by ISP. This
+          function is to access the ISP scaled frame. Throws if not JeVois-Pro Platform or the camera crop type is not
+          jevois::CropType::CropScale. Throws if we are not streaming or blocks until an image is available (has
+          been captured). The image img should have been allocated by the caller and will be filled in by what we
+          receive from the device here. Default implementation throws. */
+      virtual void get2(RawImage & img);
+
       //! Indicate that user processing is done with an image previously obtained via get()
       /*! You should call this as soon after get() as possible, once you are finished with the RawImage data so that it
           can be recycled.
 
           \note This also invalidates the image and in particular its pixel buffer! */
-      virtual void done(RawImage & img) = 0;;
+      virtual void done(RawImage & img) = 0;
+
+      //! Indicate that user processing is done with a second ISP-scaled image previously obtained via get2()
+      /*! You should call this as soon after get2() as possible, once you are finished with the RawImage data so that it
+          can be recycled. Default implementation throws.
+
+          \note This also invalidates the image and in particular its pixel buffer! */
+      virtual void done2(RawImage & img);
 
       //! Get information about a control, throw if unsupported by hardware
       /*! Caller should zero-out qc and then set the id field to the desired control id. See VIDIOC_QUERYCTRL for more
@@ -81,68 +101,6 @@ namespace jevois
 
       //! Set the video format and frame rate
       virtual void setFormat(VideoMapping const & m) = 0;
-
-      //! Write a value of one of the camera's registers
-      /*! This very low-level access is for development of optimal camera settings only and should not be used in normal
-          operation, it can crash your system. Default implementation throws a runtime_error. */
-      virtual void writeRegister(unsigned short reg, unsigned short val);
-
-      //! Read a value from one of the camera's registers
-      /*! This very low-level access is for development of optimal camera settings only and should not be used in normal
-          operation, it can crash your system. Default implementation throws a runtime_error. */
-      virtual unsigned short readRegister(unsigned short reg);
-
-      //! Write a value to one of the camera's IMU registers
-      /*! This very low-level access is for development of optimal IMU settings only and should not be used in normal
-          operation, it can crash your system. Default implementation throws a runtime_error. */
-      virtual void writeIMUregister(unsigned short reg, unsigned short val);
-
-      //! Read a value from one of the camera's IMU registers
-      /*! This very low-level access is for development of optimal IMU settings only and should not be used in normal
-          operation, it can crash your system. Default implementation throws a runtime_error. */
-      virtual unsigned short readIMUregister(unsigned short reg);
-
-      //! Write an array of values to the camera's IMU registers
-      /*! This very low-level access is for development of optimal IMU settings only and should not be used in normal
-          operation, it can crash your system. Memory for vals should have been allocated by the caller with at least
-          num bytes. num must be less than 32. Default implementation throws a runtime_error. */
-      virtual void writeIMUregisterArray(unsigned short reg, unsigned char const * vals, size_t num);
-
-      //! Read an array of values from the camera's IMU registers
-      /*! This very low-level access is for development of optimal IMU settings only and should not be used in normal
-          operation, it can crash your system. Memory for vals should have been allocated by the caller with at least
-          num bytes. num must be less than 32. Default implementation throws a runtime_error. */
-      virtual void readIMUregisterArray(unsigned short reg, unsigned char * vals, size_t num);
-
-      //! Write a value to one of the camera's DMP registers
-      /*! This very low-level access is for development of optimal DMP settings only and should not be used in normal
-          operation, it can crash your system. Note that the value will be converted to big endian, as required by the
-          DMP processor. */
-      virtual void writeDMPregister(unsigned short reg, unsigned short val);
-
-      //! Read a value from one of the camera's DMP registers
-      /*! This very low-level access is for development of optimal DMP settings only and should not be used in normal
-          operation, it can crash your system. Note that the value will be converted from big endian of DMP processor to
-          little endian of the JeVois processor.*/
-      virtual unsigned short readDMPregister(unsigned short reg);
-
-      //! Write an array of values to the camera's DMP registers
-      /*! This very low-level access is for development of optimal DMP settings only and should not be used in normal
-          operation, it can crash your system. Memory for vals should have been allocated by the caller with at least
-          num bytes. num must be less than 32. This function does not handle crossing of memory banks, so the caller
-          should segment the calls to match memory bank boundaries. Finally, this function does not perform any endian
-          conversion. Callers should be aware that the DMP is a 16-bit big endian system while the JeVois processor is
-          little endian. */
-      virtual void writeDMPregisterArray(unsigned short reg, unsigned char const * vals, size_t num);
-
-      //! Read an array of values from the camera's DMP registers
-      /*! This very low-level access is for development of optimal DMP settings only and should not be used in normal
-          operation, it can crash your system. Memory for vals should have been allocated by the caller with at least
-          num bytes. num must be less than 32. This function does not handle crossing of memory banks, so the caller
-          should segment the calls to match memory bank boundaries. Finally, this function does not perform any endian
-          conversion. Callers should be aware that the DMP is a 16-bit big endian system while the JeVois processor is
-          little endian. */
-      virtual void readDMPregisterArray(unsigned short reg, unsigned char * vals, size_t num);
 
     protected:
       std::string const itsDevName; //!< Our device or movie file name

@@ -27,6 +27,8 @@
 #include <unordered_map>
 #include <future>
 
+#include <jevois/Util/Async.H> // actually not needed here, but many derived components and modules will want to use it
+
 namespace jevois
 {
   class Manager;
@@ -49,7 +51,7 @@ namespace jevois
 
       - Finally have a look at Manager, which is a special component that is the root of a component hierarchy.
 
-      - You will then be ready to move to the next level by loking at the other elements in the documentation
+      - You will then be ready to move to the next level by looking at the other elements in the documentation
         module.
 
       \ingroup core */
@@ -436,6 +438,10 @@ namespace jevois
       virtual void paramInfo(std::shared_ptr<UserInterface> s, std::map<std::string, std::string> & categs,
 			     bool skipFrozen, std::string const & cname = "", std::string const & pfx = "");
 
+      //! Run a function on every param we hold
+      void foreachParam(std::function<void(std::string const & compname, ParameterBase * p)> func,
+                        std::string const & cname = "");
+      
       //! @}
 
       /*! @name Component path-related functions

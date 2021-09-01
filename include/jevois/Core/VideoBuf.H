@@ -32,7 +32,7 @@ namespace jevois
       //! Construct and allocate MMAP'd memory
       /*! Mostly for debugging purposes (supporting VideoDisplay), if fd is -1 then we perform a regular memory
           allocation instead of mmap. */
-      VideoBuf(int const fd, size_t const length, unsigned int offset);
+      VideoBuf(int const fd, size_t const length, unsigned int offset, int const dmafd);
 
       //! Destructor unmaps the memory
       ~VideoBuf();
@@ -52,12 +52,17 @@ namespace jevois
 
       //! Get the number of bytes used, valid only for MJPEG images
       size_t bytesUsed() const;
+
+      //! Get the dma_buf fd associated with this buffer, which was given at construction
+      int dmaFd() const;
       
+
     private:
       int const itsFd;
       size_t const itsLength;
       size_t itsBytesUsed;
       void * itsAddr;
+      int const itsDmaBufFd;
   };
   
 } // namespace jevois

@@ -42,7 +42,11 @@ namespace jevois
 
       //! End a time measurement period, report time spent if reporting interval is reached
       /*! The fps and cpu load are returned, in case users want to show this info, eg, in an overlay display. Note that
-          the values are only updated when the reporting interval is reached, and remain the same in between. */
+          the values are only updated when the reporting interval is reached, and remain the same in between. If seconds
+          is not null, it will be set to the instantaneous number of seconds between start() and stop(). */
+      std::string const & stop(double * seconds);
+
+      //! Same as the other signature of stop() except does not provide seconds, for python bindings
       std::string const & stop();
 
     private:
@@ -51,13 +55,35 @@ namespace jevois
       int const itsLogLevel;
       
       size_t itsCount;
-      std::chrono::time_point<std::chrono::high_resolution_clock> itsStartTime;
+      std::chrono::time_point<std::chrono::steady_clock> itsStartTime;
       double itsSecs, itsMinSecs, itsMaxSecs;
       std::string itsStr;
 
       rusage itsStartRusage;
-      std::chrono::time_point<std::chrono::high_resolution_clock> itsStartTimeForCpu;
+      std::chrono::time_point<std::chrono::steady_clock> itsStartTimeForCpu;
+  };
+  
+  //! Simple one-shot timer class
+  /*! This class reports the time spent between start() and stop(). Typically, this may be useful to report processing
+      time of a neural network, by rendering the string returned by stop() into the video output.  \ingroup debugging */
+  class TimerOne
+  {
+    public:
+      //! Constructor
+      TimerOne(char const * prefix);
+
+      //! Start a time measurement period
+      void start();
+
+      //! End a time measurement period, report time spent as: 'prefix: %ms (%fps)' where % is replaced by values
+      /*! If seconds is not null, it will be set to the instantaneous number of seconds between start() and stop(). */
+      std::string stop(double * seconds);
+
+      //! Same as the other signature of stop() except does not provide seconds, for python bindings
+      std::string stop();
+
+    private:
+      std::string const itsPrefix;
+      std::chrono::time_point<std::chrono::steady_clock> itsStartTime;
   };
 }
-
-      

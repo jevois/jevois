@@ -43,8 +43,9 @@ namespace jevois
   {
     public:
       //! Construct and allocate MMAP'd video buffers
-      /*! Type is the buffer type, typically V4L2_BUF_TYPE_VIDEO_CAPTURE or V4L2_BUF_TYPE_VIDEO_OUTPUT. 
-          \note name is only for debug messages, so we can differentiate camera from USB buffers. */
+      /*! Type is the buffer type, typically V4L2_BUF_TYPE_VIDEO_CAPTURE, V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE or
+          V4L2_BUF_TYPE_VIDEO_OUTPUT.  \note name is only for debug messages, so we can differentiate camera from USB
+          buffers. */
       VideoBuffers(char const * name, int const fd, v4l2_buf_type type, size_t const num = 4);
 
       //! Free the MMAP'd memory area
@@ -74,7 +75,10 @@ namespace jevois
 
       //! Queue all buffers, typically used when starting streaming on capture devices
       void qbufall();
-      
+
+      //! Queue all buffers that are not already queued except one specified
+      void qbufallbutone(size_t const index);
+     
       //! Dequeue the next captured/displayed buffer, blocks until one is available
       void dqbuf(struct v4l2_buffer & buf);
 

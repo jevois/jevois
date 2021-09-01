@@ -1,0 +1,27 @@
+include $(AQROOT)/makefile.linux.def
+
+INCLUDE +=  -I./include
+CFLAGS += $(INCLUDE)
+CFLAGS += -fPIC -shared
+
+
+LIBS += -L$(OVXLIB_DIR)/lib
+LIBS += -L$(LIB_DIR) -lm -ldl
+#############################################################################
+# Macros.
+PROGRAM = 1
+DYNAMIC      := 1
+TARGET_NAME = libnn_detect.so
+CUR_SOURCE =  ${wildcard *.c} 
+#############################################################################
+# Objects.
+OBJECTS =  ${patsubst %.c, $(OBJ_DIR)/%.o, $(CUR_SOURCE)}
+
+
+# installation directory
+INSTALL_DIR := ./
+
+################################################################################
+# Include the common makefile.
+
+include $(AQROOT)/common.target

@@ -38,10 +38,46 @@ jevois::RawImage const & jevois::InputFramePython::get() const
   return itsInputFrame->get();
 }
 
+bool jevois::InputFramePython::hasScaledImage() const
+{
+  if (itsInputFrame == nullptr) LFATAL("Internal error");
+  return itsInputFrame->hasScaledImage();
+}
+
+jevois::RawImage const & jevois::InputFramePython::get21(bool casync) const
+{
+  if (itsInputFrame == nullptr) LFATAL("Internal error");
+  return itsInputFrame->get2(casync);
+}
+
+jevois::RawImage const & jevois::InputFramePython::get2() const
+{
+  if (itsInputFrame == nullptr) LFATAL("Internal error");
+  return itsInputFrame->get2();
+}
+
+jevois::RawImage const & jevois::InputFramePython::getp1(bool casync) const
+{
+  if (itsInputFrame == nullptr) LFATAL("Internal error");
+  return itsInputFrame->getp(casync);
+}
+
+jevois::RawImage const & jevois::InputFramePython::getp() const
+{
+  if (itsInputFrame == nullptr) LFATAL("Internal error");
+  return itsInputFrame->getp();
+}
+
 void jevois::InputFramePython::done() const
 {
   if (itsInputFrame == nullptr) LFATAL("Internal error");
   itsInputFrame->done();
+}
+
+void jevois::InputFramePython::done2() const
+{
+  if (itsInputFrame == nullptr) LFATAL("Internal error");
+  itsInputFrame->done2();
 }
 
 cv::Mat jevois::InputFramePython::getCvGRAY1(bool casync) const
@@ -90,6 +126,30 @@ cv::Mat jevois::InputFramePython::getCvRGBA() const
 {
   if (itsInputFrame == nullptr) LFATAL("Internal error");
   return itsInputFrame->getCvRGBA();
+}
+
+cv::Mat jevois::InputFramePython::getCvGRAYp() const
+{
+  if (itsInputFrame == nullptr) LFATAL("Internal error");
+  return itsInputFrame->getCvGRAYp();
+}
+
+cv::Mat jevois::InputFramePython::getCvBGRp() const
+{
+  if (itsInputFrame == nullptr) LFATAL("Internal error");
+  return itsInputFrame->getCvBGRp();
+}
+
+cv::Mat jevois::InputFramePython::getCvRGBp() const
+{
+  if (itsInputFrame == nullptr) LFATAL("Internal error");
+  return itsInputFrame->getCvRGBp();
+}
+
+cv::Mat jevois::InputFramePython::getCvRGBAp() const
+{
+  if (itsInputFrame == nullptr) LFATAL("Internal error");
+  return itsInputFrame->getCvRGBAp();
 }
 
 // ####################################################################################################
@@ -218,7 +278,223 @@ void jevois::OutputFramePython::sendScaledCvRGBA(cv::Mat const & img) const
   itsOutputFrame->sendScaledCvRGBA(img);
 }
 
+// ####################################################################################################
+// ####################################################################################################
+// ####################################################################################################
+#ifdef JEVOIS_PRO
+jevois::GUIhelperPython::GUIhelperPython(GUIhelper * src) : itsGUIhelper(src)
+{ }
 
+// ####################################################################################################
+boost::python::tuple jevois::GUIhelperPython::startFrame()
+{
+  if (itsGUIhelper == nullptr) LFATAL("Internal error");
+  unsigned short w, h;
+  bool idle = itsGUIhelper->startFrame(w, h);
+  return boost::python::make_tuple(idle, w, h);
+}
+
+// ####################################################################################################
+bool jevois::GUIhelperPython::frameStarted() const
+{
+  if (itsGUIhelper == nullptr) LFATAL("Internal error");
+  return itsGUIhelper->frameStarted();
+}
+   
+// ####################################################################################################
+boost::python::tuple jevois::GUIhelperPython::drawImage(char const * name, RawImage const & img,
+                                                        bool noalias, bool isoverlay)
+{
+  if (itsGUIhelper == nullptr) LFATAL("Internal error");
+  int x = 0, y = 0; unsigned short w = 0, h = 0;
+  itsGUIhelper->drawImage(name, img, x, y, w, h, noalias, isoverlay);
+  return boost::python::make_tuple(x, y, w, h);
+}
+
+// ####################################################################################################
+boost::python::tuple jevois::GUIhelperPython::drawImage1(char const * name, cv::Mat const & img, bool rgb,
+                                                         bool noalias, bool isoverlay)
+{
+  if (itsGUIhelper == nullptr) LFATAL("Internal error");
+  int x = 0, y = 0; unsigned short w = 0, h = 0;
+  itsGUIhelper->drawImage(name, img, rgb, x, y, w, h, noalias, isoverlay);
+  return boost::python::make_tuple(x, y, w, h);
+}
+
+// ####################################################################################################
+boost::python::tuple jevois::GUIhelperPython::drawInputFrame(char const * name, InputFramePython const & frame,
+                                                             bool noalias, bool casync)
+{
+  if (itsGUIhelper == nullptr) LFATAL("Internal error");
+  int x = 0, y = 0; unsigned short w = 0, h = 0;
+  itsGUIhelper->drawInputFrame(name, *frame.itsInputFrame, x, y, w, h, noalias, casync);
+  return boost::python::make_tuple(x, y, w, h);
+}
+
+// ####################################################################################################
+boost::python::tuple jevois::GUIhelperPython::drawInputFrame2(char const * name, InputFramePython const & frame,
+                                                              bool noalias, bool casync)
+{
+  if (itsGUIhelper == nullptr) LFATAL("Internal error");
+  int x = 0, y = 0; unsigned short w = 0, h = 0;
+  itsGUIhelper->drawInputFrame(name, *frame.itsInputFrame, x, y, w, h, noalias, casync);
+  return boost::python::make_tuple(x, y, w, h);
+}
+
+// ####################################################################################################
+ImVec2 jevois::GUIhelperPython::i2d(ImVec2 p, char const * name)
+{
+  if (itsGUIhelper == nullptr) LFATAL("Internal error");
+  return itsGUIhelper->i2d(p, name);
+}
+
+// ####################################################################################################
+ImVec2 jevois::GUIhelperPython::i2d1(float x, float y, char const * name)
+{
+  if (itsGUIhelper == nullptr) LFATAL("Internal error");
+  return itsGUIhelper->i2d(x, y, name);
+}
+
+// ####################################################################################################
+ImVec2 jevois::GUIhelperPython::i2ds(ImVec2 p, char const * name)
+{
+  if (itsGUIhelper == nullptr) LFATAL("Internal error");
+  return itsGUIhelper->i2ds(p, name);
+}
+
+// ####################################################################################################
+ImVec2 jevois::GUIhelperPython::i2ds1(float x, float y, char const * name)
+{
+  if (itsGUIhelper == nullptr) LFATAL("Internal error");
+  return itsGUIhelper->i2ds(x, y, name);
+}
+
+// ####################################################################################################
+void jevois::GUIhelperPython::drawLine(float x1, float y1, float x2, float y2, ImU32 col)
+{
+  if (itsGUIhelper == nullptr) LFATAL("Internal error");
+  itsGUIhelper->drawLine(x1, y1, x2, y2, col);
+}
+
+// ####################################################################################################
+void jevois::GUIhelperPython::drawRect(float x1, float y1, float x2, float y2, ImU32 col, bool filled)
+{
+  if (itsGUIhelper == nullptr) LFATAL("Internal error");
+  itsGUIhelper->drawRect(x1, y1, x2, y2, col, filled);
+}
+
+// ####################################################################################################
+void jevois::GUIhelperPython::drawPoly(std::vector<cv::Point> const & pts, ImU32 col, bool filled)
+{
+  if (itsGUIhelper == nullptr) LFATAL("Internal error");
+  itsGUIhelper->drawPoly(pts, col, filled);
+}
+
+// ####################################################################################################
+void jevois::GUIhelperPython::drawPoly1(std::vector<cv::Point2f> const & pts, ImU32 col, bool filled)
+{
+  if (itsGUIhelper == nullptr) LFATAL("Internal error");
+  itsGUIhelper->drawPoly(pts, col, filled);
+}
+
+// ####################################################################################################
+void jevois::GUIhelperPython::drawPoly2(cv::Mat const & pts, ImU32 col, bool filled)
+{
+  if (itsGUIhelper == nullptr) LFATAL("Internal error");
+  if (pts.type() != CV_32FC2) LFATAL("Incorrect type: should be 32FC2");
+  
+  // Convert mat to vector of Point2f:
+  std::vector<cv::Point2f> p;
+  size_t const sz = pts.total() * 2;
+  float const * ptr = pts.ptr<float>(0);
+  for (size_t i = 0; i < sz; i += 2) p.emplace_back(cv::Point2f(ptr[i], ptr[i+1]));
+
+  // Draw:
+  itsGUIhelper->drawPoly(p, col, filled);
+}
+
+// ####################################################################################################
+void jevois::GUIhelperPython::drawCircle(float x, float y, float r, ImU32 col, bool filled)
+{
+  if (itsGUIhelper == nullptr) LFATAL("Internal error");
+  itsGUIhelper->drawCircle(x, y, r, col, filled);
+}
+
+// ####################################################################################################
+void jevois::GUIhelperPython::drawText(float x, float y, char const * txt, ImU32 col)
+{
+  if (itsGUIhelper == nullptr) LFATAL("Internal error");
+  itsGUIhelper->drawText(x, y, txt, col);
+}
+
+// ####################################################################################################
+ImVec2 jevois::GUIhelperPython::iline(int line, char const * name)
+{
+  if (itsGUIhelper == nullptr) LFATAL("Internal error");
+  return itsGUIhelper->iline(line, name);
+}
+
+// ####################################################################################################
+void jevois::GUIhelperPython::itext(char const * txt, ImU32 const & col, int line)
+{
+  if (itsGUIhelper == nullptr) LFATAL("Internal error");
+  itsGUIhelper->itext(txt, col, line);
+}
+
+// ####################################################################################################
+void jevois::GUIhelperPython::iinfo(jevois::InputFramePython const & inframe, std::string const & fpscpu,
+                                    unsigned short winw, unsigned short winh)
+{
+  if (itsGUIhelper == nullptr) LFATAL("Internal error");
+  itsGUIhelper->iinfo(*inframe.itsInputFrame, fpscpu, winw, winh);
+}
+
+// ####################################################################################################
+void jevois::GUIhelperPython::releaseImage(char const * name)
+{
+  if (itsGUIhelper == nullptr) LFATAL("Internal error");
+  itsGUIhelper->releaseImage(name);
+}
+
+// ####################################################################################################
+void jevois::GUIhelperPython::releaseImage2(char const * name)
+{
+  if (itsGUIhelper == nullptr) LFATAL("Internal error");
+  itsGUIhelper->releaseImage2(name);
+}
+
+// ####################################################################################################
+void jevois::GUIhelperPython::endFrame()
+{
+  if (itsGUIhelper == nullptr) LFATAL("Internal error");
+  itsGUIhelper->endFrame();
+}
+
+// ####################################################################################################
+void jevois::GUIhelperPython::reportError(std::string const & err)
+{
+  if (itsGUIhelper == nullptr) LFATAL("Internal error");
+  itsGUIhelper->reportError(err);
+}
+
+// ####################################################################################################
+void jevois::GUIhelperPython::reportAndIgnoreException(std::string const & prefix)
+{
+  if (itsGUIhelper == nullptr) LFATAL("Internal error");
+  itsGUIhelper->reportAndIgnoreException(prefix);
+}
+
+// ####################################################################################################
+void jevois::GUIhelperPython::reportAndRethrowException(std::string const & prefix)
+{
+  if (itsGUIhelper == nullptr) LFATAL("Internal error");
+  itsGUIhelper->reportAndRethrowException(prefix);
+}
+
+#endif // JEVOIS_PRO
+
+// ####################################################################################################
+// ####################################################################################################
 // ####################################################################################################
 namespace
 {
@@ -247,13 +523,14 @@ jevois::PythonModule::PythonModule(jevois::VideoMapping const & m) :
     std::string const pydir = pypath.substr(0, pypath.rfind('/'));
     std::string const execstr =
       "import sys\n"
-      "sys.path.append(\"/usr/lib\")\n" // To find libjevois module in /usr/lib
+      "sys.path.append(\"/usr/lib\")\n" // To find libjevois[pro] module in /usr/lib
+      "sys.path.append(\"" JEVOIS_CONFIG_PATH "\")\n" // To find pyjevois.py config
       "sys.path.append(\"" JEVOIS_OPENCV_PYTHON_PATH "\")\n" // To find cv2 module
       "sys.path.append(\"" + pydir + "\")\n" +
       "import " + m.modulename + "\n" +
       "import importlib\n" +
       "importlib.reload(" + m.modulename + ")\n"; // reload so we are always fresh if file changed on SD card
-    
+
     boost::python::exec(execstr.c_str(), itsMainNamespace, itsMainNamespace);
     
     // Create an instance of the python class defined in the module:
@@ -296,6 +573,20 @@ void jevois::PythonModule::process(InputFrame && inframe)
   jevois::InputFramePython inframepy(&inframe);
   itsInstance.attr("processNoUSB")(boost::ref(inframepy));
 }
+
+#ifdef JEVOIS_PRO
+
+// ####################################################################################################
+void jevois::PythonModule::process(InputFrame && inframe, GUIhelper & helper)
+{
+  if (itsInstance.is_none()) throw std::runtime_error(itsConstructionError);
+  
+  jevois::InputFramePython inframepy(&inframe);
+  jevois::GUIhelperPython helperpy(&helper);
+  itsInstance.attr("processGUI")(boost::ref(inframepy), boost::ref(helperpy));
+}
+
+#endif
 
 // ####################################################################################################
 void jevois::PythonModule::parseSerial(std::string const & str, std::shared_ptr<UserInterface> s)

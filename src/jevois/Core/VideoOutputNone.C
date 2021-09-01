@@ -26,7 +26,7 @@ jevois::VideoOutputNone::~VideoOutputNone()
 void jevois::VideoOutputNone::setFormat(VideoMapping const & m)
 {
   // Allocate one buffer:
-  itsBuffer.reset(new jevois::VideoBuf(-1, m.osize(), 0));
+  itsBuffer.reset(new jevois::VideoBuf(-1, m.osize(), 0, -1));
 
   // Attach it to our image:
   itsImage.width = m.ow;

@@ -21,14 +21,16 @@
 #include <jevois/Core/VideoBuf.H>
 #include <jevois/Debug/Log.H>
 
+#include <unistd.h> // for close()
+
 // ####################################################################################################
-jevois::VideoBuf::VideoBuf(int const fd, size_t const length, unsigned int offset) :
-    itsFd(fd), itsLength(length), itsBytesUsed(0)
+jevois::VideoBuf::VideoBuf(int const fd, size_t const length, unsigned int offset, int const dmafd) :
+    itsFd(fd), itsLength(length), itsBytesUsed(0), itsDmaBufFd(dmafd)
 {
   if (itsFd > 0)
   {
     // mmap the buffer to any address:
-#ifdef JEVOIS_PLATFORM
+#ifdef JEVOIS_PLATFORM_A33
     // PROT_EXEC needed for clearcache() to work:
     itsAddr = mmap(NULL, length, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_SHARED, fd, offset);
 #else
@@ -54,12 +56,15 @@ jevois::VideoBuf::~VideoBuf()
   {
     delete [] reinterpret_cast<char *>(itsAddr);
   }
+
+  if (itsDmaBufFd > 0) close(itsDmaBufFd);
 }
 
-#ifdef JEVOIS_PLATFORM
+// ARMv7 code that only runs on JeVois-A33 platform
 void clearcache(char* begin, char *end)
 {
-  const int syscall = 0xf0002;
+#ifdef JEVOIS_PLATFORM_A33
+  int const syscall = 0xf0002;
   __asm __volatile (
                     "mov r0, %0\n"
                     "mov r1, %1\n"
@@ -70,13 +75,16 @@ void clearcache(char* begin, char *end)
                     : "r" (begin), "r" (end), "r" (syscall)
                     : "r0", "r1", "r7"
                     );
-}
+#else
+  // Just keep compiler happy:
+  (void)begin; (void)end;
 #endif
+}
 
 // ####################################################################################################
 void jevois::VideoBuf::sync()
 {
-#ifdef JEVOIS_PLATFORM
+#ifdef JEVOIS_PLATFORM_A33
   if (itsFd > 0)
   {
     // This does nothing useful for us:
@@ -87,7 +95,7 @@ void jevois::VideoBuf::sync()
     if (ofs.is_open() == false) { LERROR("Cannot flush cache -- IGNORED"); return; }
     ofs << "1" << std::endl;
 
-    // Here is some arm-specific code:
+    // Here is some arm-specific code (only works on JeVois-A33 platform):
     clearcache(reinterpret_cast<char *>(itsAddr), reinterpret_cast<char *>(itsAddr) + itsLength);
   }
 #endif
@@ -115,4 +123,10 @@ void jevois::VideoBuf::setBytesUsed(size_t n)
 size_t jevois::VideoBuf::bytesUsed() const
 {
   return itsBytesUsed;
+}
+
+// ####################################################################################################
+int jevois::VideoBuf::dmaFd() const
+{
+  return itsDmaBufFd;
 }
