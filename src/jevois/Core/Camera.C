@@ -254,9 +254,9 @@ void jevois::Camera::getControl(struct v4l2_control & ctrl) const
   JEVOIS_TIMED_LOCK(itsMtx);
   if (itsFd == -1) LFATAL("Not initialized");
 #ifdef JEVOIS_PLATFORM_A33
-  XIOCTL(itsFd, 0xc00c561b /* should be VIDIOC_G_CTRL, bug in kernel headers? */, &ctrl);
+  XIOCTL_QUIET(itsFd, 0xc00c561b /* should be VIDIOC_G_CTRL, bug in kernel headers? */, &ctrl);
 #else
-  XIOCTL(itsFd, VIDIOC_G_CTRL, &ctrl);
+  XIOCTL_QUIET(itsFd, VIDIOC_G_CTRL, &ctrl);
 #endif
 }
 
@@ -266,9 +266,9 @@ void jevois::Camera::setControl(struct v4l2_control const & ctrl)
   JEVOIS_TIMED_LOCK(itsMtx);
   if (itsFd == -1) LFATAL("Not initialized");
 #ifdef JEVOIS_PLATFORM_A33
-  XIOCTL(itsFd, 0xc00c561c /* should be VIDIOC_S_CTRL, bug in kernel headers? */, &ctrl);
+  XIOCTL_QUIET(itsFd, 0xc00c561c /* should be VIDIOC_S_CTRL, bug in kernel headers? */, &ctrl);
 #else
-  XIOCTL(itsFd, VIDIOC_S_CTRL, &ctrl);
+  XIOCTL_QUIET(itsFd, VIDIOC_S_CTRL, &ctrl);
 #endif  
 }
 

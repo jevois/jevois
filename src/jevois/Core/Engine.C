@@ -1760,8 +1760,11 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
 
       foreachCamCtrl([this,&pfx,&s](struct v4l2_queryctrl & qc, std::set<int> & doneids)
                      {
-                       std::string hlp = camCtrlHelp(qc, doneids);
-                       if (hlp.empty() == false) s->writeString(pfx, hlp);
+                       try
+                       {
+                         std::string hlp = camCtrlHelp(qc, doneids);
+                         if (hlp.empty() == false) s->writeString(pfx, hlp);
+                       } catch (...) { } // silently ignore errors, e.g., some write-only controls
                      });
       return true;
     }
@@ -1772,8 +1775,11 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
       // Machine-readable list of camera parameters:
       foreachCamCtrl([this,&pfx,&s](struct v4l2_queryctrl & qc, std::set<int> & doneids)
                      {
-                       std::string hlp = camCtrlInfo(qc, doneids);
-                       if (hlp.empty() == false) s->writeString(pfx, hlp);
+                       try
+                       {
+                         std::string hlp = camCtrlInfo(qc, doneids);
+                         if (hlp.empty() == false) s->writeString(pfx, hlp);
+                       } catch (...) { } // silently ignore errors, e.g., some write-only controls
                      });
       return true;
     }
@@ -2541,7 +2547,10 @@ void jevois::Engine::drawCameraGUI()
 {
   ImGui::Columns(2, "camctrl");
 
-  foreachCamCtrl([this](struct v4l2_queryctrl & qc, std::set<int> & doneids) { camCtrlGUI(qc, doneids); });
+  foreachCamCtrl([this](struct v4l2_queryctrl & qc, std::set<int> & doneids)
+                 {
+                   try { camCtrlGUI(qc, doneids); } catch (...) { }
+                 });
 
   ImGui::Columns(1);
 }
