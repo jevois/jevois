@@ -1,0 +1,82 @@
+/*! \page ProHardware Overview of the JeVois-Pro hardware platform
+\tableofcontents
+
+\jvimg{JeVois-Pro.png, 60%}
+
+Features at a glance:
+
+- CPU: Amlogic A311D with 4x A73 @ 2.2 GHz + 2x A53 @ 1.8 GHz.
+
+- GPU: Quad-core MALI G52 MP4 @ 800 MHz.
+
+- NPU: 5-TOPS integrated Neural Processing Unit.
+
+- RAM: 4 GB LPDDR4-3200.
+
+- Camera: 2MP Sony IMX290 back-illuminated Starvis sensor, 1/2.8”, 12mm lens, 1920x1080 at up to 120fps, rolling
+   shutter, wide dynamic range support.
+
+- IMU: TDK InvenSense ICM-20948 with 3-axis accelerometer, 3-axis gyro, 3-axis compass, SPI bus @ 7 MHz, can be
+  synchronized with camera sensor.
+
+- HDMI 2.1 video + sound output, up to 4k @ 60 Hz.
+
+- MicroSD card slot, up to 104 MByte/s, for operating system, software and data.
+
+- 2x USB 2.0 Type A ports (for keyboard, mouse, wifi, ethernet, etc).
+
+- 1x mini-USB OTG port.
+
+- 4-Pin UART (serial) port.
+
+- 6-pin auxiliary power out for 5V, 3.3V, and 1.8V peripherals.
+
+- 8-pin GPIO port (I2C + SPI, or 6x GPIO + GND + I/O voltage select).
+
+- Custom camera sensor connector, supports 1 or 2 sensors, 4x MIPI-CSI + IMU.
+
+- M.2 E-Key slot for 2230 PCIe x1/USB/SDIO/PCM/UART add-on cards (Coral TPU, WiFi, etc), supports custom JeVois
+  extension for eMMC flash. (Note: PCIe x2 not supported).
+
+- Single 6-24 VDC input, 30 Watts max (including up to 15 Watts to power USB peripherals). Idle: 3 Watts. Running YOLOv2
+  on NPU: 5.3 Watts. Running CPU+NPU+TPU+VPU quad YOLO/SSD deep networks: 12 Watts.
+
+- Ubuntu 20.04 LTS (long-term support) aarch64 full.
+
+- OpenCV (latest) + OpenVino + all contribs and Python bindings preinstalled.
+
+- JeVois Core library with 30+ included machine vision modules preinstalled.
+
+- OpenGL ES 3.2, Vulkan 1.0, OpenCL 2.0, Coral Edge-TPU libraries.
+
+- Python 3.8 + numpy + scipy pre-installed.
+
+- Boost, Eigen, ImGui, glm, and many other C++ libraries pre-installed.
+
+- Install any extra aarch64 Ubuntu or Python packages using apt-get and pip3.
+
+- TensorFlow-Lite 2.5, Caffe, ONNX, MxNet, and Darknet deep learning support.
+
+- Import your own custom deep learning models to run inside JeVois-Pro.
+
+- Program your own machine vision pipelines in C++ or Python.
+
+- Full cross-compilation environment allows you to first develop and test your code on a standard Ubuntu Linux PC host
+  computer, then cross-compile the same code for execution on the JeVois-Pro camera.
+
+- Weight: 80 grams (2.8 oz) with case, fan, heatsinks. Electronics only: 40 grams (1.4 oz).
+
+
+\jvimg{overview-out.png, 100%}
+
+
+Regulatory information
+----------------------
+
+- HS Tariff code: 8525804000
+- Country of manufacture: China
+- ECCN classification: EAR99
+- Certifications: FCC, CE, RoHS, Australia C-Tick, Canada ICES-3(B)/NMB-3(B)
+
+
+*/

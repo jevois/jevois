@@ -1,0 +1,32 @@
+/*! \page ProUserConnect Connecting JeVois-Pro to Power and Data
+
+
+Use JeVois-Pro like a standard computer:
+
+\jvimg{proconnect.png, 40%}
+
+For power, use the included power adapter. JeVois-Pro can accept 6-24V DC input on a 5.5x2.5mm barrel jack with positive
+in the center pin.
+
+This means that you can power JeVois-Pro from a car battery or cigar adapter, or from a 2S-5S Lithium battery (2 to 5
+lithium cells in series). Make sure your battery is equipped with undervoltage protection so that it does not get
+damaged by being fully drained out.
+
+The power supply included with JeVois-Pro has 36 Watts (12V at 3A). When budgeting for power, this is the recommended
+wattage. However, this is also the worst-case scenario, where JeVois outputs significant power to connected peripherals
+through its USB and AUX power ports. If you will not connect power-hungry peripherals, you may be able to use a
+lower-wattage power supply or battery.
+
+Here are a few points of reference, with only USB keyboard, mouse, and HDMI display, and one TPU (Google Coral neural
+accelerator, M.2 card inside JeVois-Pro) and one VPU (Intel Myriad-X USB accelerator):
+
+- Idle: 3 Watts (includes fan)
+- Running YOLOv2 on neural processing unit (NPU) integrated in the JeVois-Pro CPU: 5.3 Watts
+- Running CPU+NPU+TPU+VPU quad YOLO/SSD deep networks: 12 Watts
+
+When designing a custom power supply, e.g., to use JeVois-Pro on a robot, you should measure actual wattage used by
+your vision algorithms running on JeVois-Pro, and then add a safety margin (e.g., budget 20% more wattage than the
+highest you measured).
+
+*/
+

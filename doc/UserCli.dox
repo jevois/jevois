@@ -9,6 +9,7 @@ available serial ports:
 - Hardware serial port through the 4-pin connector on the smart camera (see above).
 - Serial-over-USB port that appears to your host computer at the same time as the video camera appears on the serial
   bus.
+- On \jvpro, the Console of the graphical user interface.
 
 You, or another machine (e.g., an Arduino) can connect to JeVois and issue simple commands to the smart camera. These
 commands allow one to tune camera parameters, vision processing parameters, and general operation of the JeVois smart
@@ -214,6 +215,8 @@ MODULE-SPECIFIC COMMANDS:
 start - start saving video
 stop - stop saving video and increment video file number
 \endverbatim
+
+You can also use `help2` to only show the parameters and commands of the currenly loaded module.
 
 // ##############################################################################################################
 \section cmdline2 Command-line interface usage

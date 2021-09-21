@@ -1,0 +1,11 @@
+/*! \page ProCaseMounting JeVois-Pro case mounting guidelines
+
+\jvpro provides 2 threaded holes (metric screws M2.5x0.45) for secure mounting onto a robot or other.
+
+More info coming soon...
+
+\warning Hole depth in the JeVois-Pro camera case is a bit over 5mm. Plan for maximum 5mm screw length to avoid hitting
+the electronics inside the case!
+
+*/
+

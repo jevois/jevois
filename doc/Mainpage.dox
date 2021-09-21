@@ -4,31 +4,58 @@
 
 New users, be sure to check out [JeVois Start](/start/start.html).
 
+\jvimg{jevois-philosophy.png, 60%}
+
+Unlike a traditional camera that relies on a human viewer to interpret the contents of what it sees, JeVois runs
+powerful machine vision and deep learning algorithms right inside the camera. This allows you to directly connect
+JeVois-Pro to a custom robot, home automation system, drone, surveillance system, etc. You let JeVois-Pro handle the
+machine vision while you focus on developing the high-level functionality of your system.
+
+JeVois is mainly a development and education tool: it provides a Linux-based programming environment (C++ or Python)
+that facilitates writing your own machine vision pipelines for real-time operation on the processor inside the camera.
+
 The JeVois toolkit is primarily designed to run on embedded smart camera hardware, although it can also run on recent
 Linux-based computers, including Raspberry Pi. The toolkit facilitates image capture from a camera sensor, processing of
 the captured images through some machine vision algorithm, and sending the processed results to a host computer over a
-USB link.
+USB link (JeVois-A33) or displaying results using OpenGL (JeVois-Pro).
 
-To the host computer, a JeVois smart camera appears like a regular USB webcam, and is fully plug-and-play with no driver
-installation needed on reasonably recent versions of Windows, MacOS, and Linux: A JeVois smart camera is compliant with
-the USB Video Class (UVC) revision 1.1. Like with regular USB webcams, users can select image resolution, framerate, and
-adjust camera settings such as brightness, exposure, color balance, etc. But a JeVois smart camera outputs images that
-are the results of processing camera frames through some vision algorithm, as opposed to simply outputing the raw camera
-frames like a regular USB webcam.
+Two hardware models are available:
 
-In addition to video outputs, a JeVois smart camera includes one hardware serial port and one serial-over-USB
-port. Simple text strings can be sent by the smart camera over these ports, for example to indicate the coordinates at
-which an object of interest was found in the camera video stream. These are intended for use by embedded controllers,
-including Arduino or any other that supports serial communications (UART with TTL levels at 3.3V or 5V). Users or
-micro-controllers can also send simple text commands to the smart camera over the serial ports.
+\section hardjevoisa33 JeVois-A33 USB-powered smart webcam
 
 \image html hardware-proto.jpg "Early JeVois platform prototype with quad-core ARM processor inside. Back view shows Mini-USB port, serial port, Micro-SD slot, and status LED." width=\textwidth
 
+JeVois-A33 is a small USB-powered smart webcam. To the host computer, a JeVois-A33 smart camera appears like a regular
+USB webcam, and is fully plug-and-play with no driver installation needed on reasonably recent versions of Windows,
+MacOS, and Linux: A JeVois smart camera is compliant with the USB Video Class (UVC) revision 1.1. Like with regular USB
+webcams, users can select image resolution, framerate, and adjust camera settings such as brightness, exposure, color
+balance, etc. But a JeVois smart camera outputs images that are the results of processing camera frames through some
+vision algorithm, as opposed to simply outputing the raw camera frames like a regular USB webcam.
+
 The JeVois smart camera is a compact (39mm x 32mm x 19mm, or 1.5" x 1.25" x 0.75"), USB-powered, self-contained and
-powerful quad-core ARM computer running the Linux operating system. For ease of programming and configuration, all of
-the operating system, core JeVois software, and any necessary data files are stored on a single high-speed Micro-SD card
-that can easily be removed and plugged into a desktop or laptop computer. This also makes the platform "unbrickable" and
-very hacking-friendly.
+powerful quad-core ARM computer running the Linux operating system.
+
+\section hardjevoispro JeVois-Pro standalone deep learning camera
+
+\jvimg{jevois-pro-cards.JPG, 30%}
+
+JeVois-Pro is a full Linux-based computer in a small form factor. In addition to a 6-core CPU, it integrates a variety
+of hardware accelerators for deep neural networks. Because it is a full computer, the primary output for JeVois-Pro is
+an HDMI display. There is no need for a host computer, as one can directly connect keyboard, mouse, and display to
+JeVois-Pro.
+
+\section features Common features
+
+For ease of programming and configuration, all of the operating system, core JeVois software, and any necessary data
+files are stored on a single high-speed Micro-SD card that can easily be removed and plugged into a desktop or laptop
+computer. This also makes the platform "unbrickable" and very hacking-friendly.
+
+In addition to video outputs, a JeVois smart camera includes one hardware serial port and one serial-over-USB port
+(JeVois-Pro also includes additional hardware ports). Simple text strings can be sent by the smart camera over these
+ports, for example to indicate the coordinates at which an object of interest was found in the camera video
+stream. These are intended for use by embedded controllers, including Arduino or any other that supports serial
+communications (UART with TTL levels at 3.3V or 5V). Users or micro-controllers can also send simple text commands to
+the smart camera over the serial ports.
 
 The JeVois software framework combines custom Linux kernel drivers for camera sensor and for USB output, written in C,
 and a custom high-level vision processing framework, written in C++-17. This framework is designed for easy integration
@@ -39,15 +66,19 @@ makes it easy to create new vision processing modules, and which allows simultan
 for a host computer (e.g., Intel-based Linux desktop used for development, debugging and testing) and for the platform
 hardware (ARM processor).
 
-\image html frameworks.png "Hardware and software JeVois frameworks" width=\textwidth
+\image html frameworks.png "Hardware and software JeVois frameworks. Note that JeVois-Pro now also supports video display outputs and requires no host computer." width=\textwidth
 
 \section contents Table of contents
 
 - \subpage Handling
 - \subpage Hardware
+- \subpage ProHardware
+- \subpage ProStatus
 - \subpage UserConnect
+- \subpage ProUserConnect
 - \subpage Concepts
 - \subpage JeVoisInventor
+- \subpage JeVoisProIntro
 - \subpage Navigation
 - \subpage Versions
 - \subpage User

@@ -1,6 +1,6 @@
 /*! \page ProStatus JeVois-Pro Development Status
 
-Updated: July 28, 2021
+Updated: Setp 9, 2021
 
 Legend
 ------
@@ -45,6 +45,7 @@ Boot to console                                                                 
 Boot to JeVois software                                                               | \jvok  | -
 JeVois-Pro video + serial + storage over mini-USB OTG, kernel Gadget driver           | \jvno  | (13)
 JeVois-Pro control via JeVois Inventor                                                | \jvno  | (14)
+Software reset                                                                        | \jvno  | (15)
 \jvth{Camera Sensor}                                                                  | -      | -
 Sony IMX-290 2MP camera sensor detection and basic 1080p @ 30fps operation            | \jvok  | -
 Sony IMX-290 use 4x MIPI-CSI lanes for lowest latency                                 | \jvok  | -
@@ -155,5 +156,8 @@ vision results as text strings (e.g., "face detected at X,Y", or "QRcode decoded
 keyboard/mouse. Since JeVois-Pro has display and keyboard/mouse, the functionality of JeVois-Inventor has been converted
 into a full graphical user interface that runs directly in JeVois-Pro, thereby eliminating the need for a host
 computer entirely.
+
+15. Software reset (e.g., "shutdown -r now") is currently not working. It is likely a hardware issue. We are working on
+trying to find software workarounds. In the meantime, just unplug power and plug it back in.
 
 */

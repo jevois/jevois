@@ -1,7 +1,10 @@
 /*! \page UserLighting Optimizing performance under different lighting conditions
 
-The sensor in the JeVois smart camera is quite capable, though some adjustments are often necessary to operate well in
-low light conditions.
+The sensor in the JeVois smart camera is quite capable, though some adjustments are sometimes necessary to operate well
+in low light conditions.
+
+These tips are mostly for \jva33, as \jvpro features a high-end Starvis back-illuminated (i.e., extra sensitive) sensor
+that performs very well in low light. Nevertheless, \jvpro users may still be interested in some of the tips below.
 
 The brightness of the captured video depends on (at least):
 
@@ -31,14 +34,15 @@ At higher frame rates, there is very little time available for exposure.
 Operating in low light
 ----------------------
 
-Let us compare JeVois with a professional video camera (Sony FDR-AX1, about 100 times the price of JeVois), and with an
-inexpensive USB camera (a small bullet camera).
+Let us compare JeVois-A33 with a professional video camera (Sony FDR-AX1, about 100 times the price of JeVois-A33), and
+with an inexpensive USB camera (a small bullet camera).
 
 \image html lowlight-bullet-30fps.jpg An expensive Sony camera, JeVois camera (circled in red), and inexpensive bullet USB camera (circled in blue), all looking at the same scene, with office lights turned on. All cameras perform well in these conditions.
 
 When lighting is low (here, we turned off the light on an evening close to sunset, but not yet past sunset), the image
 captured by all cameras darkens, as seen below. Here, we can see that the bullet camera adapts by dropping framerate to
-4 frames/s to allow for more exposure time (the bullet camera's picture is shown on the computer screen, and guvcview used to display the frames from it reports 4.12 frames/s).
+4 frames/s to allow for more exposure time (the bullet camera's picture is shown on the computer screen, and guvcview
+used to display the frames from it reports 4.12 frames/s).
 
 \image html lowlight-bullet-4fps.jpg Darker images are captured in low light conditions, and one strategy to counter that is to increase exposure time by lowering frame rate, as done here by the inexpensive USB bullet camera, which drops frame rate to 4 frames/s.
 
@@ -62,6 +66,9 @@ can achieve a good enough picture quality under your lighting conditions.
 
 Allowing for automatic lower frame rates
 ----------------------------------------
+
+\note The tips below are for the default \jva33 sensor (Omnivision ov9653). Some controls may not be available on other
+sensors (e.g., Aptina AR0135 global shutter; please refer to 'help' to list available controls).
 
 If brightness control is not sufficient, one strategy is to allow for frame rate to decrease when JeVois is used in low
 light, to allow for longer exposure time. This can be achieved using the \p presetwb camera parameter available in the

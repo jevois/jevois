@@ -1,8 +1,11 @@
 /*! \page Navigation How to navigate this documentation
 \tableofcontents
 
-- You may want to first explore what JeVois can do using JeVois Inventor:
+- \jva33: You may want to first explore what JeVois can do using JeVois Inventor:
   + \ref JeVoisInventor
+
+- \jvpro: See this video introduction
+  + \ref JeVoisProIntro
 
 - Then, start with understanding the following user-level concepts:
   + \ref Concepts

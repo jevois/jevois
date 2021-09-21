@@ -1,8 +1,11 @@
-/*! \page JeVoisInventor JeVois Inventor graphical user interface
+/*! \page JeVoisInventor JeVois-A33: JeVois Inventor graphical user interface
 \tableofcontents
 
-JeVois Inventor is a graphical frontend for JeVois Smart Cameras. It makes programming new computer vision pipelines
-that run on JeVois very easy, using full Python 3.6 + OpenCV 3.4.
+JeVois Inventor is a graphical frontend for JeVois-A33 Smart Cameras which runs on a host computer (PC, Mac, Linux). It
+makes programming new computer vision pipelines that run on JeVois very easy, using full Python + OpenCV.
+
+JeVois Inventor is not used with JeVois-Pro. Instead, JeVois-Pro provides the same functionality directly in the
+camera. If you are using JeVois-Pro, you can skip this page.
 
 This frontend was created for people who do not read user manuals, so feel free to explore around!
 

@@ -6,6 +6,7 @@ with using it.
 New users, be sure to check out [JeVois Start](/start/start.html).
 
 - \subpage UserQuick
+- \subpage ProUserQuick
 - \subpage UserStartLinux
 - \subpage UserStartWindows
 - \subpage UserStartMac
@@ -17,9 +18,11 @@ New users, be sure to check out [JeVois Start](/start/start.html).
 - \subpage NewMicroSD
 - \subpage UserSerial
 - \subpage UserSerialStyle
+- \subpage ProConnectors
 - \subpage UserCli
 - \subpage ArduinoTutorial
 - \subpage CaseMounting
+- \subpage ProCaseMounting
 - \subpage HardwareFiles
 - \subpage Lenses
 - \subpage Sensors

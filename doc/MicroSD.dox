@@ -20,11 +20,23 @@ Modifying the contents of your MicroSD card, for example to add new machine visi
 were recorded by JeVois, is achieved by taking the MicroSD card out of your JeVois smart camera and connecting it to a
 desktop or laptop computer.
 
-\image html microsd-insert.png
-
 \warning Your JeVois smart camera features a \b push-push MicroSD card slot. You push the card in until it clicks to
 load it, and you push it in again until it clicks and then ejects to unload it. Do you try to pull the MicroSD card out
 or you might damage the MicroSD card slot of your JeVois smart camera.
+
+
+JeVois-A33 MicroSD
+------------------
+
+\jvimg{microsd-insert.png, 50%}
+
+JeVois-Pro MicroSD
+------------------
+
+\jvimg{jvp-sd.png, 30%}
+
+Using the MicroSD card with a computer
+--------------------------------------
 
 There are two basic ways of accessing the MicroSD card on a desktop or laptop:
 
@@ -63,19 +75,20 @@ Here is an example of what happens on a Mac laptop when you insert the MicroSD c
 JEVOIS, and one can browse the files in both of them. The LINUX volume does not appear on this Mac (but note that third
 party apps are available to allow Macs to read ext4 partitions as well).
 
-\warning The MicroSD card also has two additional and essential "files" that are stored directly onto specific sectors
-(physical flash disk locations) on the card. These are two bootloader (system startup) files which are the first two
-files loaded when the JeVois embedded processor starts. Because the processor does not yet know about partitions, file
+\warning The MicroSD card also has additional and essential "files" that are stored directly onto specific sectors
+(physical flash disk locations) on the card. These are bootloader (system startup) files which are the first files
+loaded when the JeVois embedded processor starts. Because the processor does not yet know about partitions, file
 systems, etc at that early startup stage, all it knows how to do is to read raw sectors from the SD card. You usually do
-not need to modify these two special files. But beware that if you want to copy the contents of one JeVois MicroSD card
-to a new card, you need to do a full physical sector-by-sector copy. Instructions for how to do this are provided in
-\ref NewMicroSD.
+not need to modify these special files. But beware that if you want to copy the contents of one JeVois MicroSD card to a
+new card, you need to do a full physical sector-by-sector copy. Instructions for how to do this are provided in \ref
+NewMicroSD.
 
 \image html microsd-mac.png
 
 \section microsd3 MicroSD card contents
 
-Here is an abbreviated tree of the files present on a typical JeVois microSD card:
+Here is an abbreviated tree of the files present on a typical \jva33 microSD card (\jvpro is similar but not
+identical):
 
 \verbatim
 ├── BOOT  ########## (16 MB FAT32 partition)
@@ -299,9 +312,9 @@ Here is an abbreviated tree of the files present on a typical JeVois microSD car
 
 \endverbatim
 
-\section microsd4 Accessing and modifying the MicroSD while JeVois is running
+\section microsd4 JeVois-A33: Accessing and modifying the MicroSD while JeVois is running
 
-\jvversion{1.1}
+\jva33 \jvversion{1.1}
 
 You can access the contents of the \b JEVOIS partition on the microSD while the card is inside your JeVois smart
 camera. JeVois can (on demand) make the \b JEVOIS partition visible to a connected host computer over USB, as a virtual

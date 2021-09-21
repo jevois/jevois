@@ -5,11 +5,11 @@ and 5V logic.
 
 The logic voltage to use is supplied by the connected microcontroller to the smart camera (RED wire, IOREF
 voltage). This voltage should be provided by your micro-controller and should be the voltage at which your RX and TX
-signals operate). Arduino boards provide the IOREF pin for this purpose. Thus, a 5V Arduino will output 5V to IOREF, and
-will use 5V levels for RX and TX. In contrast, a 3.3V Arduino will output 3.3V to IOREF and will use 3.3V levels for RX
-and TX.
+signals operate). Arduino boards provide the IOREF pin for this purpose. IOREF is an input to JeVois. Thus, a 5V Arduino
+will output 5V to IOREF, and will use 5V levels for RX and TX. In contrast, a 3.3V Arduino will output 3.3V to IOREF and
+will use 3.3V levels for RX and TX.
 
-To connect to an Arduino board, you would typically do as follows:
+To connect to an Arduino board, you would typically do as follows (\jva33 is shown, pinout is the same for \jvpro):
 
 \image html serial-arduino.png
 
@@ -18,9 +18,10 @@ To connect to an Arduino board, you would typically do as follows:
 \note Power consumption on the serial port (all pins combined) is less than 1mA. Hence, it is apporpriate to directly
 use the IOREF pin of any Arduino (which, often, is rated for 50mA or less) with JeVois.
 
-\note JeVois is not powered through the pins on the 4-pin serial connector. IOREF is only providing a voltage reference
-that determines which voltages should be used on the RX and TX pins, but IOREF is not connected to the main power supply
-of JeVois in any way. JeVois is exclusively powered through the mini-USB connector.
+\note JeVois is not powered through the pins on the 4-pin serial connector. IOREF is an input to JeVois, only providing
+a voltage reference that determines which voltages should be used on the RX and TX pins, but IOREF is not connected to
+the main power supply of JeVois in any way. \jva33 is exclusively powered through the mini-USB connector, while \jvpro
+is exclusively powered through its barrel jack power connector.
 
 Changing the serial port settings
 ---------------------------------

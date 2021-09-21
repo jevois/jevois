@@ -602,6 +602,7 @@ void jevois::Engine::postInit()
     // On JeVois-A33, use an OpenCV display:
     LINFO("Using OpenCV display for video output");
     itsGadget.reset(new jevois::VideoDisplay("JeVois", gadgetnbuf::get()));
+    (void)usegui; // keep compiler happy
 #endif
     itsManualStreamon = true;
   }

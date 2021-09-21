@@ -1,6 +1,8 @@
 /*! \page USBserialLinux Connecting to JeVois using serial-over-USB: Linux host
 
 
+This feature is not yet available on \jvpro but will soon be...
+
 \section serusblinuxgen Finding the serial-over-USB device on Linux host
 
 On Linux, first look for the port that was created when you plugged in your JeVois smart camera. Most likely it will be

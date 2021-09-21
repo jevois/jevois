@@ -1,6 +1,6 @@
-/*! \page Sensors Camera sensor options
+/*! \page Sensors JeVois-A33 camera sensor options
 
-JeVois smart cameras by default use an Omnivision ov9653 1.3MP camera sensor. This is a very good overall sensor that is
+\jva33 smart cameras by default use an Omnivision ov9653 1.3MP camera sensor. This is a very good overall sensor that is
 well matched to the available comptutation power of the processor inside the JeVois unit.
 
 In some cases, however, one may want to use different optics or sensors.

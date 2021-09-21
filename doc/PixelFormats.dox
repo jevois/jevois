@@ -1,6 +1,10 @@
 /*! \page PixelFormats Advanced topic: Image pixel formats
 
-<h1>Pixel formats supported by JeVois</h1>
+Pixel formats supported by JeVois-A33 and JeVois-Pro
+====================================================
+
+For the full and most updated list of resolutions and pixel formats supported by various JeVois camera sensors, see
+[CameraSensors.C]{http://jevois.org/doc/html/CameraSensor_8C_source.html} source code file.
 
 <ul>
 
@@ -52,7 +56,20 @@ which are listed above. It varies by host computer, guvcview version, etc. On ou
 under "Camera Output" in guvcview for RGB3, YU12, YV12. And when we try to select them, sometimes guvcview crashes. Just
 do not use them, stick to the native modes of GREY, RGGB, MJPG, RGBP, and YUYV.
 
-<h1>Video mapping concept</h1>
+Additional formats supported by JeVois-Pro
+==========================================
+
+<ul>
+
+<li>\b RGB24: This mode is available natively and is useful for deep neural nets that expect this pixel format.</li>
+
+<li>\b JVUI: This special output format specifies that the graphical user interface of JeVois-Pro will be used to draw
+overlays directly on top of the live camera view.</li>
+
+</ul>
+
+Video mapping concept
+=====================
 
 A vision processing mode in JeVois is determined by the combination of pixel format, image resolution, and
 framerate. You can play with all these parameters in your camera software to trigger different modes. For example, in

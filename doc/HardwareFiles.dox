@@ -39,6 +39,24 @@ Case for modified units with AR0135 global shutter sensor
 - [JeVois-A33-AR0135 bottom case STL](http://jevois.org/data/JeVois-A33-AR0135-Case-Bottom.STL)
 
 
+JeVois-Pro Schematics
+=====================
 
+- [JeVois-Pro Main Board Schematics](http://jevois.org/data/JeVois-Pro-Main-Schematics.pdf)
+- [JeVois-Pro Main Board Components](http://jevois.org/data/JeVoisPro-Main-ASSEMBLY.pdf)
+- [JeVois-Pro Daughter Board Schematics](http://jevois.org/data/JeVois-Pro-Daughter-Schematics.pdf)
+- [JeVois-Pro Daughter Board Components](http://jevois.org/data/JeVoisPro-Daughter-ASSEMBLY.pdf)
+
+JeVois-Pro Plastic case STL files
+=================================
+
+Note that those do not print well with filament-based 3D printers. They print ok with laser sintering printers, though
+you may lose many of the details in the extruded logos.
+
+Standard case
+-------------
+
+- [JeVois-Pro front case STL](http://jevois.org/data/JeVoisPro-Case-Front.STL)
+- [JeVois-Pro back case STL](http://jevois.org/data/JeVoisPro-Case-Back.STL)
 
 */

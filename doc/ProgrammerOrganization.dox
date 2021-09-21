@@ -9,10 +9,12 @@ Linux operating system and utilities, OpenCV and other libraries, JeVois core, J
 compiling and installing in platform mode will make use of some so-called staging areas, which are some directories on
 the host computers where the various bits and pieces will be assembled so that they can later be flashed to microSD.
 
-\section progorgov Organization overview
+Organization overview
+=====================
 
-- On the platform, all modules and config files get installed into a dedicated VFAT partition \b /jevois (which can be
-  exported by JeVois as a virtual USB drive).
+- On the platform, all modules and config files get installed into a dedicated VFAT partition:
+  + \jva33: \b /jevois (which can be exported by JeVois as a virtual USB drive).
+  + \jvpro: \b /jevoispro
 
 - Executables, core libraries and include files get installed into \b /usr/bin, \b /usr/lib, \b /usr/include, etc as
   usual.
@@ -24,18 +26,19 @@ the host computers where the various bits and pieces will be assembled so that t
 - Likewise, we also install executables, libraries and include files natively compiled for host into \b /usr/bin, \b
   /usr/lib, \b /usr/include, etc as usual.
 
-- Further, bootloaders, boot config files, and compiled operating system for the JeVois platform are placed into a first
-  staging directory <b>/var/lib/jevois-build</b>, which is dedicated to all files that will end up into the \b LINUX and
-  \b BOOT partitions on the microSD.
+- \jva33: Further, bootloaders, boot config files, and compiled operating system for the JeVois platform are placed into
+  a first staging directory <b>/var/lib/jevois-build</b>, which is dedicated to all files that will end up into the \b
+  LINUX and \b BOOT partitions on the microSD.
 
-- Cross-compiled machine vision modules, libraries, and config files for the platform are placed into a second staging
-  directory </b>/var/lib/jevois-microsd</b>, which is dedicated to all files that will end up into the \b JEVOIS
+- \jva33: Cross-compiled machine vision modules, libraries, and config files for the platform are placed into a second
+  staging directory </b>/var/lib/jevois-microsd</b>, which is dedicated to all files that will end up into the \b JEVOIS
   partition on the microSD.
 
-- Final microSD flashing script \b jevois-flash-card combines the contents of <b>/var/lib/jevois-build</b> and
+- \jva33: Final microSD flashing script \b jevois-flash-card combines the contents of <b>/var/lib/jevois-build</b> and
   </b>/var/lib/jevois-microsd</b> into the final microSD card.
 
-\section progorgdetails Organization details
+JeVois-A33 Organization details
+===============================
 
 - When compiling and installing \b jevois for \b host (using `./rebuild-host.sh` inside \b jevois; see \ref
   CompilingJeVois):
@@ -108,6 +111,10 @@ the host computers where the various bits and pieces will be assembled so that t
   of running the complex full rebuild from source in \b jevois-sdk:
   + Pre-compiled whole buildroot tree in <b>/usr/share/jevois-sdk/out/</b>
 
+JeVois-Pro Organization details
+===============================
+
+coming soon...
 
 */
 

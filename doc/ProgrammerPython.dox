@@ -4,7 +4,7 @@ namespace rawimage
 {
 /*! \page ProgrammerPython Programming machine vision modules with Python
 
-Starting with \jvversion{1.1}, you can program machine vision modules for JeVois in Python 3.5.
+Starting with \jvversion{1.1}, you can program machine vision modules for JeVois in Python 3.x.
 
 Overview
 ========
@@ -63,8 +63,9 @@ Python modules should be organized as follow:
 - The module may declare and implememt (all are optional, but most modules should at least implement one of the
   process() functions to be useful):
   + Constructor with no arguments: `__init__(self)`
-  + Process function with no USB output: `processNoUSB(self, inframe)`
   + Process function with USB output: `process(self, inframe, outframe)`
+  + Process function with no USB output: `processNoUSB(self, inframe)`
+  + \jvpro Process function with GUI output: `processGUI(self, inframe, guihelper)`
   + Function to parse a serial command forwarded to the module by the JeVois Engine, return a string:
     `parseSerial(self, str)`
   + Function to return a string that describes the custom commands the module supports, for the JeVois help message:
@@ -87,12 +88,15 @@ The following functions and classes of the JeVois core software are wrapped for 
 of a given class or function, just inspect the C++ documentation and assume that the same class name, function name, and
 number and types of arguments will be used (except for a few exceptions noted below).
 
-Refer to the source code in \ref BOOST_PYTHON_MODULE() for the latest up-to-date list of Python bindings.
+Refer to the source code in \ref BOOST_PYTHON_MODULE() in \ref PythonSupport.C for the latest up-to-date list of Python
+bindings.
 
 The bindings can be imported into Python through:
 
 \code{.py}
-import libjevois as jevois
+import pyjevois
+if pyjevois.pro: import libjevoispro as jevois
+else: import libjevois as jevois
 \endcode
 
 Every JeVois module written in Python should start with that import.
@@ -124,6 +128,9 @@ List of bindings
 Click on any of the classes or functions below to see its documentation. Although the doc is for the C++ version, the
 functions and classes listed here have an exact binding to Python, except that you can ignore any C++ qualifiers
 (\c const and similar) and reference/pointer specifications (\c & or \c * before an argument name).
+
+\note Refer to the source code in \ref BOOST_PYTHON_MODULE() in \ref PythonSupport.C for the latest up-to-date list of
+Python bindings.
 
 - General utility functions declared in \ref Utils.H
   + fccstr()
@@ -209,6 +216,8 @@ functions and classes listed here have an exact binding to Python, except that y
   function to place various variable values in that string):
   + LDEBUG(), LINFO(), LERROR(), LFATAL()
   + Log levels defined as constants: <b>jevois.LOG_DEBUG, jevois.LOG_INFO, jevois.LOG_ERR, jevois.LOG_CRIT</b>.
+
+- On \jvpro, functions exposed by GUIhelperPython, which is a proxy to GUIhelper.
 
 Code documentation and accessory files
 ======================================

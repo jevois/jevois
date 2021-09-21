@@ -1,0 +1,119 @@
+/*! \page ProUserQuick JeVois-Pro Quickstart user guide
+
+
+Basics
+======
+
+For more details and step-by-step instructions, see the different sections under \ref User
+
+New users, be sure to check out [JeVois Start](/start/start.html).
+
+- Your HDMI display must support at least 1080p/60Hz (1920x1080 at 60 frames/s). If your computer monitor does not work,
+  try your HD or 4K television.
+
+- Standard USB keyboards and mice should be detected automatically. Please try the most generic ones you have, if your
+  fancy ones are not detected.
+
+Troubleshooting
+===============
+
+- <b>I see the JeVois-Pro boot logo, but after that my monitor goes blank, or reports that picture is out of range.</b>
+  Your monitor needs to support at least 1080p (1920x1080). In some early shipments, we had set the
+  resolution to 1080p30Hz, but it turns out that 1080p60Hz is more widely supported. Please try this fix:
+  + carefully eject the microSD card from JeVois-Pro, as shown in
+    [this video](https://www.youtube.com/watch?v=0wMplgtwuAc)
+  + attach it to a computer using a card reader
+  + open the drive called \b BOOT
+  + in there, find file \b env.txt and open it using a plain text editor (e.g., Notepad, TextEdit, nano, etc). Just
+    double-clicking on it should do the trick.
+  + scroll down to the line that says: `hdmi=1080p30hz` and replace 30 by 60
+  + save the file and cleanly eject the disk
+  + insert the microSD back into JeVois-Pro and it should work.
+
+- <b>The top and bottom of the video are clipped</b>. Many televisions indeed crop the picture slightly by default. You
+  need to go through the menus of your television and find a picture setting for "full native", "full resolution",
+  "full 100%", etc. Here is an example with a Sceptre 4K TV:
+  
+  \jvimg{sceptrenormal.jpg, 10%}
+  Above: in normal mode on this TV, the picture is cropped slightly (see the line of text at the bottom of the
+  screen). Click on picture to enlarge.
+  
+  \jvimg{sceptrefull.jpg, 10%}
+  Above: Using the TV's remote to set the TV to "full 100%" eliminates the cropping. Click on picture to enlarge.
+
+
+
+Boot modes
+==========
+
+Under the \b System tab of the GUI, you can select different boot modes for JeVois-Pro:
+
+- JeVois: starts the JeVois software on boot.
+- Ubuntu console: starts a text console on boot.
+- Ubuntu graphical: starts X-Windows and provides a graphical login.
+
+Once you are in either console or graphical mode, issue these commands in a terminal to switch:
+
+\verbatim
+sudo systemctl set-default jevoispro.target # to boot to JeVois software
+sudo systemctl set-default multi-user.target # to boot to Ubuntu console
+sudo systemctl set-default graphical.target # to boot to Ubuntu graphical
+\endverbatim
+
+Then
+
+\verbatim
+sudo shutdown -h now
+\endverbatim
+
+Unplug power and plug it back in.
+
+\note Software reset (shutdown -r) currently does not work. It is likely a hardware issue but we may be able to create a
+software workaround later.
+
+Passwords
+=========
+
+User \a jevois has password \b jevois and is capable of sudo (using that password).
+
+User \a root has password \b jevois
+
+JeVois-Pro software runs as root by default.
+
+Starting JeVois software manually
+=================================
+
+If you have switched to Console boot, after you login (either as jevois/jevois or root/jevois), you can start the JeVois
+software from the command-line:
+
+\verbatim
+sudo jevoispro.sh
+\endverbatim
+
+Note that the GPU drivers provided by ARM for our chip (Amlogic A311D) work in full-screen framebuffer mode only. So
+they work perfectly when booting in JeVois-Pro mode or Console mode. But if you run `sudo jevoispro.sh` from a terminal
+in X-windows, you will get conflicts between two graphical interfaces (X-windows and the JeVois GUI). You will see 2
+mouse pointers, some X windows will refresh on top of the JeVois display, etc. Thus, if you want to run jevoispro.sh
+manually, do it from the console mode.
+
+When you are in console mode, you can start X-windows by typing:
+
+\verbatim
+startx
+\endverbatim
+
+and when you logout from X, you will get back to your console.
+
+This is very useful for development. You would do as follows:
+
+- switch to console boot
+- login as root/jevois
+- run `sudo jevoispro.sh`
+- if you want to exit, activate the \p allowquit parameter of the Graphical User Interface (you need to turn on showing
+  system parameters first). Or you could also start with `sudo jevoispro.sh --gui --allowquit` which will allow you to
+  exit JeVois software when you press the ESC key.
+- if you need to edit some files, download some files, etc and you like to do that in X-windows, then `startx` and
+  logout from it when you are done.
+- then you can run `sudo jevoispro.sh` again, etc.
+
+*/

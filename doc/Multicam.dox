@@ -1,6 +1,6 @@
-/*! \page Multicam Streaming video from multiple JeVois cameras connected to one USB bus
+/*! \page Multicam JeVois-A33 streaming video from multiple JeVois cameras connected to one USB bus
 
-By default, JeVois is configured to use all of the USB isochronous bandwidth, so as to minimize latency.
+By default, \jva33 is configured to use all of the USB isochronous bandwidth, so as to minimize latency.
 
 In a nutshell, isochronous transfers are the ones that guarantee real time data delivery, and hence are desirable for
 audio and video. On a 8kHz clock (125us period), each connected device can request some time slots, for example, a

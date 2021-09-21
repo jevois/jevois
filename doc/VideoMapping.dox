@@ -21,6 +21,8 @@ format. These mappings specify camera sensor format, resolution and frame rate i
 used to process the camera frames. These mappings can both be specified in the \b videomappings.cfg file, or can be
 defined at runtime (see the \b setmapping2 command in \ref UserCli).
 
+On JeVois-Pro, some mappings draw overlays over the live camera view and support GUI widgets.
+
 Below is an example \b videomappings.cfg file. Lines that start with a \a # sign are commented out and ignored by the
 smart camera.
 
@@ -50,6 +52,12 @@ duplicate video mappings in the \b videomappings.cfg file, the following policy 
   by 1 fps (and so on if more than two conflicts).
 
 See jevois::videoMappingsFromStream() for more info.
+
+The latest list of mappings for \jva33 is
+[here]{https://github.com/jevois/jevois/blob/master/Config/videomappings-A33.cfg}, and for \jvpro see
+[here]{https://github.com/jevois/jevois/blob/master/Config/videomappings-Pro.cfg}.
+
+Here is an example for a JeVois-A33 camera:
 
 \verbatim
 ######################################################################################################################

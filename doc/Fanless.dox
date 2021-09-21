@@ -1,6 +1,6 @@
-/*! \page Fanless Fanless operation
+/*! \page Fanless JeVois-A33 fanless operation
 
-In some situations, the fan that cools JeVois is just too loud or consumes too much power. It is possible for JeVois to
+In some situations, the fan that cools \jva33 is just too loud or consumes too much power. It is possible for JeVois to
 work without it. Here we show you how to convert your JeVois camera to using a heatsink instead of the fan.
 
 During development of JeVois, we had initially planned on passive cooling with a heatsink. However, the required

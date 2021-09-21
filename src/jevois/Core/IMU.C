@@ -34,7 +34,7 @@ jevois::IMU::~IMU()
 { }
 
 // ####################################################################################################
-void jevois::IMU::loadDMPfirmware(bool verify)
+void jevois::IMU::loadDMPfirmware(bool verify, bool errthrow)
 {
   unsigned char currbank = 0xff;
   
@@ -59,6 +59,8 @@ void jevois::IMU::loadDMPfirmware(bool verify)
     addr += chunksiz; chunksiz = DMP_MEM_BANK_SIZE;
   }
 
+  bool verify_error = false;
+  
   if (verify)
   {
     LINFO("Verifying ICM20948 DMP firmware...");
@@ -82,9 +84,11 @@ void jevois::IMU::loadDMPfirmware(bool verify)
       readRegisterArray(ICM20948_REG_MEM_R_W, buf, chunksiz);
       for (size_t j = 0; j < chunksiz; ++j)
         if (buf[j] != dmp3_image[i + j])
-          LERROR("DMP code verify error addr=" << std::hex << std::showbase << addr + j << ", read=" << buf[j] <<
+        {
+          LDEBUG("DMP code verify error addr=" << std::hex << std::showbase << addr + j << ", read=" << buf[j] <<
                  ", orig=" << dmp3_image[i + j]);
-      
+          verify_error = true;
+        }
       addr += chunksiz; chunksiz = DMP_MEM_BANK_SIZE;
     }
   }
@@ -98,6 +102,12 @@ void jevois::IMU::loadDMPfirmware(bool verify)
 
   LINFO("Loaded " << sizeof(dmp3_image) << " bytes of DMP firmware.");
   // User code will actually enable the DMP if desired.
+
+  if (verify_error)
+  {
+    if (errthrow) LFATAL("Error during DMP firmware verify -- DMP NOT OPERATIONAL");
+    else LERROR("Error during DMP firmware verify -- DMP NOT OPERATIONAL");
+  }
 }
 
 // ####################################################################################################

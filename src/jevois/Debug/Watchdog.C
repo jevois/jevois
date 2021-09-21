@@ -20,6 +20,7 @@
 #include <jevois/Util/Utils.H>
 #include <jevois/Debug/Log.H>
 
+#include <functional>
 #include <unistd.h>
 
 // ####################################################################################################

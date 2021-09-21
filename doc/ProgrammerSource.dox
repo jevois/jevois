@@ -10,19 +10,21 @@ Please see the [GNU GPL page](https://www.gnu.org/licenses/gpl-3.0.en.html) for 
 
 All JeVois source code is hosted on Github, at https://github.com/jevois
 
-There are 5 repositories:
+The following repositories are provided:
 
 - \b jevois: The core C++17 JeVois software.
 - \b jevoisbase: The base collection of 25+ machine vision modules for JeVois.
 - \b samplemodule: A sample standalone module for JeVois, use as a template for new modules.
 - \b samplepythonmodule: A sample Python standalone module for JeVois, use as a template for new modules.
-- \b jevois-sdk: The framework that provides a Linux kernel and operating system for a JeVois camera, to be flashed
+- \b jevois-sdk: The framework that provides a Linux kernel and operating system for a \jva33 camera, to be flashed
+  to a microSD card.
+- \b jevoispro-sdk: The framework that provides a Linux kernel and operating system for a \jvpro camera, to be flashed
   to a microSD card.
 
-Installing Ubuntu packages
---------------------------
+Installing Ubuntu packages for JeVois-A33 development
+-----------------------------------------------------
 
-The following packages have been made available at http://jevois.usc.edu
+The following packages are available at https://jevois.usc.edu for \jva33:
 
 - \b jevois-opencv: OpenCV 4.x compiled for host computer with settings that match those used by the JeVois platform
   hardware. We install this package into /usr/share/jevois-opencv-4.x so that it will not interfere with any other
@@ -44,6 +46,12 @@ As jevois-sdk-dev brings all the others as dependencies, getting up and running 
 one apt-get install command.
 
 For more details about file organization across these different packages, see \ref ProgrammerOrganization
+
+Installing Ubuntu packages for JeVois-Pro development
+-----------------------------------------------------
+
+coming soon...
+
 
 Source download and install
 ---------------------------

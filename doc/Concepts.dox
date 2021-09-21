@@ -8,15 +8,15 @@ namespace jevois
 Basic theory of operation
 =========================
 
-\image html frameworks.png "Hardware and software JeVois frameworks"
+\image html frameworks.png "Hardware and software JeVois frameworks" width=\textwidth
 
-While anything is possible since the JeVois smart camera implements a full Linux computer (though with no display), the
-standard modes of operation are as follows:
+While anything is possible since the JeVois smart cameras implement full Linux computers (though with no display on
+JeVois-A33), the standard modes of operation are as follows:
 
-Operation with streaming video output
--------------------------------------
+JeVois-A33: Operation with streaming video output over USB
+----------------------------------------------------------
 
-- When the JeVois smart camera is connected to a host computer over USB, it announces itself to that computer as two
+- When the JeVois-A33 smart camera is connected to a host computer over USB, it announces itself to that computer as two
   virtual USB devices: a webcam, and a serial-over-USB interface.
 
 - Users on the host computer start a video capture software and select a video format, resolution, and framerate.
@@ -44,7 +44,6 @@ Operation with streaming video output
     machine vision module).
   + The Engine is then ready to loop to the next video frame.
 
-
 Operation with streaming video out is useful in at least two basic scenarios:
 
 - for demo and debugging/development purposes, the JeVois smart camera streams live video with additional annotations
@@ -58,10 +57,33 @@ Operation with streaming video out is useful in at least two basic scenarios:
   those 3 regions. The host computer may not display anything to a human user, but might instead just control an
   autonomous robot.
 
-Operation with no video output
-------------------------------
+JeVois-Pro: Operation with video display
+----------------------------------------
 
-- The JeVois smart camera is powered from a USB power source, such as a USB charger or USB battery bank.
+- When JeVois-Pro is connected to a display, it shows what the camera sees, plus graphical overlays about what it
+  computed and understood in the video stream (e.g., boxes around detected objects).
+
+- On every video frame,
+  + the Engine captures a frame (image) from the camera sensor.
+  + the frame is sent to the machine vision processing module, along with a handle to a graphical interface engine
+    (GUIhelper) to help with drawing overlays.
+  + the machine vision module is invoked and it should analyze the camera image and draw any results.
+  + the Engine then sends the resulting graphical output to the HDMI display using OpenGL on the JeVois-Pro GPU.
+  + The Engine runs any command received over its 4-pin serial port (typically, connected to an Arduino or similar), or
+    over its serial-over-USB port or the integrated graphical user interface (GUI). These commands can be requests to
+    adjust camera sensor parameters (exposure, contrast, etc) or machine vision processing parameters (various
+    thresholds or modes, as implemented by each machine vision module).
+  + The Engine is then ready to loop to the next video frame.
+
+Note that JeVois-Pro also provides support for "legacy" machine vision modules which output an image that contains
+results already drawn in that image, just like JeVois-A33 did in the previous section. The only difference is that this
+image is not streamed to a host computer over USB like with JeVois-A33. Instead, it is displayed on the HDMI display.
+
+JeVois-A33 and JeVois-Pro: Operation with no video output
+---------------------------------------------------------
+
+- The JeVois-A33 smart camera is powered from a USB power source, such as a USB charger or USB battery bank. JeVois-Pro
+  is powered from a power adapter or battery.
 
 - A configuration file on the microSD card inside the smart camera may instruct it to immediately launch a particular
   machine vision module, or a controller (e.g., Arduino) connected to the smart camera's 4-pin serial port may instruct
@@ -75,35 +97,38 @@ Operation with no video output
   + the frame is sent to the machine vision processing module.
   + the machine vision module is invoked and it should analyze the camera image. It would then also usually send
     short text messages about the results of its processing to the 4-pin serial port.
-  + The Engine runs any command received over its 4-pin serial port.
-  + The Engine is then ready to loop to the next camera frame.
+  + the Engine runs any command received over its 4-pin serial port.
+  + the Engine is then ready to loop to the next camera frame.
 
 Operation with no video output is usually the preferred mode for autonomous systems. All of the processing happens on
-the JeVois camera and no host computer is necessary at all. A small controller receives the vision results over the
-4-pin serial link and controls various motors or actuators.
+the JeVois camera and no host computer is necessary at all. A small controller (e.g., Arduino) receives the vision
+results over the 4-pin serial link and controls various motors or actuators.
 
 Video formats: camera and output, video mappings
 ------------------------------------------------
 
-Thus, two video formats are usually considered when running machine vision algorithms on JeVois:
+Two video formats are usually considered when running machine vision algorithms on JeVois:
 
 - <b>camera format</b>: pixel type, resolution, and framerate used to capture video frames with the camera sensor. The
   video frames in camera format captured by the camera sensor are sent to a JeVois machine vision \b module for
   processing.
 
-- <b>output (USB) format</b>: pixel type, resolution, and framerate used to send video frames over the USB link to a
-  host computer. This format is selected by a video capture software running on a host computer. The video frames in
-  output format are created by the current JeVois machine vision \b module and are streamed to the host computer over
-  the USB link.
+- <b>output format</b>: pixel type, resolution, and framerate used to send video frames over the USB link to a host
+  computer for JeVois-A33, or to be displayed in "legacy" mode on JeVois-Pro (see above). On JeVois-A33, this format is
+  selected by a video capture software running on a host computer. On JeVois-Pro, it is selected by the user using the
+  graphical user interface. The video frames in output format are created by the current JeVois machine vision \b module
+  and are streamed to the host computer over the USB link (JeVois-A33) or to HDMI (JeVois-Pro). Note that JeVois-Pro
+  also supports a special output video format called \b JVUI which is used when drawing OpenGL overlays on top of the
+  camera's video frames (as opposed to generated fully rasterized output video frames).
 
 The \b camera and \b output formats do not have to match, and they usually do not because machine vision often involves
 transforming an image into another one that is different, including with possiby different pixel type, resolution, and
 frame rate.
 
-The JeVois camera is capable of running a wide range of machine vision algorithms. The selection of which algorithm runs
-is defined by a configuration file called \b videomappings.cfg which establishes a mapping between \b camera resolution,
-framerate, and pixel format, a USB \b output resolution, and pixel format, and the corresponding machine vision
-processing \b module.
+The JeVois camera is capable of running a wide range of machine vision algorithms. The selection of which algorithms can
+run and at which camera and output video formats is defined by a configuration file called \b videomappings.cfg which
+establishes a mapping between \b camera resolution, framerate, and pixel format, an \b output resolution, and pixel
+format, and the corresponding machine vision processing \b module.
 
 For more information see \ref PixelFormats and \ref VideoMapping.
 
@@ -112,17 +137,22 @@ Host and Platform modes
 =======================
 
 JeVois software normally is executed on the JeVois smart camera processor. This is called <b>platform mode</b> in this
-documentation. Because the CPU inside the JeVois smart camera is an ARM architecture, whie most desktop computers today
+documentation. Because the CPU inside the JeVois smart camera is an ARM architecture, while most desktop computers today
 use an Intel processor acrchitecture, code that is intended to run on the JeVois platform is usually \a cross-compiled
 for ARM. That is, a special compiler is used which runs on an Intel desktop computer but generates executable code that
 is meant to run on an ARM computer. The compiled code is then copied to microSD card that is inserted into the JeVois
 smart camera.
 
-JeVois software can also be compiled and run in <b>host mode</b>, in which case the regular compiler is used and \b
-jevois-daemon can directly run on the desktop computer that was used to compile it.
+JeVois software can also be compiled and run in <b>host mode</b>, in which case the desktop compiler is used to both
+compile and run the JeVois machine vision software. This is very useful when developing new machine vision modules: one
+can just edit, compile, and run them on the desktop, without having to transfer compiled files to the smart camera for
+execution. Once a new machine vision moduleruns well in host mode, it can be recompiled in platform mode and the
+resulting ARM executable can be copied and run on the smart camera.
 
 Both \b platform and \b host modes are possible because the core JeVois software is written in portable C++
-language. Some key differences exist, however, due to fundamental hardware differences between host and platform:
+language. Some key differences exist, however, due to fundamental hardware differences between host and platform.
+
+Here are differences for JeVois-A33:
 
 Feature | Platform | Host
 --------|----------|------
@@ -137,32 +167,70 @@ Display output | No | Yes
 USB streaming video output | Yes | No
 Serial-over-USB | Yes | No
 
+Fewer differences exist on JeVois-Pro since it is a full computer, with keyboard, mouse, and display. The main remaining
+differences are that JeVois-Pro uses a 64-bit ARM processor (aarch64) and has extra hardware features (neural
+accelerators, dual-stream video capture explained below, etc).
+
 Note that usually one would \a either:
 
-- Compile and run \b jevois-daemon in \b host mode on a host computer: In this case usually a \a dumb camera will be
+- Compile and run JeVois software in \b host mode on a host computer: In this case usually a \a dumb camera will be
   used (any regular webcam), all machine vision processing runs on the host CPU, and video output is to display; \a or
 
-- Cross-compile \b jevois-daemon in \b platform mode and run it inside the JeVois smart camera: In this case the
+- Cross-compile JeVois software in \b platform mode and run it inside the JeVois smart camera: In this case the
   built-in camera sensor in the JeVois smart camera is used, all machine vision algorithms run on the small processor
-  inside the JeVois smart camera, and video output is streamed over the USB link to a host. The host then runs a \a dumb
-  video capture software.
+  inside the JeVois smart camera, and video output is streamed over the USB link to a host (JeVois-A33) or to HDMI
+  (JeVois-Pro). When streaming over USB with JeVois-A33, the host computer then runs a \a dumb video capture software
+  and to display the results, but it does not perform any of the machine vision processing.
 
-But also note that chaining two \b jevois-daemon processes is possible, with one running inside the camera and a second
-one running on a host computer. For that to work, you need to make sure that the \b camera format requested by \b
-jevois-daemon running on the host exactly matches an available \b output format of the \b jevois-daemon running inside
-the smart camera. Such scenario may be useful to split image processing tasks between the JeVois smart camera and a host
-computer. For example, the JeVois smart camera could capture video and detect edges, and then transmit the edge maps
-over USB to a host computer that would capture them and process them further to detect and identify objects in the edge
-maps.
+
+JeVois-Pro unique optimizations
+===============================
+
+JeVois-Pro has been optimized in several ways to deliver smooth, righ-resolution outputs.
+
+There is no secret, embedded processors are not as fast as much more expensive and power-hungry desktop processors or
+professional GPUs. Chip manufacturers optimize embedded processors for particular tasks that commend high-volume sales,
+such as mobile phones and smart TV boxes. In JeVois-Pro, we leverage these optimizations to create high-throughput
+real-time machine vision capabilities through custom JeVois software. The custom JeVois software spans from low-level
+Linux kernel enhancements and hardware device drivers, to high-level machine vision support code.
+
+For example, processing 4K (8 MP, or 8 megapixels) or even 1080p (2 MP) video through any non-trivial machine vision
+algorithm is just not possible on an embedded processor. Most deep neural networks run at much lower resolution anyway,
+typically between 128x128 (0.016 MP) and 513x513 (0.263 MP).
+
+\jvimg{jevois-pro-diagrams-a.png, 70%} <b>Above: Traditional approach: CPU copies large amounts pixel data from camera
+to GPU for display – slow framerate, high CPU usage.</b>
+
+Thus, in JeVois-Pro, we implemented hardware-accelerated dual-stream video capture and display, giving users the best of
+both worlds: crisp, high-resolution displays plus fast processing through deep neural nets or other machine vision
+algorithms. We used advanced techniques including zero-copy direct-memory-access (DMA) from camera sensor to GPU to
+achieve this.
+
+\jvimg{jevois-pro-diagrams-a2.png, 70%} <b>Above: JeVois-Pro zero-copy approach: CPU only copies an address pointer
+(DMABUF handle) from camera to GPU – faster framerate, negligible CPU usage.</b>
+
+JeVois-Pro combines hardware acceleration of camera Image Signal Processor (ISP), Graphics Processing Unit (GPU), and Neural Processing Unit (NPU) to deliver real-time performance even on complex machine vision pipelines, freeing CPU resources for machine vision processing and high-level computations.
+
+\jvimg{jevois-pro-diagrams-b.png, 70%} <b>Above: JeVois-Pro dual stream: use DMABUF for zero-copy of full-resolution
+image to display, use CPU or neural accelerator to process low-resolution image, use OpenGL to draw overlays (lines,
+boxes, text, etc) showing processing results, and to draw GUI.</b>
+
+All the demos shown in the [JeVois-Pro intro video](https://www.youtube.com/watch?v=aJp-mIBytno) run on JeVois-Pro in
+real-time, including the demos that show 4 deep networks running in parallel. The tiled display with all detected boxes
+is rendered on the JeVois-Pro GPU, showing results of deep networks running on the JeVois-Pro CPU, NPU (5-TOPS Neural
+Processing Unit integrated into the JeVois processor), TPU (4-TOPS Coral Edge Tensor Processor Unit on a PCIe M.2 add-on
+board inside JeVois-Pro), and external VPU (1-TOPS Myriad-X Vector Processing Unit, available separately as a USB dongle
+device).
 
 
 The jevois-daemon program and more details about the JeVois Engine
 ==================================================================
 
 \b jevois-daemon is the main executable program that runs inside the JeVois smart camera. It handles loading machine
-vision modules at runtime, configuring camera sensor, USB streaming, and serial communication interfaces. It also
-handles grabbing video frames from the camera sensor, passing those to the currently loaded machine vision \b module,
-and streaming the module's output video frames (if any) to a host computer over USB.
+vision modules at runtime, configuring camera sensor, USB streaming (JeVois-A33) or OpenGL display (JeVois-Pro), and
+serial communication interfaces. It also handles grabbing video frames from the camera sensor, passing those to the
+currently loaded machine vision \b module, and streaming the module's output video frames (if any) to a host computer
+over USB (JeVois-A33) or to HDMI (JeVois-Pro).
 
 \b jevois-daemon implements an Engine that orchestrates the flow of data from camera sensor to machine vision processing
 to video streaming over USB.
@@ -172,10 +240,10 @@ The Engine contains the following basic elements:
 - A VideoInput, instantiated as either a Camera for live video streaming or a MovieInput for processing of pre-recorded
   video files or sequences of images (useful during algorithm development, to test and optimize on reproducible inputs);
 
-- A VideoOutput, instantiated either as a USB Gadget driver when running on the JeVois hardware platform, or as a
-  VideoDisplay when running on a computer that has a graphics display, or as a MovieOutput to save output video frames
-  to disk, or as a VideoOutputNone if desired for benchmarking of vision algorithms while discounting any work related
-  to transmitting output frames.
+- A VideoOutput, instantiated either as a USB Gadget driver when running on the JeVois-A33 hardware platform, as a
+  VideoDisplayGUI on JeVois-Pro, or as a VideoDisplay when running on a host computer that has a graphics display, or as
+  a MovieOutput to save output video frames to disk, or as a VideoOutputNone if desired for benchmarking of vision
+  algorithms while discounting any work related to transmitting output frames.
 
 - A DynamicLoader which handles loading the chosen vision processing Module at runtime depending on user selections;
 
@@ -188,9 +256,8 @@ The Engine contains the following basic elements:
   StdioInterface to accept commands directly in the terminal in which the jevois-daemon was started);
 
 - The list of VideoMapping definitions imported from your videomappings.cfg file. These definitions specify which video
-  output modes are available over USB and their corresponding Camera settings and which Module to use, as well as which
-  modes are available that do not have any sreaming video output over USB (e.g., when connecting the hardware platform
-  to an Arduino only).
+  output modes are available and their corresponding Camera settings and which Module to use, as well as which modes are
+  available that do not have any sreaming video output (e.g., when connecting the hardware platform to an Arduino only).
 
 The main loop of Engine runs until the user decides to quit, and basically goes through the following steps:
 
@@ -199,31 +266,36 @@ The main loop of Engine runs until the user decides to quit, and basically goes 
   future, when it has become available (i.e., has been captured by the camera). This is very similar to the std::future
   framework of C++11.
 
-- When the current VideoMapping specifies that we will be streaming video frames out over USB, also create an
-  OutputFrame object which is an exception-safe wrapper around the next available Gadget frame. This is also just a
+- When the current VideoMapping specifies that we will be streaming video frames out over USB (JeVois-A33), also create
+  an OutputFrame object which is an exception-safe wrapper around the next available Gadget frame. This is also just a
   mechanism for gaining access to the next blank video buffer that is available from the USB driver and that we should
-  fill with interesting pixel data before sending it over USB to a host computer.
+  fill with interesting pixel data before sending it over USB to a host computer. On JeVois-Pro, one may use a GUIhelper
+  instead to directly draw overlays on top of the live camera view.
 
 - Call the currently-loaded Module's process() function, either as process(InputFrame, OutputFrame) when the current
-  VideoMapping specifies that some video output is to be sent over USB, or as process(InputFrame) when the current
-  VideoMapping specifies no video output. Any exception thrown by the Module's process() function will be caught,
-  reported, and ignored. The process() function would typically request the next available camera image through the
-  InputFrame wrapper (this request may block until the frame has been captured by the camera sensor hardware), process
-  that image, request the next available output image through the OutputFrame wrapper (when VideoMapping specifies that
-  there is USB video output), and paint some results into that output image, which will then be sent to the host coputer
-  over USB, for display by some webcam program or for further processing by some custom vision software running on that
-  computer. In addition, the currently loaded Module may issue messages over the UserInterface ports (e.g., indicating
-  the location at which an object was found, to let an Arduino know about it).
+  VideoMapping specifies that some video output is to be sent over USB on JeVois-A33 (or legacy mode on JeVois-Pro), or
+  as process(InputFrame, GUIhelper) on JeVois-Pro when drawing overlays on top of the live camera view, or as
+  process(InputFrame) when the current VideoMapping specifies no video output. Any exception thrown by the Module's
+  process() function will be caught, reported, and ignored. The process() function would typically request the next
+  available camera image through the InputFrame wrapper (this request may block until the frame has been captured by the
+  camera sensor hardware), and process that image. On JeVois-A33 with video output to USB, it would then request the
+  next available output image through the OutputFrame wrapper (when VideoMapping specifies that there is USB video
+  output), and paint some results into that output image, which will then be sent to the host coputer over USB, for
+  display by some webcam program or for further processing by some custom vision software running on that computer. On
+  JeVois-Pro, it may instead use the GUIhelper to draw boxes, text, polygons, etc on top of the live camera view. In
+  addition, the currently loaded Module may issue messages over the UserInterface ports (e.g., indicating the location
+  at which an object was found, to let an Arduino know about it).
 
 - Read any new commands issued by users over the UserInterface ports and execute the appropriate commands.
 
-- Handle user requests to change VideoMapping, when they select a different video mode in their webcam software running
-  on the host computer connected to the JeVois hardware. Such requests may trigger unloading of the current Module and
-  loading a new one, and changing camera pixel format, image size, etc. These changes are guaranteed to occur when the
-  Module's process() function is not running, i.e., Module programmers do not have to worry about possible changes in
-  image dimensions or pixel formats during execution of their process() function.
+- Handle user requests to change VideoMapping, when they select a different video mode, either in their webcam software
+  running on the host computer connected to the JeVois-A33 hardware, or in the GUI of JeVois-Pro. Such requests may
+  trigger unloading of the current Module and loading a new one, and changing camera pixel format, image size,
+  etc. These changes are guaranteed to occur when the Module's process() function is not running, i.e., Module
+  programmers do not have to worry about possible changes in image dimensions or pixel formats during execution of their
+  process() function.
 
-- Pass any user requests received over USB or UserInterface to adjust camera parameters to the actual Camera hardware
+- Pass any user requests received over any UserInterface to adjust camera parameters to the actual Camera hardware
   driver (e.g., when users change contrast in their webcam program, that request is sent to the Engine over USB, and the
   Engine then forwards it to the Camera hardware driver).
 
@@ -237,9 +309,16 @@ Summary of key concepts and terms
   processing.
 
 - <b>output (USB) format</b>: pixel type, resolution, and framerate used to send video frames over the USB link to a
-  host computer. This format is selected by a video capture software running on a host computer. The video frames in
-  output format are created by the current JeVois machine vision \b module and are streamed to the host computer over
-  the USB link.
+  host computer (JeVois-A33) or to HDMI display (JeVois-Pro legacy mode). This format is selected by a video capture
+  software running on a host computer (JeVois-A33) or through the JeVois-Pro GUI. The video frames in output format are
+  created by the current JeVois machine vision \b module and are streamed to the host computer over the USB link
+  (JeVois-A33) or displayed over HDMI (JeVois-Pro).
+
+- <b>JeVois-Pro overlays</b>: instead of outputting fully-rasterized images to be streamed over USB or displayed over
+  HDMI, JeVois-Pro also allows one to draw geometric shapes, text, etc on top of the live video from the camera
+  sensor. This is computationally very efficient (as explained above) as the live video is streamed directly from sensor
+  to display with negligible CPU cost. Likewise, the overlays are rendered by OpenGL on the JeVois-Pro GPU with also
+  little CPU use.
 
 - <b>video mapping</b>: establishes a correspondence between a user-selected \b output video format, a \b camera sensor
   video format, and a machine vision \b module. The \b camera and \b output formats do not have to be the same; for

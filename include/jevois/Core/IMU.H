@@ -76,8 +76,9 @@ namespace jevois
 
       //! Load the DMP firmware
       /*! On JeVois-A33, the firmware is already loaded by the camera kernel module. So this is only useful on
-          JeVois-Pro to load the firmware over SPI. */
-      void loadDMPfirmware(bool verify = false);
+          JeVois-Pro to load the firmware over SPI. If verify is true, we will read it back and check. If errthrow is
+          also true, throws an exception if verification fails. */
+      void loadDMPfirmware(bool verify = false, bool errthrow = false);
       
       //! Write a value to a DMP register
       /*! This very low-level access is for development of optimal DMP settings only and should not be used in normal

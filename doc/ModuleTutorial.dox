@@ -278,7 +278,7 @@ The approach we developed for the Neuromorphic Robotics Toolkit (NRT) and refine
   onParamChange() is the parameter class type, so that a host module with many parameters will have many
   different onParamChange() function, one per parameter that has a callback.
 
-- moduless inherit from their parameters using variadic templates to make inheriting from multiple parameters
+- modules inherit from their parameters using variadic templates to make inheriting from multiple parameters
   short and easy.  
 
 - each parameter exposes simple functions get(), set(), etc (see ParameterCore and ParameterBase). In a module

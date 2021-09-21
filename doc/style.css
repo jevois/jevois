@@ -97,6 +97,13 @@ strong.jvversion {
     border-radius: 4px
 }
 
+strong.jvmodel {
+    padding: 4px 6px;
+    color: Orange;
+    background-color: #f0f0f0;
+    border-radius: 4px
+}
+
 strong.jvhostplatform {
     padding: 2px 4px;
     color: MediumBlue;

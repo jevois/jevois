@@ -29,52 +29,68 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-extern "C"
-{
-  void jevois_spi_transfer(int fd, int reg, int siz, uint8_t * rx, uint8_t const * tx);
-}
-
 // ####################################################################################################
 jevois::IMUspi::IMUspi(std::string const & devname) :
     jevois::IMU(), itsDevName(devname), itsFd(-1), itsIMUbank(0)
 {
-  itsFd = open(devname.c_str(), O_RDWR);
-  if (itsFd < 0) PLFATAL("Error opening IMU SPI device " << devname);
-
-  unsigned char mode = SPI_CPOL | SPI_CPHA; // mode 3 for ICM20948
-  XIOCTL(itsFd, SPI_IOC_WR_MODE, &mode);
-
-  unsigned char bits = 8;
-  XIOCTL(itsFd, SPI_IOC_WR_BITS_PER_WORD, &bits);
-
+  // FIXME: clock speed seems to have no effect on whether we can load the DMP data or not.
+  // So setting retry to 1 for now, trying 7MHz only.
+  int retry = 1; // number of tries, halving the speed each time
   unsigned int speed = 7000000;
-  XIOCTL(itsFd, SPI_IOC_WR_MAX_SPEED_HZ, &speed);
 
-  // At the beginning, we need to read at least once to get the clock polarity in order:
-  readRegister(ICM20948_REG_WHO_AM_I);
-  
-  // Force a reset. Reset bit will auto-clear:
-  writeRegister(ICM20948_REG_PWR_MGMT_1, ICM20948_BIT_H_RESET);
+  while (retry)
+  {
+    try
+    {
+      itsFd = open(devname.c_str(), O_RDWR);
+      if (itsFd < 0) LFATAL("Error opening IMU SPI device " << devname);
 
-  // Disable I2C as we use SPI, reset DMP:
-  writeRegister(ICM20948_REG_USER_CTRL, ICM20948_BIT_I2C_IF_DIS | ICM20948_BIT_DMP_RST | ICM20948_BIT_DIAMOND_DMP_RST);
-  
-  // Check that the ICM20948 is detected:
-  auto ret = readRegister(ICM20948_REG_WHO_AM_I);
-  if (ret == ICM20948_DEVICE_ID) LINFO("Detected ICM20948 IMU on " << devname);
-  else LFATAL("Failed to detect ICM20948 on " << devname << ": device ID=0x" << std::hex << ret <<
-              ", should be 0x" << ICM20948_DEVICE_ID);
+      unsigned char mode = SPI_CPOL | SPI_CPHA; // mode 3 for ICM20948
+      XIOCTL(itsFd, SPI_IOC_WR_MODE, &mode);
 
-  // Init sequence for SPI operation:
-  writeRegister(ICM20948_REG_USER_CTRL, ICM20948_BIT_I2C_IF_DIS | ICM20948_BIT_I2C_MST_EN | ICM20948_BIT_FIFO_EN);
-  writeRegister(ICM20948_REG_PWR_MGMT_1, ICM20948_BIT_CLK_PLL);
+      unsigned char bits = 8;
+      XIOCTL(itsFd, SPI_IOC_WR_BITS_PER_WORD, &bits);
 
-  // Upload the DMP firmware:
-  loadDMPfirmware(true);
+      XIOCTL(itsFd, SPI_IOC_WR_MAX_SPEED_HZ, &speed);
 
-  // Enable the DMP:
-  writeRegister(ICM20948_REG_USER_CTRL, ICM20948_BIT_I2C_IF_DIS | ICM20948_BIT_I2C_MST_EN | ICM20948_BIT_FIFO_EN |
-                ICM20948_BIT_DMP_EN);
+      // At the beginning, we need to read at least once to get the clock polarity in order:
+      readRegister(ICM20948_REG_WHO_AM_I);
+      
+      // Force a reset. Reset bit will auto-clear:
+      writeRegister(ICM20948_REG_PWR_MGMT_1, ICM20948_BIT_H_RESET);
+      
+      // Disable I2C as we use SPI, reset DMP:
+      writeRegister(ICM20948_REG_USER_CTRL, ICM20948_BIT_I2C_IF_DIS | ICM20948_BIT_DMP_RST |
+                    ICM20948_BIT_DIAMOND_DMP_RST);
+      
+      // Check that the ICM20948 is detected:
+      auto ret = readRegister(ICM20948_REG_WHO_AM_I);
+      if (ret == ICM20948_DEVICE_ID) LINFO("Detected ICM20948 IMU on " << devname << " @ " << speed << "Hz");
+      else LFATAL("Failed to detect ICM20948 on " << devname << " @ " << speed << "Hz: device ID=0x" << std::hex <<
+                  ret << ", should be 0x" << ICM20948_DEVICE_ID);
+      
+      // Init sequence for SPI operation:
+      writeRegister(ICM20948_REG_USER_CTRL, ICM20948_BIT_I2C_IF_DIS | ICM20948_BIT_I2C_MST_EN | ICM20948_BIT_FIFO_EN);
+      writeRegister(ICM20948_REG_PWR_MGMT_1, ICM20948_BIT_CLK_PLL);
+
+      // Upload the DMP firmware:
+      loadDMPfirmware(true, (retry > 1));
+
+      // Enable the DMP:
+      writeRegister(ICM20948_REG_USER_CTRL, ICM20948_BIT_I2C_IF_DIS | ICM20948_BIT_I2C_MST_EN | ICM20948_BIT_FIFO_EN |
+                    ICM20948_BIT_DMP_EN);
+
+      // All good, let's get out of here:
+      return;
+    }
+    catch (...)
+    {
+      if (itsFd >= 0) close(itsFd);
+      --retry;
+      speed /= 2;
+    }
+  }
+  LERROR("Giving up trying to setup ICM20948 IMU with DMP -- DMP NOT OPERATIONAL, BASIC IMU MAY WORK OR NOT");
 }
 
 // ####################################################################################################
@@ -168,7 +184,7 @@ void jevois::IMUspi::writeRegister(unsigned short reg, unsigned char val)
     break;
   }
 
-  if (delay) std::this_thread::sleep_for(std::chrono::milliseconds(1));
+  if (delay) std::this_thread::sleep_for(std::chrono::milliseconds(5));
   
   if (verify)
   {
@@ -179,6 +195,8 @@ void jevois::IMUspi::writeRegister(unsigned short reg, unsigned char val)
 
       // Try again:
       spi_xfer(reg, ICM20948_SPI_WRITE, 1, nullptr, &val);
+
+      if (delay) std::this_thread::sleep_for(std::chrono::milliseconds(5));
 
       ret = readRegister(reg);
       if (ret != val)

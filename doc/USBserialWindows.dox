@@ -1,5 +1,7 @@
 /*! \page USBserialWindows Connecting to JeVois using serial-over-USB: Windows host
 
+This feature is not yet available on \jvpro but will soon be...
+
 \section serusbwingen Finding the serial-over-USB device on Windows host
 
 <b>This should only affect some Windows 7 and Windows 8 users. If you do not see the failed CDC Serial device shown

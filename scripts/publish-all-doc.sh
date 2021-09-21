@@ -2,6 +2,8 @@
 
 # This only works in iLab, it is to refresh and publish all docs to jevois.org
 
+rm -rf $JEVOIS_SRC_ROOT/jevois/doc/html
+rm -rf $JEVOIS_SRC_ROOT/jevoisbase/doc/html
 
 # First, make the JeVois doc so we get the tagfile for cross-linking to jevoisbase:
 cd $JEVOIS_SRC_ROOT/jevois
@@ -14,7 +16,7 @@ cd $JEVOIS_SRC_ROOT/jevoisbase
 rm -f src/Modules/*/modinfo*
 if [ ! -d hbuild ]; then ./rebuild-host.sh; fi
 cd hbuild
-make -j 50
+make -j
 
 # Then make and publish the jevoisbase doc, which also creates its tagfile:
 make docweb

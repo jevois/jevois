@@ -1,5 +1,7 @@
 /*! \page USBserialMac Connecting to JeVois using serial-over-USB: Mac host
 
+This feature is not yet available on \jvpro but will soon be...
+
 \section serusbmacgen Finding the serial-over-USB device on Mac host
 
 
