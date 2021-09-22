@@ -1,0 +1,55 @@
+/*! \page ProNetwork Connecting JeVois-Pro to a network
+
+
+Easiest: USB to wired networking
+================================
+
+If you have a wired network that runs a DHCP server, you can just use a USB-to-Ethernet adapter like the one below.
+
+\jvimg{usb-ether.jpg, 20%}
+
+It should be automatically detected and configured. To check from the JeVois-Pro console, you can issue `shell ifconfig`
+and inspect the configuration. You can then move to the System tab and try to ping jevois.usc.edu
+
+USB to Wifi networking with RTL8812AU adapter
+=============================================
+
+Many Wifi adapters are not by default included in the Linux kernel because they contain closed-source code.
+
+We have pre-installed drivers for the popular Realtek RTL8812AU chip present in many adapters of various brands.
+
+\jvimg{usb-wifi.jpeg, 20%}
+
+To select a network, the easiest is to proceed as follows:
+- In JeVois-Pro System tab, choose to reboot to Linux Console.
+- Restart the camera.
+- login as \a root with password \a jevois
+- type `startx`
+- at the top-right, select the networking icon and pick a network and enter the Wifi password.
+- check that the network is working, for example, launch firefox and browse around.
+- at top-right, log out. This will get you back to the console.
+- check that the network is still working, for example `ping jevois.usc.edu`
+- type `jevoispro.sh` to start JeVois software
+- in the System tab, select to reboot to JeVois-Pro and reboot the machine.
+
+The configuration should be persistent and your Wifi network should be selected on boot automatically.
+
+M.2 PCI-express Wifi networking
+===============================
+
+If you will not be using a Coral TPU, you can use the M.2 A+E slot in JeVois-Pro to connect a Wifi card.
+
+\jvimg{m2-wifi.jpg, 20%}
+
+Proceed as follows:
+
+- choose one that uses PCIe. We have had good success with Intel-based cards.
+- make sure it is M.2 2230 (22mm x 30mm) A-key or E-key (most M.2 Wifi cards should be).
+- Open JeVois-Pro (4 screws)
+- Remove the TPU board if you have one
+- Insert Wifi card
+- Secure it using an M2x5mm screw
+
+The card should be detected. You can then configure it as above for the USB to Wifi case.
+
+*/
