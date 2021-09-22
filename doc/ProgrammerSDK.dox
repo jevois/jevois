@@ -207,14 +207,14 @@ Then, if you are just changing a few files, you can only recompile what is neede
 - for host:
 \verbatim
 cd hbuild
-make -j 4   # replace 4 by the number of cores on your desktop computer
+make -j
 sudo make install
 \endverbatim
 
 - for platform
 \verbatim
 cd pbuild
-make -j 4   # replace 4 by the number of cores on your desktop computer
+make -j
 make install
 make jvpkg
 \endverbatim

@@ -6,11 +6,10 @@ It provides a base collection of 25+ machine vision modules. Those are the modul
 smart camera by default. They provide a wide range of machine vision algorithms, including visual attention and gist of
 a scene, object recognition, QRcode decoding, object tracking, road following, etc.
 
-Compiling JeVoisBase software from source is only supported on Ubuntu Linux (version 16.10 amd64 recommended).
+Compiling JeVoisBase software from source is only supported on Ubuntu Linux 20.04 amd64.
 
-Before you attempt to compile JeVoisBase, you should go through the [INSTALL
-instructions](https://github.com/jevois/jevois/blob/master/INSTALL) at least once. As part of this, you will download
-all JeVoisBase software and all necessary Ubuntu packages.
+Before you attempt to compile JeVoisBase, you should compile jevois for both host and platform as explained in \ref
+CompilingJeVois
 
 Theory
 ------
@@ -28,9 +27,11 @@ from the video sensor inside the JeVois camera, and video output will be streame
 Because several machine vision modules in JeVoisBase use the same components, such as for example a visual attention
 component, JeVoisBase is architectured as:
 
-- \c libjevoisbase.so contains all the components, i.e., elementary machine vision algorithms
+- \c libjevoisbase.so on \jva33 or \c libjevoisprobase.so on \jvpro contains all the components, i.e., elementary
+  machine vision algorithms.
+
 - Modules then simply connect a collection of those components together, to the camera input, and to the video streaming
-  output over USB.
+  output over USB or HDMI.
 
 Getting the source code from GitHub
 -----------------------------------
@@ -43,6 +44,8 @@ git clone https://github.com/jevois/jevoisbase.git
 Before compiling for the first time: Getting the contributed packages
 ---------------------------------------------------------------------
 
+\note The compilation scripts now do this automatically.
+
 The directory <b>jevoisbase/Contrib</b> is for a collection of contributed source code packages.
 
 Before you attempt to compile jevoisbase the first time, you should download and patch those contributed packages, as
@@ -53,8 +56,8 @@ cd jevoisbase/Contrib
 ./reinstall.sh
 \endverbatim
 
-Full reconfiguration and compilation
-------------------------------------
+JeVois-A33: Full reconfiguration and compilation
+------------------------------------------------
 
 Scripts are provided to recompile everything:
 
@@ -100,6 +103,25 @@ subsequent `make install` commands, until you change it by re-running `rebuild-p
 
 Once jevoisbase is compiled and installed for host, you can try it out using \ref JeVoisDaemon.
 
+JeVois-Pro: Full reconfiguration and compilation
+------------------------------------------------
+
+Scripts are provided to recompile everything:
+
+- \c rebuild-pro-host.sh will
+  + Compile natively for your computer's CPU
+  + Object files will be in \c phbuild/ which the script creates
+  + Modules and libraries will be installed in \c /jevoispro (to match their location on the platform hardware)
+  + Thus, modules are ready to use immediately on your computer.
+
+- \c rebuild-pro-platform-pdeb.sh will
+  + Cross-compile for the ARM CPU inside the JeVois-Pro smart camera
+  + Object files will be in \b ppdbuild/ which the script creates
+  + A deb package will be created that should be installed on the camera while logged on the camera.
+  + File locations are the same as above for host.
+
+Once jevoisbase is compiled and installed for host, you can try it out using \ref JeVoisDaemon.
+
 Partial re-compilation
 ----------------------
 
@@ -109,20 +131,36 @@ You should run them at least once.
 
 Then, if you are just changing a few files, you can only recompile what is needed, as follows:
 
-- for host:
+- \jva33: for host:
 \verbatim
 cd hbuild
-make -j 4    # replace 4 by the number of cores on your desktop computer
+make -j
 sudo make install
-make doc     # if desired
+make doc     # optional; if desired
 \endverbatim
 
-- for platform:
+- \jva33: for platform
 \verbatim
 cd pbuild
-make -j 4    # replace 4 by the number of cores on your desktop computer
-make install # if desired
-make jvpkg   # if desired and if you did not specify -DJEVOIS_MODULES_TO_BUILDROOT=ON when running rebuild-platform.sh
+make -j
+sudo make install
+make jvpkg   # if desired
+\endverbatim
+
+- \jvpro: for host:
+\verbatim
+cd phbuild
+make -j
+sudo make install
+make doc     # optional; if desired
+\endverbatim
+
+- \jvpro: for platform
+\verbatim
+cd ppdbuild
+make -j
+sudo make install
+sudo cpack # will re-generate the deb package
 \endverbatim
 
 */

@@ -35,16 +35,23 @@ We also strongly recommend that you get the other JeVois source code repositorie
 
 \verbatim
 git clone https://github.com/jevois/jevoisbase.git
-git clone https://github.com/jevois/jevois-sdk.git
 git clone https://github.com/jevois/samplemodule.git
 git clone https://github.com/jevois/samplepythonmodule.git
 git clone https://github.com/jevois/jevois-tutorials.git
 \endverbatim
 
-Full reconfiguration and compilation
-------------------------------------
+and, for \jva33:
+\verbatim
+git clone https://github.com/jevois/jevois-sdk.git
+\endverbatim
 
-\note These instructions have changed in \jvversion{1.1}
+or, for \jvpro:
+\verbatim
+git clone https://github.com/jevois/jevoispro-sdk.git
+\endverbatim
+
+JeVois-A33: Full reconfiguration and compilation
+------------------------------------------------
 
 Scripts are provided to recompile everything:
 
@@ -58,7 +65,7 @@ Scripts are provided to recompile everything:
   + Thus, all files and executables are ready to use immediately on your computer.
 
 - \c rebuild-platform.sh will
-  + Cross-compile for the CPU inside the JeVois smart camera (arm-gnueabihf)
+  + Cross-compile for the ARM CPU inside the JeVois smart camera
   + Object files will be in \b pbuild/ which the script creates
   + Config files used by JeVois at runtime will be staged into <b>/var/lib/jevois-microsd/config/</b> and will later
     be installed into <b>/jevois/config/</b> on the actual microSD card.
@@ -77,35 +84,75 @@ The main executable that is created is \c jevois-daemon, which basically impleme
 orchestrate the flow of data from camera sensor to machine vision processing to video streaming over USB. See
 \ref JeVoisDaemon for more info.
 
+JeVois-Pro: Full reconfiguration and compilation
+------------------------------------------------
+
+Scripts are provided to recompile everything:
+
+- \c rebuild-pro-host.sh will
+  + Compile natively for your computer's CPU
+  + Object files will be in \b phbuild/ which the script creates
+  + Executables will be installed to \b /usr/bin
+  + Include files to be used by module developers will be installed in \b /usr/include/jevois
+  + JeVois config files will be installed in \b /jevoispro and this
+    is also where machine vision modules and shared data for JeVois-Pro will be installed later.
+  + Thus, all files and executables are ready to use immediately on your computer.
+
+- \c rebuild-pro-platform-pdeb.sh will
+  + Cross-compile for the ARM CPU inside the JeVois-Pro smart camera
+  + Object files will be in \b ppdbuild/ which the script creates
+  + A deb package will be created that should be installed on the camera while logged on the camera.
+  + File locations are the same as above for host.
+
+The main executable that is created is \c jevoispro-daemon, which basically implements a JeVois Engine that will
+orchestrate the flow of data from camera sensor to machine vision processing to video display over HDMI. See
+\ref JeVoisDaemon for more info.
+
 Partial re-compilation
 ----------------------
 
-The scripts \c rebuild-host.sh and \c rebuild-platform.sh clear and recompile everything.
+The scripts \c rebuild-host.sh, \c rebuild-platform.sh, etc clear and recompile everything.
 
 You should run them at least once.
 
 Then, if you are just changing a few files, you can only recompile what is needed, as follows:
 
-- for host:
+- \jva33: for host:
 \verbatim
 cd hbuild
-make -j 4    # replace 4 by the number of cores on your desktop computer
+make -j
 sudo make install
 make doc     # optional; if desired
 \endverbatim
 
-- for platform
+- \jva33: for platform
 \verbatim
 cd pbuild
-make -j 4    # replace 4 by the number of cores on your desktop computer
+make -j
 sudo make install
+\endverbatim
+
+- \jvpro: for host:
+\verbatim
+cd phbuild
+make -j
+sudo make install
+make doc     # optional; if desired
+\endverbatim
+
+- \jvpro: for platform
+\verbatim
+cd ppdbuild
+make -j
+sudo make install
+sudo cpack # will re-generate the deb package
 \endverbatim
 
 Advanced configuration flags
 ----------------------------
 
-The scripts \c rebuild-host.sh and \c rebuild-platform.sh pass down any command-line arguments to cmake. Available flags
-include (see CMakeLists.txt in jevois/ for the latest):
+The scripts \c rebuild-host.sh, \c rebuild-platform.sh, etc pass down any command-line arguments to cmake. Available
+flags include (see CMakeLists.txt in jevois/ for the latest):
 
 - \b -DJEVOIS_LDEBUG_ENABLE=ON Enable debug-level messages. Those are turned off by default so that they do not use any
   CPU and do not slow down operations. Turning them on is useful for low-level debugging. Beware that some sections of
@@ -128,8 +175,6 @@ include (see CMakeLists.txt in jevois/ for the latest):
 
 - \b -DJEVOIS_LOG_TO_FILE=ON Enable sending all log messages to file jevois.log instead of console. Only works with
   async logging.
-
-- \b -DHOST_IS_ARM=ON When compiling for host, assume an ARM processor instead of default Intel.
 
 */
 

@@ -19,9 +19,9 @@ Organization overview
 - Executables, core libraries and include files get installed into \b /usr/bin, \b /usr/lib, \b /usr/include, etc as
   usual.
 
-- Hence, on host, we also install all modules and config files into \b /jevois (this is mainly to avoid surprises with
-  different paths on host and platform and troubleshooting why a module that worked great in host mode cannot find its
-  data files when running on platform).
+- Hence, on host, we also install all modules and config files into \b /jevois or \b /jevoispro (this is mainly to avoid
+  surprises with different paths on host and platform and troubleshooting why a module that worked great in host mode
+  cannot find its data files when running on platform).
 
 - Likewise, we also install executables, libraries and include files natively compiled for host into \b /usr/bin, \b
   /usr/lib, \b /usr/include, etc as usual.
@@ -36,6 +36,8 @@ Organization overview
 
 - \jva33: Final microSD flashing script \b jevois-flash-card combines the contents of <b>/var/lib/jevois-build</b> and
   </b>/var/lib/jevois-microsd</b> into the final microSD card.
+
+- \jvpro: The operating system for the camera, bootloaders, etc are in \b /usr/share/jevoispro-sdk
 
 JeVois-A33 Organization details
 ===============================
@@ -114,7 +116,53 @@ JeVois-A33 Organization details
 JeVois-Pro Organization details
 ===============================
 
-coming soon...
+- When compiling and installing \b jevois for \b host (using `./rebuild-pro-host.sh` inside \b jevois; see \ref
+  CompilingJeVois):
+  + Config files used by JeVois at runtime are installed into <b>/jevoispro/config/</b>
+  + Executables including \c jevoispro-daemon are installed into <b>/usr/bin/</b>
+  + Include files (needed when compiling modules for host) are installed into <b>/usr/include/jevois/</b>
+  + The core JeVois library (\b libjevoispro.so) is installed into <b>/usr/lib/</b>
+  + Documentation files are installed into <b>/usr/share/doc/jevoispro-host/</b>
+  + Try a `dpkg -c jevoispro-host-VERSION.deb` on the deb downloaded from https://jevois.usc.edu to confirm.
+
+- When cross-compiling and installing \b jevois for \b platform (using `./rebuild-pro-platform-pdeb.sh` inside \b
+  jevois; see \ref CompilingJeVois):
+  + You will create a deb package for aarch64 (64-bit ARM) with the same file locations as above.
+  + This package should be installed on the JeVois-Pro platform using dpkg while logged on the platform.
+  + Try a `dpkg -c jevois-platform-VERSION.deb` on the deb downloaded from https://jevois.usc.edu to confirm
+    all file locations.
+
+- When compiling and installing \b jevoisbase (or, similarly, \b samplemodule or your own module) for \b host (using
+  `./rebuild-host.sh` inside \b jevoisbase (or your module's source tree); see \ref CompilingJeVois):
+  + Config files used by JeVois at runtime are installed into <b>/jevoispro/config/</b>
+  + Machine vision modules are installed into <b>/jevoispro/modules/</b>
+  + Executables (if any) are installed into <b>/usr/bin/</b>
+  + Include files (possibly needed when compiling further modules for host) are installed into
+    <b>/usr/include/jevoisbase/</b>
+  + Libraries (if any) is installed into <b>/usr/lib/</b>
+  + Documentation files are installed into <b>/usr/share/doc/jevoisprobase-host/</b>
+  + Try a `dpkg -c jevoisprobase-host-VERSION.deb` on the deb downloaded from https://jevois.usc.edu to confirm.
+
+- When cross-compiling and installing \b jevoisbase (or, similarly, \b samplemodule or your own module) for
+  \b platform (using `./rebuild-pro-platform-pdeb.sh` inside \b jevoisbase (or your module's source tree); see \ref
+  CompilingJeVois):
+  + You will create a deb package for aarch64 (64-bit ARM) with the same file locations as above.
+  + This package should be installed on the JeVois-Pro platform using dpkg while logged on the platform.
+  + Try a `dpkg -c jevoisprobase-platform-VERSION.deb` on the deb downloaded from https://jevois.usc.edu to confirm
+    all file locations.
+
+- \b OpenCV and \b OpenVino are installed into <b>/usr/share/jevoispro-opencv-VERSION/</b> and
+  <b>/usr/share/jevoispro-openvino-VERSION/</b> on host and platform, to avoid possible conflicts with other OpenCV and
+  OpenVino installations you may already have.
+
+- The \b jevoispro-sdk-dev Ubuntu package for host provides the following files needed to cross-compile JeVois software:
+  + <b>/usr/share/jevoispro-sdk/jevoispro-sysroot</b> contains a sanitized version of the whole operating system that
+    runs on JeVois-Pro. It is sanitized in terms of having all symbolic links converted to relative locations within the
+    jevoispro-sysroot directory, as opposed to having some absolute symlinks in a standard Linux operating system (those
+    absolute links would end up pointing to libraries and other files in your root filesystem, which is for Intel AMD64,
+    as opposed to the needed AARCH64 libraries and files).
+  + Try a `dpkg -c jevois-sdk-VERSION.deb` on the deb downloaded from https://jevois.usc.edu to confirm.
+
 
 */
 

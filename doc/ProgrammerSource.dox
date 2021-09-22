@@ -24,6 +24,14 @@ The following repositories are provided:
 Installing Ubuntu packages for JeVois-A33 development
 -----------------------------------------------------
 
+Because the operating system that runs on \jva33 is as small as possible and does not have a package management system,
+compilers, etc the overall strategy for \jva33 is that we cross-compile all code on a desktop computer and place the
+compiled results into a staging area that will later be flashed to microSD.
+
+Thus, all packages for \jva33 are for Intel amd64 architecture and are to be installed on desktop, though some packages
+do contain cross-compiled code for the ARM processor of JeVois-A33. This cross-compiled code will be copied from staging
+to microSD.
+
 The following packages are available at https://jevois.usc.edu for \jva33:
 
 - \b jevois-opencv: OpenCV 4.x compiled for host computer with settings that match those used by the JeVois platform
@@ -50,16 +58,60 @@ For more details about file organization across these different packages, see \r
 Installing Ubuntu packages for JeVois-Pro development
 -----------------------------------------------------
 
-coming soon...
+\note This is work in progress. More coming soon...
 
+Because \jvpro runs a full Ubuntu operating system, installing packages on the camera is as you would do for a normal
+computer.
 
-Source download and install
----------------------------
+The following packages are available at https://jevois.usc.edu for \jvpro amd64 (to be installed on a desktop):
+
+- \b jevoispro-opencv: OpenCV 4.x compiled for host computer with settings that match those used by the JeVois-Pro
+  platform hardware. We install this package into /usr/share/jevois-opencv-4.x so that it will not interfere with any
+  other OpenCV install you might have on your host system and that might be required by some other software.
+
+- \b jevoispro-openvino: Intel neural network framework OpenVino compiled for host computer with settings that match
+  those used by the JeVois platform hardware. We install this package into /usr/share/jevoispro-openvino-x so that it
+  will not interfere with any other OpenVino install you might have on your host system and that might be required by
+  some other software.
+
+- \b jevoispro-host: JeVois core software compiled for execution on a host computer.
+
+- \b jevoisprobase-host: JeVois base modules compiled for execution on a host computer.
+
+- \b jevoispro-sdk-dev: Cross-compiled operating system and libraries to be installed on host to support
+  cross-compilation of JeVois software for the platform. That is, installing jevoispro-sdk-dev on your desktop will
+  allow you to cross-compile jevois and jevoisbase for platform.
+
+The following packages are available at https://jevois.usc.edu for \jvpro aarch64 (to be installed on JeVois-Pro):
+
+- \b jevoispro-opencv: OpenCV 4.x compiled for JeVois-Pro. We install this package into /usr/share/jevois-opencv-4.x on
+  the camera.
+
+- \b jevoispro-openvino: Intel neural network framework OpenVino compiled for JeVois-Pro. We install this package into
+  /usr/share/jevoispro-openvino-x on the camera.
+
+- \b jevoispro-platform: JeVois core software compiled for execution on the JeVois-Pro platform hardware.
+
+- \b jevoisprobase-platform: JeVois base modules compiled for execution on the JeVois-Pro platform hardware.
+
+JeVois-A33 operating system source download and install
+-------------------------------------------------------
 
 This only recommended for advanced programmers who want to modify the Linux kernel or operating system of JeVois.
 
 Download and installation instructions are in the [INSTALL file of the jevois
 repository](https://github.com/jevois/jevois/blob/master/INSTALL).
+
+JeVois-Pro operating system source download and install
+-------------------------------------------------------
+
+This only recommended for advanced programmers who want to modify the Linux kernel or operating system of JeVois-Pro.
+
+\verbatim
+git clone https://github.com/jevois/jevoispro-sdk.git
+cd jevoispro-sdk
+./rebuild-os.sh
+\endverbatim
 
 */
 

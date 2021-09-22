@@ -1,7 +1,7 @@
 /*! \page Virtualbox Using Virtualbox to setup jevois-sdk in a virtual machine
 
 It is highly recommended that you use a virtual machine software to create a fresh installation of Ubuntu into which you
-will install the JeVois development environment. This way, you will not envounter problems with differemt versions of
+will install the JeVois development environment. This way, you will not encounter problems with differemt versions of
 packages required by JeVois and by possibly other applications you run on your desktop and laptop.
 
 Here are summary instructions on how to do this with the free Virtualbox software:
@@ -28,19 +28,16 @@ Here are summary instructions on how to do this with the free Virtualbox softwar
 
   \image html vbox4.png Above: Selecting VDI hard disk type
 
-  \image html vbox5.png Above: We recommend setting VDI size to at least 50GB
+  \image html vbox5.png Above: We recommend setting VDI size to at least 50GB for \jva33 and 150GB for \jvpro
  
 
-- Get an Ubuntu Desttop amd64 iso file from https://www.ubuntu.com/download/desktop (as of \jvversion{1.5}, Ubuntu 17.04
-  is recommended).
+- Get Ubuntu 20.04 Desttop amd64 iso file from https://www.ubuntu.com/download/desktop
 
 - Start your virtual machine. Because it has no operating system yet, you will be asked to provide an iso file, select
   the Ubuntu iso you just downloaded.
 
-- Install Ubuntu. Make sure you allocate the whole virtual disk to a single root partition. This is the default on 17.04
-  but 16.04 by default allocates a small root partition and a larger home partition. To avoid this, select the
-  <b>something else</b> option when asked how to install Ubuntu, and then manually create a single ext4 partition
-  filling the whole disk and mounted as <b>/</b> (root).
+- Install Ubuntu. Make sure you allocate the whole virtual disk to a single root partition (this is the default when
+  asked how to format the disk), so that there is plenty of room in the root partition.
 
 - After Ubuntu is installed, you can start it, open a terminal, and proceed with the installation of the JeVois SDK as
   detailed in \ref ProgrammerSource and in [the programmer setup

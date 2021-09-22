@@ -89,11 +89,11 @@ set(JEVOIS_PLATFORM_OPENCV_PREFIX "${JEVOIS_BUILD_BASE}/usr/share/${JEVOIS}-open
 set(JEVOIS_PLATFORM_OPENVINO_PREFIX "${JEVOIS_BUILD_BASE}/usr/share/${JEVOIS}-openvino-${JEVOIS_OPENVINO_VERSION}")
 set(JEVOIS_PLATFORM_OPENCV_INCLUDE "-I${JEVOIS_PLATFORM_OPENCV_PREFIX}/include/opencv4")
 set(JEVOIS_PLATFORM_OPENCV_LIBS
-  "-L${JEVOIS_PLATFORM_OPENCV_PREFIX}/lib \
+  "-L${JEVOIS_BUILD_BASE}/usr/lib/aarch64-linux-gnu \
+   -L${JEVOIS_PLATFORM_OPENCV_PREFIX}/lib \
    -L${JEVOIS_PLATFORM_OPENVINO_PREFIX}/deployment_tools/ngraph/lib \
    -L${JEVOIS_PLATFORM_OPENVINO_PREFIX}/deployment_tools/inference_engine/external/tbb/lib \
    -L${JEVOIS_PLATFORM_OPENVINO_PREFIX}/deployment_tools/inference_engine/lib/aarch64 \
-   -L${JEVOIS_BUILD_BASE}/usr/lib/aarch64-linux-gnu \
    ${OPENCV_LIBS_FOR_JEVOIS}")
 
 set(JEVOIS_HOST_OPENCV_PREFIX "/usr/share/${JEVOIS}-opencv-${JEVOIS_OPENCV_VERSION}")

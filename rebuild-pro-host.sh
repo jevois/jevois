@@ -4,7 +4,7 @@
 ncpu=`grep -c processor /proc/cpuinfo`
 if [ `grep -c JeVois /proc/cpuinfo` -gt 0 ]; then ncpu=4; fi
    
-/bin/rm -rf phbuild \
+sudo /bin/rm -rf phbuild \
     && mkdir phbuild \
     && cd phbuild\
     && cmake "$@" -DJEVOIS_HARDWARE=PRO .. \
