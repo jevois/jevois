@@ -20,15 +20,15 @@ Here are summary instructions on how to do this with the free Virtualbox softwar
   sliders to the point where they become red), and create a new virtual hard drive, using the VDI method and selecting
   at least 50GB size.
 
-  \image html vbox1.png Above: creating a new virtual machine
+  \image html vbox1.png "Above: creating a new virtual machine"
 
-  \image html vbox2.png Above: setting memory size
+  \image html vbox2.png "Above: setting memory size"
 
-  \image html vbox3.png Above: Creating a virtual hard disk
+  \image html vbox3.png "Above: Creating a virtual hard disk"
 
-  \image html vbox4.png Above: Selecting VDI hard disk type
+  \image html vbox4.png "Above: Selecting VDI hard disk type"
 
-  \image html vbox5.png Above: We recommend setting VDI size to at least 50GB for \jva33 and 150GB for \jvpro
+  \image html vbox5.png "Above: We recommend setting VDI size to at least 50GB for JeVois-A33 and 150GB for JeVois-Pro"
  
 
 - Get Ubuntu 20.04 Desttop amd64 iso file from https://www.ubuntu.com/download/desktop
@@ -48,9 +48,9 @@ Here are summary instructions on how to do this with the free Virtualbox softwar
   device filter for it (click the icon with the + sign on top of a USB connector). We recommend that you then restart
   your virtual machine and your host.
 
-  \image html vbox6.png Above: adding a USB filter
+  \image html vbox6.png "Above: adding a USB filter"
 
-  \image html vbox7.png Above: you can also enable a connected USB camera using the little USB connector icon at the bottom of your virtualbox screen.
+  \image html vbox7.png "Above: you can also enable a connected USB camera using the little USB connector icon at the bottom of your virtualbox screen."
 
 - Back to the virtual machine, install `guvcview` by typing:
   \verbatim
@@ -58,7 +58,7 @@ Here are summary instructions on how to do this with the free Virtualbox softwar
   \endverbatim
   and you should be able to grab video from your USB camera.
 
-  \image html vbox8.png Above: guvcview working inside virtualbox
+  \image html vbox8.png "Above: guvcview working inside virtualbox"
 
 Headless VirtualBox
 -------------------

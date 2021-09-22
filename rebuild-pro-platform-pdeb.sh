@@ -12,4 +12,6 @@ sudo /bin/rm -rf ppdbuild \
     && cd ppdbuild \
     && cmake "$@" -DJEVOISPRO_PLATFORM_DEB=ON -DJEVOIS_HARDWARE=PRO -DJEVOIS_PLATFORM=ON .. \
     && make -j ${ncpu} \
-    && sudo make install
+    && sudo make install \
+    && sudo cpack
+

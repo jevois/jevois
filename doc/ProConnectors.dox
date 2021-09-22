@@ -7,6 +7,10 @@ This connector (located between the two USB ports at the top of the camera, see 
 auxilliary gadgets you may want to connect to JeVois-Pro. This power is derived from the main 6-24VDC barrel jack input
 of JeVois-Pro.
 
+\jvimg{aux-pwr.jpg, 30%}
+
+Note the connector orientation and the order of the colored wires above.
+
 The pinout is as follows:
 
 Pin | Wire color | Function
@@ -38,6 +42,10 @@ Like with the 4-pin serial port, this port expects an input voltage to be provid
 JeVois-Pro that your must provide to tell JeVois-Pro the voltage level that you want the GPIO pins to operate at: 3.3V
 or 5V. See \ref UserSerial for more info.
 
+\jvimg{aux.jpg, 30%}
+
+Note the connector orientation and the order of the colored wires above.
+
 The pinout is as follows:
 
 Pin | Wire color | Function                                                       | A311D SoC | Kernel GPIO
@@ -57,10 +65,10 @@ The pins for these connectors are almost impossible to crimp by hand, unless you
 JST. Thus, please take good care of the cable that was provided with your JeVois-Pro camera. Extend the wires instead of
 cutting them very short...
 
-\warning IOREF should always be provided and match the voltage at which your GPIO operate. Conveniently, you can get it
+\warning IOREF should always be provided and match the voltage at which your GPIOs operate. Conveniently, you can get it
 from the 6-pin AUX power connector if you will use that to power your gadgets. So, for example, if you power a 3.3V
-gadget using the yellow wire of the 6-pin AUX power connector, also feed that same 3.3V to IOREF (red) wire of the 8-pin
-GPIO connector.
+gadget using the yellow wire of the 6-pin AUX power connector, also feed that same 3.3V to the IOREF (red) wire of the
+8-pin GPIO connector.
 
 \warning IOREF and all GPIOs should operate at voltages between 3.3V and 5V. If you exceed 5.5V you could destroy the
 GPIO buffer chip on your JeVois-Pro.

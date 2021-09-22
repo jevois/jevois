@@ -21,8 +21,36 @@ The following repositories are provided:
 - \b jevoispro-sdk: The framework that provides a Linux kernel and operating system for a \jvpro camera, to be flashed
   to a microSD card.
 
+Installing pre-compiled code from jevois.usc.edu
+================================================
+
+See https://jevois.usc.edu for the latest instructions.
+
+We provided pre-compiled Ubuntu deb packages for the GitHub repositories listed above.
+
+Setting up the jevois.usc.edu apt source
+----------------------------------------
+
+As of this writing, and for a desktop running Ubuntu 20.04 amd64:
+
+\verbatim
+sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys DD24C027
+sudo add-apt-repository "deb https://jevois.usc.edu/apt focal main"
+sudo apt update
+sudo apt upgrade # see note below
+sudo apt autoremove
+sudo apt purge modemmanager
+sudo usermod -aG dialout $USER # need to reboot to take effect
+sudo usermod -aG video $USER # need to reboot to take effect
+\endverbatim
+
+\note During the upgrade of Ubuntu 20.04, you may get logged out to the login screen, and unable to log back in by
+typing your password. We assume this is a glitch in Ubuntu while the login screen software gets updated. If this
+happens, patiently wait until you see no more disk activity for a while, as other updates are in progress. We recommend
+waiting for at least 15-30 minutes. Then send a hard power off to the machine and restart it.
+
 Installing Ubuntu packages for JeVois-A33 development
------------------------------------------------------
+=====================================================
 
 Because the operating system that runs on \jva33 is as small as possible and does not have a package management system,
 compilers, etc the overall strategy for \jva33 is that we cross-compile all code on a desktop computer and place the
@@ -55,15 +83,50 @@ one apt-get install command.
 
 For more details about file organization across these different packages, see \ref ProgrammerOrganization
 
+Which packages to install for JeVois-A33?
+-----------------------------------------
+ 
+- If you just want to install and run \ref JeVoisInventor on your desktop:
+  \verbatim
+  sudo apt install jevois-inventor
+  \endverbatim
+  
+- If you just want to run JeVois software (jevois-daemon) on your host computer with a standard webcam:
+  \verbatim
+  sudo apt install jevois-host jevoisbase-host
+  \endverbatim
+
+- If you want jevois and jevoisbase cross-compiled for the platform hardware:
+  \verbatim
+  sudo apt install jevois-platform jevoisbase-platform
+  \endverbatim
+
+- If you want to be able to flash a microSD card using jevois-flash-card:
+  \verbatim
+  sudo apt install jevois-sdk
+  \endverbatim
+    	
+- If you want to be able to cross-compile new modules for JeVois platform hardware:
+  \verbatim
+  sudo apt install jevois-sdk-dev
+  \endverbatim
+    	
+- If you want to be able to recompile the platform Linux kernel or change the platform O.S. or add new buildroot
+  packages to the platform:
+
+  You need to rebuild jevois-sdk from source. Follow the instructions in the INSTALL file of the jevois repository at
+  https://github.com/jevois.
+    	
+
 Installing Ubuntu packages for JeVois-Pro development
------------------------------------------------------
+=====================================================
 
 \note This is work in progress. More coming soon...
 
 Because \jvpro runs a full Ubuntu operating system, installing packages on the camera is as you would do for a normal
 computer.
 
-The following packages are available at https://jevois.usc.edu for \jvpro amd64 (to be installed on a desktop):
+The following packages are available at https://jevois.usc.edu for amd64 (to be installed on a desktop):
 
 - \b jevoispro-opencv: OpenCV 4.x compiled for host computer with settings that match those used by the JeVois-Pro
   platform hardware. We install this package into /usr/share/jevois-opencv-4.x so that it will not interfere with any
@@ -80,9 +143,10 @@ The following packages are available at https://jevois.usc.edu for \jvpro amd64 
 
 - \b jevoispro-sdk-dev: Cross-compiled operating system and libraries to be installed on host to support
   cross-compilation of JeVois software for the platform. That is, installing jevoispro-sdk-dev on your desktop will
-  allow you to cross-compile jevois and jevoisbase for platform.
+  allow you to cross-compile jevois and jevoisbase for platform, finding the necessary cross-compiled libraries that may
+  be needed.
 
-The following packages are available at https://jevois.usc.edu for \jvpro aarch64 (to be installed on JeVois-Pro):
+The following packages are available at https://jevois.usc.edu for aarch64 (to be installed on JeVois-Pro):
 
 - \b jevoispro-opencv: OpenCV 4.x compiled for JeVois-Pro. We install this package into /usr/share/jevois-opencv-4.x on
   the camera.
@@ -94,24 +158,88 @@ The following packages are available at https://jevois.usc.edu for \jvpro aarch6
 
 - \b jevoisprobase-platform: JeVois base modules compiled for execution on the JeVois-Pro platform hardware.
 
-JeVois-A33 operating system source download and install
--------------------------------------------------------
+Which packages to install on a desktop host for JeVois-Pro?
+-----------------------------------------------------------
+ 
+- If you just want to run JeVois software (jevois-daemon) on your host computer with a standard webcam:
+  \verbatim
+  sudo apt install jevoispro-host jevoisprobase-host
+  \endverbatim
+    	
+- If you want jevois and jevoisbase cross-compiled for the platform hardware:
+  \verbatim
+  sudo apt install jevoispro-platform jevoisprobase-platform
+  \endverbatim
+
+- If you want to be able to cross-compile new modules for JeVois platform hardware:
+  \verbatim
+  sudo apt install jevoispro-sdk-dev
+  \endverbatim
+    	
+- If you want to be able to recompile the platform Linux kernel or change the platform operating system:
+
+  You need to rebuild jevoispro-sdk from source using `rebuild-os.sh` as described below.
+    	
+Which packages to install on the JeVois-Pro smart camera?
+---------------------------------------------------------
+
+\note The apt source jevois.usc.edu is already configured on the microSD, so you do not need to add that source to your
+camera using the `add-apt-repository` command detailed above.
+
+Before you can run the commands below, you need to connect your camera to a network as described in \ref ProNetwork
+
+\note jevoispro-platform and jevoisprobase-platform are already installed on the microSD.
+
+The easiest to run the commands below is to switch JeVois-Pro to Console boot as explained in \ref ProUserQuick and to
+login as user \a root with password \a jevois
+
+- If you want to update jevoispro-platform and jevoisprobase-platform to the latest official version
+  published at jevois.usc.edu:
+  \verbatim
+  sudo apt update
+  sudo apt upgrade
+  \endverbatim
+
+- If you accidentally messed-up your jevois or jevoisbase on microSD (e.g., deleted some critical files) and want
+  to re-install the latest official version published at jevois.usc.edu:
+  \verbatim
+  sudo apt purge jevoispro-platform jevoisprobase-platform
+  sudo apt update
+  sudo apt install jevoispro-platform jevoisprobase-platform
+  \endverbatim
+  And if that does not fix your problem, you may need to re-flash your microSD.
+
+- If you modified and then cross-compiled jevois and jevoisbase from source (see \ref CompilingJeVois and \ref
+  CompilingJeVoisBase) and you want to install those packages on your camera:
+  \verbatim
+  sudo apt purge jevoispro-platform jevoisprobase-platform
+  # get the debs you created onto your microSD
+  dpkg -i jevoispro-platform-XXX.deb
+  dpkg -i jevoisprobase-platform-XXX.deb
+  \endverbatim
+
+JeVois-A33 operating system source download and build from scratch
+==================================================================
 
 This only recommended for advanced programmers who want to modify the Linux kernel or operating system of JeVois.
 
 Download and installation instructions are in the [INSTALL file of the jevois
 repository](https://github.com/jevois/jevois/blob/master/INSTALL).
 
-JeVois-Pro operating system source download and install
--------------------------------------------------------
+JeVois-Pro operating system source download and build from scratch
+==================================================================
 
-This only recommended for advanced programmers who want to modify the Linux kernel or operating system of JeVois-Pro.
+This only recommended for advanced programmers who want to modify the Linux kernel or operating system of JeVois-Pro. If
+you just need the cross-compiled operating system so that you can compile and link custom code, install the
+\b jevoispro-sdk-dev deb package instead.
 
 \verbatim
 git clone https://github.com/jevois/jevoispro-sdk.git
 cd jevoispro-sdk
 ./rebuild-os.sh
 \endverbatim
+
+It will take a very long time, possibly over 12 hours depending on your computer and network speeds.
 
 */
 

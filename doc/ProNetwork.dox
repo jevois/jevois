@@ -1,4 +1,4 @@
-/*! \page ProNetwork Connecting JeVois-Pro to a network
+/*! \page ProNetwork JeVois-Pro: Connecting to a wired or WiFi network
 
 
 Easiest: USB to wired networking
@@ -20,13 +20,13 @@ We have pre-installed drivers for the popular Realtek RTL8812AU chip present in 
 
 \jvimg{usb-wifi.jpeg, 20%}
 
-To select a network, the easiest is to proceed as follows:
+To select a Wifi network, the easiest is to proceed as follows:
 - In JeVois-Pro System tab, choose to reboot to Linux Console.
 - Restart the camera.
 - login as \a root with password \a jevois
 - type `startx`
 - at the top-right, select the networking icon and pick a network and enter the Wifi password.
-- check that the network is working, for example, launch firefox and browse around.
+- check that the network is working, for example, launch the web browser and browse around.
 - at top-right, log out. This will get you back to the console.
 - check that the network is still working, for example `ping jevois.usc.edu`
 - type `jevoispro.sh` to start JeVois software

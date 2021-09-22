@@ -1,8 +1,8 @@
 /*! \page JeVoisDaemon The jevois-daemon executable
 
-The main executable that is created when compiling the JeVois framework is \b jevois-daemon, which basically implements
-a jevois::Engine that will orchestrate the flow of data from camera sensor to machine vision processing to video
-streaming over USB.
+The main executable that is created when compiling the JeVois framework is \b jevois-daemon on \jva33 or
+\b jevoispro-daemon on \jvpro, which basically implements a jevois::Engine that will orchestrate the flow of data from
+camera sensor to machine vision processing to video streaming over USB.
 
 \note \c jevois-deamon can run on host (when compiling jevois for host), in which case all machine vision algorithms
 will run on your host computer. In this mode, you would usually use a regular USB camera, or you might want to use the
@@ -20,6 +20,9 @@ would usually want to run a plain video viewer on your host, such as guvcview, o
 you have developed, which will grab video frames from the JeVois camera and will then process them further on your host
 computer.
 
+\note For readability, we just use \b jevois-daemon below, but you should replace that by \b jevoispro-daemon when using
+\jvpro
+
 Running jevois-daemon on host
 =============================
 
@@ -33,7 +36,7 @@ jevois-daemon
 You should see the saliency demo in a window. Note that the JeVois core software does not provide any module, so make
 sure you proceed to compiling and installing jevoisbase before you try to use jevois-daemon.
 
-jevois-daemon accepts a number of command-line arguments, try
+\b jevois-daemon accepts a number of command-line arguments, try
 
 \verbatim
 jevois-daemon --help
@@ -125,6 +128,8 @@ Engine Options:
 jevois-daemon config files
 ==========================
 
+\note For \jvpro, replace \b /jevois/ below with \b /jevoispro/
+
 jevois-daemon uses several config files, source is in <b>jevois/Config/</b> and they get installed into
 <b>/jevois/config/</b> on host and <b>JEVOIS:/jevois/config/</b> on platform microSD.
 
@@ -136,8 +141,8 @@ jevois-daemon uses several config files, source is in <b>jevois/Config/</b> and 
 - \b initscript.cfg Script that gets run on startup, you can put in this file any valid commands as you have typed them
   interactively, see \ref UserCli for more info.
 
-Running jevois-daemon on platform
-=================================
+Running jevois-daemon on JeVois-A33 platform
+============================================
 
 \c jevois-daemon starts automatically on the platform. The script that starts it is installed in
 <b>LINUX:/usr/bin/jevois.sh</b> on the microSD. Its source is in <b>jevois/bin/jevois.sh</b> and it gets installed to
@@ -165,6 +170,36 @@ handle SIGILL nostop noprint
 before you give gdb the \c run command. See https://www.raspberrypi.org/forums/viewtopic.php?p=155085 for the same issue
 reported on the Raspberry Pi.
 
+Instead of running in gdb, which sometimes struggles with many threads, etc you can enable core dumps, run jevois-daemon
+normally until it crashes, and then use gdb to find the error in the core file:
+
+\verbatim
+ulimit -c unlimited # enable core dumps
+jevois.sh # get to the part that crashes and it will quit, dumping a file named 'core'
+gdb /usr/bin/jevois-daemon core
+# press return a few times until you get a prompt
+bt # to show the backtrace leading to the crash
+quit
+\endverbatim
+
+Running jevois-daemon on JeVois-Pro platform
+============================================
+
+\c jevoispro-daemon starts automatically on the platform. The script that starts it is installed in
+<b>LINUX:/usr/bin/jevoispro.sh</b> on the microSD. Its source is in <b>jevois/bin/jevoispro.sh</b> and it gets installed
+to microSD as part of the rebuild-platform-pdeb.sh process.
+
+To debug hard crashes, proceed as follows: enable core dumps, run jevoispro-daemon normally until it crashes, and then
+use gdb to find the error in the core file:
+
+\verbatim
+ulimit -c unlimited # enable core dumps
+jevoispro.sh # get to the part that crashes and it will quit, dumping a file named 'core'
+gdb /usr/bin/jevoispro-daemon core
+# press return a few times until you get a prompt
+bt # to show the backtrace leading to the crash
+quit
+\endverbatim
 
 */
 

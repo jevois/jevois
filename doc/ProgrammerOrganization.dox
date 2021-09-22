@@ -37,7 +37,7 @@ Organization overview
 - \jva33: Final microSD flashing script \b jevois-flash-card combines the contents of <b>/var/lib/jevois-build</b> and
   </b>/var/lib/jevois-microsd</b> into the final microSD card.
 
-- \jvpro: The operating system for the camera, bootloaders, etc are in \b /usr/share/jevoispro-sdk
+- \jvpro: The operating system for the camera, cross-compiled libraries, etc are in \b /usr/share/jevoispro-sdk
 
 JeVois-A33 Organization details
 ===============================

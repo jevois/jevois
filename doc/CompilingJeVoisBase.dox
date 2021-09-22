@@ -160,7 +160,9 @@ make doc     # optional; if desired
 cd ppdbuild
 make -j
 sudo make install
-sudo cpack # will re-generate the deb package
+sudo cpack # will re-generate the deb package into ppdbuild/jevoisprobase-platform_XXX.deb
+# You can then copy this file to microSD, switch JeVois-Pro to console boot, then
+# `apt remove jevoisprobase-platform` to nuke the existing version and then `dpkg -i <your_new_deb>`.
 \endverbatim
 
 */

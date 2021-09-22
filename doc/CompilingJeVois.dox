@@ -50,6 +50,14 @@ or, for \jvpro:
 git clone https://github.com/jevois/jevoispro-sdk.git
 \endverbatim
 
+SDK needed to cross-compile code
+--------------------------------
+
+To compile jevois, jevoisbase, samplemodule, etc for host, you can just proceed to the next section.
+
+To cross-compile these for platform, you first need the JeVois SDK installed. The easiest is to install \b
+jevois-sdk-dev or \b jevoispro-sdk-dev debian files, as detailed in \ref ProgrammerSource
+
 JeVois-A33: Full reconfiguration and compilation
 ------------------------------------------------
 
@@ -145,8 +153,13 @@ make doc     # optional; if desired
 cd ppdbuild
 make -j
 sudo make install
-sudo cpack # will re-generate the deb package
+sudo cpack # will re-generate the deb package into ppdbuild/jevoispro-platform_XXX.deb
+# You can then copy this file to microSD, switch JeVois-Pro to console boot, then
+# `apt remove jevoispro-platform` to nuke the existing version and then `dpkg -i <your_new_deb>`.
 \endverbatim
+
+\note When you `apt remove jevoispro-platform` it will also remove jevoisprobase-platform. So make sure you have
+compiled it and packed it as a deb ready to install, using the instructions at \ref CompilingJeVoisBase
 
 Advanced configuration flags
 ----------------------------

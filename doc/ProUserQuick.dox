@@ -14,6 +14,10 @@ New users, be sure to check out [JeVois Start](/start/start.html).
 - Standard USB keyboards and mice should be detected automatically. Please try the most generic ones you have, if your
   fancy ones are not detected.
 
+- To insert the microSD card into JeVois-Pro, see \ref JeVoisProIntro
+
+- To connect JeVois-Pro see \ref ProUserConnect
+
 Troubleshooting
 ===============
 
@@ -115,5 +119,10 @@ This is very useful for development. You would do as follows:
 - if you need to edit some files, download some files, etc and you like to do that in X-windows, then `startx` and
   logout from it when you are done.
 - then you can run `sudo jevoispro.sh` again, etc.
+
+WiFi or wired networking
+========================
+
+See \ref ProNetwork
 
 */

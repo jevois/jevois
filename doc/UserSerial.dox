@@ -11,7 +11,11 @@ will use 3.3V levels for RX and TX.
 
 To connect to an Arduino board, you would typically do as follows (\jva33 is shown, pinout is the same for \jvpro):
 
-\image html serial-arduino.png
+\jvimg{serial-arduino.png, 50%}
+
+Note the orientation of the connector and the order of the colored wires, for \jva33 above and \jvpro below:
+
+\jvimg{proserial.jpg, 15%}
 
 \note Make sure that you do not use voltages in excess of 5.5V on all pins, otherwise you may damage your JeVois unit.
 
