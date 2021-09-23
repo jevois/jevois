@@ -131,7 +131,7 @@ You should run them at least once.
 
 Then, if you are just changing a few files, you can only recompile what is needed, as follows:
 
-- \jva33: for host:
+- \jva33: for host
 \verbatim
 cd hbuild
 make -j
@@ -147,7 +147,7 @@ sudo make install
 make jvpkg   # if desired
 \endverbatim
 
-- \jvpro: for host:
+- \jvpro: for host
 \verbatim
 cd phbuild
 make -j

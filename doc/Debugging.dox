@@ -12,6 +12,28 @@ from which you started it.
 
 You can also run \b jevois-daemon in \b gdb (the GNU debugger) and see where it might crash.
 
+Sometimes that does not run well as we use lots of threads in JeVois. You can instead debug offline by enabling core
+dumps, running jevois-daemon until it crashes, and then using gdb to inspect the core file. See \ref JeVoisDaemon for
+details.
+
+// ####################################################################################################
+\section linkerr Debugging compiler and linker errors
+
+Compilation errors are reported in quite a verbose way. But linker errors are harder to debug. If you end up with an
+error message about a missing library, it is useful to see which linker command was exactly called with all paths
+specified in there to check why your library is missing.
+
+CMake allows you to switch to verbose mode by specifying `VERBOSE=1` as an option to make. So, if you get a missing
+library error, then
+
+\verbatim
+cd hbuild/ # or pbuild/, phbuild/, etc
+make VERBOSE=1
+\endverbatim
+
+This will show you the linker command that was run. You can then look at all the `-L...` arguments and check your
+CMakeList.txt to understand why your library was not found.
+
 // ####################################################################################################
 \section enablingdebugmsg Enabling debug-level messages
 
@@ -23,7 +45,7 @@ If you change those flags, you should recompile everything from scratch (recompi
 etc).
 
 // ####################################################################################################
-\section debuguboot Debugging the boot process on platform hardware
+\section debuguboot JeVois-A33: Debugging the boot process on platform hardware
 
 If you are tinkering with low-level software on your JeVois smart camera hardware and are experiencing difficulties with
 booting up, you can enable boot messages. This requires that you connect to the JeVois 4-pin hardware serial port during

@@ -7,36 +7,15 @@ your JeVois camera, and the full Linux operating system and set of utilities tha
 Getting started with the JeVois Programmer SDK
 ==============================================
 
-To get started with the programmer SDK, follow the instructions in the [INSTALL file of the jevois
-repository](https://github.com/jevois/jevois/blob/master/INSTALL).
+To get started with the programmer SDK, either install a pre-compiled deb package for it, or build it from source, as
+detailed in \ref ProgrammerSource
 
 Writing new modules: A single standalone module
 ===============================================
 
-Take a look at the samplemodule directory you installed as part of installing the SDK. It is a template for a new
-module. Here are quick steps on how to use it to get started with your own new module:
-
-\verbatim
-
-# Make your own copy:
-cp -r samplemodule myalgo
-
-# Pick a class name for your module, say MyAlgo, then rename the .C file of the module:
-cd myalgo/src/Modules
-mv SampleModule MyAlgo
-mv MyAlgo/SampleModule.C MyAlgo/MyAlgo.C
-
-# Rename the class inside the module's .C file:
-sed -i s/SampleModule/MyAlgo/g MyAlgo/MyAlgo.C
-
-cd ../..
-
-# Choose your vendor name and put it in CMakeLists.txt
-emacs CMakeLists.txt  # Change the value of JEVOIS_VENDOR from SampleVendor to your name (no spaces or special chars)
-\endverbatim
-
-A script \c jevois-create-module has been created in \b /usr/bin (source in \b ~/jevois/scripts/) to automate
-this process:
+A script \c jevois-create-module has been created in \b /usr/bin (source in \b ~/jevois/scripts/) to automate the
+process of creating a new module. It basically clones https://github.com/jevois/samplemodule and changes some names in
+there to new names you provide:
 
 \verbatim
 # USAGE: jevois-create-module <VendorName> <ModuleName>
@@ -57,17 +36,33 @@ You can then compile using
 \verbatim
 ./rebuild-host.sh
 ./rebuild-platform.sh
+./rebuild-pro-host.sh
+./rebuild-pro-platform-pdeb.sh
 \endverbatim
 
-as you did with jevois and jevoisbase when installing the SDK.
-
-Note that \c rebuild-platform.sh compiles your module and then installs everything under a directory named myalgo/jvpkg
+as you did with jevois and jevoisbase.
 
 \note If you get an error <b>cc1plus: fatal error: jevois/Config/Config.H: No such file or directory</b>, just run
-\c rebuild-platform.sh in your \b jevois repository.
+\c rebuild-platform.sh in your \b jevois repository. See \ref CompilingJeVois
 
-Adding your module to a microSD card: live microSD card
--------------------------------------------------------
+JeVois-Pro: Installing your module on the camera
+------------------------------------------------
+
+After running `./rebuild-pro-platform-pdeb.sh` a .deb file is created in ppdbuild/
+
+- Copy it to your microSD.
+
+- Start your camera with that microSD in it.
+
+- In the JeVois-Pro console, type `shell dpkg -i /path/to/your-module-package.deb`. If you already had a previous
+  version installed, run `shell dpkg -r your-module-package` first to remove it.
+
+- In the Config tab, edit videomappings.cfg to add a new mapping for your module. Save the file.
+
+- Your module should now appear under the menu of available modules and you can select it and run it.
+
+JeVois-A33: Adding your module to a microSD card: live microSD card
+-------------------------------------------------------------------
 
 Insert a properly installed JeVois MicroSD (follow the steps at [JeVois Start](http://jevois.org/start) to make one from
 a disk image) into your computer, either physically inserted into your host computer using a microSD-to-USB adapter, or
@@ -110,8 +105,8 @@ which will:
 - install the cross-compiled module to the microSD inside JeVois
 - issue a `jevois-usbsd stop` to eject the virtual flash drive and restart JeVois.
 
-Adding your module to a microSD card: jvpkg
--------------------------------------------
+JeVois-A33: Adding your module to a microSD card: jvpkg
+-------------------------------------------------------
 
 This approach is useful if you also want to share your module with friends. You can just send them your jvpkg file.
 
@@ -147,7 +142,7 @@ For more information:
   platform when it boots up.
 
 Module documentation and metadata
----------------------------------
+=================================
 
 A really nasty perl script, \c /usr/bin/jevois-modinfo (source in \c ~/jevois/scripts/jevois-modinfo), will parse your
 module to generate a single-page documentation for it. This script is a mess and its operation is quite brittle. It is
@@ -196,7 +191,7 @@ Specially named files will also be used if present:
   `tar --exclude-from`
 
 Partial compilation
--------------------
+===================
 
 The scripts \c rebuild-host.sh and \c rebuild-platform.sh clear and recompile everything.
 
@@ -204,14 +199,14 @@ You should run them at least once.
 
 Then, if you are just changing a few files, you can only recompile what is needed, as follows:
 
-- for host:
+- \jva33: for host
 \verbatim
 cd hbuild
 make -j
 sudo make install
 \endverbatim
 
-- for platform
+- \jva33: for platform
 \verbatim
 cd pbuild
 make -j
@@ -219,6 +214,21 @@ make install
 make jvpkg
 \endverbatim
 
+- \jvpro: for host
+\verbatim
+cd phbuild
+make -j
+sudo make install
+make doc     # optional; if desired
+\endverbatim
+
+- \jvpro: for platform
+\verbatim
+cd ppdbuild
+make -j
+sudo make install
+sudo cpack # will re-generate the deb package into ppdbuild/
+\endverbatim
 
 Writing new modules: A collection with shared components
 ========================================================

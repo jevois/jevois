@@ -14,6 +14,10 @@ that arise from processing the input image.
 In this tutorial, we first show you how to program a few very simple modules, to bring in the necessary
 concepts. Towards the end of this tutorial, we will point you to further detailed reading.
 
+\jvpro: The tutorials below create modules that operate in "legacy mode" on JeVois-Pro, i.e., the module receives one
+image as input and outputs a new image that contains processing results. For examples of modules that use the new
+"Pro/GUI" mode of /jvpro, check out the source code of the many examples in jevoisbase: \ref UserDemos
+
 Before you start, you should understand \ref Concepts.
 
 \subsection pymappings Pixel formats and video mappings
@@ -27,13 +31,24 @@ For explanations about these formats, please see \ref UserModes for details.
 
 \subsection pyvideomappings Camera to USB video mappings
 
-A module is invoked when a particular image resolution and pixel format is selected by a host computer over USB. A list
-of video mappings associate a given output resolution and pixel type to the corresponding camera resolution and pixel
-type that should be used and to the machine vision module that should be invoked. Again see \ref UserModes for details.
+A module is invoked when a particular image resolution and pixel format is selected by a host computer over USB on
+\jva33 or by th euser on \jvpro. A list of video mappings associate a given output resolution and pixel type to the
+corresponding camera resolution and pixel type that should be used and to the machine vision module that should be
+invoked. Again see \ref UserModes for details.
 
-Because an output video format is selected by the host computer, it is not negotiable. If a video mapping has been
-specified in \b videomappings.cfg that invokes a particular machine vision module, that module just must perform (or
-throw an exception), and process the images that it receives from the camera to generate the desired output images.
+Because an output video format is selected by the host computer on \jva33 or the user on \jvpro, it is not
+negotiable. If a video mapping has been specified in \b videomappings.cfg that invokes a particular machine vision
+module, that module just must perform (or throw an exception), and process the images that it receives from the camera
+to generate the desired output images.
+
+\jvpro: for JeVois-Pro, replace `import libjevois as jevois` in the examples below by the following:
+
+\code{.py}
+import pyjevois
+if pyjevois.pro: import libjevoispro as jevois
+else: import libjevois as jevois
+\endcode
+
 
 // ####################################################################################################
 \section pygetstarted Getting started: an edge detection module
