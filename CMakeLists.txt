@@ -436,7 +436,7 @@ autoconf, libeigen3-dev, screen, libgtk2.0-dev, libdc1394-22, libdc1394-22-dev, 
 libavcodec-dev, libavformat-dev, libswscale-dev, libxine2-dev, libgstreamer1.0-dev, libgstreamer-plugins-base1.0-dev, \
 libv4l-dev, libtbb2, libtbb-dev, libfaac-dev, libmp3lame-dev, libopencore-amrnb-dev, \
 libopencore-amrwb-dev, libtheora-dev, libvorbis-dev, libxvidcore-dev, x264, v4l-utils, unzip, qt5-default, \
-libgtk-3-dev, libatlas-base-dev, libturbojpeg, libtbb2, \
+libgtk-3-dev, libatlas-base-dev, libturbojpeg, libtbb2, libsdl2-dev, \
 python${JEVOIS_HOST_PYTHON_MAJOR}.${JEVOIS_HOST_PYTHON_MINOR}-dev, python${JEVOIS_HOST_PYTHON_MAJOR}-numpy, \
 python${JEVOIS_HOST_PYTHON_MAJOR}-pip, ${JEVOIS}-opencv (>=${JEVOIS_OPENCV_VERSION}), libglm-dev")
 
