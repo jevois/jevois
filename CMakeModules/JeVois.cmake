@@ -334,10 +334,10 @@ macro(jevois_setup_cpack packagename)
     set(CPACK_PACKAGE_NAME "${packagename}-platform")
 
     if (JEVOISPRO_PLATFORM_DEB)
-      set(JEVOIS_CPACK_ARCH "arm64") # pack for aarch64
+      set(JEVOIS_CPACK_ARCH "arm64") # pack for aarch64 to install on platform
       set(CPACK_SET_DESTDIR OFF) # cpack installs using default install dir
     else ()
-      set(JEVOIS_CPACK_ARCH "all") # pack for all so we can install on any arch
+      set(JEVOIS_CPACK_ARCH "amd64") # pack for amd64 to install on host
       set(CPACK_SET_DESTDIR ON) # needed to avoid having cpack use default install dir
     endif ()
 

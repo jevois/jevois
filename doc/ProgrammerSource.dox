@@ -49,6 +49,22 @@ typing your password. We assume this is a glitch in Ubuntu while the login scree
 happens, patiently wait until you see no more disk activity for a while, as other updates are in progress. We recommend
 waiting for at least 15-30 minutes. Then send a hard power off to the machine and restart it.
 
+JeVois-Pro: Setting up the Google Coral package source
+------------------------------------------------------
+
+\jvpro will also use libraries from Google Coral for the TPU accelerator. Set these up as follows (see
+https://coral.ai/software/#debian-packages for up-to-date information):
+
+\verbatim
+echo "deb https://packages.cloud.google.com/apt coral-edgetpu-stable main" | sudo tee /etc/apt/sources.list.d/coral-edgetpu.list
+echo "deb https://packages.cloud.google.com/apt coral-cloud-stable main" | sudo tee /etc/apt/sources.list.d/coral-cloud.list
+curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+sudo apt update
+\endverbatim
+
+You do not need to install any Coral package yet. When you later run `apt install jevoispro-host` (see below) it will
+pull the Coral libraries as dependencies.
+
 Installing Ubuntu packages for JeVois-A33 development
 =====================================================
 
@@ -165,8 +181,12 @@ Which packages to install on a desktop host for JeVois-Pro?
   \verbatim
   sudo apt install jevoispro-host jevoisprobase-host
   \endverbatim
-    	
-- If you want jevois and jevoisbase cross-compiled for the platform hardware:
+
+  \note Yes, this will pull over 500 dependent packages, this is normal, just say Yes to install them all. They include
+  many libraries used by JeVois, the Coral libraries, OpenCV and OpenVino, etc.
+
+- If you want jevois and jevoisbase cross-compiled for the platform hardware (needed to later cross-compile your
+  own modules from source):
   \verbatim
   sudo apt install jevoispro-platform jevoisprobase-platform
   \endverbatim
@@ -183,8 +203,8 @@ Which packages to install on a desktop host for JeVois-Pro?
 Which packages to install on the JeVois-Pro smart camera?
 ---------------------------------------------------------
 
-\note The apt source jevois.usc.edu is already configured on the microSD, so you do not need to add that source to your
-camera using the `add-apt-repository` command detailed above.
+\note The apt source jevois.usc.edu and those for Google Coral are already configured on the microSD, so you do not need
+to add them to your camera using the `add-apt-repository` commands detailed above.
 
 Before you can run the commands below, you need to connect your camera to a network as described in \ref ProNetwork
 

@@ -32,7 +32,7 @@ JeVois core framework, quidelines are much looser and are described in the docum
   JeVois, and can be found in jevois/scripts/astylerc. To use this style file, invoke astyle using the –options flag,
   e.g.
   \code 
-  astyle myfile --options=/path/to/nrt/scripts/astylerc
+  astyle myfile --options=/path/to/jevois/scripts/astylerc
   \endcode
 
 - Indentation matching this style is as defined by the following emacs rules, on top of the default C mode of emacs
@@ -105,8 +105,8 @@ JeVois core framework, quidelines are much looser and are described in the docum
   " you can just type in the relative path from the file you're currently editing.
   set autochdir
   
-  " When editing the JeVois library, it is a total pain when you are editing a .H file in nrt/include/whatever/whatever, 
-  " and then decide you need to edit the source .C file in the nrt/src/whatever/whatever. This little function will 
+  " When editing the JeVois library, it is a total pain when you are editing a .H file in jevois/include/whatever/whatever, 
+  " and then decide you need to edit the source .C file in the jevois/src/whatever/whatever. This little function will 
   " automatically back track in the directory tree for you, find the corresponding .C or .H file, and open it in a new
   " tab. 
   " To use it, just type ,o (that's a comma, and then a lower-case o). 
@@ -243,7 +243,7 @@ int const * const ptr3; // ptr3 is a const pointer to a const int (const address
   http://www.dansaks.com/articles/1999-02%20const%20T%20vs%20T%20const.pdf and that one:
   http://www.parashift.com/c++-faq-lite/const-correctness.html
 
-- JeVois is const-correct code (except for bugs and omissions!). When writing nrt code, make sure it is
+- JeVois is const-correct code (except for bugs and omissions!). When writing jevois code, make sure it is
   const-correct. For example:
   - input arguments to a function are typically received by const reference. For example:
 \code
@@ -344,7 +344,7 @@ Example:
   \code
   class MyCoolClass;
   class ImageSegmenter;
-  \edncode
+  \endcode
 
 - Variables should be camelCase starting with a lowercase character, for example:
   \code
@@ -377,7 +377,7 @@ Example:
   example:
 
   \code
-  typedef nrt::Dims<float> FloatingDims;
+  typedef jevois::Dims<float> FloatingDims;
   \endcode
 
 - Anything that is the result of any fancy metaprogramming (e.g. static const variables or typedefs set by compile-time
