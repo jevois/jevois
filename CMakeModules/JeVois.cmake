@@ -179,7 +179,7 @@ macro(jevois_project_set_flags)
 
   message(STATUS "Host path to ${JEVOIS} lib and data install root: ${JEVOIS_INSTALL_ROOT}")
 
-  # Add imgui include path as installed by JeVois if building for jevois-pro:
+  # Add imgui and function2 (for ThreadPool) include paths as installed by JeVois if building for jevois-pro:
   if (JEVOISPRO_PLATFORM_DEB)
     set(JEVOIS_INST_PATH "${JEVOIS_INSTALL_PREFIX}/${JEVOIS_MODULES_ROOT}")
   else ()
@@ -191,7 +191,18 @@ macro(jevois_project_set_flags)
     include_directories("${JEVOIS_INST_PATH}/include/imgui")
   endif ()
   include_directories("${JEVOIS_INST_PATH}/include/function2")
-  
+
+  # If building a pdeb against pre-compiled jevois/jevoisbase, but they have not been compiled from source as pdeb, make
+  # sure we can find the includes and libs:
+  if (JEVOISPRO_PLATFORM_DEB AND NOT EXISTS "${JEVOIS_PLATFORM_INSTALL_PREFIX_PDEB}")
+    include_directories("${JEVOIS_PLATFORM_INSTALL_PREFIX}/include")
+    include_directories("${JEVOIS_PLATFORM_MODULES_ROOT}/include")
+    include_directories("${JEVOIS_PLATFORM_MODULES_ROOT}/include/imgui")
+    include_directories("${JEVOIS_PLATFORM_MODULES_ROOT}/include/function2")
+    link_directories("${JEVOIS_PLATFORM_INSTALL_PREFIX}/lib")
+    link_directories("${JEVOIS_PLATFORM_MODULES_ROOT}/lib")
+  endif()
+
 endmacro()
 
 ####################################################################################################

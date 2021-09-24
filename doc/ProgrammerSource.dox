@@ -185,17 +185,17 @@ Which packages to install on a desktop host for JeVois-Pro?
   \note Yes, this will pull over 500 dependent packages, this is normal, just say Yes to install them all. They include
   many libraries used by JeVois, the Coral libraries, OpenCV and OpenVino, etc.
 
-- If you want jevois and jevoisbase cross-compiled for the platform hardware (needed to later cross-compile your
-  own modules from source):
+- If you want jevois and jevoisbase cross-compiled for the platform hardware as \a support packages to be installed on
+  your host (needed to later cross-compile your own modules from source):
   \verbatim
   sudo apt install jevoispro-platform jevoisprobase-platform
   \endverbatim
 
-- If you want to be able to cross-compile new modules for JeVois platform hardware:
+- If you want to be able to cross-compile jevois, jevoisbase, or new modules for JeVois platform hardware:
   \verbatim
   sudo apt install jevoispro-sdk-dev
   \endverbatim
-    	
+
 - If you want to be able to recompile the platform Linux kernel or change the platform operating system:
 
   You need to rebuild jevoispro-sdk from source using `rebuild-os.sh` as described below.
