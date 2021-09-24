@@ -80,7 +80,7 @@ namespace
     //PyOS_sighandler_t sighandler = PyOS_getsig(SIGINT);
     import_array();
     //PyOS_setsig(SIGINT,sighandler);
-    return NUMPY_IMPORT_ARRAY_RETVAL;
+    return nullptr; // was NUMPY_IMPORT_ARRAY_RETVAL in older numpy
   }
 }
 
