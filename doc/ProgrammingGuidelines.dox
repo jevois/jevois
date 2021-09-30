@@ -210,7 +210,7 @@ JeVois core framework, quidelines are much looser and are described in the docum
    framework
 
 - To find particular words in JeVois source code, we recommend adding the following macro to your
-\c ~/.bash_aliases or \c ~/.bashrc:
+`~/.bash_aliases` or `~/.bashrc`:
 \verbatim
 # do a grep on c sources (e.g., for kernel, u-boot, etc) or c++ sources (for JeVois, NRT, etc)
 xg () {

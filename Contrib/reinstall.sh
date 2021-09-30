@@ -11,25 +11,17 @@ if [[ -z "${JEVOISPRO_SDK_ROOT}" ]]; then
     echo "JEVOISPRO_SDK_ROOT is not set, using ${JEVOISPRO_SDK_ROOT}"
 fi
 
-if [ ! -d "${JEVOISPRO_SDK_ROOT}/jevoispro-sysroot" ]; then
-    echo "Cannot find ${JEVOISPRO_SDK_ROOT}/jevoispro-sysroot -- ABORT"
-    exit 1
-fi
-
 if [[ -z "${JEVOIS_SDK_ROOT}" ]]; then
     JEVOIS_SDK_ROOT=/usr/share/jevois-sdk
     echo "JEVOIS_SDK_ROOT is not set, using ${JEVOIS_SDK_ROOT}"
 fi
 
 JEVOIS_BUILD_BASE="${JEVOIS_SDK_ROOT}/out/sun8iw5p1/linux/common/buildroot"
-if [ ! -d "${JEVOIS_BUILD_BASE}" ]; then
-    echo "Cannot find ${JEVOIS_BUILD_BASE} -- ABORT"
-    exit 1
-fi
-
 JEVOISPRO_BUILD_BASE="${JEVOISPRO_SDK_ROOT}/jevoispro-sysroot"
-if [ ! -d "${JEVOISPRO_BUILD_BASE}" ]; then
-    echo "Cannot find ${JEVOISPRO_BUILD_BASE} -- ABORT"
+
+if [ ! -d "${JEVOIS_BUILD_BASE}" -a ! -d "${JEVOISPRO_BUILD_BASE}" ]; then
+    echo "Cannot find either ${JEVOIS_BUILD_BASE} or ${JEVOISPRO_BUILD_BASE}"
+    echo "You need to insall jevois-sdk-dev or jevoispro-sdk-dev first -- ABORT"
     exit 1
 fi
 
@@ -101,17 +93,22 @@ if [ "X$REPLY" = "Xy" ]; then
     # Build for host:
     bazel build -c opt //tensorflow/lite:libtensorflowlite.so
     sudo cp -v bazel-bin/tensorflow/lite/libtensorflowlite.so /usr/lib/
-    
-    # Build for JeVois-Pro platform:
-    bazel build --config=elinux_aarch64 -c opt //tensorflow/lite:libtensorflowlite.so
-    sudo cp -v bazel-bin/tensorflow/lite/libtensorflowlite.so /var/lib/jevoispro-microsd/lib/ # for sd card
-    sudo cp -v bazel-bin/tensorflow/lite/libtensorflowlite.so ${JEVOISPRO_BUILD_BASE}/usr/lib/ # for compiling
 
-    # Build for JeVois-A33 platform:
-    bazel build --config=elinux_armhf -c opt //tensorflow/lite:libtensorflowlite.so
-    sudo mkdir -p /var/lib/jevois-microsd/lib
-    sudo cp -v bazel-bin/tensorflow/lite/libtensorflowlite.so /var/lib/jevois-microsd/lib/ # for sd card
-    sudo cp -v bazel-bin/tensorflow/lite/libtensorflowlite.so ${JEVOIS_BUILD_BASE}/target/usr/lib/ # for compiling
+    if [ -d "${JEVOISPRO_BUILD_BASE}" ]; then
+        # Build for JeVois-Pro platform:
+        bazel build --config=elinux_aarch64 -c opt //tensorflow/lite:libtensorflowlite.so
+        sudo cp -v bazel-bin/tensorflow/lite/libtensorflowlite.so /var/lib/jevoispro-microsd/lib/ # for sd card
+        sudo cp -v bazel-bin/tensorflow/lite/libtensorflowlite.so ${JEVOISPRO_BUILD_BASE}/usr/lib/ # for compiling
+    fi
+    
+    if [ -d "${JEVOIS_BUILD_BASE}" ]; then
+        # Build for JeVois-A33 platform:
+        bazel build --config=elinux_armhf -c opt //tensorflow/lite:libtensorflowlite.so
+        sudo mkdir -p /var/lib/jevois-microsd/lib
+        sudo cp -v bazel-bin/tensorflow/lite/libtensorflowlite.so /var/lib/jevois-microsd/lib/ # for sd card
+        sudo cp -v bazel-bin/tensorflow/lite/libtensorflowlite.so ${JEVOIS_BUILD_BASE}/target/usr/lib/ # for compiling
+    fi
+
     cd ..
     
     # pycoral build

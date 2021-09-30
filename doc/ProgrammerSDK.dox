@@ -253,5 +253,5 @@ To create your own, roughly the first 50 lines of the \b jevoisbase \b CMakeList
 for your project. The rest of the \b jevoisbase \b CMakeLists.txt is basically to add required dependencies, such as on
 the ZBar library, the OpenCV library, etc and those will vary with your specific project.
 
-Make sure you keep the call to \c jevois_project_finalize() at the nd of your \b CMakeLists.txt file.
+Make sure you keep the call to \c jevois_project_finalize() at the end of your \b CMakeLists.txt file.
 */

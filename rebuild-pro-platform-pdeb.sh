@@ -3,15 +3,14 @@
 
 # compiled code is in /var/lib/jevoispro-build-pdeb/
 
-# On JeVoisPro, limit the number of compile threads to not run out of memory:
-ncpu=`grep -c processor /proc/cpuinfo`
-if [ `grep -c JeVois /proc/cpuinfo` -gt 0 ]; then ncpu=4; fi
+# Get the external contributed packages if they are not here or are outdated:
+./Contrib/check.sh
 
 sudo /bin/rm -rf ppdbuild \
     && mkdir ppdbuild \
     && cd ppdbuild \
     && cmake "$@" -DJEVOISPRO_PLATFORM_DEB=ON -DJEVOIS_HARDWARE=PRO -DJEVOIS_PLATFORM=ON .. \
-    && make -j ${ncpu} \
+    && make -j \
     && sudo make install \
     && sudo cpack
 

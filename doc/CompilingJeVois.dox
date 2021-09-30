@@ -95,6 +95,23 @@ orchestrate the flow of data from camera sensor to machine vision processing to 
 JeVois-Pro: Full reconfiguration and compilation
 ------------------------------------------------
 
+Note that there are three ways to compile software for \jvpro:
+
+- \b host: compiles natively on your amd64 desktop for execution on that amd64 desktop. Use this during development as
+  it allows you to compile your code on your desktop and then test it immediately using a regular webcam. Of course,
+  some modules will not work on desktop, for example if they use the NPU. But in general this is the fastest way to
+  develop and debug new machine vision modules.
+
+- \b platform: cross-compiles on your desktop code for arm64 target processor, which is the architecture used in
+  \jvpro. Typically, you would only need to run this if you want to place \a support files in a staging area (\b
+  /var/lib/jevoispro-build and \b /var/lib/jevoispro-microsd) that can then be referenced when you compile other modules
+  that will need to link against or otherwise use those files.
+
+- \b platform-pdeb: cross-compiles on your desktop code for arm64 target processor of \jvpro, and create an arm64 deb
+  package that you can later copy to your microSD and install on \jvpro. Typically, you would do this once you have
+  tested and debugged a new machine vision module in host mode, and you are now ready to try it out on the \jvpro
+  camera.
+
 Scripts are provided to recompile everything:
 
 - \c rebuild-pro-host.sh will
@@ -105,6 +122,17 @@ Scripts are provided to recompile everything:
   + JeVois config files will be installed in \b /jevoispro and this
     is also where machine vision modules and shared data for JeVois-Pro will be installed later.
   + Thus, all files and executables are ready to use immediately on your computer.
+
+- \c rebuild-pro-platform.sh will
+  + Cross-compile for the ARM CPU inside the JeVois-Pro smart camera
+  + Object files will be in \b ppbuild/ which the script creates
+  + Config files used by JeVois at runtime will be staged into <b>/var/lib/jevoispro-microsd/config/</b>
+  + Executables including \c jevois-daemon will be staged into <b>/var/lib/jevoispro-build/usr/bin/</b>
+  + Include files will be staged into <b>/var/lib/jevoispro-build/usr/include/jevois/</b>
+  + The core JeVois library (\b libjevoispro.so) will be staged into <b>/var/lib/jevoispro-build/usr/lib/</b>
+  + Documentation files are staged into <b>/var/lib/jevoispro-build/usr/share/doc/jevoispro-platform/</b>
+  + Thus, because all target files are stored into the staging area, they will be ready to be used as
+    dependencies when you try to compile jevoisbase or new custom machine vision modules.
 
 - \c rebuild-pro-platform-pdeb.sh will
   + Cross-compile for the ARM CPU inside the JeVois-Pro smart camera
@@ -148,12 +176,19 @@ sudo make install
 make doc     # optional; if desired
 \endverbatim
 
-- \jvpro: for platform
+- \jvpro: for platform \a support files
+\verbatim
+cd ppbuild
+make -j
+sudo make install
+\endverbatim
+
+- \jvpro: for platform deb
 \verbatim
 cd ppdbuild
 make -j
 sudo make install
-sudo cpack # will re-generate the deb package into ppdbuild/jevoispro-platform_XXX.deb
+sudo cpack # will re-generate the deb package into ppdbuild/jevoispro-platform_XXX_arm64.deb with arm64 arch.
 # You can then copy this file to microSD, switch JeVois-Pro to console boot, then
 # `apt remove jevoispro-platform` to nuke the existing version and then `dpkg -i <your_new_deb>`.
 \endverbatim

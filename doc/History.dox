@@ -5,7 +5,7 @@
 
 \section invt The iLab Neuromorphic Vision C++ Toolkit
 
-Back in 1995, we started what has become the iLab Neuromorphic Vision C++ Toolkit. The tolkit allows one to develop
+Back in 1995, we started what has become the iLab Neuromorphic Vision C++ Toolkit. The toolkit allows one to develop
 neuroscience-inspired computer vision models. The core elements provided by this toolkit are:
 
 - Low-level helper classes, including Point2D, Rectangle, PixRGB<T>, Range, Timer, XWindow, etc.

@@ -368,8 +368,8 @@ install(FILES "Config/params.cfg"
   DESTINATION "${JEVOIS_MODULES_ROOT}/config" COMPONENT bin)
 install(FILES "Config/initscript.cfg"
   DESTINATION "${JEVOIS_MODULES_ROOT}/config" COMPONENT bin)
-install(DIRECTORY "share"
-  DESTINATION "${JEVOIS_MODULES_ROOT}" COMPONENT bin)
+install(DIRECTORY "share-${JEVOIS}/"
+  DESTINATION "${JEVOIS_MODULES_ROOT}/share" COMPONENT bin)
 
 # Install libtensorflowlite.so library from Contrib. See Contrib/reinstall.sh for staging locations for each of host,
 # platform, A33, Pro:

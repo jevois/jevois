@@ -114,6 +114,17 @@ Scripts are provided to recompile everything:
   + Modules and libraries will be installed in \c /jevoispro (to match their location on the platform hardware)
   + Thus, modules are ready to use immediately on your computer.
 
+- \c rebuild-pro-platform.sh will
+  + Cross-compile for the ARM CPU inside the JeVois-Pro smart camera
+  + Object files will be in \b ppbuild/ which the script creates
+  + Config files used by JeVois at runtime will be staged into <b>/var/lib/jevoispro-microsd/config/</b>
+  + Executables including \c jevois-daemon will be staged into <b>/var/lib/jevoispro-build/usr/bin/</b>
+  + Include files will be staged into <b>/var/lib/jevoispro-build/usr/include/jevois/</b>
+  + The core JeVois Base library (\b libjevoisprobase.so) will be staged into <b>/var/lib/jevoispro-build/usr/lib/</b>
+  + Documentation files are staged into <b>/var/lib/jevoispro-build/usr/share/doc/jevoispro-platform/</b>
+  + Thus, because all target files are stored into the staging area, they will be ready to be used as
+    dependencies when you try to compile new custom machine vision modules.
+
 - \c rebuild-pro-platform-pdeb.sh will
   + Cross-compile for the ARM CPU inside the JeVois-Pro smart camera
   + Object files will be in \b ppdbuild/ which the script creates
@@ -155,12 +166,19 @@ sudo make install
 make doc     # optional; if desired
 \endverbatim
 
-- \jvpro: for platform
+- \jvpro: for platform \a support files
+\verbatim
+cd ppbuild
+make -j
+sudo make install
+\endverbatim
+
+- \jvpro: for platform deb
 \verbatim
 cd ppdbuild
 make -j
 sudo make install
-sudo cpack # will re-generate the deb package into ppdbuild/jevoisprobase-platform_XXX.deb
+sudo cpack # will re-generate the deb package into ppdbuild/jevoisprobase-platform_XXX_arm64.deb
 # You can then copy this file to microSD, switch JeVois-Pro to console boot, then
 # `apt remove jevoisprobase-platform` to nuke the existing version and then `dpkg -i <your_new_deb>`.
 \endverbatim

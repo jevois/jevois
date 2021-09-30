@@ -1,5 +1,8 @@
 /*! \page JeVoisDaemon The jevois-daemon executable
 
+\note For readability, we just use \b jevois-daemon below, but you should replace that by \b jevoispro-daemon when using
+\jvpro
+
 The main executable that is created when compiling the JeVois framework is \b jevois-daemon on \jva33 or
 \b jevoispro-daemon on \jvpro, which basically implements a jevois::Engine that will orchestrate the flow of data from
 camera sensor to machine vision processing to video streaming over USB.
@@ -20,21 +23,21 @@ would usually want to run a plain video viewer on your host, such as guvcview, o
 you have developed, which will grab video frames from the JeVois camera and will then process them further on your host
 computer.
 
-\note For readability, we just use \b jevois-daemon below, but you should replace that by \b jevoispro-daemon when using
-\jvpro
-
 Running jevois-daemon on host
 =============================
 
-To run it on your host computer, just run \c rebuild-host.sh both in jevois and in jevoisbase, plug in any USB camera,
-and type
+To run it on your host computer, either install jevois and jevoisbase deb packages for host (see \ref
+ProgrammerSource). Or get the source code from GitHub and recompile (see \ref CompilingJeVois and \ref
+CompilingJeVoisBase) and then just run \c rebuild-host.sh both in jevois and in jevoisbase.
+
+Then, plug in any USB camera, and type
 
 \verbatim
 jevois-daemon
 \endverbatim
 
-You should see the saliency demo in a window. Note that the JeVois core software does not provide any module, so make
-sure you proceed to compiling and installing jevoisbase before you try to use jevois-daemon.
+You should see video from your webcam processed on your desktop in a window. Note that the JeVois core software does not
+provide any module, so make sure you proceed to compiling and installing jevoisbase before you try to use jevois-daemon.
 
 \b jevois-daemon accepts a number of command-line arguments, try
 
@@ -64,6 +67,9 @@ jevois-daemon --videomapping=19
 to start it again in using that new video mapping (here, mapping 19 was for Demo QR-code according to listmappings). See
 \ref UserCli for more info about commands, and http://jevois.org/start/start.html for a list of video mappings that
 correspond to the default collection of modules in jevoisbase.
+
+\note If your USB webcam cannot support the camera resolution required by a given video mapping, then you will get an
+error and that mapping cannot run on host.
 
 jevois-daemon options
 =====================
@@ -187,7 +193,7 @@ Running jevois-daemon on JeVois-Pro platform
 
 \c jevoispro-daemon starts automatically on the platform. The script that starts it is installed in
 <b>LINUX:/usr/bin/jevoispro.sh</b> on the microSD. Its source is in <b>jevois/bin/jevoispro.sh</b> and it gets installed
-to microSD as part of the rebuild-platform-pdeb.sh process.
+to microSD as part of the rebuild-platform-pdeb.sh process of package \b jevois.
 
 To debug hard crashes, proceed as follows: enable core dumps, run jevoispro-daemon normally until it crashes, and then
 use gdb to find the error in the core file:

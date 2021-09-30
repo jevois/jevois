@@ -26,7 +26,7 @@ Installing pre-compiled code from jevois.usc.edu
 
 See https://jevois.usc.edu for the latest instructions.
 
-We provided pre-compiled Ubuntu deb packages for the GitHub repositories listed above.
+We provide pre-compiled Ubuntu deb packages for the GitHub repositories listed above.
 
 Setting up the jevois.usc.edu apt source
 ----------------------------------------
@@ -52,8 +52,8 @@ waiting for at least 15-30 minutes. Then send a hard power off to the machine an
 JeVois-Pro: Setting up the Google Coral package source
 ------------------------------------------------------
 
-\jvpro will also use libraries from Google Coral for the TPU accelerator. Set these up as follows (see
-https://coral.ai/software/#debian-packages for up-to-date information):
+\jvpro will also use libraries from Google Coral for the TPU accelerator. Set these up as follows to be able to install
+them on your desktop (see https://coral.ai/software/#debian-packages for up-to-date information):
 
 \verbatim
 echo "deb https://packages.cloud.google.com/apt coral-edgetpu-stable main" | sudo tee /etc/apt/sources.list.d/coral-edgetpu.list
@@ -62,7 +62,7 @@ curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
 sudo apt update
 \endverbatim
 
-You do not need to install any Coral package yet. When you later run `apt install jevoispro-host` (see below) it will
+You do not need to install any Coral package yet. When you later run `apt install jevoispro-host` (see below), it will
 pull the Coral libraries as dependencies.
 
 Installing Ubuntu packages for JeVois-A33 development
@@ -162,7 +162,7 @@ The following packages are available at https://jevois.usc.edu for amd64 (to be 
   allow you to cross-compile jevois and jevoisbase for platform, finding the necessary cross-compiled libraries that may
   be needed.
 
-The following packages are available at https://jevois.usc.edu for aarch64 (to be installed on JeVois-Pro):
+The following packages are available at https://jevois.usc.edu for arm64 (to be installed on JeVois-Pro):
 
 - \b jevoispro-opencv: OpenCV 4.x compiled for JeVois-Pro. We install this package into /usr/share/jevois-opencv-4.x on
   the camera.
@@ -183,7 +183,7 @@ Which packages to install on a desktop host for JeVois-Pro?
   \endverbatim
 
   \note Yes, this will pull over 500 dependent packages, this is normal, just say Yes to install them all. They include
-  many libraries used by JeVois, the Coral libraries, OpenCV and OpenVino, etc.
+  many libraries used by JeVois, the Coral libraries, Boost, OpenCV and OpenVino, etc.
 
 - If you want jevois and jevoisbase cross-compiled for the platform hardware as \a support packages to be installed on
   your host (needed to later cross-compile your own modules from source):
@@ -260,6 +260,9 @@ cd jevoispro-sdk
 \endverbatim
 
 It will take a very long time, possibly over 12 hours depending on your computer and network speeds.
+
+\note If you want to also re-create the \b jevoispro-sdk-dev deb package so that you can later install it on another
+desktop computer, use `./rebuild-os -deb`
 
 */
 
