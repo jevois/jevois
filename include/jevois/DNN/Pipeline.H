@@ -38,64 +38,64 @@ namespace jevois
     {
       static jevois::ParameterCategory const ParamCateg("DNN Pipeline Options");
 
-      //! Parameter \relates Pipeline
+      //! Parameter \relates jevois::Pipeline
       JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(zooroot, std::string, "Path where to find zoo files (.yml). "
                                              "If not absolute, it is relative to this module's path",
                                              std::string(JEVOIS_SHARE_PATH) + "/dnn", ParamCateg);
 
-      //! Parameter \relates Pipeline
+      //! Parameter \relates jevois::Pipeline
       JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(zoo, std::string, "Filename for neural network zoo file (.yml). "
                                              "If not absolute, it is relative to zooroot",
                                              "models.yml", ParamCateg);
-      //! Enum \relates Pipeline
+      //! Enum \relates jevois::Pipeline
       JEVOIS_DEFINE_ENUM_CLASS(Filter, (All) (OpenCV) (TPU) (NPU) (VPU) );
 
-      //! Parameter \relates Pipeline
+      //! Parameter \relates jevois::Pipeline
       JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(filter, Filter, "Filter to possibly only show as options in "
                                              "the 'pipe' parameter some class of models from the zoo",
                                              Filter::All, Filter_Values, ParamCateg);
 
-      //! Parameter \relates Pipeline
+      //! Parameter \relates jevois::Pipeline
       JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(pipe, std::string, "Pipeline to use, which should correspond to a "
                                              "top-level entry in the zoo file",
                                              "", ParamCateg);
       
-      //! Enum \relates Pipeline
+      //! Enum \relates jevois::Pipeline
       JEVOIS_DEFINE_ENUM_CLASS(PreProc, (Blob) (Custom) );
 
-      //! Parameter \relates Pipeline
+      //! Parameter \relates jevois::Pipeline
       JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(preproc, PreProc, "Pre-Processor to use, usually set automatically "
                                              "by selecting a pipeline from the zoo file",
                                              PreProc::Blob, PreProc_Values, ParamCateg);
-      //! Enum \relates Pipeline
+      //! Enum \relates jevois::Pipeline
 #ifdef JEVOIS_PRO
       JEVOIS_DEFINE_ENUM_CLASS(NetType, (OpenCV) (NPU) (TPU) (Custom) );
 #else
       JEVOIS_DEFINE_ENUM_CLASS(NetType, (OpenCV) (Custom) );
 #endif
 
-      //! Parameter \relates Pipeline
+      //! Parameter \relates jevois::Pipeline
       JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(nettype, NetType, "Network runtime framework to use, usually set "
                                              "automatically by selecting a pipeline from the zoo file",
                                              NetType::OpenCV, NetType_Values, ParamCateg);
-      //! Enum \relates Pipeline
+      //! Enum \relates jevois::Pipeline
       JEVOIS_DEFINE_ENUM_CLASS(PostProc, (Classify) (Detect) (Segment) (Custom) );
 
-      //! Parameter \relates Pipeline
+      //! Parameter \relates jevois::Pipeline
       JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(postproc, PostProc, "Post-Processor to use, usually set automatically "
                                              "by selecting a pipeline from the zoo file",
                                              PostProc::Classify, PostProc_Values, ParamCateg);
-      //! Enum \relates Pipeline
+      //! Enum \relates jevois::Pipeline
       JEVOIS_DEFINE_ENUM_CLASS(Processing, (Sync) (Async) );
 
-      //! Parameter \relates Pipeline
+      //! Parameter \relates jevois::Pipeline
       JEVOIS_DECLARE_PARAMETER(processing, Processing, "Type of processing: Sync runs pre-processing, "
                                "network, and post-processing sequentially for every frame. Use for fast "
                                "networks. Async runs the network in a thread and should be used for "
                                "networks slower than the camera framerate.",
                                Processing::Async, Processing_Values, ParamCateg);
       
-      //! Parameter \relates Pipeline
+      //! Parameter \relates jevois::Pipeline
       JEVOIS_DECLARE_PARAMETER(overlay, bool, "Show some pipeline info as an overlay over output or GUI video",
                                true, ParamCateg);
     }

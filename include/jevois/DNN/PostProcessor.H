@@ -37,49 +37,49 @@ namespace jevois
       // will use different subsets of all available parameters:
       static jevois::ParameterCategory const ParamCateg("DNN Post-Processing Options");
       
-      //! Parameter \relates PostProcessorClassify
+      //! Parameter \relates jevois::PostProcessorClassify
       JEVOIS_DECLARE_PARAMETER(classoffset, int, "Offset added to model output when looking up class name. Useful if "
                                "your model uses a background class but your class file does not (use -1), or if your "
                                "model does not use a background class but your class file has one (use 1). If unsure, "
                                "use 0 and check whether reported class names are off.",
                                0, ParamCateg);
       
-      //! Parameter \relates PostProcessorClassify
+      //! Parameter \relates jevois::PostProcessorClassify
       JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(classes, std::string, "Path to text file with names of object classes",
                                              "", ParamCateg);
       
-      //! Parameter \relates PostProcessorClassify
+      //! Parameter \relates jevois::PostProcessorClassify
       JEVOIS_DECLARE_PARAMETER(top, unsigned int, "Max number of top-scoring predictions that score above "
                                "thresh to report",
                                5, ParamCateg);
       
-      //! Parameter \relates PostProcessorClassify
+      //! Parameter \relates jevois::PostProcessorClassify
       JEVOIS_DECLARE_PARAMETER(thresh, float, "Threshold (in percent confidence) above which predictions will be "
                                "reported",
                                20.0F, jevois::Range<float>(0.0F, 100.0F), ParamCateg);
       
-      //! Parameter \relates PostProcessorClassify
+      //! Parameter \relates jevois::PostProcessorClassify
       JEVOIS_DECLARE_PARAMETER(softmax, bool, "Apply a softmax to classification outputs",
                                false, ParamCateg);
 
-      //! Parameter \relates PostProcessorClassify
+      //! Parameter \relates jevois::PostProcessorClassify
       JEVOIS_DECLARE_PARAMETER(scorescale, float, "Scaling factors applied to recognition scores, useful for "
                                "InceptionV3 and possibly other networks",
                                1.0F, ParamCateg);
       
-      //! Enum \relates PostProcessorDetect
+      //! Enum \relates jevois::PostProcessorDetect
       JEVOIS_DEFINE_ENUM_CLASS(DetectType, (FasterRCNN) (YOLO) (SSD) (TPUSSD) (RAWYOLOface) (RAWYOLOv2)
                                (RAWYOLOv3) (RAWYOLOv4) (RAWYOLOv3tiny) )
       
-      //! Parameter \relates PostProcessorDetect
+      //! Parameter \relates jevois::PostProcessorDetect
       JEVOIS_DECLARE_PARAMETER(detecttype, DetectType, "Type of detection output format",
                                DetectType::YOLO, DetectType_Values, ParamCateg);
       
-      //! Parameter \relates PostProcessorDetect
+      //! Parameter \relates jevois::PostProcessorDetect
       JEVOIS_DECLARE_PARAMETER(nms, float, "Non-maximum suppression intersection-over-union threshold in percent",
                                45.0F, jevois::Range<float>(0.0F, 100.0F), ParamCateg);
 
-      //! Parameter \relates PostProcessorDetect
+      //! Parameter \relates jevois::PostProcessorDetect
       JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(anchors, std::string, "For YOLO-type detection models with raw outputs, "
                                "list of anchors. Should be formatted as: w1, h1, w2, h2, ... ; ww1, hh1, ww2, hh2, "
                                "... ; ... where individual entries for a given YOLO layer are separated by commas, "
@@ -88,27 +88,25 @@ namespace jevois
                                "the same for all YOLO layers, you may just specify them once.",
                                "", ParamCateg);
 
-      //! Parameter \relates PostProcessorDetect \relates PostProcessorSegment
+      //! Parameter \relates jevois::PostProcessorDetect \relates jevois::PostProcessorSegment
       JEVOIS_DECLARE_PARAMETER(alpha, unsigned char, "Alpha channel value for drawn results",
                                64, ParamCateg);
 
-      //! Parameter \relates PostProcessorSegment
+      //! Parameter \relates jevois::PostProcessorSegment
       JEVOIS_DECLARE_PARAMETER(bgid, unsigned char, "Class ID for the background, will show as fully transparent in "
                                "semantic segmentation overlays",
                                0, ParamCateg);
 
-      //! Enum \relates PostProcessorSegment
+      //! Enum \relates jevois::PostProcessorSegment
       JEVOIS_DEFINE_ENUM_CLASS(SegType, (Classes) (Classes2) (ArgMax) );
 
-      //! Parameter \relates PostProcessorSegment
+      //! Parameter \relates jevois::PostProcessorSegment
       JEVOIS_DECLARE_PARAMETER(segtype, SegType, "Type of segmentation network output. If Classes, output is HxWxN "
                                "where N is the number of classes and we get one score per class, and we will show "
                                "the top scoring class for each pixel (e.g., UNet-MobileNet on TPU). If Classes2, "
                                "output is NxHxW and the rest is as for Classes (e.g., DeepLabV3 OpenCV). If ArgMax, "
                                "output is HxW and contains the class ID for each pixel (e.g., DeepLabV3 on TPU).",
                                SegType::Classes, SegType_Values, ParamCateg);
-
-      
     }
 
     //! Post-Processor for neural network pipeline

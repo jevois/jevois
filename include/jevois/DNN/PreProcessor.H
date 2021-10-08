@@ -35,20 +35,20 @@ namespace jevois
       // will use different subsets of all available parameters:
       static jevois::ParameterCategory const ParamCateg("DNN Pre-Processing Options");
 
-      //! Parameter \relates PreProcessor
+      //! Parameter \relates jevois::PreProcessor
       JEVOIS_DECLARE_PARAMETER(rgb, bool, "When true, model works with RGB input images instead BGR ones",
                                true, ParamCateg);
       
-      //! Parameter \relates PreProcessor
+      //! Parameter \relates jevois::PreProcessor
       JEVOIS_DECLARE_PARAMETER(scale, float, "Value scaling factor applied to input pixels, or 0.0 to extract a "
                                "UINT8 blob, typically for use with quantized networks",
                                2.0F / 255.0F, ParamCateg);
       
-      //! Parameter \relates PreProcessor
+      //! Parameter \relates jevois::PreProcessor
       JEVOIS_DECLARE_PARAMETER(mean, cv::Scalar, "Mean BGR value subtracted from input image",
                                cv::Scalar(127.5F, 127.5F, 127.5F), ParamCateg);
 
-      //! Parameter \relates PreProcessor
+      //! Parameter \relates jevois::PreProcessor
       JEVOIS_DECLARE_PARAMETER(letterbox, bool, "When true, extract the largest possible box from the input image "
                                "with same aspect ratio as the network's input tensor, and then rescale it to that "
                                "tensor's width and height (hence with cropping but no distortion). Otherwise, use "
@@ -56,7 +56,7 @@ namespace jevois
                                "possible stretching.",
                                false, ParamCateg);
       
-      //! Parameter \relates PreProcessor
+      //! Parameter \relates jevois::PreProcessor
       JEVOIS_DECLARE_PARAMETER(showin, bool, "Show outline of cropped image fed to network",
                                true, ParamCateg);
     }

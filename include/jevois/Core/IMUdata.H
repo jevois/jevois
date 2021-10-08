@@ -26,7 +26,8 @@ namespace jevois
       \ingroup core
 
       These classes and functions provide support for optional IMU chips that may be present in some of the optional
-      JeVois imaging sensors. */
+      JeVois imaging sensors. For example, TDK InvenSense ICM20948: 3-axis accelerometer, 3-axis gyroscope, 3-axis
+      magnetometer, integrated digital motion processor (DMP). */
 
   //! Raw IMU data
   /*! These are raw measurements from the sensor. Note that they are unscaled and thus their meaning depends on the

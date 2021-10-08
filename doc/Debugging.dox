@@ -1,8 +1,8 @@
 /*! \page Debugging Debugging JeVois software
 
 
-// ####################################################################################################
-\section debugginghost Debugging on host
+Debugging on host
+=================
 
 The easiest way to debug new machine vision modules on JeVois is to first compile and run them on your desktop (host)
 computer (see \ref CompilingJeVois and \ref CompilingJeVoisBase).
@@ -16,8 +16,8 @@ Sometimes that does not run well as we use lots of threads in JeVois. You can in
 dumps, running jevois-daemon until it crashes, and then using gdb to inspect the core file. See \ref JeVoisDaemon for
 details.
 
-// ####################################################################################################
-\section linkerr Debugging compiler and linker errors
+Debugging compiler and linker errors
+------------------------------------
 
 Compilation errors are reported in quite a verbose way. But linker errors are harder to debug. If you end up with an
 error message about a missing library, it is useful to see which linker command was exactly called with all paths
@@ -34,18 +34,26 @@ make VERBOSE=1
 This will show you the linker command that was run. You can then look at all the `-L...` arguments and check your
 CMakeList.txt to understand why your library was not found.
 
-// ####################################################################################################
-\section enablingdebugmsg Enabling debug-level messages
+Enabling debug-level messages
+-----------------------------
 
 You can turn on CMake flags \c JEVOIS_LDEBUG_ENABLE and \c JEVOIS_TRACE_ENABLE when compiling jevois to enable
 extra-verbose debugging messages (see \ref CompilingJeVois). Note that these flags only enable those messages to be
 compiled in. To see them, you also need to set the parameter \c loglevel to \c debug at runtime (see \ref UserCli).
 
-If you change those flags, you should recompile everything from scratch (recompile jevois, jevoisbase, your modules,
+If you change those flags, you must recompile everything from scratch (recompile jevois, jevoisbase, your modules,
 etc).
 
-// ####################################################################################################
-\section debuguboot JeVois-A33: Debugging the boot process on platform hardware
+JeVois-Pro: Debugging on the platform hardware
+==============================================
+
+Perhaps the easiest debugging workflow for \jvpro is:
+
+- switch to console boot as described in \ref ProUserQuick
+- enable core dumps and run `jevoispro.sh`, then use `gdb` to find the error, as described in \ref JeVoisDaemon
+
+JeVois-A33: Debugging the boot process on platform hardware
+===========================================================
 
 If you are tinkering with low-level software on your JeVois smart camera hardware and are experiencing difficulties with
 booting up, you can enable boot messages. This requires that you connect to the JeVois 4-pin hardware serial port during

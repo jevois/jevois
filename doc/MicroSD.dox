@@ -1,7 +1,8 @@
 /*! \page MicroSD MicroSD card organization and files
 
 
-\section microsd1 How the MicroSD card is organized
+How the MicroSD card is organized
+=================================
 
 The MicroSD card in your JeVois smart camera contains all the software that runs on the smart camera's processor. This
 includes:
@@ -14,7 +15,8 @@ includes:
 
 - JeVois machine vision modules and data.
 
-\section microsd2 Using your MicroSD card with a desktop or laptop computer
+Using your MicroSD card with a desktop or laptop computer
+=========================================================
 
 Modifying the contents of your MicroSD card, for example to add new machine vision modules or to get video files that
 were recorded by JeVois, is achieved by taking the MicroSD card out of your JeVois smart camera and connecting it to a
@@ -51,7 +53,8 @@ There are two basic ways of accessing the MicroSD card on a desktop or laptop:
 
 \image html microsd-sdmac.jpg
 
-\section microsd2 MicroSD partitions and partition types
+MicroSD partitions and partition types
+======================================
 
 The card is organized into three partitions (logical volumes):
 
@@ -85,7 +88,8 @@ NewMicroSD.
 
 \image html microsd-mac.png
 
-\section microsd3 MicroSD card contents
+MicroSD card contents
+=====================
 
 Here is an abbreviated tree of the files present on a typical \jva33 microSD card (\jvpro is similar but not
 identical):
@@ -312,7 +316,8 @@ identical):
 
 \endverbatim
 
-\section microsd4 JeVois-A33: Accessing and modifying the MicroSD while JeVois is running
+JeVois-A33: Accessing and modifying the MicroSD while JeVois is running
+=======================================================================
 
 \jva33 \jvversion{1.1}
 

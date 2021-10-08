@@ -52,53 +52,53 @@ namespace jevois
   {
     static jevois::ParameterCategory const ParamCateg("Graphical Interface Options");
 
-    //! Parameter \relates GUIhelper
+    //! Parameter \relates jevois::GUIhelper
     JEVOIS_DECLARE_PARAMETER(fullscreen, bool, "Use a fullscreen display when true, only has effect on host. "
                              "Platform always is fullscreen as the MALI OpenGL driver do not support windowing.",
                              false, ParamCateg);
 
-    //! Parameter \relates GUIhelper
+    //! Parameter \relates jevois::GUIhelper
     JEVOIS_DECLARE_PARAMETER(winsize, cv::Size, "Initial window size to use on host. On platform, size is determined "
                              "by hardware and the value of this parameter will be overwritten on init. The "
                              "parameter can still be used to query display size.",
                              cv::Size(1920, 1080), ParamCateg);
 
-    //! Parameter \relates GUIhelper
+    //! Parameter \relates jevois::GUIhelper
     JEVOIS_DECLARE_PARAMETER(hidesecs, float, "Number of seconds of inactivity from keyboard/mouse/joystick/etc after "
                              "which we hide the GUI, or 0.0 to never hide it. Note: The GUI starts hidden until the "
                              "first input event from a keyboard, mouse, etc.",
                              30.0F, ParamCateg);
 
-    //! Parameter \relates GUIhelper
+    //! Parameter \relates jevois::GUIhelper
     JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(scale, float, "Scale factor applied to the GUI",
                                            2.0f, { 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f,
                                                    2.1f, 2.2f, 2.3f, 2.4f, 2.5f, 2.6f, 2.7f, 2.8f, 2.9f, 3.0f },
                                            ParamCateg);
 
-    //! Enum for Parameter \relates GUIhelper
+    //! Enum for Parameter \relates jevois::GUIhelper
     JEVOIS_DEFINE_ENUM_CLASS(GuiStyle, (Light) (Dark) (Classic) );
 
-    //! Parameter \relates GUIhelper
+    //! Parameter \relates jevois::GUIhelper
     JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(style, GuiStyle, "Color style for the JeVois GUI",
                                            GuiStyle::Light, GuiStyle_Values, ParamCateg);
 
-    //! Parameter \relates GUIhelper
+    //! Parameter \relates jevois::GUIhelper
     JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(rounding, int, "Window and widget corner rounding for the JeVois GUI. "
                                            "Note than changing GUI scale will update this parameter as well.",
                                            4, jevois::Range<int>(0, 24), ParamCateg);
-    //! Parameter \relates GUIhelper
+    //! Parameter \relates jevois::GUIhelper
     JEVOIS_DECLARE_PARAMETER(overlaycolor, ImColor, "Default color to use for overlay text",
                              ImColor(255, 255, 255, 255), ParamCateg);
 
-    //! Parameter \relates GUIhelper
+    //! Parameter \relates jevois::GUIhelper
     JEVOIS_DECLARE_PARAMETER(linethick, float, "Line thickness for overlay drawings",
                              5.0F, jevois::Range<float>(0.1F, 20.0F), ParamCateg);
 
-    //! Parameter \relates GUIhelper
+    //! Parameter \relates jevois::GUIhelper
     JEVOIS_DECLARE_PARAMETER(fillalpha, float, "Alpha multiplier for overlay fills",
                              0.25F, jevois::Range<float>(0.0F, 1.0F), ParamCateg);
 
-    //! Parameter \relates GUIhelper
+    //! Parameter \relates jevois::GUIhelper
     JEVOIS_DECLARE_PARAMETER(allowquit, bool, "Quit application on ESC key (platform) or window close (host)",
                              false, ParamCateg);
   } // namespace gui

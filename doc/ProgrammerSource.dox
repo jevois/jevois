@@ -137,12 +137,10 @@ Which packages to install for JeVois-A33?
 Installing Ubuntu packages for JeVois-Pro development
 =====================================================
 
-\note This is work in progress. More coming soon...
+Because \jvpro runs a full Ubuntu operating system, installing packages on the camera is done as you would do for a
+normal computer.
 
-Because \jvpro runs a full Ubuntu operating system, installing packages on the camera is as you would do for a normal
-computer.
-
-The following packages are available at https://jevois.usc.edu for amd64 (to be installed on a desktop):
+The following packages are available at https://jevois.usc.edu for \a amd64 (to be installed on a desktop):
 
 - \b jevoispro-opencv: OpenCV 4.x compiled for host computer with settings that match those used by the JeVois-Pro
   platform hardware. We install this package into /usr/share/jevois-opencv-4.x so that it will not interfere with any
@@ -157,12 +155,18 @@ The following packages are available at https://jevois.usc.edu for amd64 (to be 
 
 - \b jevoisprobase-host: JeVois base modules compiled for execution on a host computer.
 
+- \b jevoispro-platform: JeVois core software cross-compiled for arm64 processor as a \a support package that will
+  provide the necessary ARM libraries to allow you to later cross-compile your own machine vision modules.
+
+- \b jevoisprobase-platform: JeVois base modules cross-compiled for arm64 processor as a \a support package that will
+  provide the necessary ARM libraries to allow you to later cross-compile your own machine vision modules.
+
 - \b jevoispro-sdk-dev: Cross-compiled operating system and libraries to be installed on host to support
   cross-compilation of JeVois software for the platform. That is, installing jevoispro-sdk-dev on your desktop will
   allow you to cross-compile jevois and jevoisbase for platform, finding the necessary cross-compiled libraries that may
   be needed.
 
-The following packages are available at https://jevois.usc.edu for arm64 (to be installed on JeVois-Pro):
+The following packages are available at https://jevois.usc.edu for \a arm64 (to be installed on JeVois-Pro):
 
 - \b jevoispro-opencv: OpenCV 4.x compiled for JeVois-Pro. We install this package into /usr/share/jevois-opencv-4.x on
   the camera.
@@ -170,9 +174,11 @@ The following packages are available at https://jevois.usc.edu for arm64 (to be 
 - \b jevoispro-openvino: Intel neural network framework OpenVino compiled for JeVois-Pro. We install this package into
   /usr/share/jevoispro-openvino-x on the camera.
 
-- \b jevoispro-platform: JeVois core software compiled for execution on the JeVois-Pro platform hardware.
+- \b jevoispro-platform: JeVois core software cross-compiled for execution on the JeVois-Pro platform hardware, as a \a
+  native package for arm64.
 
-- \b jevoisprobase-platform: JeVois base modules compiled for execution on the JeVois-Pro platform hardware.
+- \b jevoisprobase-platform: JeVois base modules compiled for execution on the JeVois-Pro platform hardware, as a \a
+  native package for arm64.
 
 Which packages to install on a desktop host for JeVois-Pro?
 -----------------------------------------------------------
@@ -208,7 +214,8 @@ to add them to your camera using the `add-apt-repository` commands detailed abov
 
 Before you can run the commands below, you need to connect your camera to a network as described in \ref ProNetwork
 
-\note jevoispro-platform and jevoisprobase-platform are already installed on the microSD.
+\note jevoispro-opencv, jevoispro-openvino, jevoispro-platform, and jevoisprobase-platform are already pre-installed on
+the microSD.
 
 The easiest to run the commands below is to switch JeVois-Pro to Console boot as explained in \ref ProUserQuick and to
 login as user \a root with password \a jevois
@@ -234,8 +241,8 @@ login as user \a root with password \a jevois
   \verbatim
   sudo apt purge jevoispro-platform jevoisprobase-platform
   # get the debs you created onto your microSD
-  dpkg -i jevoispro-platform-XXX.deb
-  dpkg -i jevoisprobase-platform-XXX.deb
+  dpkg -i jevoispro-platform-XXX_arm64.deb
+  dpkg -i jevoisprobase-platform-XXX_arm64.deb
   \endverbatim
 
 JeVois-A33 operating system source download and build from scratch

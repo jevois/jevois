@@ -35,6 +35,9 @@ if [ "X$REPLY" != "Xn" ]; then
 
     chmod a+x src/Modules/$2/postinstall
 
+    mkdir -p share-jevois
+    mkdir -p share-jevoispro
+    
     cd ..
     
     echo "*** All done. The following files were created:"

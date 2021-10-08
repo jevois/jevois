@@ -38,21 +38,21 @@
 #include <jevois/Core/PythonOpenCV.H>
 
 // ####################################################################################################
-//! Convenience macro to define a Python binding for a free function in the jevois namespace
+// Convenience macro to define a Python binding for a free function in the jevois namespace
 #define JEVOIS_PYTHON_FUNC(funcname)                \
   boost::python::def(#funcname, jevois::funcname)
 
-//! Convenience macro to define a Python binding for a free function in the jevois::rawimage namespace
+// Convenience macro to define a Python binding for a free function in the jevois::rawimage namespace
 #define JEVOIS_PYTHON_RAWIMAGE_FUNC(funcname)                   \
   boost::python::def(#funcname, jevois::rawimage::funcname)
 
-//! Convenience macro to define a python enum value where the value is in jevois::rawimage
+// Convenience macro to define a python enum value where the value is in jevois::rawimage
 #define JEVOIS_PYTHON_RAWIMAGE_ENUM_VAL(val) value(#val, jevois::rawimage::val)
 
-//! Convenience macro to define a python enum value where the value is in jevois::python
+// Convenience macro to define a python enum value where the value is in jevois::python
 #define JEVOIS_PYTHON_ENUM_VAL(val) value(#val, jevois::python::val)
 
-//! Convenience macro to define a constant that exists in the global C++ namespace
+// Convenience macro to define a constant that exists in the global C++ namespace
 #define JEVOIS_PYTHON_CONSTANT(cst) boost::python::scope().attr(#cst) = cst;
 
 

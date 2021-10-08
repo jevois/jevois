@@ -55,11 +55,23 @@ SDK needed to cross-compile code
 
 To compile jevois, jevoisbase, samplemodule, etc for host, you can just proceed to the next section.
 
-To cross-compile these for platform, you first need the JeVois SDK installed. The easiest is to install \b
-jevois-sdk-dev or \b jevoispro-sdk-dev debian files, as detailed in \ref ProgrammerSource
+To cross-compile these for platform, you first need the JeVois SDK installed, as it will provide ARM libraries needed to
+cross-compile. The easiest is to install \b jevois-sdk-dev or \b jevoispro-sdk-dev debian files, as detailed in \ref
+ProgrammerSource
 
 JeVois-A33: Full reconfiguration and compilation
 ------------------------------------------------
+
+There are two ways to compile software for \jva33:
+
+- \b host: compiles natively on your amd64 desktop for execution on that amd64 desktop. Use this during development as
+  it allows you to compile your code on your desktop and then test it immediately using a regular webcam. Of course,
+  some modules will not work on desktop, for example if they use ARM-specific NEON instructions. But in general this is
+  the fastest way to develop and debug new machine vision modules.
+
+- \b platform: cross-compiles on your desktop code for ARM target processor, which is the architecture used in
+  \jva33. The cross-compiled files will be stored in a staging area (\b /var/lib/jevois-build and \b
+  /var/lib/jevois-microsd) that can then be flashed to microSD.
 
 Scripts are provided to recompile everything:
 
@@ -95,7 +107,7 @@ orchestrate the flow of data from camera sensor to machine vision processing to 
 JeVois-Pro: Full reconfiguration and compilation
 ------------------------------------------------
 
-Note that there are three ways to compile software for \jvpro:
+There are three ways to compile software for \jvpro:
 
 - \b host: compiles natively on your amd64 desktop for execution on that amd64 desktop. Use this during development as
   it allows you to compile your code on your desktop and then test it immediately using a regular webcam. Of course,
@@ -107,9 +119,9 @@ Note that there are three ways to compile software for \jvpro:
   /var/lib/jevoispro-build and \b /var/lib/jevoispro-microsd) that can then be referenced when you compile other modules
   that will need to link against or otherwise use those files.
 
-- \b platform-pdeb: cross-compiles on your desktop code for arm64 target processor of \jvpro, and create an arm64 deb
-  package that you can later copy to your microSD and install on \jvpro. Typically, you would do this once you have
-  tested and debugged a new machine vision module in host mode, and you are now ready to try it out on the \jvpro
+- \b platform-pdeb: cross-compiles on your desktop code for arm64 target processor of \jvpro, and creates a \a native
+  arm64 deb package that you can later copy to your microSD and install on \jvpro. Typically, you would do this once you
+  have tested and debugged a new machine vision module in host mode, and you are now ready to try it out on the \jvpro
   camera.
 
 Scripts are provided to recompile everything:
@@ -147,7 +159,7 @@ orchestrate the flow of data from camera sensor to machine vision processing to 
 Partial re-compilation
 ----------------------
 
-The scripts \c rebuild-host.sh, \c rebuild-platform.sh, etc clear and recompile everything.
+The scripts \c rebuild-host.sh, \c rebuild-platform.sh, etc clear and recompile everything. This takes a while.
 
 You should run them at least once.
 
@@ -183,7 +195,7 @@ make -j
 sudo make install
 \endverbatim
 
-- \jvpro: for platform deb
+- \jvpro: for platform \a native deb
 \verbatim
 cd ppdbuild
 make -j

@@ -195,8 +195,12 @@ Running jevois-daemon on JeVois-Pro platform
 <b>LINUX:/usr/bin/jevoispro.sh</b> on the microSD. Its source is in <b>jevois/bin/jevoispro.sh</b> and it gets installed
 to microSD as part of the rebuild-platform-pdeb.sh process of package \b jevois.
 
-To debug hard crashes, proceed as follows: enable core dumps, run jevoispro-daemon normally until it crashes, and then
-use gdb to find the error in the core file:
+To debug hard crashes, proceed as follows: boot into console, enable core dumps, run jevoispro-daemon normally until it
+crashes, and then use gdb to find the error in the core file:
+
+First, switch to console boot as described in \ref ProUserQuick
+
+Then reboot and login as root / jevois, and:
 
 \verbatim
 ulimit -c unlimited # enable core dumps

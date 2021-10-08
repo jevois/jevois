@@ -21,13 +21,6 @@
 
 namespace jevois
 {
-  /*! \defgroup imu Inertial Measurement Unit (IMU)
-
-      Interfacing to an Inertial Measurement Unit (IMU), TDK InvenSense ICM20948: 3-axis accelerometer, 3-axis
-      gyroscope, 3-axis magnetometer, integrated digital motion processor (DMP).
-
-      \ingroup core */
-  
   //! Abstract interface to an ICM20948 inertial measurement unit (IMU)
   /*! This class abstracts the low-level communication interface (over SPI bus on JeVois-Pro hardware, or over I2C bus
       shared with the camera sensor chip and through custom ioctl() calls on JeVois-A33.  \ingroup imu */

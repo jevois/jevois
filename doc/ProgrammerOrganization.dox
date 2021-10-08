@@ -128,8 +128,8 @@ Things can be a bit confusing here as we have three different builds:
   platform. This is needed so that you can later cross-compile your own machine vision modules for platform, as these
   will link against the core JeVois libraries cross-compiled for platform.
 
-- `rebuild-pro-platform-pdeb.sh`: cross-compiles for platform (ARM arm64) and creates a package to be installed on
-  platform (arm64 as well). This is what we use to deploy JeVois software to the camera. We create arm64 packages,
+- `rebuild-pro-platform-pdeb.sh`: cross-compiles for platform (ARM arm64) and creates a \a native package to be
+  installed on platform (arm64). This is what we use to deploy JeVois software to the camera. We create arm64 packages,
   and then we install those on the camera.
 
 With this in mind:
@@ -146,7 +146,7 @@ With this in mind:
 - When cross-compiling and installing \b jevois for \b platform as a \a support package to be installed on host (using
   `./rebuild-pro-platform.sh` inside \b jevois; see \ref CompilingJeVois):
   + Config files used by JeVois at runtime are staged into <b>/var/lib/jevoispro-microsd/config/</b>
-  + Executables including \c jevois-daemon are staged into <b>/var/lib/jevoispro-build/usr/bin/</b>
+  + Executables including \c jevoispro-daemon are staged into <b>/var/lib/jevoispro-build/usr/bin/</b>
   + Include files are staged into <b>/var/lib/jevoispro-build/usr/include/jevois/</b> and will be used when you
     cross-compile your own machine vision modules.
   + The core JeVois library (\b libjevoispro.so) is staged into <b>/var/lib/jevoispro-build/usr/lib/</b> and will
@@ -154,15 +154,15 @@ With this in mind:
   + Documentation files are staged into <b>/var/lib/jevoispro-build/usr/share/doc/jevois-platform/</b>
   + Try a `dpkg -c jevoispro-platform-VERSION_amd64.deb` on the deb downloaded from https://jevois.usc.edu to confirm.
 
-- When cross-compiling \b jevois for \b platform as a native platform (arm64) package (using
+- When cross-compiling \b jevois for \b platform as a \a native platform (arm64) package (using
   `./rebuild-pro-platform-pdeb.sh` inside \b jevois; see \ref CompilingJeVois):
   + You will create a deb package for arm64 (64-bit ARM) with the same file locations as used on host.
   + This package should be installed on the JeVois-Pro platform using dpkg while logged on the platform.
-  + Try a `dpkg -c jevois-platform-VERSION_arm64.deb` on the deb downloaded from https://jevois.usc.edu to confirm
+  + Try a `dpkg -c jevoispro-platform-VERSION_arm64.deb` on the deb downloaded from https://jevois.usc.edu to confirm
     all file locations.
 
 - When compiling and installing \b jevoisbase (or, similarly, \b samplemodule or your own module) for \b host (using
-  `./rebuild-host.sh` inside \b jevoisbase (or your module's source tree); see \ref CompilingJeVois):
+  `./rebuild-pro-host.sh` inside \b jevoisbase (or your module's source tree); see \ref CompilingJeVois):
   + Config files used by JeVois at runtime are installed into <b>/jevoispro/config/</b>
   + Machine vision modules are installed into <b>/jevoispro/modules/</b>
   + Executables (if any) are installed into <b>/usr/bin/</b>
@@ -182,9 +182,10 @@ With this in mind:
   + Libraries (if any) (e.g., \b libjevoisprobase.so) are staged into <b>/var/lib/jevoispro-microsd/lib/</b> and will be
     used when cross-compiling your own modules.
   + Documentation files are staged into <b>/var/lib/jevoispro-build/usr/share/doc/jevoisbase-platform/</b>
-  + Try a `dpkg -c jevoisbase-platform-VERSION_amd64.deb` on the deb downloaded from https://jevois.usc.edu to confirm.
+  + Try a `dpkg -c jevoisprobase-platform-VERSION_amd64.deb` on the deb downloaded from
+    https://jevois.usc.edu to confirm.
 
-- When cross-compiling \b jevoisbase as a native platform (arm64) package (or, similarly, \b samplemodule or your
+- When cross-compiling \b jevoisbase as a \a native platform (arm64) package (or, similarly, \b samplemodule or your
   own module) for \b platform (using `./rebuild-pro-platform-pdeb.sh` inside \b jevoisbase (or your module's
   source tree); see \ref CompilingJeVois):
   + You will create a deb package for arm64 (64-bit ARM) with the same file locations as for host.
@@ -202,7 +203,7 @@ With this in mind:
     jevoispro-sysroot directory, as opposed to having some absolute symlinks in a standard Linux operating system (those
     absolute links would end up pointing to libraries and other files in your root filesystem, which is for Intel AMD64,
     as opposed to the needed ARM64 libraries and files).
-  + Try a `dpkg -c jevois-sdk-VERSION.deb` on the deb downloaded from https://jevois.usc.edu to confirm.
+  + Try a `dpkg -c jevoispro-sdk-dev-VERSION.deb` on the deb downloaded from https://jevois.usc.edu to confirm.
 
 
 */

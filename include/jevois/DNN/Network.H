@@ -35,18 +35,18 @@ namespace jevois
       // will use different subsets of all available parameters:
       static jevois::ParameterCategory const ParamCateg("DNN Network Options");
 
-      //! Parameter \relates Network
+      //! Parameter \relates jevois::Network
       JEVOIS_DECLARE_PARAMETER(dataroot, std::string, "Root directory to use when config or model parameters "
                                "are relative paths.",
                                JEVOIS_SHARE_PATH, ParamCateg);
 
-      //! Parameter \relates Network
+      //! Parameter \relates jevois::Network
       JEVOIS_DECLARE_PARAMETER(config, std::string, "Path to a text file that contains network configuration. "
                                "Can have extension .prototxt (Caffe), .pbtxt (TensorFlow), or .cfg (Darknet). "
                                "If path is relative, it will be prefixed by dataroot.",
                                "", ParamCateg);
       
-      //! Parameter \relates Network
+      //! Parameter \relates jevois::Network
       JEVOIS_DECLARE_PARAMETER(model, std::string, "Path to a binary file of model contains trained weights. "
                                "Can have extension .caffemodel (Caffe), .pb (TensorFlow), .t7 or .net (Torch), "
                                ".tflite (TensorFlow Lite), or .weights (Darknet). If path is relative, it will be "
@@ -54,19 +54,19 @@ namespace jevois
                                "", ParamCateg);
       
 #ifdef JEVOIS_PRO
-      //! Enum \relates Network
+      //! Enum \relates jevois::Network
       JEVOIS_DEFINE_ENUM_CLASS(Target, (CPU) (OpenCL) (OpenCL_FP16) (Myriad) );
 #else
-      //! Enum \relates Network
+      //! Enum \relates jevois::Network
       JEVOIS_DEFINE_ENUM_CLASS(Target, (CPU) );
 #endif
       
-      //! Parameter \relates Network
+      //! Parameter \relates jevois::Network
       JEVOIS_DECLARE_PARAMETER(target, Target, "OpenCV compute target to use. Changes will take effect "
                                "next time you load a different model.",
                                Target::CPU, Target_Values, ParamCateg);
 #ifdef JEVOIS_PRO
-      //! Enum \relates Network
+      //! Enum \relates jevois::Network
       JEVOIS_DEFINE_ENUM_CLASS(Backend, (Default) (OpenCV) (InferenceEngine) );
 
 #ifdef JEVOIS_PLATFORM
@@ -75,12 +75,12 @@ namespace jevois
 #define JEVOIS_BACKEND_DEFAULT Backend::Default
 #endif
 #else
-      //! Enum \relates Network
+      //! Enum \relates jevois::Network
       JEVOIS_DEFINE_ENUM_CLASS(Backend, (Default) );
 #define JEVOIS_BACKEND_DEFAULT Backend::Default
 #endif
       
-      //! Parameter \relates Network
+      //! Parameter \relates jevois::Network
       JEVOIS_DECLARE_PARAMETER(backend, Backend, "OpenCV compute backend to use. Default will use the inference "
                                "engine if available, otherwise OpenCV (note that inference engine only works on Intel "
                                "processors or MyriadX hardware, thus you should normally select OpenCV when running "
@@ -89,26 +89,26 @@ namespace jevois
                                JEVOIS_BACKEND_DEFAULT, Backend_Values, ParamCateg);
 
 #ifdef JEVOIS_PRO
-      //! Parameter \relates Network
+      //! Parameter \relates jevois::Network
       JEVOIS_DECLARE_PARAMETER(tpunum, size_t, "Coral EdgeTPU number to use to run this model, typically 0, or can be "
                                "1 when using a dual-TPU add-on board, or more when using additional TPUs connected "
                                "to USB ports",
                                0, ParamCateg);
 #endif
 
-      //! Parameter \relates Network
+      //! Parameter \relates jevois::Network
       JEVOIS_DECLARE_PARAMETER(intensors, std::string, "Specification of input tensors",
                                "", ParamCateg);
 
-      //! Parameter \relates Network
+      //! Parameter \relates jevois::Network
       JEVOIS_DECLARE_PARAMETER(outtensors, std::string, "Specification of output tensors",
                                "", ParamCateg);
 
-      //! Parameter \relates Network
+      //! Parameter \relates jevois::Network
       JEVOIS_DECLARE_PARAMETER(dequant, bool, "Dequantize output tensors",
                                true, ParamCateg);
 
-      //! Parameter \relates Network
+      //! Parameter \relates jevois::Network
       JEVOIS_DECLARE_PARAMETER(flattenoutputs, bool, "Dequant, flatten and concatenate all NPU outputs into a "
                                "single 1D vector",
                                false, ParamCateg);
