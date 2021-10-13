@@ -33,7 +33,9 @@ fi
 ###################################################################################################
 function finish
 {
+    rc=$?
     if [ ! -f .installed ] || (( `cat .installed` < `cat RELEASE` )); then echo "--- ABORTED on error"; fi
+    exit $rc
 }
 
 trap finish EXIT
@@ -75,7 +77,7 @@ fi
 if [ "X$REPLY" = "Xy" ]; then
     ###################################################################################################
     # Cleanup:
-    /bin/rm -rf tensorflow pycoral
+    /bin/rm -rf tensorflow pycoral threadpool
 
     ###################################################################################################
     # Get the packages:
@@ -106,13 +108,14 @@ if [ "X$REPLY" = "Xy" ]; then
     # We need bazel:
     if [ ! -x /usr/bin/bazel -a ! -x /usr/local/bin/bazel ]; then
         echo "### JeVois: Installing bazel ..."
-        sudo apt install apt-transport-https curl gnupg
+        sudo apt -y install apt-transport-https curl gnupg
         curl -fsSL https://bazel.build/bazel-release.pub.gpg | gpg --dearmor > bazel.gpg
         sudo mv bazel.gpg /etc/apt/trusted.gpg.d/
         echo "deb [arch=amd64] https://storage.googleapis.com/bazel-apt stable jdk1.8" | \
             sudo tee /etc/apt/sources.list.d/bazel.list
         sudo apt update
-        sudo apt install bazel
+        sudo apt -y install bazel
+        sudo apt -y install bazel-3.1.0
     fi
         
     # Build for host:
