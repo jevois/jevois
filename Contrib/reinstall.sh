@@ -4,6 +4,9 @@
 
 set -e # Exit on any error
 
+# Go to the Contrib directory (where this script is):
+cd "$( dirname "${BASH_SOURCE[0]}" )"
+
 # Bump this release number each time you make significant changes here, this will cause rebuild-host.sh to re-run
 # this reinstall script:
 release=`cat RELEASE`
@@ -26,6 +29,14 @@ if [ ! -d "${JEVOIS_BUILD_BASE}" -a ! -d "${JEVOISPRO_BUILD_BASE}" ]; then
     echo "You need to insall jevois-sdk-dev or jevoispro-sdk-dev first -- ABORT"
     exit 1
 fi
+
+###################################################################################################
+function finish
+{
+    if [ ! -f .installed ] || (( `cat .installed` < `cat RELEASE` )); then echo "--- ABORTED on error"; fi
+}
+
+trap finish EXIT
 
 ###################################################################################################
 function get_github # owner, repo, revision
@@ -93,8 +104,7 @@ if [ "X$REPLY" = "Xy" ]; then
     ./tensorflow/lite/tools/make/download_dependencies.sh
 
     # We need bazel:
-    bzl=`which bazel`
-    if [ "X$bzl" = "X" ]; then
+    if [ ! -x /usr/bin/bazel -a ! -x /usr/local/bin/bazel ]; then
         echo "### JeVois: Installing bazel ..."
         sudo apt install apt-transport-https curl gnupg
         curl -fsSL https://bazel.build/bazel-release.pub.gpg | gpg --dearmor > bazel.gpg

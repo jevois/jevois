@@ -7,4 +7,5 @@ cd "$( dirname "${BASH_SOURCE[0]}" )"
 if [ ! -f .installed ] || (( `cat .installed` < `cat RELEASE` )); then
     echo "Contrib packages are missing or outdated. Running Contrib/reinstall.sh ..."
     ./reinstall.sh
+    exit $?
 fi
