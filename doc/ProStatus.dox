@@ -27,7 +27,7 @@ HDMI output, video + sound                                                      
 Mini-USB 2.0 OTG port working, both in host and in device modes                       | \jvok  | -
 4-pin micro-serial port working                                                       | \jvok  | -
 6-pin AUX power port working (outputs 5V, 3.3V, 1.8V for accessories)                 | \jvok  | -
-8-pin GPIO port working (configurable as SPI+I2C, or general GPIO)                    | ?      | (12)
+8-pin GPIO port working (configurable as SPI+I2C, or general GPIO)                    | \jvok  | (12)
 Thermally stable operation under full load                                            | \jvok  | -
 Camera sensor connector working, camera functionality                                 | \jvok  | -
 Camera sensor connector working, dual-camera functionality                            | ?      | (10)
@@ -45,7 +45,7 @@ Boot to console                                                                 
 Boot to JeVois software                                                               | \jvok  | -
 JeVois-Pro video + serial + storage over mini-USB OTG, kernel Gadget driver           | \jvno  | (13)
 JeVois-Pro control via JeVois Inventor                                                | \jvno  | (14)
-Software reset                                                                        | \jvno  | (15)
+Software reset                                                                        | \jvok  | -
 \jvth{Camera Sensor}                                                                  | -      | -
 Sony IMX-290 2MP camera sensor detection and basic 1080p @ 30fps operation            | \jvok  | -
 Sony IMX-290 use 4x MIPI-CSI lanes for lowest latency                                 | \jvok  | -
@@ -144,7 +144,7 @@ sensor. Single camera sensor boards (e.g., default Sony IMX290 board) use one MI
 11. Supports cropping or scaling of camera frames to any size, but OpenGL, OpenCV, and others often require image width
 and height to be multiples of 32.
 
-12. Not yet tested, hopefully no error in our design.
+12. See \ref ProConnectors
 
 13. Since JeVois-Pro has an HDMI output, emulating a USB webcam like we did on JeVois-A33 is of lesser interest. During
 development of algorithms, you can just connect JeVois-Pro directly to display, keyboard, and mouse, and JeVois-Pro has
@@ -156,8 +156,5 @@ vision results as text strings (e.g., "face detected at X,Y", or "QRcode decoded
 keyboard/mouse. Since JeVois-Pro has display and keyboard/mouse, the functionality of JeVois-Inventor has been converted
 into a full graphical user interface that runs directly in JeVois-Pro, thereby eliminating the need for a host
 computer entirely.
-
-15. Software reset (e.g., "shutdown -r now") is currently not working. It is likely a hardware issue. We are working on
-trying to find software workarounds. In the meantime, just unplug power and plug it back in.
 
 */
