@@ -133,6 +133,10 @@ Scripts are provided to recompile everything:
 
 Once jevoisbase is compiled and installed for host, you can try it out using \ref JeVoisDaemon.
 
+Here is a walkthrough of what you should see when compiling jevois and jevoisbase from source for \jvpro:
+
+\youtube{TnQW0gMJzTo}
+
 Partial re-compilation
 ----------------------
 

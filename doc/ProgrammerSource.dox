@@ -180,6 +180,13 @@ The following packages are available at https://jevois.usc.edu for \a arm64 (to 
 - \b jevoisprobase-platform: JeVois base modules compiled for execution on the JeVois-Pro platform hardware, as a \a
   native package for arm64.
 
+
+\note Installing jevoispro-sdk-dev will pull all the other packages automatically as dependencies.
+
+Here is a walkthrough of what you should see:
+
+\youtube{rQ-_GUz1NAc}
+
 Which packages to install on a desktop host for JeVois-Pro?
 -----------------------------------------------------------
  
@@ -270,6 +277,10 @@ It will take a very long time, possibly over 12 hours depending on your computer
 
 \note If you want to also re-create the \b jevoispro-sdk-dev deb package so that you can later install it on another
 desktop computer, use `./rebuild-os -deb`
+
+Here is a walkthrough of what you should see when running `rebuild-os.sh`:
+
+\youtube{w8AeW91ZOww}
 
 */
 

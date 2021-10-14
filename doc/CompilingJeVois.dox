@@ -156,6 +156,11 @@ The main executable that is created is \c jevoispro-daemon, which basically impl
 orchestrate the flow of data from camera sensor to machine vision processing to video display over HDMI. See
 \ref JeVoisDaemon for more info.
 
+Here is a walkthrough of what you should see when compiling jevois and jevoisbase from source for \jvpro:
+
+\youtube{TnQW0gMJzTo}
+
+
 Partial re-compilation
 ----------------------
 
