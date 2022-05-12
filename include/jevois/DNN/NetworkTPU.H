@@ -61,7 +61,10 @@ namespace jevois
         std::unique_ptr<tflite::FlatBufferModel> itsModel;
         
         struct ErrorReporter : public tflite::ErrorReporter
-        { int Report(char const * format, va_list args) override; };
+        {
+            int Report(char const * format, va_list args) override;
+            std::vector<std::string> itsErrors;
+        };
 
         ErrorReporter itsErrorReporter;
     };

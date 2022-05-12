@@ -18,6 +18,7 @@
 #ifdef JEVOIS_PRO
 
 #include <jevois/GPU/ImGuiImage.H>
+#include <jevois/Image/RawImageOps.H>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <imgui.h>
@@ -52,7 +53,15 @@ void jevois::ImGuiImage::load(cv::Mat const & img, bool isbgr)
 
   default: LFATAL("Unsupported image format with " << img.channels() << " channels, should be 1, 3, or 4");
   }
-  
+
+  // OpenGL requires width to be a multiple of 8:
+  if (cvt.cols % 8)
+  {
+    int const newcols = cvt.cols + 8 - (cvt.cols % 8);
+    cvt = jevois::rescaleCv(cvt, cv::Size(newcols, cvt.rows * newcols / cvt.cols));
+  }
+
+  // Create an OpenGL texture:
   glGenTextures(1, &itsId);
   glBindTexture(GL_TEXTURE_2D, itsId);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);

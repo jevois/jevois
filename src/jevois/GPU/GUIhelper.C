@@ -2024,9 +2024,16 @@ void jevois::GUIhelper::drawNewModuleForm()
       ImGui::Separator();
       
       ImVec2 const button_size(ImGui::GetFontSize() * 7.0f, 0.0f);
-      if (ImGui::Button("Cancel", button_size)) { ImGui::CloseCurrentPopup(); ImGui::EndPopup(); return; }
+      if (ImGui::Button("Cancel", button_size))
+      {
+        ImGui::CloseCurrentPopup();
+        ImGui::EndPopup();
+        ImGui::PopStyleColor();
+        return;
+      }
+
       ImGui::SameLine(0, 530);
-      
+
       if (ImGui::Button("Create", button_size))
       {
         // Validate inputs:
@@ -2036,8 +2043,8 @@ void jevois::GUIhelper::drawNewModuleForm()
         LINFO("New Module data valid...");
         
         // Let's do it:
-        mkdir(jevois::sformat("/%s/%s", JEVOIS_MODULE_PATH, vendor.c_str()).c_str(), 0777);
-        std::string const dir = jevois::sformat("/%s/%s/%s", JEVOIS_MODULE_PATH, vendor.c_str(), name.c_str());
+        mkdir(jevois::sformat("%s/%s", JEVOIS_MODULE_PATH, vendor.c_str()).c_str(), 0777);
+        std::string const dir = jevois::sformat("%s/%s/%s", JEVOIS_MODULE_PATH, vendor.c_str(), name.c_str());
         if (mkdir(dir.c_str(), 0777) == -1)
           LFATAL("Error creating directory [" << dir << "] for new module. Maybe that module name already exists "
                  "or not running as root?");
@@ -2137,7 +2144,7 @@ void jevois::GUIhelper::drawNewModuleForm()
       }
     }
     catch (...) { reportAndIgnoreException(); }
-
+    
     // Make sure we always end the popup, even if we had an exception:
     ImGui::EndPopup();
   }

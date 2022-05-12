@@ -710,8 +710,6 @@ void jevois::dnn::Pipeline::showInfo(std::vector<std::string> const & info,
                                      jevois::RawImage * outimg,
                                      jevois::OptGUIhelper * helper, bool ovl, bool idle)
 {
-  if (ovl == false) return;
-  
   bool show = true;
 
   for (std::string const & s : info)
@@ -730,13 +728,14 @@ void jevois::dnn::Pipeline::showInfo(std::vector<std::string> const & info,
         else ImGui::TextUnformatted(s.c_str());
       }
     }
+#else
+    (void)idle; (void)show; (void)helper; // avoid warning
 #endif
     
-    if (outimg)
+    if (outimg && ovl)
     {
       jevois::rawimage::writeText(*outimg, s, 5, itsOutImgY, jevois::yuyv::White);
       itsOutImgY += 11;
-      (void)idle; (void)ovl; (void)show; (void)helper; // avoid warning
     }
   }
 }

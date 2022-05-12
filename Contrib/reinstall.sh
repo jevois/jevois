@@ -87,8 +87,9 @@ if [ "X$REPLY" = "Xy" ]; then
     
     # Tensorflow, needed for libtensorflowlite.so and includes, not available as deb package.  Tensorflow version must
     # exactly match that used for libedgetpu, specified as TENSORFLOW_COMMIT in pycoral/WORKSPACE
-    #tc=`grep ^TENSORFLOW_COMMIT pycoral/WORKSPACE |awk '{ print \$3 }'`
-    tc="48c3bae94a8b324525b45f157d638dfd4e8c3be1" # version used by frogfish release
+    #tc=`grep ^TENSORFLOW_COMMIT pycoral/workspace.bzl |awk '{ print \$3 }'`
+    #tc="48c3bae94a8b324525b45f157d638dfd4e8c3be1" # version used by frogfish tpu release
+    tc="a4dfb8d1a71385bd6d122e4f27f86dcebb96712d" # TF 2.5.0, for use with grouper tpu release
     get_github tensorflow tensorflow ${tc//\"/}
 
     # C++20 thread pool (we actually implement our own ThreadPool.H/C but need the dependencies):

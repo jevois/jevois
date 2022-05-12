@@ -54,16 +54,18 @@ void jevois::dnn::NetworkOpenCV::load()
 
   std::string const m = jevois::absolutePath(dataroot::get(), model::get());
   std::string const c = jevois::absolutePath(dataroot::get(), config::get());
+  LINFO("Loading " << m << " / " << c << " ...");
   
   // Create and load the network:
   itsNet = cv::dnn::readNet(m, c);
-
+  
   switch(backend::get())
   {
-  case network::Backend::Default: itsNet.setPreferableBackend(cv::dnn::DNN_BACKEND_DEFAULT); break;
 #ifdef JEVOIS_PRO
   case network::Backend::OpenCV: itsNet.setPreferableBackend(cv::dnn::DNN_BACKEND_OPENCV); break;
   case network::Backend::InferenceEngine: itsNet.setPreferableBackend(cv::dnn::DNN_BACKEND_INFERENCE_ENGINE); break;
+#else
+  case network::Backend::Default: itsNet.setPreferableBackend(cv::dnn::DNN_BACKEND_DEFAULT); break;
 #endif
   }
 
@@ -76,12 +78,11 @@ void jevois::dnn::NetworkOpenCV::load()
   case network::Target::Myriad: itsNet.setPreferableTarget(cv::dnn::DNN_TARGET_MYRIAD); break;
 #endif
   }
-
+  LINFO("Backend: " << backend::get() << ", Target: " << target::get());
+  
   // Get names of the network's output layers:
-  itsOutLayers = itsNet.getUnconnectedOutLayers();
-  std::vector<cv::String> layersNames = itsNet.getLayerNames();
-  itsOutNames.resize(itsOutLayers.size());
-  for (size_t i = 0; i < itsOutLayers.size(); ++i) itsOutNames[i] = layersNames[itsOutLayers[i] - 1];
+  itsOutNames = itsNet.getUnconnectedOutLayersNames();
+  for (auto const & s : itsOutNames) LINFO("Output layer: " << s);
 }
 
 // ####################################################################################################

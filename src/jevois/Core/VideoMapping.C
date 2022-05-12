@@ -320,8 +320,8 @@ std::vector<jevois::VideoMapping> jevois::videoMappingsFromStream(jevois::Camera
 
 #ifndef JEVOIS_PLATFORM
     // Skip if not jevois-pro platform and trying to do dual-frame hardware scaling through the ISP:
-    if (m.crop == jevois::CropType::CropScale || m.crop == jevois::CropType::Scale)
-    { PERROR("Scale or Crop+Scale camera input only supported on JeVois-Pro platform -- SKIPPING"); continue; }
+    if (m.crop == jevois::CropType::CropScale || m.crop == jevois::CropType::Crop)
+    { PERROR("Crop or Crop+Scale camera input only supported on JeVois-Pro platform -- SKIPPING"); continue; }
 #endif // JEVOIS_PLATFORM
 #endif // JEVOIS_PRO
   

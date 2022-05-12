@@ -1,0 +1,32 @@
+/*! \page Change117log Changes and new features in JeVois 1.17
+
+
+JeVois 1.17 brings the following new features:
+
+- Updated to OpenCV 4.5.4, OpenVino 2021.4 LTS
+
+- Updated to TensorFlow 2.5.0
+
+- Threadpool improvements, with better big/little affinity handling on JeVois-Pro.
+
+- JeVois-A33: New JeVois DNN framework to run a variety of deep learning models for classification, detection, and
+  semantic segmentation using OpenCV (supports Caffe, ONNX, TensorFlow, etc). Add your own models to
+  JEVOIS:/share/dnn/models.yml (and also copy the corresponding model and weight files to microSD) to run them directly.
+
+- DNN: friendlier error messages when expected network inputs/outputs differ from what is received.
+
+- JeVois-Pro: minor linux kernel enhancements, updated NPU kernel module.
+
+- Upgraded to latest numpy, which is now installed by default on platform, with corresponding API changes.
+
+- JeVois-Pro: Better build and packaging system.
+
+- JeVois-Pro: More deep learning models in models.yml model zoo.
+
+- JeVois-Pro: Better fan control.
+
+- Added more docs.
+
+- Miscellaneous bug fixes and performance improvements.
+
+*/

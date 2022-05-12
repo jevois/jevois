@@ -20,7 +20,7 @@ The parameters \p serstyle and \p serprec of jevois::StdModule define the follow
 styles. Parameter \p serstamp allow additional stamping of every message with a frame number, date, and/or time.
 
 \note Beware that \p serstyle and \p serprec are reset to their default value each time a vision processing module is
-loaded. Hence, you should sent them after loading the module. Parameter \p sertamp is not affected by module change,
+loaded. Hence, you should set them after loading the module. Parameter \p sertamp is not affected by module change,
 because it is owned by the JeVois Engine.
 
 Coordinates conventions and precision
@@ -204,8 +204,8 @@ Object detection + recognition messages
 Some modules, like \jvmod{DarknetYOLO}, \jvmod{TensorFlowSaliency}, and \jvmod{DarknetSaliency} first detect one or more
 bounding boxes that may contain an object, and then recognize which object might be in each box.
 
-These modules send Two-dimensional (2D) location messages as detailed below, with the following information in the
-\a id and \a extra fields:
+These modules send Two-dimensional (2D) location messages as detailed above (T2, N2, D2, F2 messages), with the
+following information in the \a id and \a extra fields:
 
 serstyle | id                         | extra
 ---------|----------------------------|---------------------------------------------------------------

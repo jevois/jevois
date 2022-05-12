@@ -67,13 +67,8 @@ namespace jevois
                                Target::CPU, Target_Values, ParamCateg);
 #ifdef JEVOIS_PRO
       //! Enum \relates jevois::Network
-      JEVOIS_DEFINE_ENUM_CLASS(Backend, (Default) (OpenCV) (InferenceEngine) );
-
-#ifdef JEVOIS_PLATFORM
+      JEVOIS_DEFINE_ENUM_CLASS(Backend, (OpenCV) (InferenceEngine) );
 #define JEVOIS_BACKEND_DEFAULT Backend::OpenCV
-#else
-#define JEVOIS_BACKEND_DEFAULT Backend::Default
-#endif
 #else
       //! Enum \relates jevois::Network
       JEVOIS_DEFINE_ENUM_CLASS(Backend, (Default) );

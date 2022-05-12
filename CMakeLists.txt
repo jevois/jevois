@@ -24,18 +24,22 @@ set(JEVOIS_VENDOR "JeVois")
 ########################################################################################################################
 # Project version:
 set(JEVOIS_VERSION_MAJOR  1)
-set(JEVOIS_VERSION_MINOR  16)
+set(JEVOIS_VERSION_MINOR  17)
 set(JEVOIS_VERSION_PATCH  0)
 set(JEVOIS_SOVERSION "${JEVOIS_VERSION_MAJOR}.${JEVOIS_VERSION_MINOR}.${JEVOIS_VERSION_PATCH}" )
+
 
 ########################################################################################################################
 # OpenCV version to use with JeVois:
 set(JEVOIS_OPENCV_MAJOR 4)
 set(JEVOIS_OPENCV_MINOR 5)
-set(JEVOIS_OPENCV_PATCH 3)
+set(JEVOIS_OPENCV_PATCH 4)
 set(JEVOIS_OPENCV_VERSION "${JEVOIS_OPENCV_MAJOR}.${JEVOIS_OPENCV_MINOR}.${JEVOIS_OPENCV_PATCH}")
 
 set(JEVOIS_OPENVINO_VERSION "2021.4")
+
+message(STATUS "JeVois OpenCV: ${JEVOIS_OPENCV_VERSION}")
+message(STATUS "JeVois OpenVino: ${JEVOIS_OPENVINO_VERSION}")
 
 ########################################################################################################################
 # Select target hardware amd include A33/pro specific definitions.

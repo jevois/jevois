@@ -29,8 +29,9 @@
 // ####################################################################################################
 int jevois::dnn::NetworkTPU::ErrorReporter::Report(char const * format, va_list args)
 {
-  char buf[1024];
-  int ret = vsnprintf(buf, 1024, format, args);
+  static char buf[2048];
+  int ret = vsnprintf(buf, 2048, format, args);
+  itsErrors.push_back(buf);
   LERROR(buf);
   return ret;
 }
@@ -94,52 +95,63 @@ void jevois::dnn::NetworkTPU::load()
   // Need to nuke the network first if it exists or we could run out of RAM:
   itsInterpreter.reset();
   itsModel.reset();
-
+  itsErrorReporter.itsErrors.clear();
+  
   std::string const m = jevois::absolutePath(dataroot::get(), model::get());
 
-  // Create and load the network:
-  itsModel = tflite::FlatBufferModel::BuildFromFile(m.c_str(), &itsErrorReporter);
-  if (!itsModel) LFATAL("Failed to load model from file " << m);
+  try
+  {
+    // Create and load the network:
+    itsModel = tflite::FlatBufferModel::BuildFromFile(m.c_str(), &itsErrorReporter);
+    if (!itsModel) LFATAL("Failed to load model from file " << m);
 
-  tflite::ops::builtin::BuiltinOpResolver resolver;
-  tflite::InterpreterBuilder(*itsModel, resolver)(&itsInterpreter);
+    tflite::ops::builtin::BuiltinOpResolver resolver;
+    tflite::InterpreterBuilder(*itsModel, resolver)(&itsInterpreter);
 
-  size_t num_devices;
-  std::unique_ptr<edgetpu_device, decltype(&edgetpu_free_devices)>
-    devices(edgetpu_list_devices(&num_devices), &edgetpu_free_devices);
-
-  if (num_devices == 0) LFATAL("No connected TPU found");
-  size_t const tn = tpunum::get();
-  if (tn >= num_devices) LFATAL("Cannot use TPU " << tn << " because only " << num_devices << " TPUs detected.");
-
-  auto const & device = devices.get()[tn];
-  itsInterpreter->
-    ModifyGraphWithDelegate(std::unique_ptr<TfLiteDelegate, decltype(&edgetpu_free_delegate)>
-                            (edgetpu_create_delegate(device.type, device.path, nullptr, 0), &edgetpu_free_delegate));
-
-  itsInterpreter->SetNumThreads(1);
-
-  if (itsInterpreter->AllocateTensors() != kTfLiteOk) LFATAL("Failed to allocate tensors");
-
-  for (size_t i = 0; i < itsInterpreter->inputs().size(); ++i)
-    LINFO("Input tensor " << i << ": " << itsInterpreter->GetInputName(i));
-  for (size_t i = 0; i < itsInterpreter->outputs().size(); ++i)
-    LINFO("Output tensor " << i << ": " << itsInterpreter->GetOutputName(i));
-
-  int t_size = itsInterpreter->tensors_size();
-  for (int i = 0; i < t_size; ++i)
-    if (itsInterpreter->tensor(i)->name)
-      LINFO("Layer " << i << ": " << itsInterpreter->tensor(i)->name << ", "
-            << jevois::dnn::shapestr(itsInterpreter->tensor(i)) << ", "
-            << itsInterpreter->tensor(i)->bytes << " bytes, scale: "
-            << itsInterpreter->tensor(i)->params.scale << ", zero: "
-            << itsInterpreter->tensor(i)->params.zero_point);
-  
-  //if (threads::get()) itsInterpreter->SetNumThreads(threads::get());
-  for (size_t i = 0; i < itsInterpreter->inputs().size(); ++i)
-    LINFO("input " << i << " is layer " << itsInterpreter->inputs()[i]);
-  for (size_t i = 0; i < itsInterpreter->outputs().size(); ++i)
-    LINFO("output " << i << " is layer " << itsInterpreter->outputs()[i]);
+    size_t num_devices;
+    std::unique_ptr<edgetpu_device, decltype(&edgetpu_free_devices)>
+      devices(edgetpu_list_devices(&num_devices), &edgetpu_free_devices);
+    
+    if (num_devices == 0) LFATAL("No connected TPU found");
+    size_t const tn = tpunum::get();
+    if (tn >= num_devices) LFATAL("Cannot use TPU " << tn << " because only " << num_devices << " TPUs detected.");
+    
+    auto const & device = devices.get()[tn];
+    itsInterpreter->
+      ModifyGraphWithDelegate(std::unique_ptr<TfLiteDelegate, decltype(&edgetpu_free_delegate)>
+                              (edgetpu_create_delegate(device.type, device.path, nullptr, 0), &edgetpu_free_delegate));
+    
+    itsInterpreter->SetNumThreads(1);
+    
+    if (itsInterpreter->AllocateTensors() != kTfLiteOk) LFATAL("Failed to allocate tensors");
+    
+    for (size_t i = 0; i < itsInterpreter->inputs().size(); ++i)
+      LINFO("Input tensor " << i << ": " << itsInterpreter->GetInputName(i));
+    for (size_t i = 0; i < itsInterpreter->outputs().size(); ++i)
+      LINFO("Output tensor " << i << ": " << itsInterpreter->GetOutputName(i));
+    
+    int t_size = itsInterpreter->tensors_size();
+    for (int i = 0; i < t_size; ++i)
+      if (itsInterpreter->tensor(i)->name)
+        LINFO("Layer " << i << ": " << itsInterpreter->tensor(i)->name << ", "
+              << jevois::dnn::shapestr(itsInterpreter->tensor(i)) << ", "
+              << itsInterpreter->tensor(i)->bytes << " bytes, scale: "
+              << itsInterpreter->tensor(i)->params.scale << ", zero: "
+              << itsInterpreter->tensor(i)->params.zero_point);
+    
+    //if (threads::get()) itsInterpreter->SetNumThreads(threads::get());
+    for (size_t i = 0; i < itsInterpreter->inputs().size(); ++i)
+      LINFO("input " << i << " is layer " << itsInterpreter->inputs()[i]);
+    for (size_t i = 0; i < itsInterpreter->outputs().size(); ++i)
+      LINFO("output " << i << " is layer " << itsInterpreter->outputs()[i]);
+  }
+  catch (std::exception const & e)
+  {
+    std::string err = "\n";
+    for (std::string const & s : itsErrorReporter.itsErrors) err += "ERR " + s + "\n";
+    err += e.what();
+    throw std::runtime_error(err);
+  }
 }
 
 // ####################################################################################################

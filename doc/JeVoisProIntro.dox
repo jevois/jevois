@@ -7,7 +7,8 @@ This video will give you an introduction and tour:
 \youtube{0wMplgtwuAc}
 
 If your screen turns blank after the JeVois-Pro logo, maybe it does not support the resolution used by JeVois-Pro. At
-the time of this writing, this is 1080p/30Hz (1920x1080). JeVois-Pro should work great with HDTV or 4K TV sets, but
-smaller and older computer monitors may not be capable of supporting this high resolution.
+the time of this writing, this is 1080p/60Hz (1920x1080). JeVois-Pro should work great with HDTV or 4K TV sets, but
+smaller and older computer monitors may not be capable of supporting this high resolution. See \ref ProUserQuick for
+more details.
 
 */
