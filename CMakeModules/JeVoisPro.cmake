@@ -16,7 +16,15 @@
 
 ########################################################################################################################
 # Python version to use for python modules, on host:
-if (EXISTS "/usr/lib/x86_64-linux-gnu/libboost_python38.so")
+if (EXISTS "/usr/lib/x86_64-linux-gnu/libboost_python310.so")
+  # Ubuntu 22.04 jammy
+  set(JEVOIS_COMPILER_VERSION 10)
+  set(JEVOIS_HOST_PYTHON_MAJOR 3)
+  set(JEVOIS_HOST_PYTHON_MINOR 10)
+  set(JEVOIS_HOST_PYTHON_M "")
+  set(JEVOIS_HOST_BOOST_PYTHON "boost_python310")
+  set(TURBOJPEG_PKG "libjpeg-turbo8-dev, libturbojpeg-dev")
+elseif (EXISTS "/usr/lib/x86_64-linux-gnu/libboost_python38.so")
   # Ubuntu 20.04 focal
   set(JEVOIS_COMPILER_VERSION 10)
   set(JEVOIS_HOST_PYTHON_MAJOR 3)
