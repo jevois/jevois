@@ -1,0 +1,87 @@
+/*! \page Change118log Changes and new features in JeVois 1.17
+
+
+JeVois 1.18 brings the following new features:
+
+- New support for Hailo-8 neural accelerator, up to 26-TOPS in a small M.2 A+E 2230 board that can fit inside
+  JeVois-Pro! This is by far the fastest neural accelerator available to date, and it can run larger models like YOLOv5m
+  or YOLOv7 are very nice framerates. See SPU entries in \ref JeVoisProBenchmarks
+
+- Updated to OpenCV 4.6.0, OpenVino 2022.1
+
+- Support for TIM-VX library to execute moels on the JeVois-Pro ine=tegrated NPU directly via OpenCV (no conversion to
+  NPU blob format needed, load model directly from ONNX, etc; model still should be quantized to int8). See
+  [TIM-VX](https://github.com/VeriSilicon/TIM-VX) and
+  [OpenCV+TIM-VX](https://github.com/opencv/opencv/wiki/TIM-VX-Backend-For-Running-OpenCV-On-NPU).
+
+- Support for Intel Myriad-X emulation on ARM CPU through the ARM Compute Backend to OpenCV. See [ARM CPU
+  Plugin](https://docs.openvino.ai/latest/openvino_docs_OV_UG_supported_plugins_ARM_CPU.html) and [github
+  repo](https://github.com/openvinotoolkit/openvino_contrib/blob/master/modules/arm_plugin/README.md). Load any OpenVino
+  model for VPU and try them out using CPU-based emulation even if you do not have a VPU hardware dongle. Emulation is
+  quite slow compared to the actual VPU chip, though. See VPU vs VPUX in \ref JeVoisProBenchmarks
+
+- Core JeVois: new support for dynamic JeVois parameters. These are strongly typed parameters that a can be accessed via
+  command-line, console, or GUI.
+
+- Python: Allow creation of and access to JeVois parameters in Python modules. Have a look at \jvmod{PythonTest} for an
+  example. Python modules can now have tunable parameters that users can adjust in the GUI, just like C++ modules.
+
+- Python: Added support for Python Components. These are JeVois Component objects that can be assembled into component
+  hierarchies just like C++ components, but they are written in python. Python components can hold JeVois parameters
+  created from Python.
+
+- Core JeVois: moving towards using std::filesystem for file and paths operations
+
+- DNN: support for pre-processor, network, and post-processor written in python. This will make it much easier to add
+  new network types, as often pre-processing and post-processing code in Python is provided by the network
+  designer. These can now be easily ported to JeVois. Check out:
+  + \ref PyPreBlob.py - sample pre-processor in Python
+  + \ref PyNetOpenCV.py - load network and run inference using the OpenCV API
+  + \ref PyPostClassify.py - report top-scoring classes
+
+- DNN: better error messages when expected network inputs/outputs differ from what is received.
+
+- DNN: better and more general pre-processing. Ability to show lots of details when PreProcessor::details is checked in
+  the GUI.
+
+- DNN: much improved RAW YOLO preprocessing, about 4x faster, supports various yolo shapes and both old/new
+  coordinate styles. Better handling of YOLO anchors.
+
+- JeVois-Pro GUI: Improved text editor, new jevois::GUIeditor class. Added file browser and support for keyboard
+  shortcuts. Can now edit any file on disk and create new files if needed.
+
+- OpenGL GUI: added d2i() to convert coordinates from screen to displayed image. See example of use in new GUI version
+  of \jvmod{ColorFiltering}
+
+- JeVois-Pro: support for 4K display. Can be enabled by editing /boot/env.txt, not enabled by default as it slows down
+  the overall operation a bit, likely because of higher traffic on the memory bus.
+
+- JeVois-Pro: More deep learning models in models.yml model zoo. Split off model.yml into separate child files for npu,
+  tpu, vpu, etc. Added support for global paremeters that can be set and unset. New zoo files are much easier to read
+  and edit now. Zoo files are directly accessible undr the Config tab of the JeVois-Pro GUI.
+
+- JeVois-Pro: Better fan control. Note: as there currenty is no Hailo temp available in /sys/, we always turn on the fan
+  to 100% speed if a Hailo-8 accelerator is installed in JeVois-Pro.
+
+- New docs and tutorials on how to convert deep networks for the various accelerators available on JeVois-Pro:
+  + \ref UserDNNoverview
+  + \ref UserDNNconv
+  + \ref UserDNNopencv
+  + \ref UserDNNnpu
+  + \ref UserDNNspu
+  + \ref UserDNNtpu
+  + \ref UserDNNvpu
+
+- replaced frameNum() in JeVois Module by a more widely accessible jevois::frameNum() free function. Reports the current
+  video frame number. Reset to 0 when a new machine vision module is loaded.
+
+- added new usilities such as jevois::joinall(), jevois::num2str(), jevois::secs2str(), Hailo-related helpers,
+  quantization-related, etc
+
+- New LTHROW() macro is like LFATAL() but does not show the error in the console, just throw it. Useful in sub-routines
+  where the caller will catch any exception and possibly reformat it to provide unified error messages. Just like a
+  plain throw, except that the same JeVois streaming syntax as in LDEBUG(), LINFO(), etc can be used.
+
+- Miscellaneous bug fixes and performance improvements.
+
+*/
