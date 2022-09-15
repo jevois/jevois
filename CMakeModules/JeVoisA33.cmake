@@ -138,3 +138,9 @@ set(JEVOIS_PLATFORM_OPENGL_LIBS "-lGLESv2 -lEGL")
 set(JEVOIS_PLATFORM_INCLUDE "-I${JEVOIS_BUILD_BASE}/host/arm-buildroot-linux-gnueabihf/sysroot/usr/include/opencv4 ${JEVOIS_PLATFORM_KERNEL_INCLUDE} ${JEVOIS_PLATFORM_TBB_INCLUDE} ${JEVOIS_PLATFORM_PYTHON_INCLUDE}")
 set(JEVOIS_HOST_INCLUDE "-I${JEVOIS_HOST_OPENCV_PREFIX}/include/opencv4 ${JEVOIS_HOST_PYTHON_INCLUDE}")
 
+
+
+
+# FIXME: on GCC8, still need to link tolibstdc++fs to use recursive_directory_iretator:
+set(JEVOIS_PLATFORM_PYTHON_LIBS "${JEVOIS_PLATFORM_PYTHON_LIBS} -lstdc++fs")
+

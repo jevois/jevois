@@ -7,3 +7,4 @@ version_patch=@JEVOIS_VERSION_PATCH@
 
 # Location of our shared files:
 share = '/jevoispro/share' if pro else '/jevois/share'
+pydnn = '/jevoispro/pydnn' if pro else '/jevois/pydnn'

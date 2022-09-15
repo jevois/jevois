@@ -97,7 +97,7 @@ void jevois::paramValToString(cv::Size_<T> const & val, std::string & result)
 template <typename T> inline
 void jevois::paramStringToVal(std::string const & valstring, cv::Size_<T> & result)
 {
-  std::stringstream s(valstring); s >> result.width >> std::skipws >> result.height;
+  std::stringstream s(valstring); s >> result.width >> result.height;
 }
 
 // ######################################################################
@@ -119,7 +119,8 @@ void jevois::paramStringToVal(std::string const & valstring, cv::Scalar_<T> & re
 #ifdef JEVOIS_PRO
 
 // ######################################################################
-inline void jevois::paramValToString(ImColor const & val, std::string & result)
+template <> inline
+void jevois::paramValToString<ImColor>(ImColor const & val, std::string & result)
 {
   std::stringstream s;
   s << int(val.Value.x * 255.0F) << ' ' << int(val.Value.y * 255.0F) << ' '
@@ -128,7 +129,8 @@ inline void jevois::paramValToString(ImColor const & val, std::string & result)
 }
 
 // ######################################################################
-inline void jevois::paramStringToVal(std::string const & valstring, ImColor & result)
+template <> inline
+void jevois::paramStringToVal<ImColor>(std::string const & valstring, ImColor & result)
 {
   std::stringstream s(valstring); int r, g, b, a;
   s >> r >> std::skipws >> g >> std::skipws >> b >> std::skipws >> a;
@@ -164,8 +166,8 @@ void jevois::paramStringToVal<bool>(std::string const & valstring, bool & result
 {
   std::string vs = valstring; for (char & c : vs) c = std::tolower(c);
 
-  if (vs == "" || vs == "true" || vs == "t" || vs == "yes" || vs == "y" || vs == "1") result = true;
-  else if (vs == "false" || vs == "f" || vs == "no" || vs == "n" || vs == "0") result = false;
+  if (vs == "" || vs == "true" || vs == "True" || vs == "t" || vs == "yes" || vs == "y" || vs == "1") result = true;
+  else if (vs == "false" || vs == "False" || vs == "f" || vs == "no" || vs == "n" || vs == "0") result = false;
   else result = jevois::from_string<bool>(valstring);
 }
 

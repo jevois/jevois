@@ -51,7 +51,12 @@ void jevois::dnn::PostProcessorClassify::onParamChange(postprocessor::classes co
 void jevois::dnn::PostProcessorClassify::process(std::vector<cv::Mat> const & outs,
                                                  jevois::dnn::PreProcessor * JEVOIS_UNUSED_PARAM(preproc))
 {
-  if (outs.size() != 1) LFATAL("Expected exactly one output tensor, got " << outs.size());
+  if (outs.size() != 1 && itsFirstTime)
+  {
+    itsFirstTime = false;
+    LERROR("Expected 1 output tensor, got " << outs.size() << " - USING FIRST ONE");
+  }
+  
   cv::Mat const & out = outs[0]; uint32_t const sz = out.total();
   if (out.type() != CV_32F) LFATAL("Need FLOAT32 tensor");
   uint32_t topk = top::get(); if (topk > sz) topk = sz;
@@ -61,14 +66,14 @@ void jevois::dnn::PostProcessorClassify::process(std::vector<cv::Mat> const & ou
   uint32_t MaxClass[topk]; float fMaxProb[topk];
   if (softmax::get())
   {
-    cv::Mat copy = out.clone();
-    jevois::dnn::softmax((float const *)out.data, sz, 1.0F, (float *)copy.data);
-    jevois::dnn::topK((float const *)copy.data, fMaxProb, MaxClass, sz, topk);
+    float sm[out.total()];
+    jevois::dnn::softmax((float const *)out.data, sz, 1, 1.0F, sm, false);
+    jevois::dnn::topK(sm, fMaxProb, MaxClass, sz, topk);
   }
   else jevois::dnn::topK((float const *)out.data, fMaxProb, MaxClass, sz, topk);
 
   // Collect the top-k results that are also above threshold:
-  float const t = thresh::get(); float const fac = 100.0F * scorescale::get();
+  float const t = cthresh::get(); float const fac = 100.0F * scorescale::get();
   
   for (uint32_t i = 0; i < topk; ++i)
   {
@@ -88,7 +93,7 @@ void jevois::dnn::PostProcessorClassify::report(jevois::StdModule * mod, jevois:
   if (outimg && overlay)
   {
     int y = 16;
-    jevois::rawimage::writeText(*outimg, jevois::sformat("Top-%u above %.2F", topk, thresh::get()),
+    jevois::rawimage::writeText(*outimg, jevois::sformat("Top-%u above %.2F%%", topk, cthresh::get()),
                                 220, y, jevois::yuyv::White);
     y += 15;
     
@@ -106,11 +111,11 @@ void jevois::dnn::PostProcessorClassify::report(jevois::StdModule * mod, jevois:
   {
     if (idle == false && ImGui::CollapsingHeader("Classification results", ImGuiTreeNodeFlags_DefaultOpen))
     {
-      ImGui::Text("Top-%u classes above threshold %f", topk, thresh::get());
+      ImGui::Text("Top-%u classes above threshold %.2f", topk, cthresh::get());
       ImGui::Separator();
       uint32_t done = 0;
       for (jevois::ObjReco const & o : itsObjRec) { ImGui::Text("%s: %.2F", o.category.c_str(), o.score); ++done; }
-      while (done < topk) { ImGui::TextUnformatted("-"); ++done; }
+      while (done++ < topk) ImGui::TextUnformatted("-");
     }
     
     if (overlay)
@@ -118,7 +123,7 @@ void jevois::dnn::PostProcessorClassify::report(jevois::StdModule * mod, jevois:
       uint32_t done = 0;
       for (jevois::ObjReco const & o : itsObjRec)
       { helper->itext(jevois::sformat("%s: %.2F", o.category.c_str(), o.score)); ++done; }
-      while (done < topk) { helper->itext("-"); ++done; }
+      while (done++ < topk) helper->itext("-");
     }
   }
 #else

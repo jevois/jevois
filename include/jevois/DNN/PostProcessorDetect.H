@@ -24,12 +24,14 @@ namespace jevois
 {
   namespace dnn
   {
+    class PostProcessorDetectYOLO;
+    
     //! Post-Processor for neural network pipeline
     /*! This is the last step in a deep neural network processing Pipeline. \ingroup dnn */
     class PostProcessorDetect : public PostProcessor,
                                 public Parameter<postprocessor::classoffset, postprocessor::classes, postprocessor::nms,
-                                                 postprocessor::detecttype, postprocessor::top, postprocessor::thresh,
-                                                 postprocessor::anchors>
+                                                 postprocessor::detecttype, postprocessor::maxnbox,
+                                                 postprocessor::cthresh, postprocessor::dthresh>
     {
       public:
         
@@ -50,12 +52,12 @@ namespace jevois
                     jevois::OptGUIhelper * helper = nullptr, bool overlay = true, bool idle = false) override;
 
       protected:
+        void onParamChange(postprocessor::detecttype const & param, postprocessor::DetectType const & val) override;
         void onParamChange(postprocessor::classes const & param, std::string const & val) override;
-        void onParamChange(postprocessor::anchors const & param, std::string const & val) override;
         std::map<int, std::string> itsLabels; //!< Mapping from object ID to class name
         std::vector<ObjDetect> itsDetections;
         cv::Size itsImageSize;
-        std::vector<std::array<float, 64>> itsAnchors;
+        std::shared_ptr<PostProcessorDetectYOLO> itsYOLO;
     };
     
   } // namespace dnn

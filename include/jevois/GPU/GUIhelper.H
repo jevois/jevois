@@ -42,11 +42,11 @@ namespace jevois
 #include <imgui.h>
 #include <glm/glm.hpp>
 #include <opencv2/core/core.hpp>
-#include <ImGuiColorTextEdit/TextEditor.h>
 
 namespace jevois
 {
   class GPUimage;
+  class GUIeditor;
   
   namespace gui
   {
@@ -61,8 +61,16 @@ namespace jevois
     JEVOIS_DECLARE_PARAMETER(winsize, cv::Size, "Initial window size to use on host. On platform, size is determined "
                              "by hardware and the value of this parameter will be overwritten on init. The "
                              "parameter can still be used to query display size.",
-                             cv::Size(1920, 1080), ParamCateg);
-
+#ifdef JEVOIS_PLATFORM
+                             // Use 0x0 default on platform which will trigger a query for framebuffer size in
+                             // VideoDisplayBackEndMali:
+                             cv::Size(0, 0),
+#else
+                             // On host, provide a default size since by default we run in a window:
+                             cv::Size(1920, 1080),
+#endif
+                             ParamCateg);
+    
     //! Parameter \relates jevois::GUIhelper
     JEVOIS_DECLARE_PARAMETER(hidesecs, float, "Number of seconds of inactivity from keyboard/mouse/joystick/etc after "
                              "which we hide the GUI, or 0.0 to never hide it. Note: The GUI starts hidden until the "
@@ -102,9 +110,15 @@ namespace jevois
     JEVOIS_DECLARE_PARAMETER(allowquit, bool, "Quit application on ESC key (platform) or window close (host)",
                              false, ParamCateg);
   } // namespace gui
-  
+
+  /*! \defgroup gui JeVois-Pro Graphical Interface
+
+      Classes and utilities to provide a graphical interface using Dear ImGui. Supported on JeVois-Pro only.
+        
+      \ingroup core */
+ 
   //! Helper class to assist modules in creating graphical and GUI elements
-  /*! This class only works on JeVois-Pro. All functions except constructor and destructor throw on other platforms. */
+  /*! This class only works on JeVois-Pro. \ingroup gui */
   class GUIhelper : public Component,
                     public Parameter<gui::fullscreen, gui::winsize, gui::hidesecs, gui::scale,
                                      gui::style, gui::rounding, gui::overlaycolor, gui::linethick,
@@ -283,6 +297,12 @@ namespace jevois
 
       //! Report current exception in a modal dialog, then re-throw it
       void reportAndRethrowException(std::string const & prefix = "");
+
+      //! Clear all errors currently displayed in the JeVois-Pro GUI
+      /*! In the JevoisPro GUI, errors reported via reportError() remain displayed for a few seconds, but sometimes we
+          want to clear them right away, e.g., after DNN pipeline threw, if the user selects another one, we want the
+          previous error to disappear immediately since it is not applicable anymore. */
+      void clearErrors();
       
       //! Z distance from camera to image plane to achieve pixel-perfect rendering
       float const pixel_perfect_z;
@@ -304,9 +324,11 @@ namespace jevois
       bool toggleButton(char const * name, bool * val);
 
       //! Helper to draw a modal with 2 choices
-      /*! Returns 0 if no button was clicked, 1 if the first button was, 2 if the second was. By default, the first
-          button is in focus. */
-      int modal(std::string const & title, char const * text, bool & dont_ask_me_next_time,
+      /*! Returns 1 if the first button was clicked, 2 if the second was, or some other value if no button was clicked
+          (caller should just wait and try again at the next frame if not 1 or 2, passing again that returned value). By
+          default, the first button is in focus. If default_val is not nullptr, add a "don't ask again" checkbox. If
+          *default_val is 1 or 2, just return that without even showing the modal. */
+      int modal(std::string const & title, char const * text, int * default_val = nullptr,
                 char const * b1txt = "Ok", char const * b2txt = "Cancel");
 
       //! Show a message that we are running headless
@@ -318,6 +340,34 @@ namespace jevois
       //! Tell whether user enabled serout messages to GUI console
       bool seroutEnabled() const;
       
+      //! Convert coordinates of a point from on-screen to within a rendered image
+      /*! If name is nullptr, the last image used by drawImage() or drawInputFrame() is used. In such case, if
+          drawInputFrame() was called on a frame that also had a second, scaled image, assume that we have displayed the
+          full-resolution input frame but sent the scaled image to processing, and that hence we also need to scale from
+          second to first frame. */
+      ImVec2 d2i(ImVec2 p, char const * name = nullptr);
+
+      //! Convert coordinates of a point from on-screen to within a rendered image
+      /*! If name is nullptr, the last image used by drawImage() or drawInputFrame() is used. In such case, if
+          drawInputFrame() was called on a frame that also had a second, scaled image, assume that we have displayed the
+          full-resolution input frame but sent the scaled image to processing, and that hence we also need to scale from
+          second to first frame. */
+      ImVec2 d2i(float x, float y, char const * name = nullptr);
+
+      //! Convert a 2D size from on-screen to within a rendered image
+      /*! If name is nullptr, the last image used by drawImage() or drawInputFrame() is used. In such case, if
+          drawInputFrame() was called on a frame that also had a second, scaled image, assume that we have displayed the
+          full-resolution input frame but sent the scaled image to processing, and that hence we also need to scale from
+          second to first frame. */
+      ImVec2 d2is(ImVec2 p, char const * name = nullptr);
+
+      //! Convert a 2D size from on-screen to within a rendered image
+      /*! If name is nullptr, the last image used by drawImage() or drawInputFrame() is used. In such case, if
+          drawInputFrame() was called on a frame that also had a second, scaled image, assume that we have displayed the
+          full-resolution input frame but sent the scaled image to processing, and that hence we also need to scale from
+          second to first frame. */
+      ImVec2 d2is(float x, float y, char const * name = nullptr);
+
     protected:
       std::map<std::string /* name */, GPUimage> itsImages, itsImages2;
       GPUimage * itsLastDrawnImage = nullptr;
@@ -362,17 +412,13 @@ namespace jevois
       bool itsShowAppMetrics = false;
       bool itsShowImGuiDemo = false;
       bool itsSerLogEnabled = true;
-      bool itsSerOutEnabled = true;
+      bool itsSerOutEnabled = false;
       
       void drawJeVoisGUI();
       void drawInfo();
       void drawParameters();
       void drawConsole();
-      void drawEditorMenu(TextEditor & e);
-      void drawEditor(TextEditor & e);
       void drawCamCtrls();
-      void drawCfgEditor();
-      void drawCodeEditor();
       void drawTweaks();
       void drawSystem();
       void drawMenuBar();
@@ -394,34 +440,10 @@ namespace jevois
       void onParamChange(gui::style const & param, gui::GuiStyle const & newval) override;
 
       // Config files:
-      TextEditor itsCfgEditor;
-      std::string itsCfgFileName;
-      void loadEditorFile(TextEditor & e, std::string const & fn, std::string const & failtxt, bool failro);
-      void saveEditorFile(TextEditor & e, std::string const & fn);
-
-      // Helper enum for actions to execute after saving a config file
-      enum class CfgSaveAction { None, Reload, Reboot, RefreshMappings };
-
-      // Helper class to represent config file in a pull-down menu:
-      struct CfgItem {
-          std::string filename;
-          std::string displayname;
-          std::string defaulttext;
-          CfgSaveAction action;
-      };
-      std::vector<CfgItem> itsCfgItems;
-      size_t itsNumFixedCfgItems;
-      bool itsRefreshCfgList = true;
-      int itsCfgCurrentItem = 0;
-      CfgSaveAction itsCfgCurrentAction = CfgSaveAction::None;
-      bool itsCfgWantLoad = true;
-      bool itsCfgWantAction = false;
-      bool itsCfgOkToLoad = false;
-      int itsCfgNewItem = 0;
+      std::shared_ptr<GUIeditor> itsCfgEditor;
       
       // Code editing:
-      TextEditor itsCodeEditor;
-      std::string itsCodeFileName;
+      std::shared_ptr<GUIeditor> itsCodeEditor;
 
       // dnnget helpers
       std::future<std::string> itsDnnGetFut;

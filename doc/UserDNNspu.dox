@@ -1,0 +1,344 @@
+/*! \page UserDNNspu Converting and running neural networks for Hailo-8
+
+\jvpro supports the [26-TOPS Hailo-8](https://hailo.ai/products/hailo-8-m2-module/) Stream Processing Unit (SPU) as an
+optional add-on neural accelerator on an M.2 2230 A+E board using the PCIe interface. To date, this is the fastest
+accelerator available in this form factor.
+
+\note \jvpro only. This accelerator is not supported on \jva33.
+
+Supported neural network frameworks
+===================================
+
+- TensorFlow / TensorFlow-Lite
+- ONNX
+- pyTorch (via export to ONNX)
+
+Procedure
+=========
+
+- Read and understand the JeVois docs about \ref UserDNNoverview
+
+- Make sure you understand the quantization concepts in \ref UserDNNconv
+
+- You need to download and install the Hailo Software Suite docker to convert/compress your model on a desktop computer
+  running Linux Ubuntu 20.04. <em>Registration and password required.</em>
+
+- Everything you need for runtime inference (HailoRT runtime libraries, Hailo PCIe kernel driver) is pre-installed on
+  your JeVois microSD.
+
+- Obtain a model: train your own, or download a pretrained model.
+
+- Obtain some parameters about the model (e.g., pre-processing mean, stdev, scale, expected input image size, RGB or
+  BGR, packed (NWHC) or planar (NCHW) pixels, etc).
+
+- Convert the model as follows:
+  + Use `hailo parser` to convert the source model to a Hailo archive (.har)
+  + Use `hailo optimize` to optimize the model for Hailo-8 and quantize to int8.
+  + Use `hailo compiler` to convert the model to a binary blob (.hef) that can run on JeVois-Pro
+  + Additional commands are available to visualize your model, check its performance on a validation set, etc.
+  + Try `hailo tutorial` for a jupyter tutorial from Hailo.
+  
+- Copy converted model to JeVois microSD card under JEVOISPRO:/share/dnn/custom/
+
+- Create a JeVois model zoo entry for your model, where you specify the model parameters and the location where you
+  copied your model files. Typically this is a YAML file under JEVOISPRO:/share/dnn/custom/
+
+- Launch the JeVois \jvmod{DNN} module. It will scan the custom directory for any valid YAML file, and make your model
+  available as one available value for the \p pipe parameter of the DNN module's Pipeline component. Select that pipe to
+  run your model.
+
+Setting up the Hailo Software Suite
+===================================
+
+\note Everything below is to be run on a fast x86_64 desktop computer running Ubuntu 20.04 Linux, not on your JeVois-Pro
+camera. At the end, we will copy the converted model to microSD and then run inference on JeVois-Pro with that model.
+
+- Check out the [official docs](https://hailo.ai/developer-zone/documentation/sw-suite-2022-07-1)
+
+- The [Hailo model zoo](https://hailo.ai/products/hailo-software-suite/model-zoo/) has many models that can run on
+  Hailo-8. Also check it out on [GitHub](https://github.com/hailo-ai/hailo_model_zoo) for additional files and model
+  retraining code.
+
+- Request a developer account at hailo.ai, login, and go to https://hailo.ai/developer-zone/sw-downloads/
+  + Download the **Hailo Software Suite - Docker**
+  + Download the **HailoRT – Ubuntu package (deb) for amd64**
+  + Download the **HailoRT – PCIe driver Ubuntu package (deb)**
+
+- Install the PCIe drivers and runtime library. This is not strictly necessary but it will eliminate many warnings as we
+  proceed (say Y to DKMS, it will carry the driver through kernel updates; do not worry if it fails, maybe you need to
+  install dkms, kernel-headers, etc):
+  \code{.py}
+sudo dpkg -i ~/Downloads/hailort-pcie-driver_4.8.1_all.deb
+sudo dpkg -i ~/Downloads/hailort_4.8.1_amd64.deb
+  \endcode
+
+- Install docker if you do not yet have it:
+  \code{.py}
+sudo apt install docker.io
+sudo usermod -aG docker ${USER} # need to reboot to take effect
+  \endcode
+
+- Unzip the Hailo Software Suite you downloaded:
+  \code{.py}
+mkdir hailodev
+cd hailodev
+unzip ~/Downloads/hailo_sw_suite_2022-07.zip
+./hailo_sw_suite_docker_run.sh
+  \endcode
+  You should see this:
+  \code{.unparsed}
+Welcome to Hailo Software Suite Container
+To list available commands, please type:
+
+----------------------------------------------------
+
+HailoRT:                hailortcli -h
+Dataflow Compiler:      hailo -h
+Hailo Model Zoo:        hailomz -h
+TAPPAS:                 hailo_run_app -h
+
+----------------------------------------------------
+
+(hailo_virtualenv) hailo@mypc:/local/workspace$ 
+  \endcode
+
+- At this point, you can get a model from the Hailo Model Zoo and retrain it, get your own model and convert it,
+  etc. following the Hailo docs. We show an example below.
+
+- When you are done, just `exit` the docker container.
+
+- To resume later, type `./hailo_sw_suite_docker_run.sh --resume`.
+
+- To restart fresh and replace the old container by a new one, type `./hailo_sw_suite_docker_run.sh --override`
+
+- To copy files between your host and the Hailo docker, type this on your host (not in the container):
+  + `sudo docker container ls -a` shows the ID of the container, e.g., **4f6342fbc915**
+  + `sudo docker cp myfile 4f6342fbc915:/local/workspace/` copies from host to container
+  + `sudo docker cp 4f6342fbc915:/local/workspace/myfile .` copies from container to host
+  + see https://hailo.ai/developer-zone/documentation/sw-suite-2022-07-1?sp_referrer=working_with_dockers.html for
+    more (need to be logged into your Hailo account).
+
+Example: YOLOv7 Object Detection
+================================
+
+Everything we run below is from inside the docker container we started above.
+
+1. Get the model
+----------------
+
+- Go to https://github.com/WongKinYiu/yolov7 and check it out
+
+- We are going to use the base YOLOv7, full version, to see how fast this Hailo board is with a large model:
+\code{.py}
+wget https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7.pt
+\endcode
+
+2. Since our model is pyTorch, convert it to ONNX first
+-------------------------------------------------------
+
+- The model is in pyTorch, but the YOLOv7 team provides an `export.py` that can export it to onnx, as is often the case
+  with recent models:
+  \code{.py}
+git clone https://github.com/WongKinYiu/yolov7.git
+cd yolov7
+pip install --upgrade pip
+pip install -r requirements.txt
+python3 export.py --weights ../yolov7.pt --simplify --img-size 640 --batch-size 1
+cd ..
+  \endcode
+  \note Installing the requirements uninstalls the hailo-provided torch, then installs apparently the same version.
+  This may interfere with other aspects of the Hailo software suite. So you may want to do that in a different
+  virtualenv or on your native host and then copy the result to the container as shown above.
+
+- We now have **yolov7.onnx**
+
+- To visualize it using Netron, run **google-chrome https://netron.app** (still within the container), select "Open
+  Model...", and then select the model, which is in <b>/local/workspace/yolov7.onnx</b> in the container. In particular,
+  we see 3 outputs, 1x3x80x80x85, 1x3x40x40x85, 1x3x20x20x85 for the usual 3 YOLO scales (shapes are unusual, we will
+  fix that later). Note that the original model includes some additional post-processing, but that was stripped from the
+  export, which is great because it may not be supported by the hardware accelerator. The JeVois software will provide
+  post-processing. Input is 1x3x640x640 (NCHW).
+
+3. Run the Hailo parser
+-----------------------
+
+- The Hailo Model Zoo User Guide in the [Hailo download
+  section](https://hailo.ai/developer-zone/documentation/?type=application-and-release-notes) has good detailed
+  instructions.
+
+- We also check out the [Hailo Dataflow Compiler
+  docs](https://hailo.ai/developer-zone/documentation/dataflow-compiler-v3-19-0)
+
+- First, parse the model from ONNX into a Hailo archive (HAR):
+  \code{.py}
+hailo parser onnx yolov7.onnx 
+  \endcode
+  We get some errors about unsupported layers 298, 299, 301, 302, 304, 305 and a recommendation to try again, "using
+  these end node names: Conv_297, Conv_300, Conv_303". Those are outputs before final reshaping, e.g., conv_303 (last
+  Conv block towards bottom of the graph in Netron) is 1x255x20x20 then gets reshaped to 1x3x20x20x85. Indeed, we should
+  use Conv_303 as this is the kind of YOLO output shape that jevois::dnn::PostProcessorDetect can handle. So we try
+  again (after running **hailo parser onnx yolov7.onnx --help** to get some help):
+  \code{.py}
+hailo parser onnx yolov7.onnx --end-node-names Conv_297 Conv_300 Conv_303
+  \endcode
+
+- Success, we now have **yolov7.har**
+
+4. Get a sample dataset
+-----------------------
+
+- We need a sample dataset for quantization of the model. It will be processed through the model (forward inference
+  only) to determine the range of values encountered on every layer. These ranges will then be used for quantization.
+
+- If you trained your model on a custom dataset, copy about 100 images from your validation set into a new directory
+  here.
+
+- Our model was trained on the [COCO dataset](https://cocodataset.org). Let's download the [2017 validation
+  set](http://images.cocodataset.org/zips/val2017.zip):
+  \code{.py}
+wget http://images.cocodataset.org/zips/val2017.zip
+unzip val2017.zip
+  \endcode
+
+- That's 5,000 images which is more than we need. The unix command `shuf` can randomly shuffle a list of names and take
+  the first \p n, so let's use it to grab 100 random images from the dataset and copy them to a new directory
+  <b>sampledata</b>:
+  \code{.py}
+mkdir sampledata
+cp `ls ./val2017/*.jpg | shuf -n 100` sampledata/
+  \endcode
+
+- **sampledata/** should now contain 100 jpeg images.
+
+- Hailo wants the sample dataset as a <em>".npy file containing numpy array of preprocessed images with shape
+  (calib_size, h, w, c)"</em> (from running **hailo optimize --help**). So we need to write a little python script
+  <b>numpy_sampledata.py</b> to do that:
+  \code{.py}
+import numpy as np
+import os
+from PIL import Image
+
+dir = 'sampledata'
+width = 640
+height = 640
+numimages = 100
+
+dataset = np.ndarray((numimages, height, width, 3), np.float32)
+idx = 0
+
+for path in os.listdir(dir):
+    fname = os.path.join(dir, path)
+    if os.path.isfile(fname):
+        image = Image.open(fname).resize((width, height));
+        arr = np.array(image).astype(np.float32)
+        arr = (arr - 0.0) / 255.0 # pre-processing. Here: mean=[0 0 0], scale=1/255 but varies by model
+        dataset[idx, :] = arr
+        idx += 1
+        
+with open('sampledata.npy', 'wb') as f:
+    np.save(f, dataset)
+  \endcode
+
+- We run the script and get **sampledata.npy**
+
+5. Optimize the model
+---------------------
+
+- Launch the Hailo optimizer on our model and using our sample dataset. This will quantize the model:
+  \code{.py}
+hailo optimize yolov7.har --calib-set-path sampledata.npy
+  \endcode
+
+- We get **yolov7_quantized.har**
+
+6. Compile the model
+--------------------
+
+\code{.py}
+hailo compiler yolov7_quantized.har 
+\endcode
+
+We get **yolov7.hef** which we will copy to the microSD of \jvpro.
+
+The compiler predicts 12.27 FPS for this model, which sounds pretty good given its size. Note that it aimed for a
+compute utilization of 75% and does indeed achieve that. Maybe that can be increased through some parameter. For faster
+FPS, yolov7-tiny is available, or one could reduce the input size.
+
+7. Create JeVois-Pro YAML zoo file
+----------------------------------
+
+- We start with any of the YOLO entries in zoo file spu.yml already in the JeVois microSD (and available in the Config
+  tab of the GUI).
+
+- For YOLO post-processing, we need definitions of anchors (prototypical box shapes that will be used to predict object
+  boxes). We just get those from https://github.com/WongKinYiu/yolov7/blob/main/cfg/deploy/yolov7.yaml, towards top:
+  \code{.py}
+anchors:
+  - [12,16, 19,36, 40,28]  # P3/8
+  - [36,75, 76,55, 72,146]  # P4/16
+  - [142,110, 192,243, 459,401]  # P5/32
+  \endcode
+  In the YAML file below, we will separate the 3 sets of anchors for the 3 YOLO scales by semicolons.
+
+- Because YOLOv7 uses the "new style" of YOLO coordinates, we need to disable Post-Processor sigmoid and set
+  Post-Processor scalexy to 2.0. You would want that for YOLOv5/v7. Conversely, set sigmoid to true and scalexy to 0.0
+  (defaults) to use old-style box coordinates for YOLOv2/v3/v4. You can look at the differences in
+  jevois::dnn::PostProcessorDetectYOLO::yolo_one()
+
+- Here, actually, it looks like these 3 Conv layers we used for our outputs have linear activation in that particular
+  model (check them out in Netron). So we need to set sigmoid to true as the post-processor will require that for YOLO
+  decoding.
+
+- We just modify the name and file locations, bring all the global definitions that were in spu.yml into our file (like
+  preproc, nettype, etc which were set globally in spu.yml and hence not repeated for the entry we are copying
+  from), and end up with the following **yolov7.yml**:
+  \code{.py}
+%YAML 1.0
+---
+
+yolov7:
+  preproc: Blob
+  mean: "0 0 0"
+  scale: 0.0039215686
+  nettype: SPU
+  model: "dnn/custom/yolov7.hef"
+  postproc: Detect
+  detecttype: RAWYOLO
+  anchors: "12,16, 19,36, 40,28;   36,75, 76,55, 72,146;   142,110, 192,243, 459,401"
+  classes: "npu/detection/coco-labels.txt"
+  sigmoid: true
+  scalexy: 2.0
+  \endcode
+
+\note We do not need to (and cannot) specify **intensors** and **outtensors** with Hailo models, the specs are embedded
+in the HEF file.
+
+- We copy yolov7.yml and yolov7.hef to /jevoispro/share/dnn/custom/ on JeVois-Pro and let's try it!
+
+8. Test the model and adjust any parameters
+-------------------------------------------
+
+- Select the \jvmod{DNN} machine vision module
+
+- Set the \p pipe parameter to **SPU:Detect:yolov7**
+
+\jvimg{spu-yolov7.png, 70%}
+
+It works! Indeed about 12.2 FPS as promised by the compiler. This is a large model and also using 640x640 inputs. If you
+need higher frame rate, try smaller inputs or yolov7-tiny. Or try YOLOv5m-640 provided by the Hailo team, it runs at
+over 45 FPS on JeVois-Pro.
+
+Tips
+====
+
+- You may want to start with the models in the [Hailo Model
+  Zoo](https://hailo.ai/products/hailo-software-suite/model-zoo/). Those should convert well, and also you can get an
+  idea of their speed beforehand by looking at the GFLOPS figures. Note, however, that some detection models have been
+  converted with quite unusual sets of outputs, which the JeVois PostProcessor may not support.
+
+- The Hailo Model Zoo Github has several dockers and instructions on how to retrain some of these models:
+  https://github.com/hailo-ai/hailo_model_zoo/tree/master/training
+
+- Also see \ref UserDNNtips
+
+*/

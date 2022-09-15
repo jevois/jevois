@@ -51,6 +51,9 @@ namespace jevois
         std::array<uint32_t, 256> itsColor; //!< Colors for our drawings, as RGBA with zero alpha value
 
       private:
+        template <typename T>
+        void process(cv::Mat const & results);
+
         jevois::OptGUIhelper * itsHelper = nullptr;
         int itsTLx = 0, itsTLy = 0, itsBRx = 0, itsBRy = 0;
         cv::Mat itsOverlay;

@@ -58,17 +58,17 @@ Under the \b System tab of the GUI, you can select different boot modes for JeVo
 
 Once you are in either console or graphical mode, issue these commands in a terminal to switch:
 
-\verbatim
+\code{.py}
 sudo systemctl set-default jevoispro.target # to boot to JeVois software
 sudo systemctl set-default multi-user.target # to boot to Ubuntu console
 sudo systemctl set-default graphical.target # to boot to Ubuntu graphical
-\endverbatim
+\endcode
 
 Then
 
-\verbatim
+\code{.py}
 sudo shutdown -h now
-\endverbatim
+\endcode
 
 Unplug power and plug it back in.
 
@@ -90,9 +90,9 @@ Starting JeVois software manually
 If you have switched to Console boot, after you login (either as jevois/jevois or root/jevois), you can start the JeVois
 software from the command-line:
 
-\verbatim
+\code{.py}
 sudo jevoispro.sh
-\endverbatim
+\endcode
 
 Note that the GPU drivers provided by ARM for our chip (Amlogic A311D) work in full-screen framebuffer mode only. So
 they work perfectly when booting in JeVois-Pro mode or Console mode. But if you run `sudo jevoispro.sh` from a terminal
@@ -102,15 +102,15 @@ manually, do it from the console mode.
 
 When you are in console mode, you can start X-windows by typing:
 
-\verbatim
+\code{.py}
 startx
-\endverbatim
+\endcode
 
 and when you logout from X, you will get back to your console.
 
 This is very useful for development. You would do as follows:
 
-- switch to console boot
+- switch to console boot and reboot
 - login as root/jevois
 - run `sudo jevoispro.sh`
 - if you want to exit, activate the \p allowquit parameter of the Graphical User Interface (you need to turn on showing

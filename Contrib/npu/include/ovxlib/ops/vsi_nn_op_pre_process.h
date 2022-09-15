@@ -27,6 +27,10 @@
 #include "vsi_nn_types.h"
 #include "vsi_nn_pre_post_process.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef  vsi_nn_preprocess_source_format_e vsi_nn_pre_process_type_e;
 
 enum
@@ -61,7 +65,7 @@ typedef struct _vsi_nn_pre_process_param
 
     struct
     {
-        uint32_t   *size;
+        vsi_size_t   *size;
         uint32_t   dim_num;
     } output_attr;
 
@@ -80,5 +84,9 @@ typedef struct _vsi_nn_pre_process_param
 
     vsi_nn_pre_process_lcl_data *local;
 } vsi_nn_pre_process_param;
+
+#ifdef __cplusplus
+}
 #endif
 
+#endif

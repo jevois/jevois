@@ -47,9 +47,10 @@ namespace jevois
       void callbackInitCall();
 
     private:
-      //! Allow Component to access our registry data, everyone else is locked out
+      //! Allow Component and DynamicParameter to access our registry data, everyone else is locked out
       friend class Component;
-
+      template <typename T> friend class DynamicParameter;
+      
       // A list of pointers to all Parameters registered with this Component
       std::map<std::string, ParameterBase *> itsParameterList;
 

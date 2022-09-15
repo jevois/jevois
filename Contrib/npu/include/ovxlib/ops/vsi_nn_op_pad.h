@@ -39,11 +39,11 @@ typedef enum {
 
 typedef struct _vsi_nn_pad_param
 {
-    uint32_t         * front_size;
-    uint32_t         * back_size;
-    uint8_t            dim_num;
-    int32_t            const_val;
-    vsi_nn_pad_mode_e  mode;
+    const uint32_t * front_size;
+    const uint32_t * back_size;
+    uint8_t dim_num;
+    int32_t const_val;
+    vsi_nn_pad_mode_e mode;
 } vsi_nn_pad_param;
 
 #ifdef __cplusplus

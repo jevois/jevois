@@ -1,4 +1,4 @@
-/*
+/* 
 
  * Copyright (c) 2012-2017 The Khronos Group Inc.
  *
@@ -202,6 +202,35 @@ typedef struct _vx_tile_t {
  */
 #define vxNeighborhoodBottom(ptile)  ((ptile)->neighborhood.bottom)
 
+#if 0
+/*!
+ * \brief The simple wrapper to access each image's stride X value.
+ * \param [in] ptile The pointer to the \ref vx_tile_t structure.
+ * \ingroup group_tiling
+ */
+#define vxStrideSizeX(ptile, index)  ((ptile)->addr[index].stride_x)
+
+/*!
+ * \brief The simple wrapper to access each image's stride Y value.
+ * \param [in] ptile The pointer to the \ref vx_tile_t structure.
+ * \ingroup group_tiling
+ */
+#define vxStrideSizeY(ptile, index)  ((ptile)->addr[index].stride_y)
+
+/*!
+ * \brief The simple wrapper to access each image's step X value.
+ * \param [in] ptile The pointer to the \ref vx_tile_t structure.
+ * \ingroup group_tiling
+ */
+#define vxStepSizeX(ptile, index)    ((ptile)->addr[index].step_x)
+
+/*!
+ * \brief The simple wrapper to access each image's step Y value.
+ * \param [in] ptile The pointer to the \ref vx_tile_t structure.
+ * \ingroup group_tiling
+ */
+#define vxStepSizeY(ptile, index)    ((ptile)->addr[index].step_y)
+#endif
 
 #endif
 
@@ -308,7 +337,7 @@ typedef void (*vx_tiling_kernel_f)(void * VX_RESTRICT parameters[VX_RESTRICT],
 
 #endif
 
-#ifdef __cplusplus
+#ifdef  __cplusplus
 extern "C" {
 #endif
 
@@ -340,7 +369,7 @@ VX_API_ENTRY vx_kernel VX_API_CALL vxAddTilingKernel(vx_context context,
                             vx_kernel_input_validate_f input,
                             vx_kernel_output_validate_f output);
 
-#ifdef __cplusplus
+#ifdef  __cplusplus
 }
 #endif
 

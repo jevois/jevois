@@ -40,7 +40,7 @@ typedef struct _vsi_nn_reverse_lcl_data
 
 typedef struct _vsi_nn_reverse_param
 {
-    int32_t    *axis;
+    const int32_t    *axis;
     uint32_t   axis_num;
 
     /* reverse layer local data structure */

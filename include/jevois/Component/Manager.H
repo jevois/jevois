@@ -96,7 +96,7 @@ namespace jevois
 
       //! @}
       
-      //! @name Component hierarchies unser the Manager
+      //! @name Component hierarchies under the Manager
       //! @{
 
       //! Pseudo-constructor: construct a top-level Component

@@ -50,30 +50,42 @@ namespace jevois
       
       //! Parameter \relates jevois::PostProcessorClassify
       JEVOIS_DECLARE_PARAMETER(top, unsigned int, "Max number of top-scoring predictions that score above "
-                               "thresh to report",
+                               "threshold to report",
                                5, ParamCateg);
       
-      //! Parameter \relates jevois::PostProcessorClassify
-      JEVOIS_DECLARE_PARAMETER(thresh, float, "Threshold (in percent confidence) above which predictions will be "
-                               "reported",
+      //! Parameter \relates jevois::PostProcessorDetect
+      JEVOIS_DECLARE_PARAMETER(maxnbox, unsigned int, "Max number of top-scoring boxes to report (for YOLO flavors, "
+                               "this is the max for each scale)",
+                               500, ParamCateg);
+      
+      //! Parameter \relates jevois::PostProcessorClassify \relates jevois::PostProcessorDetect
+      JEVOIS_DECLARE_PARAMETER(cthresh, float, "Classification threshold (in percent confidence) above which "
+                               "predictions will be reported",
                                20.0F, jevois::Range<float>(0.0F, 100.0F), ParamCateg);
+
+      //! Parameter \relates jevois::PostProcessorDetect
+      JEVOIS_DECLARE_PARAMETER(dthresh, float, "Detection box threshold (in percent confidence) above which "
+                               "predictions will be reported. Not all networks use a separate box threshold, "
+                               "many only use one threshold confidence threshold (cthresh parameter). The YOLO "
+                               "family is an example that uses both box and classification confidences",
+                               15.0F, jevois::Range<float>(0.0F, 100.0F), ParamCateg);
       
       //! Parameter \relates jevois::PostProcessorClassify
       JEVOIS_DECLARE_PARAMETER(softmax, bool, "Apply a softmax to classification outputs",
                                false, ParamCateg);
 
       //! Parameter \relates jevois::PostProcessorClassify
-      JEVOIS_DECLARE_PARAMETER(scorescale, float, "Scaling factors applied to recognition scores, useful for "
-                               "InceptionV3 and possibly other networks",
+      JEVOIS_DECLARE_PARAMETER(scorescale, float, "Scaling factors applied to recognition scores. Mainly "
+                               "for debugging if your scores seem too high or too low. If too high, usually "
+                               "that means that you should turn on parameter softmax instead.",
                                1.0F, ParamCateg);
       
       //! Enum \relates jevois::PostProcessorDetect
-      JEVOIS_DEFINE_ENUM_CLASS(DetectType, (FasterRCNN) (YOLO) (SSD) (TPUSSD) (RAWYOLOface) (RAWYOLOv2)
-                               (RAWYOLOv3) (RAWYOLOv4) (RAWYOLOv3tiny) )
+      JEVOIS_DEFINE_ENUM_CLASS(DetectType, (FasterRCNN) (YOLO) (SSD) (TPUSSD) (RAWYOLO) );
       
       //! Parameter \relates jevois::PostProcessorDetect
-      JEVOIS_DECLARE_PARAMETER(detecttype, DetectType, "Type of detection output format",
-                               DetectType::YOLO, DetectType_Values, ParamCateg);
+      JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(detecttype, DetectType, "Type of detection output format",
+                                             DetectType::YOLO, DetectType_Values, ParamCateg);
       
       //! Parameter \relates jevois::PostProcessorDetect
       JEVOIS_DECLARE_PARAMETER(nms, float, "Non-maximum suppression intersection-over-union threshold in percent",
@@ -83,9 +95,9 @@ namespace jevois
       JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(anchors, std::string, "For YOLO-type detection models with raw outputs, "
                                "list of anchors. Should be formatted as: w1, h1, w2, h2, ... ; ww1, hh1, ww2, hh2, "
                                "... ; ... where individual entries for a given YOLO layer are separated by commas, "
-                               "and successive YOLO layers (in the order in which they appear in the Darknet .cfg "
-                               "file) are separated by semicolons. Leave empty for other models. If your anchors are "
-                               "the same for all YOLO layers, you may just specify them once.",
+                               "and successive YOLO layers (from large to small, e.g., first the anchors for 52x52, "
+                               "then for 26x26, then for 13x13) are separated by semicolons. Leave empty "
+                               "for other models.",
                                "", ParamCateg);
 
       //! Parameter \relates jevois::PostProcessorDetect \relates jevois::PostProcessorSegment
@@ -98,15 +110,35 @@ namespace jevois
                                0, ParamCateg);
 
       //! Enum \relates jevois::PostProcessorSegment
-      JEVOIS_DEFINE_ENUM_CLASS(SegType, (Classes) (Classes2) (ArgMax) );
+      JEVOIS_DEFINE_ENUM_CLASS(SegType, (ClassesHWC) (ClassesCHW) (ArgMax) );
 
       //! Parameter \relates jevois::PostProcessorSegment
-      JEVOIS_DECLARE_PARAMETER(segtype, SegType, "Type of segmentation network output. If Classes, output is HxWxN "
-                               "where N is the number of classes and we get one score per class, and we will show "
-                               "the top scoring class for each pixel (e.g., UNet-MobileNet on TPU). If Classes2, "
-                               "output is NxHxW and the rest is as for Classes (e.g., DeepLabV3 OpenCV). If ArgMax, "
-                               "output is HxW and contains the class ID for each pixel (e.g., DeepLabV3 on TPU).",
-                               SegType::Classes, SegType_Values, ParamCateg);
+      JEVOIS_DECLARE_PARAMETER(segtype, SegType, "Type of segmentation network output. ClassesHWC: output is 1xHxWxC "
+                               "for C classes and we get one score per class; we will show "
+                               "the top scoring class for each pixel (e.g., UNet-MobileNet on TPU). ClassesCHW: "
+                               "output is 1xCxHxW and the rest is as for ClassesHWC (e.g., DeepLabV3 OpenCV). ArgMax: "
+                               "output is HxW, 1xHxW, or 1xHxWx1 and contains the class ID for each pixel "
+                               "(e.g., DeepLabV3 on TPU).",
+                               SegType::ClassesHWC, SegType_Values, ParamCateg);
+
+      //! Parameter \relates jevois::PostProcessorPython
+      JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(pypost, std::string, "Path below " JEVOIS_SHARE_PATH "/ of the python "
+                                             "post-processor file. Name of class defined in the file must match "
+                                             "the file name without the trailing '.py'",
+                                             "", ParamCateg);
+
+      //! Parameter \relates jevois::PostProcessorDetectYOLO
+      JEVOIS_DECLARE_PARAMETER(scalexy, float, "If 0, use old-style YOLO boxes (YOLOv2/v3/v4); otherwise, this is "
+                               "the scale_xy factor for new-style YOLO coordinates (YOLOv5/v7; value is usually 2.0 "
+                               "but check the yolo layer in the model's .cfg file)",
+                               0.0F, ParamCateg);
+
+      //! Parameter \relates jevois::PostProcessorDetectYOLO
+      JEVOIS_DECLARE_PARAMETER(sigmoid, bool, "Apply sigmoid to raw YOLO outputs, use when the last conv layers "
+                               "just before yolo/detection/region layers have linear activation (most "
+                               "YOLOv2/v3/v4 models, but not YOLOv5/v7 which have logistic activation on their "
+                               "last conv)",
+                               true, ParamCateg);
     }
 
     //! Post-Processor for neural network pipeline

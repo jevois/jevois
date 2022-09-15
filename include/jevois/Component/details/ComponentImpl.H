@@ -153,9 +153,13 @@ void jevois::Component::setParamValUnique(std::string const & descriptor, T cons
 {
   JEVOIS_TRACE(7);
 
+  // Try a get before we set to make sure we only have one hit:
+  std::vector<std::pair<std::string, T> > test = getParamVal<T>(descriptor);
+  if (test.size() > 1) throw std::range_error("Ambiguous multiple matches for descriptor [" + descriptor + ']');
+ 
+  // Ok, set it, ret should always have size 1:
   std::vector<std::string> ret = setParamVal(descriptor, val);
-  if (ret.size() > 1) throw std::range_error("Multiple matches for descriptor [" + descriptor +
-                                             "] while only one is allowed");
+  if (ret.size() > 1) throw std::range_error("Ambiguous multiple matches for descriptor [" + descriptor + ']');
 }
 
 // ######################################################################
@@ -188,9 +192,74 @@ T jevois::Component::getParamValUnique(std::string const & descriptor) const
   JEVOIS_TRACE(8);
 
   std::vector<std::pair<std::string, T> > ret = getParamVal<T>(descriptor);
-  if (ret.size() > 1) throw std::range_error("Multiple matches for descriptor [" + descriptor +
-                                             "] while only one is allowed");
+  if (ret.size() > 1) throw std::range_error("Ambiguous multiple matches for descriptor [" + descriptor + ']');
   return ret[0].second;
+}
+
+// ######################################################################
+template <typename T> inline
+std::shared_ptr<jevois::DynamicParameter<T>>
+jevois::Component::addDynamicParameter(std::string const & name, std::string const & description,
+                                       T const & defaultValue, jevois::ParameterCategory const & category)
+{
+  std::lock_guard<std::mutex> _(itsDynParMtx);
+
+  // Check for duplicate dynamic params; ParameterRegistry will check for duplicates against static params:
+  if (itsDynParams.find(name) != itsDynParams.end()) LFATAL("Already have a parameter with name [" << name << ']');
+
+  // Create a parameter definition:
+  jevois::ParameterDef<T> pd(name, description, defaultValue, category);
+
+  // Create the parameter and register it with our Parameter registry:
+  std::shared_ptr<jevois::DynamicParameter<T>> par(new jevois::DynamicParameter<T>(this, pd));
+  
+  // Keep the param around since ParameterRegistry only operates on raw pointers:
+  itsDynParams.insert(std::make_pair(name, par));
+
+  return par;
+}
+
+// ######################################################################
+template <typename T, template <typename> class ValidValuesSpec> inline
+std::shared_ptr<jevois::DynamicParameter<T>>
+jevois::Component::addDynamicParameter(std::string const & name, std::string const & description,
+                                            T const & defaultValue, ValidValuesSpec<T> const & validValuesSpec,
+                                            ParameterCategory const & category)
+{
+  std::lock_guard<std::mutex> _(itsDynParMtx);
+  
+  // Check for duplicate dynamic params; ParameterRegistry will check for duplicates against static params:
+  if (itsDynParams.find(name) != itsDynParams.end()) LFATAL("Already have a parameter with name [" << name << ']');
+
+  // Create a parameter definition:
+  jevois::ParameterDef<T> pd(name, description, defaultValue, validValuesSpec, category);
+
+  // Create the parameter and register it with our Parameter registry:
+  std::shared_ptr<jevois::DynamicParameter<T>> par(new jevois::DynamicParameter<T>(this, pd));
+  
+  // Keep the param around since ParameterRegistry only operates on raw pointers:
+  itsDynParams.insert(std::make_pair(name, par));
+
+  return par;
+}
+
+// ######################################################################
+template <typename T> inline
+void jevois::Component::setDynamicParameterCallback(std::string const & name, std::function<void(T const &)> cb,
+                                                    bool callnow)
+{
+  std::lock_guard<std::mutex> _(itsDynParMtx);
+
+  auto itr = itsDynParams.find(name);
+  if (itr == itsDynParams.end()) LFATAL("No dynamic parameter found with name [" << name << ']');
+
+  jevois::ParameterBase * basepar = itr->second.get();
+  jevois::ParameterCore<T> * par = dynamic_cast<jevois::ParameterCore<T> *>(basepar);
+  if (par == nullptr) LFATAL("Internal error: dynamic parameter registry is corrupt");
+
+  par->setCallback(cb);
+
+  if (callnow) par->set(par->get());
 }
 
 // Include inlined implementation details that are of no interest to the end user

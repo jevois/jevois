@@ -28,6 +28,8 @@ jevois::ParameterRegistry::~ParameterRegistry()
 // ######################################################################
 void jevois::ParameterRegistry::addParameter(jevois::ParameterBase * const param)
 {
+  JEVOIS_TRACE(1);
+  
   boost::upgrade_lock<boost::shared_mutex> uplck(itsParamMtx);
   if (itsParameterList.find(param->name()) != itsParameterList.end())
     LFATAL("Duplicate Parameter Name: " << param->name());
@@ -41,6 +43,8 @@ void jevois::ParameterRegistry::addParameter(jevois::ParameterBase * const param
 // ######################################################################
 void jevois::ParameterRegistry::removeParameter(jevois::ParameterBase * const param)
 {
+  JEVOIS_TRACE(1);
+
   boost::upgrade_lock<boost::shared_mutex> uplck(itsParamMtx);
   auto itr = itsParameterList.find(param->name());
 
@@ -58,6 +62,8 @@ void jevois::ParameterRegistry::removeParameter(jevois::ParameterBase * const pa
 // ######################################################################
 void jevois::ParameterRegistry::callbackInitCall()
 {
+  JEVOIS_TRACE(1);
+
   boost::shared_lock<boost::shared_mutex> _(itsParamMtx);
 
   for (auto const & pl : itsParameterList) pl.second->callbackInitCall();

@@ -26,6 +26,7 @@
 #include <map>
 #include <unordered_map>
 #include <future>
+#include <filesystem>
 
 #include <jevois/Util/Async.H> // actually not needed here, but many derived components and modules will want to use it
 
@@ -376,7 +377,7 @@ namespace jevois
           int paramValue = comp->getParamValUnique<int>("myparam");
           @endcode
 
-          @throws jevois::exception::ParameterException if not exactly one Parameter matches the given descriptor. */
+          @throws std::range_error if not exactly one Parameter matches the given descriptor. */
       template <typename T>
       T getParamValUnique(std::string const & paramdescriptor) const;
 
@@ -390,7 +391,7 @@ namespace jevois
 
       //! Set a parameter value by string, simple version assuming only one parameter match
       /*! This calls setParamVal(), and checks that exactly one match was found.
-          @throws jevois::exception::ParameterException if not exactly one Parameter matches the given descriptor. */
+          @throws std::range_error if not exactly one Parameter matches the given descriptor. */
       void setParamStringUnique(std::string const & paramdescriptor, std::string const & val);
 
       //! Get a parameter value, by string
@@ -441,6 +442,37 @@ namespace jevois
       //! Run a function on every param we hold
       void foreachParam(std::function<void(std::string const & compname, ParameterBase * p)> func,
                         std::string const & cname = "");
+
+      //! Add a new parameter after the Component has already been constructed
+      /*! Dynamic parameters can only be accessed by descriptor using Component::setParamVal(),
+          Component::getParamVal(), etc., since the owning component does not inherit from them like standard
+          parameters. Callbacks can be added manually after creation using
+          Component::setDynamicParameterCallback(). This version creates a Parameter with no given valid values, valid
+          values are whatever T can take. */
+      template <typename T>
+      std::shared_ptr<DynamicParameter<T>>
+      addDynamicParameter(std::string const & name, std::string const & description, T const & defaultValue,
+                          ParameterCategory const & category);
+
+      //! Add a new parameter after the Component has already been constructed
+      /*! Dynamic parameters can only be accessed by descriptor, since the owning component does not inherit from them
+          like standard parameters. Callbacks can be added manually after creation using
+          Component::setDynamicParameterCallback(). This version creates a Parameter with specified valid values from a
+          ValidValueSpec */
+      template <typename T, template <typename> class ValidValuesSpec>
+      std::shared_ptr<DynamicParameter<T>>
+      addDynamicParameter(std::string const & name, std::string const & description, T const & defaultValue,
+                          ValidValuesSpec<T> const & validValuesSpec, ParameterCategory const & category);
+
+      //! Register a callback with a previously created dynamic parameter
+      /*! If callnow is true, the callback will be called right after it is registered, using the parameter's current
+          value. This is to mimic standard parameters where the callback is called at least once during init. */
+      template <typename T>
+      void setDynamicParameterCallback(std::string const & name, std::function<void(T const &)> cb,
+                                       bool callnow = true);
+
+      //! Remove a previously added dynamic parameter
+      void removeDynamicParameter(std::string const & name);
       
       //! @}
 
@@ -457,7 +489,7 @@ namespace jevois
 
       //! If given path is relative (not starting with /), prepend the Component path to it
       /*! If path is absolute, no-op. If path is empty, return the Component's path as set with setPath(). */
-      std::string absolutePath(std::string const & path = "");
+      std::filesystem::path absolutePath(std::filesystem::path const & path = "");
 
       //! @}
 
@@ -562,7 +594,28 @@ namespace jevois
       void doRemoveSubComponent(std::vector<std::shared_ptr<Component> >::iterator & itr,
                                 boost::upgrade_lock<boost::shared_mutex> & uplck,
                                 std::string const & displayname);
+
+      // Bank of defs for dynamic parameters, someone needs to hold them
+      std::map<std::string /* name */, std::shared_ptr<ParameterBase>> itsDynParams;
+      mutable std::mutex itsDynParMtx;
   };
+
+
+  //! Get the current video processing frame number
+  /*! The Engine maintains a master frame counter that is incremented on each call to a Module's process(), whether
+      or not the call succeeds. The counter is not incremented when a module has not been loaded (e.g., failed to
+      load). The counter is reset to zero each time a new module is loaded.
+
+      This is implemented as a free function so that anyone can access it:
+
+      \code
+      size_t current_frame_number = jevois::frameNum();
+      \endcode
+
+      It is thread-safe. Programmer note: the implementation is in Engine.C since Engine is the one that manages the
+      counter. It is declared here so that users don't have to include Engine.H \relates Engine */
+  size_t frameNum();
+
 } //jevois
 
 // Include inlined implementation details that are of no interest to the end user

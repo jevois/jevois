@@ -19,7 +19,7 @@
 
 #include <jevois/Core/Module.H>
 #include <jevois/Core/VideoMapping.H>
-#include <boost/python.hpp>
+#include <jevois/Core/PythonWrapper.H>
 #include <jevois/GPU/GUIhelper.H>
 
 namespace jevois
@@ -224,9 +224,6 @@ namespace jevois
   class GUIhelperPython
   {
     public:
-      //! Default constructor to keep boost::python happy, object is not operational
-      GUIhelperPython() = default;
-      
       //! Construct from a regular GUIhelper that should be be coming from Engine
       GUIhelperPython(GUIhelper * src);
 
@@ -304,6 +301,18 @@ namespace jevois
       //! Finish current frame and render it
       void endFrame();
 
+      //! Convert coordinates of a point from on-screen to within a rendered image
+      ImVec2 d2i(ImVec2 p, char const * name = nullptr);
+
+      //! Convert coordinates of a point from on-screen to within a rendered image
+      ImVec2 d2i1(float x, float y, char const * name = nullptr);
+
+      //! Convert a 2D size from on-screen to within a rendered image
+      ImVec2 d2is(ImVec2 p, char const * name = nullptr);
+
+      //! Convert a 2D size from on-screen to within a rendered image
+      ImVec2 d2is1(float x, float y, char const * name = nullptr);
+
       //! Report an error in an overlay window
       void reportError(std::string const & err);
 
@@ -321,7 +330,7 @@ namespace jevois
   //! Wrapper module to allow users to develop new modules written in Python
   /*! This wrapper module calls a process function written in Python on every frame. Note how sendSerial() is added
       dynamically after the python class is defined, as a new member function of the class. \ingroup python */
-  class PythonModule : public Module
+  class PythonModule : public Module, public PythonWrapper
   {
     public:
       //! Constructor needs the full path to a Python source code file
@@ -331,6 +340,9 @@ namespace jevois
 	  at any access to process(), parfseSerial(), etc. */
       PythonModule(VideoMapping const & m);
 
+      //! Load python code and optionally call init() python module function, if implemented
+      void preInit() override;
+ 
       //! Virtual destructor for safe inheritance
       virtual ~PythonModule();
 
@@ -353,12 +365,46 @@ namespace jevois
 
       //! Optionally call uninit() python module function, if implemented
       void postUninit() override;
-      
+
     private:
-      boost::python::object itsMainModule, itsMainNamespace;
-      boost::python::object itsInstance;
-      std::string itsConstructionError;
+      std::string itsPyPath;
   };
 
-} // namespace jevois
+  namespace dnn
+  {
+    class PreProcessor;
+    
+    //! Pre-Processor interface expose to the python side
+    /*! This wrapper is passed down to the process() function of a python post-processor, it provides a python-friendly
+        interface to b2i(), blobsizes(), etc \ingroup python */
+    class PreProcessorForPython
+    {
+      public:
+        //! Construct from an existing PreProcessor
+        /*! Caller must ensure that pp outlives us. */
+        PreProcessorForPython(PreProcessor * pp);
 
+        //! Access the last processed image size
+        cv::Size imagesize() const;
+        
+        //! Access the last computed blobs (or empty if process() has not yet been called)
+        boost::python::list blobs() const;
+
+        //! Access the width and height of a given blob, accounting for NCHW or NHWC
+        cv::Size blobsize(size_t num) const;
+        
+        //! Convert coordinates from blob back to original image
+        /*! Given coords x,y should be in [0..w-1]x[0..h-1] where w,h are the blob's width and height. This is useful to
+            convert detected boxes back into original input coordinates. */
+        cv::Point2f b2i(float x, float y, size_t blobnum);
+
+        //! Get unscaled crop rectangle in image coordinates
+        /*! This is useful to display an image overlay on top of the input image. */
+        cv::Rect getUnscaledCropRect(size_t blobnum);
+        
+      private:
+        PreProcessor * itsPP;
+    };
+    
+  } // namespace dnn
+} // namespace jevois

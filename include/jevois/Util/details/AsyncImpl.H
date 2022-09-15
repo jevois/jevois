@@ -20,6 +20,7 @@
 #ifdef JEVOIS_PRO
 
 #include <jevois/Util/ThreadPool.H>
+#include <stdexcept>
 
 // ####################################################################################################
 #ifdef JEVOIS_PLATFORM
@@ -93,3 +94,39 @@ jevois::async_little(Function && f, Args &&... args)
 }
 
 #endif // JEVOIS_PRO
+
+// ###################################################################################################
+template <typename T> inline
+std::vector<T> jevois::joinall(std::vector<std::future<T>> & fvec, bool multiline)
+{
+  std::vector<T> ret;
+  std::string errors;
+  std::string prefix = multiline ? "" : "[";
+  std::string postfix = multiline ? "\n" : "]";
+  
+  for (auto & f : fvec)
+    try { ret.emplace_back(f.get()); }
+    catch (std::exception const & e) { errors += prefix + e.what() + postfix; }
+    catch (...) { errors += prefix + "Unknown error" + postfix; }
+  
+  if (errors.empty() == false) throw std::runtime_error(errors);
+
+  return ret; // return value will be move-constructed from ret
+}
+
+// ###################################################################################################
+inline void jevois::joinall(std::vector<std::future<void>> & fvec, bool multiline)
+{
+  std::string errors;
+  std::string prefix = multiline ? "" : "[";
+  std::string postfix = multiline ? "\n" : "]";
+
+  for (auto & f : fvec)
+    try { f.get(); }
+    catch (std::exception const & e) { errors += prefix + e.what() + postfix; }
+    catch (...) { errors += prefix + "Unknown error" + postfix; }
+  
+  if (errors.empty() == false) throw std::runtime_error(errors);
+}
+  
+

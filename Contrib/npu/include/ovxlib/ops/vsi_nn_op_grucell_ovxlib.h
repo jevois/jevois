@@ -25,6 +25,11 @@
 #define _VSI_NN_OP_GRUCELL_OVXLIB_H
 
 #include "vsi_nn_types.h"
+#include "vsi_nn_op_grucell_ovxlib.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define GRUCELL_RZ_GATE_COUNT 2
 
@@ -40,12 +45,21 @@ enum
     GRUCELL_INPUT_WEIGHT_H2R   = 4,
     GRUCELL_INPUT_WEIGHT_H2Z   = 5,
 
-    GRUCELL_INPUT_BIAS_R       = 6,
-    GRUCELL_INPUT_BIAS_Z       = 7,
+    GRUCELL_INPUT_BIAS_I2R     = 6,
+    GRUCELL_INPUT_BIAS_I2Z     = 7,
 
-    GRUCELL_INPUT_WEIGHT_I2C   = 8,
-    GRUCELL_INPUT_WEIGHT_R2C   = 9,
-    GRUCELL_INPUT_BIAS_C       = 10,
+    GRUCELL_INPUT_BIAS_H2R     = 8,
+    GRUCELL_INPUT_BIAS_H2Z     = 9,
+
+    GRUCELL_INPUT_WEIGHT_I2C   = 10,
+    GRUCELL_INPUT_WEIGHT_H2C   = 11,
+
+    GRUCELL_INPUT_BIAS_I2C     = 12,
+    GRUCELL_INPUT_BIAS_H2C     = 13,
+
+    GRUCELL_INPUT_COND_RESET   = 14,
+    GRUCELL_INPUT_COND_UPDATE  = 15,
+    GRUCELL_INPUT_COND_CANDIDATE    = 16,
 
     GRUCELL_INPUT_CNT,
 
@@ -62,9 +76,13 @@ enum
     GRUCELL_QUANTIZE_PARAM_H2R,
     GRUCELL_QUANTIZE_PARAM_H2Z,
     GRUCELL_QUANTIZE_PARAM_I2C,
-    GRUCELL_QUANTIZE_PARAM_R2C,
+    GRUCELL_QUANTIZE_PARAM_H2C,
 
-    GRUCELL_QUANTIZE_PARAM_COUNT
+    GRUCELL_QUANTIZE_PARAM_COUNT,
+
+    GRUCELL_CUDNN_QUANTIZE_PARAM_INPUT = 0,
+    GRUCELL_CUDNN_QUANTIZE_PARAM_HIDDEN,
+    GRUCELL_CUDNN_QUANTIZE_PARAM_COUNT
 };
 
 enum
@@ -75,19 +93,22 @@ enum
     GRUCELL_GATE_COUNT
 };
 
-typedef struct _vsi_nn_grucell_ovxlib_lcl_data_t
-{
-    vsi_nn_activation_e gate_activation;
-    vsi_nn_activation_e candidate_activation;
-    vsi_bool multi_batch;
-} vsi_nn_grucell_ovxlib_lcl_data_t;
-
 typedef struct _vsi_nn_grucell_ovxlib_param
 {
-    vsi_nn_grucell_ovxlib_lcl_data_t local;
-
+    struct _grucell_ovxlib_local_data_t* local;
+    uint32_t num_units;
     vsi_nn_activation_e activation;
+    vsi_nn_activation_e recurrent_activation;
+    uint32_t linear_before_reset;
+    vsi_bool use_cudnn_implementation;
+    uint32_t cudnn_implementation_version;
     vsi_nn_dtype_t internal_dtype[GRUCELL_QUANTIZE_PARAM_COUNT];
 } vsi_nn_grucell_ovxlib_param;
+_compiler_assert(offsetof(vsi_nn_grucell_ovxlib_param, local) == 0, \
+    vsi_nn_vsi_nn_grucell_ovxlib_h );
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

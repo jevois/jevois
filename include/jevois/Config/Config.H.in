@@ -84,6 +84,9 @@
 //! Directory where custom DNN models are stored:
 #define JEVOIS_CUSTOM_DNN_PATH JEVOIS_SHARE_PATH "/dnn/custom"
 
+//! Directory where python pre/net/post DNN processors are stored:
+#define JEVOIS_PYDNN_PATH JEVOIS_SHARE_PATH "/pydnn"
+
 //! URL where custom converted DNN models can be downloaded:
 #define JEVOIS_CUSTOM_DNN_URL "https://jevois.usc.edu/mc/d"
 
@@ -113,7 +116,7 @@
 #else
 #define JEVOIS_OPENCV_PREFIX "@JEVOIS_HOST_OPENCV_PREFIX@"
 #define JEVOIS_OPENCV_PYTHON_PATH JEVOIS_OPENCV_PREFIX "/lib/python" JEVOIS_MACRO_STRING(JEVOIS_PYTHON_MAJOR) "." \
-  JEVOIS_MACRO_STRING(JEVOIS_PYTHON_MINOR) "/dist-packages"
+  JEVOIS_MACRO_STRING(JEVOIS_PYTHON_MINOR) "/site-packages"
 #endif
 
 // Doxygen does not like the macros below, so replace them by no-ops when compiling the documentation:

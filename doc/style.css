@@ -72,7 +72,10 @@ h1,h2,h3,h4,h5,h6 {
 
 
 
-
+/* increase padding of code fragments */
+div.fragment {
+    padding: 6px 6px;
+}
 
 code, kbd, pre, samp {
     font-family: Menlo,Monaco,Consolas,"Courier New",monospace
@@ -83,7 +86,7 @@ em {
 }
 
 code {
-    padding: 2px 4px;
+    padding: 6px 6px;
     font-size: 90%;
     color: #c7254e;
     background-color: #e9e2e4;
@@ -153,5 +156,62 @@ strong.jvinv {
 }
 .videothumb:hover:before {
     color: #eee;
+}
+
+/* for benchmark table */
+
+td.jvpipe {
+    color: navy;
+    font-weight: bold;
+    vertical-align: middle;
+    text-align: left;
+    white-space: nowrap;
+}
+
+td.jvnetin {
+    color: #006000;
+    vertical-align: middle;
+    text-align: left;
+    white-space: nowrap;
+}
+
+td.jvnetout {
+    color: #006000;
+    vertical-align: middle;
+    text-align: left;
+    white-space: nowrap;
+}
+
+td.jvprestats {
+    vertical-align: middle;
+    text-align: center;
+    white-space: nowrap;
+}
+
+td.jvnetstats {
+    vertical-align: middle;
+    text-align: center;
+    white-space: nowrap;
+}
+
+td.jvpststats {
+    vertical-align: middle;
+    text-align: center;
+    white-space: nowrap;
+}
+
+td.jvtotstats {
+    vertical-align: middle;
+    text-align: center;
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+td.jvfps {
+    color: red;
+    vertical-align: middle;
+    text-align: center;
+    font-weight: bolder;
+    white-space: nowrap;
 }
 

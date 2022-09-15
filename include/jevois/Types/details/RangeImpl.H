@@ -159,10 +159,10 @@ void jevois::paramStringToVal(std::string const & valstring, jevois::Range<T> & 
   if (splitVec.size() != 2) throw std::range_error("Error parsing Range from [" + valstring + "]: missing '...'");
 
   T mi = 0, ma = 0;
-  try { jevois::paramStringToVal<T>(splitVec[0], mi); }
+  try { jevois::paramStringToVal(splitVec[0], mi); }
   catch (...) { throw std::range_error("Error parsing Range from [" + valstring + "]: invalid min value"); }
 
-  try { jevois::paramStringToVal<T>(splitVec[1], ma); }
+  try { jevois::paramStringToVal(splitVec[1], ma); }
   catch (...) { throw std::range_error("Error parsing Range from [" + valstring + "]: invalid max value"); }
 
   result = jevois::Range<T>(mi, ma);

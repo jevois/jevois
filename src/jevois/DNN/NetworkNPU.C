@@ -20,12 +20,9 @@
 #include <jevois/DNN/NetworkNPU.H>
 #include <jevois/Util/Utils.H>
 #include <jevois/DNN/Utils.H>
+#include <vsi_nn_version.h>
 
-// Those are from vnn_inceptionv3.h:
 #define VNN_APP_DEBUG (FALSE)
-#define VNN_VERSION_MAJOR 1
-#define VNN_VERSION_MINOR 1
-#define VNN_VERSION_PATCH 21
 
 /*-------------------------------------------
                    Macros
@@ -38,7 +35,7 @@
   } while(0)
 
 #define NEW_VIRTUAL_TENSOR(_id, _attr, _dtype) do {                     \
-    memset(_attr.size, 0, VSI_NN_MAX_DIM_NUM * sizeof(uint32_t));       \
+    memset(_attr.size, 0, VSI_NN_MAX_DIM_NUM * sizeof(vsi_size_t));     \
     _attr.dim_num = VSI_NN_DIM_AUTO;                                    \
     _attr.vtl = !VNN_APP_DEBUG;                                         \
     _attr.is_const = FALSE;                                             \
@@ -93,8 +90,7 @@ void jevois::dnn::NetworkNPU::create_tensors(std::vector<vsi_nn_tensor_attr_t> &
 {
   if (attrs.empty()) LFATAL("Invalid empty " << (isin ? "in" : "out") << "tensors specification");
 
-  int tnum = 0;
-  for (vsi_nn_tensor_attr_t & attr : attrs)
+  for (int tnum = 0; vsi_nn_tensor_attr_t & attr : attrs)
   {
     // Allocate the tensor:
     vsi_nn_tensor_id_t id;
@@ -129,10 +125,10 @@ jevois::dnn::NetworkNPU::~NetworkNPU()
 void jevois::dnn::NetworkNPU::freeze(bool doit)
 {
   dataroot::freeze(doit);
-  config::freeze(doit);
   model::freeze(doit);
   intensors::freeze(doit);
   outtensors::freeze(doit);
+  ovxver::freeze(doit);
 }
 
 // ####################################################################################################
@@ -153,9 +149,19 @@ void jevois::dnn::NetworkNPU::load()
   // Create graph:
   itsGraph = vsi_nn_CreateGraph(itsCtx, numin + numout * 2, 1);
   if (itsGraph == NULL) LFATAL("Graph creation failed");
-  vsi_nn_SetGraphVersion(itsGraph, VNN_VERSION_MAJOR, VNN_VERSION_MINOR, VNN_VERSION_PATCH);
+
+  if (ovxver::get().empty() == false)
+  {
+    std::vector<std::string> tok = jevois::split(ovxver::get(), "\\.");
+    if (tok.size() != 3) LFATAL("Malformed ovxver version [" << ovxver::get() <<"] -- should be x.y.z");
+    vsi_nn_SetGraphVersion(itsGraph, std::stoi(tok[0]), std::stoi(tok[1]), std::stoi(tok[2]));
+  }
+  else
+    vsi_nn_SetGraphVersion(itsGraph, VSI_NN_VERSION_MAJOR, VSI_NN_VERSION_MINOR, VSI_NN_VERSION_PATCH);
+
   vsi_nn_SetGraphInputs(itsGraph, NULL, numin);
   vsi_nn_SetGraphOutputs(itsGraph, NULL, numout);
+
   LINFO("Created graph with " << numin << " inputs and " << numout << " outputs");
   
   // Get NBG file name:
@@ -173,8 +179,20 @@ void jevois::dnn::NetworkNPU::load()
   
   // Setup the graph:
   auto status = vsi_nn_SetupGraph(itsGraph, FALSE);
-  if (status != VSI_SUCCESS) LFATAL("Failed to setup graph");
+  if (status != VSI_SUCCESS)
+    LFATAL("Failed to setup graph -- Possible causes:\n"
+           "- Your source network uses unsupported layer types?\n"
+           "- Wrong NPU model? Check --optimize VIPNANOQI_PID0X88\n"
+           "- Wrong NPU SDK version? Running ovxlib " <<
+           VSI_NN_VERSION_MAJOR << '.' << VSI_NN_VERSION_MINOR << '.' << VSI_NN_VERSION_PATCH);
   LINFO("Graph ready.");
+
+  if (verifygraph::get())
+  {
+    status = vsi_nn_VerifyGraph(itsGraph);
+    if (status != VSI_SUCCESS) LFATAL("Graph verification failed");
+    else LINFO("Graph verification ok");
+  }
 }
 
 // ####################################################################################################
@@ -191,75 +209,19 @@ std::vector<cv::Mat> jevois::dnn::NetworkNPU::doprocess(std::vector<cv::Mat> con
     // Get the input tensor:
     vsi_nn_tensor_t * tensor = vsi_nn_GetTensor(itsGraph, itsGraph->input.tensors[b]);
     if (tensor == nullptr) LFATAL("Network does not have input tensor " << b);
-    auto const & attr = tensor->attr;
+    auto const & iattr = tensor->attr;
 
     // Check that blob and tensor are a complete match:
-    bool ok = blob.channels() == 1 &&
-      blob.depth() == jevois::dnn::vsi2cv(tensor->attr.dtype.vx_type) &&
-      uint32_t(blob.size.dims()) == attr.dim_num;
-    if (ok)
-      for (size_t i = 0; i < attr.dim_num; ++i)
-        if (int(attr.size[attr.dim_num - 1 - i]) != blob.size[i]) { ok = false; break; }
-    
-    if (ok == false)
+    if (jevois::dnn::attrmatch(iattr, blob) == false)
       LFATAL("Input " << b << ": received " << jevois::dnn::shapestr(blob) <<
-             " but want: " << jevois::dnn::shapestr(attr));
+             " but want: " << jevois::dnn::shapestr(iattr));
 
     // Copy blob data to tensor:
     auto status = vsi_nn_CopyDataToTensor(itsGraph, tensor, (uint8_t *)blob.data);
     if (status != VSI_SUCCESS) LFATAL("Error setting input tensor: " << status);
-    info.emplace_back("- Copied " + jevois::dnn::shapestr(blob) + " to input tensor " + std::to_string(b));
+
+    info.emplace_back("- In " + std::to_string(b) + ": " + jevois::dnn::attrstr(iattr));
   }
-    /*
-    // Convert blob to dtype if needed:
-    switch (blob.type())
-    {
-    case CV_8U:
-    {
-      if (tensor->attr.dtype.vx_type == VSI_NN_TYPE_UINT8)
-      {
-        auto status = vsi_nn_CopyDataToTensor(itsGraph, tensor, blob.data);
-        if (status != VSI_SUCCESS) LFATAL("Error setting input tensor: " << status);
-        info.emplace_back("- Copied UINT8 data to input tensor");
-      }
-      else if (tensor->attr.dtype.vx_type == VSI_NN_TYPE_INT8)
-      {
-        uint8_t const * bdata = (uint8_t const *)blob.data;
-        uint32_t sz = vsi_nn_GetElementNum(tensor);
-        uint32_t stride = vsi_nn_TypeGetBytes(tensor->attr.dtype.vx_type);
-        int8_t * data = (int8_t *)malloc(stride * sz * sizeof(uint8_t));
-        int const shift = 8 - tensor->attr.dtype.fl;
-        for (uint32_t i = 0; i < sz; i++) data[i] = bdata[i] >> shift;
-        
-        // Copy the Pre-processed data to input tensor:
-        auto status = vsi_nn_CopyDataToTensor(itsGraph, tensor, (uint8_t *)data);
-        free(data);
-        if (status != VSI_SUCCESS) LFATAL("Error setting input tensor: " << status);
-        info.emplace_back("- Converted UINT8 input tensor to INT8");
-      }
-    }
-    break;
-    
-    case CV_32F:
-    {
-      float const * fdata = (float const *)blob.data;
-      uint32_t sz = vsi_nn_GetElementNum(tensor);
-      uint32_t stride = vsi_nn_TypeGetBytes(tensor->attr.dtype.vx_type);
-      uint8_t * data = (uint8_t *)malloc(stride * sz * sizeof(uint8_t));
-      for (uint32_t i = 0; i < sz; i++) vsi_nn_Float32ToDtype(fdata[i], &data[stride * i], &tensor->attr.dtype);
-      
-      // Copy the Pre-processed data to input tensor:
-      auto status = vsi_nn_CopyDataToTensor(itsGraph, tensor, data);
-      free(data);
-      if (status != VSI_SUCCESS) LFATAL("Error setting input tensor: " << status);
-      info.emplace_back("- Converted FLOAT input tensor to NPU data type");
-    }
-    break;
-    
-    default: LFATAL("FIXME unsupported input blob type");
-    }
-  }
-    */
     
   // Ok, let's run the network:
   auto status = vsi_nn_RunGraph(itsGraph);
@@ -268,63 +230,29 @@ std::vector<cv::Mat> jevois::dnn::NetworkNPU::doprocess(std::vector<cv::Mat> con
   
   // Collect the outputs:
   std::vector<cv::Mat> outs;
-  if (flattenoutputs::get())
+  for (uint32_t i = 0; i < itsGraph->output.num; ++i)
   {
-    // Concatenate all outputs into one big float vector:
-    uint32_t nout = itsGraph->output.num;
-    uint32_t sz[nout]; // total number of elements in each output
-    uint32_t totsz = 0; // total number of elements over all outputs
-    for (size_t i = 0; i < nout; ++i)
-    {
-      vsi_nn_tensor_t * tensor = vsi_nn_GetTensor(itsGraph, itsGraph->output.tensors[i]);
-      sz[i] = 1;
-      for (uint32_t j = 0; j < tensor->attr.dim_num; ++j) sz[i] *= tensor->attr.size[j];
-      totsz += sz[i];
-    }
-    
-    cv::Mat out(1, totsz, CV_32F);
-    float * buffer = (float *)out.data;
+    vsi_nn_tensor_t * ot = vsi_nn_GetTensor(itsGraph, itsGraph->output.tensors[i]);
+    vsi_nn_tensor_attr_t const & oattr = ot->attr;
+    uint8_t * tensor_data = (uint8_t *)vsi_nn_ConvertTensorToData(itsGraph, ot);
 
-    for (uint32_t i = 0; i < nout; ++i)
+    try
     {
-      vsi_nn_tensor_t * tensor = vsi_nn_GetTensor(itsGraph, itsGraph->output.tensors[i]);
-      uint32_t stride = vsi_nn_TypeGetBytes(tensor->attr.dtype.vx_type);
-      uint8_t * tensor_data = (uint8_t *)vsi_nn_ConvertTensorToData(itsGraph, tensor);
+      cv::Mat rawout = jevois::dnn::attrmat(oattr, tensor_data);
 
-      // FIXME: i guess this should be replaced by more general vsi_nn_DtypeToFloat32 like below
-      float fl = pow(2.0F, -tensor->attr.dtype.fl);
-      for (uint32_t j = 0; j < sz[i]; j++) {
-        int val = tensor_data[stride*j];
-        int tmp1 = (val >= 128) ? val-256 : val;
-        *buffer++ = tmp1 * fl;
+      if (dequant::get())
+      {
+        outs.emplace_back(jevois::dnn::dequantize(rawout, oattr));
+        info.emplace_back("- Out " + std::to_string(i) + ": " + jevois::dnn::attrstr(oattr) + " -> 32F");
       }
-      vsi_nn_Free(tensor_data);
-      info.emplace_back("- Converted output tensor " + std::to_string(i) + " to FLOAT");
-    }
-    info.emplace_back("- Concatenated " + std::to_string(nout) + " outputs to 1x" + std::to_string(totsz) + " FLOAT");
-    outs.emplace_back(out);
-  }
-  else
-  {
-    // Convert all outputs to one float Mat each:
-    for (uint32_t i = 0; i < itsGraph->output.num; ++i)
-    {
-      vsi_nn_tensor_t * ot = vsi_nn_GetTensor(itsGraph, itsGraph->output.tensors[i]);
-      size_t const ndim = ot->attr.dim_num;
-      int cvdims[ndim]; uint32_t sz = 1;
-      for (uint32_t i = 0; i < ndim; ++i) { cvdims[ndim - 1 - i] = ot->attr.size[i]; sz *= ot->attr.size[i]; }
-      cv::Mat out(ndim, cvdims, CV_32F);
-      
-      uint32_t stride = vsi_nn_TypeGetBytes(ot->attr.dtype.vx_type);
-      uint8_t * tensor_data = (uint8_t *)vsi_nn_ConvertTensorToData(itsGraph, ot);
-      float * buffer = (float *)out.data;
-      
-      for (uint32_t i = 0; i < sz; ++i) vsi_nn_DtypeToFloat32(&tensor_data[stride * i], &buffer[i], &ot->attr.dtype);
-      
-      vsi_nn_Free(tensor_data);
-      outs.emplace_back(out);
-      info.emplace_back("- Converted output tensor " + std::to_string(i) + " to FLOAT");
-    }
+      else
+      {
+        outs.emplace_back(rawout.clone());
+        info.emplace_back("- Out " + std::to_string(i) + ": " + jevois::dnn::attrstr(oattr));
+      }
+    } catch (...) { vsi_nn_Free(tensor_data); jevois::warnAndRethrowException(); }
+    
+    vsi_nn_Free(tensor_data);
   }
 
   return outs;

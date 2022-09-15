@@ -40,6 +40,7 @@ typedef struct _vsi_nn_deconv_param
     uint32_t   pad_type;
     uint32_t   weights;
     uint32_t   group;
+    uint32_t   output_padding[2];
 } vsi_nn_deconv_param;
 
 #ifdef __cplusplus

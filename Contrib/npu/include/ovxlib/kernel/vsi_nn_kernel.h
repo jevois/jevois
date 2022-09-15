@@ -145,7 +145,7 @@ typedef struct
 typedef struct
 {
     vsi_nn_kernel_dtype_e       dtype;
-    vsi_int_array_t           * shape;
+    vsi_size_array_t           * shape;
     vsi_nn_kernel_quant_type_e  quant;
     union
     {
@@ -242,6 +242,12 @@ vsi_bool vsi_nn_kernel_param_add_buffer
     ( vsi_nn_kernel_param_t * params, const char * key, void * buf, size_t size);
 
 void * vsi_nn_kernel_param_get_buffer
+    ( const vsi_nn_kernel_param_t * params, const char * key, size_t * size);
+
+vsi_bool vsi_nn_kernel_param_add_const_buffer
+    ( vsi_nn_kernel_param_t * params, const char * key, const void * buf, size_t size);
+
+const void * vsi_nn_kernel_param_get_const_buffer
     ( const vsi_nn_kernel_param_t * params, const char * key, size_t * size);
 
 /** Kernel register */
@@ -389,8 +395,8 @@ void vsi_nn_kernel_tensor_release
 vsi_nn_kernel_tensor_t vsi_nn_kernel_tensor_reshape
     (
     vsi_nn_kernel_tensor_t tensor,
-    int32_t * shape,
-    uint32_t rank
+    vsi_size_t * shape,
+    vsi_size_t rank
     );
 
 vsi_status vsi_nn_kernel_node_pass_param
@@ -501,6 +507,42 @@ static inline vsi_nn_kernel_dtype_e vsi_nn_kernel_map_dtype
     return I8;
 } /* vsi_nn_kernel_map_dtype() */
 
+static inline  vsi_nn_type_e vsi_nn_dtype_map_kernel
+    (
+    vsi_nn_kernel_dtype_e dtype
+    )
+{
+    switch( dtype )
+    {
+    case I8:
+        return VSI_NN_TYPE_INT8;
+    case BOOL8:
+        return VSI_NN_TYPE_BOOL8;
+    case I16:
+        return VSI_NN_TYPE_INT16;
+    case I32:
+        return VSI_NN_TYPE_INT32;
+    case I64:
+        return VSI_NN_TYPE_INT64;
+    case U8:
+        return VSI_NN_TYPE_UINT8;
+    case U16:
+        return VSI_NN_TYPE_UINT16;
+    case U32:
+        return VSI_NN_TYPE_UINT32;
+    case F16:
+        return VSI_NN_TYPE_FLOAT16;
+    case BF16:
+        return VSI_NN_TYPE_BFLOAT16;
+    case F32:
+        return VSI_NN_TYPE_FLOAT32;
+    default:
+        VSILOGE("error data type %d", dtype);
+        break;
+    }
+    return VSI_NN_TYPE_INT8;
+} /* vsi_nn_kernel_map_dtype() */
+
 static inline size_t vsi_nn_kernel_dtype_get_bytes
     (
     vsi_nn_kernel_dtype_e dtype
@@ -552,6 +594,10 @@ vsi_nn_kernel_node_t  vsi_nn_kernel_create_node
     vsi_nn_graph_t * graph,
     vsi_nn_kernel_t * kernel
     );
+
+vsi_status vsi_nn_kernel_node_set_border
+    (vsi_nn_kernel_node_t node,
+    vx_border_t* border);
 
 vsi_nn_kernel_scalar_t vsi_nn_kernel_scalar_create
     (
@@ -624,7 +670,7 @@ vsi_status vsi_nn_kernel_register
     );
 
 vsi_bool vsi_nn_kernel_gpu_check_shape
-    ( const int32_t * shape, size_t rank );
+    ( const vsi_size_t * shape, vsi_size_t rank );
 
 vsi_status vsi_nn_kernel_gpu_add_param
     (
@@ -692,45 +738,49 @@ vsi_status vsi_nn_kernel_tensor_write
     size_t size
     );
 
-static inline size_t vsi_nn_kernel_tensor_attr_get_size
+static inline vsi_size_t vsi_nn_kernel_tensor_attr_get_size
     ( const vsi_nn_kernel_tensor_attr_t * attr )
 {
     if( !attr )
     {
         return 0;
     }
-    return vsi_nn_shape_get_size( attr->shape->data, attr->shape->size );
+    return vsi_nn_shape_get_size( attr->shape->data, (vsi_size_t)attr->shape->size );
 } /* vsi_nn_kernel_tensor_attr_get_size() */
 
-static inline size_t vsi_nn_kernel_tensor_attr_get_bytes
+static inline vsi_size_t vsi_nn_kernel_tensor_attr_get_bytes
     ( const vsi_nn_kernel_tensor_attr_t * attr )
 {
-    size_t size;
-    size_t type_bytes;
+    vsi_size_t size;
+    vsi_size_t type_bytes;
     if( !attr )
     {
         return 0;
     }
     size = vsi_nn_kernel_tensor_attr_get_size( attr );
-    type_bytes = vsi_nn_kernel_dtype_get_bytes( attr->dtype );
+    type_bytes = (vsi_size_t)vsi_nn_kernel_dtype_get_bytes( attr->dtype );
     return size * type_bytes;
 } /* vsi_nn_kernel_tensor_attr_get_bytes() */
 
 static inline void vsi_nn_kernel_tensor_attr_get_stride
-    ( const vsi_nn_kernel_tensor_attr_t * attr, size_t * out_stride)
+    ( const vsi_nn_kernel_tensor_attr_t * attr, vsi_size_t * out_stride)
 {
     if( !attr || !out_stride )
     {
         return;
     }
-    vsi_nn_shape_get_stride( attr->shape->data, attr->shape->size, out_stride );
+    vsi_nn_shape_get_stride( attr->shape->data, (vsi_size_t)attr->shape->size, out_stride );
 } /* vsi_nn_kernel_tensor_attr_get_size() */
 
 static inline vsi_bool vsi_nn_kernel_tensor_attr_is_quantized
     ( const vsi_nn_kernel_tensor_attr_t * attr )
 {
     return ( attr && attr->quant > VSI_NN_KERNEL_QUANT_NONE
-            && attr->quant < VSI_NN_KERNEL_QUANT_TYPE_NUM );
+            && attr->quant < VSI_NN_KERNEL_QUANT_TYPE_NUM
+            && attr->dtype != F16
+            && attr->dtype != BF16
+            && attr->dtype != F32
+            && attr->dtype != F64 );
 } /* vsi_nn_kernel_tensor_attr_is_quantized() */
 
 //TODO: Make vsi_nn_kernel_dtype_e to public and move dtype functions to vsi_nn_dtype.h
@@ -769,7 +819,7 @@ vsi_bool vsi_nn_dtype_convert_float_to_quantize_symm_perchannel
     (
     const float * buffer, size_t size,
     vsi_nn_kernel_dtype_e dtype,
-    const int32_t * shape, size_t rank,
+    const vsi_size_t * shape, size_t rank,
     const float * scale, size_t scale_size,
     const int32_t * zero_point, size_t zero_point_size,
     int32_t channel_dim,
@@ -812,7 +862,7 @@ vsi_bool vsi_nn_dtype_convert_quantize_symm_perchannel_to_float
     (
     const void * buffer, size_t size,
     vsi_nn_kernel_dtype_e dtype,
-    const int32_t * shape, size_t rank,
+    const vsi_size_t * shape, size_t rank,
     const float * scale, size_t scale_size,
     const int32_t * zero_point, size_t zero_point_size,
     int32_t channel_dim,
@@ -823,9 +873,9 @@ vsi_nn_tensor_t* vsi_nn_pad_tensor
     (
     vsi_nn_graph_t  * graph,
     vsi_nn_tensor_t * input,
-    int32_t * pad_front,
-    int32_t * pad_end,
-    size_t pad_size,
+    vsi_size_t * pad_front,
+    vsi_size_t * pad_end,
+    vsi_size_t pad_size,
     vsi_nn_pad_mode_e mode,
     float pad_value
     );
@@ -837,6 +887,27 @@ vsi_nn_tensor_t* vsi_nn_merge_input_zeropoint_to_bias
     vsi_nn_tensor_t * weight,
     vsi_nn_tensor_t * bias
     );
+
+static inline const char* vsi_nn_kernel_type_str
+    (
+    vsi_nn_kernel_type_e type
+    )
+{
+    switch( type )
+    {
+    case VSI_NN_KERNEL_TYPE_CPU:
+        return "CPU";
+    case VSI_NN_KERNEL_TYPE_EVIS:
+        return "EVIS";
+    case VSI_NN_KERNEL_TYPE_CL:
+        return "CL";
+    case VSI_NN_KERNEL_TYPE_VX:
+        return "OPENVX";
+    default:
+        break;
+    }
+    return "None";
+} /* vsi_nn_kernel_type_str() */
 
 __END_DECLS
 

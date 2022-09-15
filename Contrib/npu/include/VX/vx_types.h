@@ -282,7 +282,7 @@ typedef struct _vx_array *vx_array;
  * \ingroup group_object_array
  */
 typedef struct _vx_object_array *vx_object_array;
-
+ 
  /*! \brief The multidimensional data object (Tensor).
  * \see vxCreateTensor
  * \ingroup group_object_tensor
@@ -374,7 +374,7 @@ enum vx_type_e {
     VX_TYPE_COORDINATES2D   = 0x022,/*!< \brief A <tt>\ref vx_coordinates2d_t</tt>. */
     VX_TYPE_COORDINATES3D   = 0x023,/*!< \brief A <tt>\ref vx_coordinates3d_t</tt>. */
     VX_TYPE_COORDINATES2DF  = 0x024,/*!< \brief A <tt>\ref vx_coordinates2df_t</tt>. */
-
+    
     /* Reserve enums that are defined in khronos extensions
         NN extensions:
         VX_TYPE_NN_CONVOLUTION_PARAMS     = 0x025,
@@ -387,8 +387,8 @@ enum vx_type_e {
     VX_TYPE_HOUGH_LINES_PARAMS               = 0x029, /*!< \brief A <tt>\ref vx_hough_lines_p_t</tt>. */
     VX_TYPE_LINE_2D                          = 0x02A, /*!< \brief A <tt>\ref vx_line2d_t</tt>. */
     VX_TYPE_TENSOR_MATRIX_MULTIPLY_PARAMS    = 0x02B, /*!< \brief A <tt>\ref vx_tensor_matrix_multiply_params_t</tt>. */
-
-
+    
+    
     VX_TYPE_USER_STRUCT_START    = 0x100,/*!< \brief A user-defined struct base index.*/
     VX_TYPE_VENDOR_STRUCT_START  = 0x400,/*!< \brief A vendor-defined struct base index.*/
     VX_TYPE_KHRONOS_OBJECT_START = 0x800,/*!< \brief A Khronos defined object base index. */
@@ -444,6 +444,11 @@ enum vx_type_e {
  * \ingroup group_basic_features
  */
 enum vx_status_e {
+    VX_ERROR_VENDOR_VSI_END             = -2000, /*!< \brief A vendor defined error status end base. */
+    /* add new error here*/
+    VX_ERROR_CANCEL_JOB                 = -1001, /*!< \brief Indicates that a VIP job was cancelled. */
+    VX_ERROR_VENDOR_VSI_START           = -1000, /*!< \brief A vendor defined error status start base. */
+
     VX_STATUS_MIN                       = -25,/*!< \brief Indicates the lower bound of status codes in VX. Used for bounds checks only. */
     /* add new codes here */
     VX_ERROR_REFERENCE_NONZERO          = -24,/*!< \brief Indicates that an operation did not complete due to a reference count being non-zero. */
@@ -635,11 +640,11 @@ enum vx_enum_e {
     VX_ENUM_NN_POOLING_TYPE    = 0x1B,
     VX_ENUM_NN_NORMALIZATION_TYPE    = 0x1C,
     VX_ENUM_NN_ACTIVATION_FUNCTION_TYPE    = 0x1D,
-*/
+*/    
 
 /* Classifier extension
-    VX_ENUM_CLASSIFIER_MODEL= 0x1E,
-*/
+    VX_ENUM_CLASSIFIER_MODEL= 0x1E, 
+*/    
 /* IX extension
     VX_ENUM_IX_USE          = 0x1F, !< \brief How to use references in import and export. */
     VX_ENUM_SCALAR_OPERATION= 0X20  /*!< \brief Scalar operation list. */
@@ -718,6 +723,8 @@ enum vx_graph_state_e {
    VX_GRAPH_STATE_ABANDONED = VX_ENUM_BASE(VX_ID_KHRONOS, VX_ENUM_GRAPH_STATE) + 0x3,
    /*! \brief The graph execution is completed and the graph is not scheduled for execution */
    VX_GRAPH_STATE_COMPLETED = VX_ENUM_BASE(VX_ID_KHRONOS, VX_ENUM_GRAPH_STATE) + 0x4,
+   /*! \brief The graph execution was cancelled */
+   VX_GRAPH_STATE_CANCELLED = VX_ENUM_BASE(VX_ID_KHRONOS, VX_ENUM_GRAPH_STATE) + 0x5,
 };
 
 /*! \brief The graph attributes list.
@@ -1021,7 +1028,7 @@ enum vx_image_attribute_e {
     /*! \brief Queries if an image is uniform. Read-only. Use a <tt>\ref vx_bool</tt> parameter */
     VX_IMAGE_IS_UNIFORM = VX_ATTRIBUTE_BASE(VX_ID_KHRONOS, VX_TYPE_IMAGE) + 0x8,
     /*! \brief Queries the image uniform value if any. Read-only. Use a <tt>\ref vx_pixel_value_t</tt> parameter. */
-    VX_IMAGE_UNIFORM_VALUE = VX_ATTRIBUTE_BASE(VX_ID_KHRONOS, VX_TYPE_IMAGE) + 0x9,
+    VX_IMAGE_UNIFORM_VALUE = VX_ATTRIBUTE_BASE(VX_ID_KHRONOS, VX_TYPE_IMAGE) + 0x9,    
 };
 
 /*! \brief The scalar attributes list.
@@ -1044,7 +1051,7 @@ enum vx_scalar_operation_e {
     /*! \brief logical exclusive or. */
     VX_SCALAR_OP_XOR = VX_ENUM_BASE(VX_ID_KHRONOS, VX_ENUM_SCALAR_OPERATION) + 0x2,
     /*! \brief logical nand. */
-    VX_SCALAR_OP_NAND = VX_ENUM_BASE(VX_ID_KHRONOS, VX_ENUM_SCALAR_OPERATION) + 0x3,
+    VX_SCALAR_OP_NAND = VX_ENUM_BASE(VX_ID_KHRONOS, VX_ENUM_SCALAR_OPERATION) + 0x3,  
     /*! \brief comparison (equal). */
     VX_SCALAR_OP_EQUAL = VX_ENUM_BASE(VX_ID_KHRONOS, VX_ENUM_SCALAR_OPERATION) + 0x4,
     /*! \brief comparison (not equal). */
@@ -1052,13 +1059,13 @@ enum vx_scalar_operation_e {
     /*! \brief comparison (less than). */
     VX_SCALAR_OP_LESS = VX_ENUM_BASE(VX_ID_KHRONOS, VX_ENUM_SCALAR_OPERATION) + 0x6,
     /*! \brief comparison (less than or equal to). */
-    VX_SCALAR_OP_LESSEQ = VX_ENUM_BASE(VX_ID_KHRONOS, VX_ENUM_SCALAR_OPERATION) + 0x7,
+    VX_SCALAR_OP_LESSEQ = VX_ENUM_BASE(VX_ID_KHRONOS, VX_ENUM_SCALAR_OPERATION) + 0x7,  
     /*! \brief comparison (greater than). */
     VX_SCALAR_OP_GREATER = VX_ENUM_BASE(VX_ID_KHRONOS, VX_ENUM_SCALAR_OPERATION) + 0x8,
     /*! \brief comparison (greater than or equal to). */
-    VX_SCALAR_OP_GREATEREQ = VX_ENUM_BASE(VX_ID_KHRONOS, VX_ENUM_SCALAR_OPERATION) + 0x9,
+    VX_SCALAR_OP_GREATEREQ = VX_ENUM_BASE(VX_ID_KHRONOS, VX_ENUM_SCALAR_OPERATION) + 0x9,  
     /*! \brief arithmetic addition. */
-    VX_SCALAR_OP_ADD = VX_ENUM_BASE(VX_ID_KHRONOS, VX_ENUM_SCALAR_OPERATION) + 0xA,
+    VX_SCALAR_OP_ADD = VX_ENUM_BASE(VX_ID_KHRONOS, VX_ENUM_SCALAR_OPERATION) + 0xA,  
     /*! \brief arithmetic subtraction. */
     VX_SCALAR_OP_SUBTRACT = VX_ENUM_BASE(VX_ID_KHRONOS, VX_ENUM_SCALAR_OPERATION) + 0xB,
     /*! \brief arithmetic multiplication. */
@@ -1066,11 +1073,11 @@ enum vx_scalar_operation_e {
     /*! \brief arithmetic division. */
     VX_SCALAR_OP_DIVIDE = VX_ENUM_BASE(VX_ID_KHRONOS, VX_ENUM_SCALAR_OPERATION) + 0xD,
     /*! \brief arithmetic (modulo operator). */
-    VX_SCALAR_OP_MODULUS = VX_ENUM_BASE(VX_ID_KHRONOS, VX_ENUM_SCALAR_OPERATION) + 0xE,
+    VX_SCALAR_OP_MODULUS = VX_ENUM_BASE(VX_ID_KHRONOS, VX_ENUM_SCALAR_OPERATION) + 0xE,  
     /*! \brief minimum of two scalars. */
     VX_SCALAR_OP_MIN = VX_ENUM_BASE(VX_ID_KHRONOS, VX_ENUM_SCALAR_OPERATION) + 0xF,
     /*! \brief maximum of two scalars. */
-    VX_SCALAR_OP_MAX = VX_ENUM_BASE(VX_ID_KHRONOS, VX_ENUM_SCALAR_OPERATION) + 0x10,
+    VX_SCALAR_OP_MAX = VX_ENUM_BASE(VX_ID_KHRONOS, VX_ENUM_SCALAR_OPERATION) + 0x10,      
 };
 
 /*! \brief The Look-Up Table (LUT) attribute list.
@@ -1241,9 +1248,9 @@ enum vx_tensor_attribute_e
     /*! \brief tensor quantization scale value. */
     VX_TENSOR_SCALE = VX_ATTRIBUTE_BASE(VX_ID_VIVANTE, VX_TYPE_TENSOR) + 0x2,
     /*! \brief the rank of tensor. */
-    VX_TENSOR_RANK = VX_ATTRIBUTE_BASE(VX_ID_VIVANTE, VX_TYPE_TENSOR) + 0x3,
+    VX_TENSOR_RANK = VX_ATTRIBUTE_BASE(VX_ID_VIVANTE, VX_TYPE_TENSOR) + 0x3, 
     /*! \brief the precision of tensor. */
-    VX_TENSOR_PRECISION = VX_ATTRIBUTE_BASE(VX_ID_VIVANTE, VX_TYPE_TENSOR) + 0x4,
+    VX_TENSOR_PRECISION = VX_ATTRIBUTE_BASE(VX_ID_VIVANTE, VX_TYPE_TENSOR) + 0x4,  
     /*! \brief the data lifetime of tensor. */
     VX_TENSOR_LIFETIME = VX_ATTRIBUTE_BASE(VX_ID_VIVANTE, VX_TYPE_TENSOR) + 0x5,
     /*! \brief the value status of tensor. */
@@ -1288,6 +1295,8 @@ enum vx_channel_e {
     VX_CHANNEL_U = VX_ENUM_BASE(VX_ID_KHRONOS, VX_ENUM_CHANNEL) + 0x15,
     /*! \brief Use to extract the Cr/V/Value channel, no matter the byte or packing order. */
     VX_CHANNEL_V = VX_ENUM_BASE(VX_ID_KHRONOS, VX_ENUM_CHANNEL) + 0x16,
+
+    VX_CHANNEL_UV = VX_ENUM_BASE(VX_ID_VIVANTE, VX_ENUM_CHANNEL) + 0x0,
 };
 
 /*! \brief An enumeration of memory import types.
@@ -1508,20 +1517,20 @@ enum vx_round_policy_e {
  */
 enum vx_lbp_format_e
 {
-    /*! \brief local binary pattern
+    /*! \brief local binary pattern 
     */
     VX_LBP  = VX_ENUM_BASE( VX_ID_KHRONOS, VX_ENUM_LBP_FORMAT ) + 0x0,
     /*! \brief Modified Local Binary Patterns
     */
-
+    
     VX_MLBP = VX_ENUM_BASE( VX_ID_KHRONOS, VX_ENUM_LBP_FORMAT ) + 0x1,
-    /*! \brief Uniform local binary pattern
+    /*! \brief Uniform local binary pattern 
     */
     VX_ULBP = VX_ENUM_BASE( VX_ID_KHRONOS, VX_ENUM_LBP_FORMAT ) + 0x2
 };
 
 /*! \brief comparing metrics.
- * \details In all the equations below w and h are width and height of the template image respectively.
+ * \details In all the equations below w and h are width and height of the template image respectively. 
  * \f$ R \f$ is the compare map. \f$ T \f$ is the template image.\f$ I \f$ is the image on which the template is searched.
  * \ingroup group_vision_function_match_template
  */
@@ -1664,11 +1673,11 @@ typedef struct _vx_line2d_t
     vx_float32 end_y;
 } vx_line2d_t;
 
-/*! \brief Matrix Multiply Parameters
+/*! \brief Matrix Multiply Parameters 
  *
  * transpose_input1/input2/input3 : if True the matrix is transposed before the operation, otherwise the matrix is used as is. \n
  * \ingroup group_vision_function_tensor_matrix_multiply
- */
+ */            
 typedef struct _vx_tensor_matrix_multiply_params_t{
     /*! \brief if True the matrix is transposed before the operation, otherwise the matrix is used as is*/
     vx_bool  transpose_input1;
@@ -1781,13 +1790,13 @@ typedef union _vx_pixel_value_t {
  */
 typedef struct {
     /*! \brief   The histogram cell width of type <tt>\ref VX_TYPE_INT32</tt>.*/
-    vx_int32 cell_width;
+    vx_int32 cell_width; 
     /*! \brief   The histogram cell height of type <tt>\ref VX_TYPE_INT32</tt>.*/
-    vx_int32 cell_height;
+    vx_int32 cell_height; 
     /*! \brief  The histogram block width of type <tt>\ref VX_TYPE_INT32</tt>.  Must be divisible by cell_width. */
-    vx_int32 block_width;
+    vx_int32 block_width; 
     /*! \brief  The histogram block height of type <tt>\ref VX_TYPE_INT32</tt>.  Must be divisible by cell_height. */
-    vx_int32 block_height;
+    vx_int32 block_height; 
     /*! \brief  The histogram block stride within the window of type <tt>\ref VX_TYPE_INT32</tt>.  Must be an integral number of cell_width and cell_height.*/
     vx_int32 block_stride;
     /*! \brief  The histogram size of type <tt>\ref VX_TYPE_INT32</tt>.*/

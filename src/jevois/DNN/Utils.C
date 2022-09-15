@@ -19,7 +19,6 @@
 #include <jevois/Util/Utils.H>
 #include <jevois/Debug/Log.H>
 #include <fstream>
-#include <regex>
 
 // ##############################################################################################################
 std::map<int, std::string> jevois::dnn::readLabelsFile(std::string const & fname)
@@ -45,7 +44,7 @@ std::map<int, std::string> jevois::dnn::readLabelsFile(std::string const & fname
     else classname = line.substr(idx1, idx2 + 1 - idx1);
 
     // Possibly replace two double quotes by one:
-    classname = std::regex_replace(classname, std::regex("\"\""), "\"");
+    jevois::replaceStringAll(classname, "\"\"", "\"");
 
     // Possibly remove enclosing double quotes:
     size_t len = classname.length();
@@ -170,6 +169,32 @@ std::string jevois::dnn::shapestr(vsi_nn_tensor_attr_t const & attr)
 }
 
 // ##############################################################################################################
+#ifdef JEVOIS_PRO
+std::string jevois::dnn::shapestr(hailo_vstream_info_t const & vi)
+{
+  // FIXME: should optimize but beware that vi.shape may have different interpretations depending on NCHW vs NWCH etc
+  return shapestr(tensorattr(vi));
+
+  /*
+  std::string ret = "3D ";
+  switch (+ std::to_string(vi.shape[0]) + 'x' +
+    std::to_string(vi.shape[1]) + 'x' + std::to_string(vi.shape[2]);
+
+  switch (vi.format.type)
+  {
+  case HAILO_FORMAT_TYPE_AUTO: ret += " AUTO"; break;
+  case HAILO_FORMAT_TYPE_UINT8: ret += " 8U"; break;
+  case HAILO_FORMAT_TYPE_UINT16: ret += " 16U"; break;
+  case HAILO_FORMAT_TYPE_FLOAT32: ret += " 32F"; break;
+  default: throw std::range_error("shapestr: Unsupported tensor type " + std::to_string(vi.format));
+  }
+
+  return ret;
+  */
+}
+#endif
+
+// ##############################################################################################################
 std::vector<size_t> jevois::dnn::strshape(std::string const & str)
 {
   std::vector<size_t> ret;
@@ -196,8 +221,7 @@ int jevois::dnn::tf2cv(TfLiteType t)
     //case kTfLiteString:
     //case kTfLiteInt64:
     //case kTfLiteNoType:
-  default:
-    LFATAL("Unsupported type " << TfLiteTypeGetName(t));
+  default: throw std::range_error(std::string("tf2cv: Unsupported type ") + TfLiteTypeGetName(t));
   }
 }
 
@@ -241,10 +265,24 @@ vsi_nn_type_e jevois::dnn::tf2vsi(TfLiteType t)
     //case kTfLiteComplex128:
     //case kTfLiteComplex64:
     //case kTfLiteString:
-  default:
-    LFATAL("Unsupported type " << TfLiteTypeGetName(t));
+  default: throw std::range_error(std::string("tf2vsi: Unsupported type ") + TfLiteTypeGetName(t));
   }
 }
+
+// ##############################################################################################################
+#ifdef JEVOIS_PRO
+vsi_nn_type_e jevois::dnn::hailo2vsi(hailo_format_type_t t)
+{
+  switch (t)
+  {
+  case HAILO_FORMAT_TYPE_AUTO: return VSI_NN_TYPE_NONE; break; // or throw?
+  case HAILO_FORMAT_TYPE_UINT8: return VSI_NN_TYPE_UINT8; break;
+  case HAILO_FORMAT_TYPE_UINT16: return VSI_NN_TYPE_UINT16; break;
+  case HAILO_FORMAT_TYPE_FLOAT32: return VSI_NN_TYPE_FLOAT32; break;
+  default: throw std::range_error("hailo2vsi: Unsupported tensor type " + std::to_string(t));
+  }
+}
+#endif
 
 // ##############################################################################################################
 void jevois::dnn::clamp(cv::Rect & r, int width, int height)
@@ -253,6 +291,16 @@ void jevois::dnn::clamp(cv::Rect & r, int width, int height)
   int ty = std::min(height - 1, std::max(0, r.y));
   int bx = std::min(width - 1, std::max(0, r.x + r.width));
   int by = std::min(height - 1, std::max(0, r.y + r.height));
+  r.x = tx; r.y = ty; r.width = bx - tx; r.height = by - ty;
+}
+
+// ##############################################################################################################
+void jevois::dnn::clamp(cv::Rect2f & r, float width, float height)
+{
+  float tx = std::min(width - 1.0F, std::max(0.0F, r.x));
+  float ty = std::min(height - 1.0F, std::max(0.0F, r.y));
+  float bx = std::min(width - 1.0F, std::max(0.0F, r.x + r.width));
+  float by = std::min(height - 1.0F, std::max(0.0F, r.y + r.height));
   r.x = tx; r.y = ty; r.width = bx - tx; r.height = by - ty;
 }
 
@@ -314,15 +362,15 @@ std::vector<vsi_nn_tensor_attr_t> jevois::dnn::parseTensorSpecs(std::string cons
     {
       attr.dtype.qnt_type = VSI_NN_QNT_TYPE_DFP;
       if (tok.size() != n+2)
-        throw std::range_error("parseTensorSpecs: In "+spec+", DFP quantization needs :fl param (" + specdef + ')');
+        throw std::range_error("parseTensorSpecs: In "+spec+", DFP quantization needs :fl (" + specdef + ')');
       attr.dtype.fl = std::stoi(tok[n+1]);
     }
     
-    else if (tok[n] == "AA")
+    else if (tok[n] == "AA" || tok[n] == "AS") // affine asymmetric and symmetric same, see ovxlib/vsi_nn_tensor.h
     {
       attr.dtype.qnt_type = VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC;
       if (tok.size() != n+3)
-        throw std::range_error("parseTensorSpecs: In "+spec+", AA quantization needs :scale:zero params ("+specdef+')');
+        throw std::range_error("parseTensorSpecs: In "+spec+", AA/AS quantization needs :scale:zero ("+specdef+')');
       attr.dtype.scale = std::stof(tok[n+1]);
       attr.dtype.zero_point = std::stoi(tok[n+2]);
     }
@@ -341,6 +389,22 @@ std::vector<vsi_nn_tensor_attr_t> jevois::dnn::parseTensorSpecs(std::string cons
 }
 
 // ##############################################################################################################
+cv::Mat jevois::dnn::attrmat(vsi_nn_tensor_attr_t const & attr, void * dataptr)
+{
+  if (dataptr) return cv::Mat(jevois::dnn::attrdims(attr), jevois::dnn::vsi2cv(attr.dtype.vx_type), dataptr);
+  else return cv::Mat(jevois::dnn::attrdims(attr), jevois::dnn::vsi2cv(attr.dtype.vx_type));
+}
+
+// ##############################################################################################################
+std::vector<int> jevois::dnn::attrdims(vsi_nn_tensor_attr_t const & attr)
+{
+  size_t const ndim = attr.dim_num;
+  std::vector<int> cvdims(ndim);
+  for (size_t i = 0; i < ndim; ++i) cvdims[ndim - 1 - i] = attr.size[i];
+  return cvdims;
+}
+
+// ##############################################################################################################
 cv::Size jevois::dnn::attrsize(vsi_nn_tensor_attr_t const & attr)
 {
   switch (attr.dtype.fmt)
@@ -350,9 +414,18 @@ cv::Size jevois::dnn::attrsize(vsi_nn_tensor_attr_t const & attr)
     return cv::Size(attr.size[1], attr.size[2]);
     
   case VSI_NN_DIM_FMT_NCHW:
-  default:
     if (attr.dim_num < 2) throw std::range_error("attrsize: need at least 2D, got " + jevois::dnn::attrstr(attr));
     return cv::Size(attr.size[0], attr.size[1]);
+
+  case VSI_NN_DIM_FMT_AUTO:
+    if (attr.dim_num < 2) throw std::range_error("attrsize: need at least 2D, got " + jevois::dnn::attrstr(attr));
+    if (attr.dim_num < 3) return cv::Size(attr.size[0], attr.size[1]);
+    // ok, size[] starts with either CWH (when dim index goes 0..2) or WHC, assume C<H
+    if (attr.size[0] > attr.size[2]) return cv::Size(attr.size[0], attr.size[1]); // WHCN
+    else return cv::Size(attr.size[1], attr.size[2]); // CWHN
+    
+  default:
+    throw std::range_error("attrsize: cannot extract width and height, got " + jevois::dnn::attrstr(attr));
   }
 }
 
@@ -385,7 +458,7 @@ std::string jevois::dnn::attrstr(vsi_nn_tensor_attr_t const & attr)
   case VSI_NN_TYPE_UINT64: ret += "64U:"; break;
   case VSI_NN_TYPE_INT64: ret += "64S:"; break;
   case VSI_NN_TYPE_FLOAT64: ret += "64F:"; break;
-  default: std::range_error("attrstr: Unsupported tensor type " + std::to_string(attr.dtype.vx_type));
+  default: ret += "TYPE_UNKNOWN";
   }
 
   // Dims:
@@ -395,12 +468,13 @@ std::string jevois::dnn::attrstr(vsi_nn_tensor_attr_t const & attr)
   // Quantization:
   switch (attr.dtype.qnt_type)
   {
-  case VSI_NN_QNT_TYPE_NONE: ret += ":NONE"; break;
-  case VSI_NN_QNT_TYPE_DFP: ret += ":DFP:" + std::to_string(attr.dtype.fl); break;
-  case VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC: ret += ":AA:" + std::to_string(attr.dtype.scale) + ':' +
-      std::to_string(attr.dtype.zero_point); break;
-  case  VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_SYMMETRIC: ret += ":APS:unsupported"; break;
-  default: std::range_error("attrstr: Unsupported tensor quantization " + std::to_string(attr.dtype.qnt_type));
+  case VSI_NN_QNT_TYPE_NONE: ret += "NONE"; break;
+  case VSI_NN_QNT_TYPE_DFP: ret += "DFP:" + std::to_string(attr.dtype.fl); break;
+  case VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC: // same value as VSI_NN_QNT_TYPE_AFFINE_SYMMETRIC:
+    ret += "AA:" + std::to_string(attr.dtype.scale) + ':' + std::to_string(attr.dtype.zero_point);
+    break;
+  case  VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_SYMMETRIC: ret += "APS:unsupported"; break;
+  default: ret += "QUANT_UNKNOWN";
   }
 
   return ret;
@@ -421,11 +495,9 @@ vsi_nn_tensor_attr_t jevois::dnn::tensorattr(TfLiteTensor const * t)
 
   case kTfLiteAffineQuantization:
   {
-    attr.dtype.qnt_type = VSI_NN_QNT_TYPE_DFP;
-    //TfLiteAffineQuantization const * q = reinterpret_cast<TfLiteAffineQuantization const *>(t->quantization.params);
-    //attr.dtype.scale = q->scale[0];//fixme
-    //attr.dtype.zero_point = q->zero_point[0]; //fixme
-    // FIXME q->quantized_dimension
+    attr.dtype.qnt_type = VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC;
+    attr.dtype.scale = t->params.scale;
+    attr.dtype.zero_point = t->params.zero_point;
   }
   break;
   
@@ -436,20 +508,254 @@ vsi_nn_tensor_attr_t jevois::dnn::tensorattr(TfLiteTensor const * t)
   attr.dim_num = dims.size;
   for (int i = 0; i < dims.size; ++i) attr.size[dims.size - 1 - i] = dims.data[i];
 
+  // Set the fmt to NCHW or NHWC if possible:
+  if (attr.dim_num == 4)
+  {
+    if (attr.size[0] > attr.size[2]) attr.dtype.fmt = VSI_NN_DIM_FMT_NCHW; // assume H>C
+    else attr.dtype.fmt = VSI_NN_DIM_FMT_NHWC;
+  }
+  
   return attr;
 }
 
 // ##############################################################################################################
-void jevois::dnn::softmax(float const * input, size_t n, float fac, float * output)
+#ifdef JEVOIS_PRO
+vsi_nn_tensor_attr_t jevois::dnn::tensorattr(hailo_vstream_info_t const & vi)
 {
-  float sum = 0.0F;
-  float largest = -FLT_MAX;
-  for (size_t i = 0; i < n; ++i) if (input[i] > largest) largest = input[i];
-  for (size_t i = 0; i < n; ++i)
+  vsi_nn_tensor_attr_t attr; memset(&attr, 0, sizeof(attr));
+
+  attr.dtype.vx_type = hailo2vsi(vi.format.type);
+  
+  switch (vi.format.order)
   {
-    float e = exp(input[i]/fac - largest/fac);
-    sum += e;
-    output[i] = e;
+  case HAILO_FORMAT_ORDER_HAILO_NMS:
+    attr.dtype.fmt = VSI_NN_DIM_FMT_AUTO;
+    attr.dim_num = 2;
+    attr.size[0] = vi.nms_shape.number_of_classes;
+    attr.size[1] = vi.nms_shape.max_bboxes_per_class * 5; // Each box has: xmin, ymin, xmax, ymax, score
+    break;
+    
+  case HAILO_FORMAT_ORDER_NHWC:
+  case HAILO_FORMAT_ORDER_FCR:
+  case HAILO_FORMAT_ORDER_F8CR:
+    attr.dtype.fmt = VSI_NN_DIM_FMT_NHWC;
+    attr.dim_num = 4;
+    attr.size[0] = vi.shape.features;
+    attr.size[1] = vi.shape.width;
+    attr.size[2] = vi.shape.height;
+    attr.size[3] = 1;
+    break;
+    
+  case HAILO_FORMAT_ORDER_NHW:
+    attr.dtype.fmt = VSI_NN_DIM_FMT_NHWC;
+    attr.dim_num = 4;
+    attr.size[0] = 1;
+    attr.size[1] = vi.shape.width;
+    attr.size[2] = vi.shape.height;
+    attr.size[3] = 1;
+    break;
+    
+  case HAILO_FORMAT_ORDER_NC:
+    attr.dtype.fmt = VSI_NN_DIM_FMT_NHWC;
+    attr.dim_num = 4;
+    attr.size[0] = 1;
+    attr.size[1] = 1;
+    attr.size[2] = vi.shape.features;
+    attr.size[3] = 1;
+    break;
+    
+  case HAILO_FORMAT_ORDER_NCHW:
+    attr.dtype.fmt = VSI_NN_DIM_FMT_NCHW;
+    attr.dim_num = 4;
+    attr.size[0] = vi.shape.features;
+    attr.size[1] = vi.shape.width;
+    attr.size[2] = vi.shape.height;
+    attr.size[3] = 1;
+    break;
+
+  default: throw std::range_error("tensorattr: Unsupported Hailo order " +std::to_string(vi.format.order));
   }
-  if (sum) for (size_t i = 0; i < n; ++i) output[i] /= sum;
+
+  // Hailo only supports one quantization type:
+  attr.dtype.qnt_type = VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC;
+  attr.dtype.scale = vi.quant_info.qp_scale;
+  attr.dtype.zero_point = int32_t(vi.quant_info.qp_zp);
+
+  return attr;
 }
+#endif
+
+// ##############################################################################################################
+size_t jevois::dnn::softmax(float const * input, size_t const n, size_t const stride, float const fac, float * output,
+                            bool maxonly)
+{
+  if (stride == 0) LFATAL("Cannot work with stride = 0");
+  
+  float sum = 0.0F;
+  float largest = -FLT_MAX; size_t largest_idx = 0;
+  size_t const ns = n * stride;
+
+  for (size_t i = 0; i < ns; i += stride) if (input[i] > largest) { largest = input[i]; largest_idx = i; }
+
+  if (fac == 1.0F)
+    for (size_t i = 0; i < ns; i += stride)
+    {
+      float const e = expf(input[i] - largest);
+      sum += e;
+      output[i] = e;
+    }
+  else    
+    for (size_t i = 0; i < ns; i += stride)
+    {
+      float const e = expf(input[i]/fac - largest/fac);
+      sum += e;
+      output[i] = e;
+    }
+  
+  if (sum)
+  {
+    if (maxonly) output[largest_idx] /= sum;
+    else for (size_t i = 0; i < ns; i += stride) output[i] /= sum;
+  }
+  
+  return largest_idx;
+}
+
+// ##############################################################################################################
+bool jevois::dnn::attrmatch(vsi_nn_tensor_attr_t const & attr, cv::Mat const & blob)
+{
+  // Check that blob and tensor are a complete match:
+  if (blob.channels() != 1) return false;
+  if (blob.depth() != jevois::dnn::vsi2cv(attr.dtype.vx_type)) return false;
+  if (uint32_t(blob.size.dims()) != attr.dim_num) return false;
+
+  for (size_t i = 0; i < attr.dim_num; ++i)
+    if (int(attr.size[attr.dim_num - 1 - i]) != blob.size[i]) return false;
+
+  return true;
+}
+
+// ##############################################################################################################
+cv::Mat jevois::dnn::quantize(cv::Mat const & m, vsi_nn_tensor_attr_t const & attr)
+{
+  if (m.depth() != CV_32F) LFATAL("Tensor to quantize must be 32F");
+  
+  // Do a sloppy match for total size only since m may still be 2D RGB packed vs 4D attr...
+  std::vector<int> adims = jevois::dnn::attrdims(attr);
+  size_t tot = 1; for (int d : adims) tot *= d;
+  
+  if (tot != m.total() * m.channels())
+    LFATAL("Mismatched tensor: " << jevois::dnn::shapestr(m) << " vs attr: " << jevois::dnn::shapestr(attr));
+
+  unsigned int const tt = jevois::dnn::vsi2cv(attr.dtype.vx_type);
+
+  switch (attr.dtype.qnt_type)
+  {
+  case VSI_NN_QNT_TYPE_NONE:
+  {
+    cv::Mat ret;
+    m.convertTo(ret, tt);
+    return ret;
+  }
+
+  case VSI_NN_QNT_TYPE_DFP:
+  {
+    switch (tt)
+    {
+    case CV_8S:
+    {
+      if (attr.dtype.fl > 7) LFATAL("Invalid DFP fl value " << attr.dtype.fl << ": must be in [0..7]");
+      cv::Mat ret;
+      m.convertTo(ret, tt, 1 << attr.dtype.fl, 0.0);
+      return ret;
+    }
+    case CV_16S:
+    {
+      if (attr.dtype.fl > 15) LFATAL("Invalid DFP fl value " << attr.dtype.fl << ": must be in [0..15]");
+      cv::Mat ret;
+      m.convertTo(ret, tt, 1 << attr.dtype.fl, 0.0);
+      return ret;
+    }
+    default:
+      break;
+    }
+    break;
+  }
+
+  case VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC: // same value as VSI_NN_QNT_TYPE_AFFINE_SYMMETRIC:
+  {
+    switch (tt)
+    {
+    case CV_8U:
+    {
+      cv::Mat ret;
+      if (attr.dtype.scale == 0.0) LFATAL("Quantization scale must not be zero in " << jevois::dnn::shapestr(attr));
+      m.convertTo(ret, tt, 1.0 / attr.dtype.scale, attr.dtype.zero_point);
+      return ret;
+    }
+    
+    default:
+      break;
+    }
+    break;
+  }
+  
+  case  VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_SYMMETRIC:
+    LFATAL("Affine per-channel symmetric not supported yet");
+    
+  default:
+    break;
+  }
+  
+  LFATAL("Quantization to " << jevois::dnn::shapestr(attr) << " not yet supported");
+}
+
+// ##############################################################################################################
+cv::Mat jevois::dnn::dequantize(cv::Mat const & m, vsi_nn_tensor_attr_t const & attr)
+{
+  if (! jevois::dnn::attrmatch(attr, m))
+    LFATAL("Mismatched tensor: " << jevois::dnn::shapestr(m) << " vs attr: " << jevois::dnn::shapestr(attr));
+
+  switch (attr.dtype.qnt_type)
+  {
+  case VSI_NN_QNT_TYPE_NONE:
+  {
+    cv::Mat ret;
+    m.convertTo(ret, CV_32F);
+    return ret;
+  }
+
+  case VSI_NN_QNT_TYPE_DFP:
+  {
+    cv::Mat ret;
+    m.convertTo(ret, CV_32F, 1.0 / (1 << attr.dtype.fl), 0.0);
+    return ret;
+  }
+  
+  case VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC: // same value as VSI_NN_QNT_TYPE_AFFINE_SYMMETRIC:
+  {
+    cv::Mat ret;
+    m.convertTo(ret, CV_32F);
+    if (attr.dtype.zero_point) ret -= attr.dtype.zero_point;
+    if (attr.dtype.scale != 1.0F) ret *= attr.dtype.scale;
+    return ret;
+  }
+
+  case  VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_SYMMETRIC:
+    LFATAL("Affine per-channel symmetric not supported yet");
+
+  default:
+    LFATAL("Unknown quantization type " << int(attr.dtype.qnt_type));
+  }
+}
+
+// ##############################################################################################################
+size_t jevois::dnn::effectiveDims(cv::Mat const & m)
+{
+  cv::MatSize const & rs = m.size;
+  size_t const ndims = rs.dims();
+  size_t ret = ndims;
+  for (size_t i = 0; i < ndims; ++i) if (rs[i] == 1) --ret; else break;
+  return ret;
+}
+

@@ -26,6 +26,9 @@
 
 #include "vsi_nn_types.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 enum
 {
@@ -36,33 +39,6 @@ enum
     PRE_PROCESS_RGB_OUTPUT = 0,
 
     PRE_PROCESS_RGB_OUTPUT_CNT
-};
-
-
-enum {
-    PRE_PROCESS_RGB_CPU_KERNEL,
-
-    PRE_PROCESS_RGB_F16_KERNEL,
-    PRE_PROCESS_RGB_I16_KERNEL,
-    PRE_PROCESS_RGB_I8_KERNEL,
-    PRE_PROCESS_RGB_U8_KERNEL,
-
-    PRE_PROCESS_RGB_F16_COPY_KERNEL,
-    PRE_PROCESS_RGB_I16_COPY_KERNEL,
-    PRE_PROCESS_RGB_I8_COPY_KERNEL,
-    PRE_PROCESS_RGB_U8_COPY_KERNEL,
-
-    PRE_PROCESS_RGB_F16_NHWC_KERNEL,
-    PRE_PROCESS_RGB_I16_NHWC_KERNEL,
-    PRE_PROCESS_RGB_I8_NHWC_KERNEL,
-    PRE_PROCESS_RGB_U8_NHWC_KERNEL,
-
-    PRE_PROCESS_RGB_F16_COPY_NHWC_KERNEL,
-    PRE_PROCESS_RGB_I16_COPY_NHWC_KERNEL,
-    PRE_PROCESS_RGB_I8_COPY_NHWC_KERNEL,
-    PRE_PROCESS_RGB_U8_COPY_NHWC_KERNEL,
-
-    PRE_PROCESS_RGB_KERNEL_COUNTS,
 };
 
 typedef struct _vsi_nn_pre_process_rgb_lcl_data
@@ -86,7 +62,7 @@ typedef struct _vsi_nn_pre_process_rgb_param
 
     struct
     {
-        uint32_t   *size;
+        vsi_size_t   *size;
         uint32_t   dim_num;
     } output_attr;
 
@@ -104,5 +80,8 @@ typedef struct _vsi_nn_pre_process_rgb_param
     vsi_nn_pre_process_rgb_lcl_data local;
 } vsi_nn_pre_process_rgb_param;
 
+#ifdef __cplusplus
+}
 #endif
 
+#endif

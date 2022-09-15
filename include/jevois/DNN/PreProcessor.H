@@ -29,6 +29,8 @@ namespace jevois
 {
   namespace dnn
   {
+    class PreProcessorForPython;
+    
     namespace preprocessor
     {
       // We define all parameters for all derived classes here to avoid duplicate definitions. Different derived classes
@@ -40,13 +42,19 @@ namespace jevois
                                true, ParamCateg);
       
       //! Parameter \relates jevois::PreProcessor
-      JEVOIS_DECLARE_PARAMETER(scale, float, "Value scaling factor applied to input pixels, or 0.0 to extract a "
-                               "UINT8 blob, typically for use with quantized networks",
+      JEVOIS_DECLARE_PARAMETER(scale, float, "Value scaling factor applied to input pixels after mean subtraction, "
+                               "or 0.0 to extract an unscaled UINT8 blob, typically for use with quantized networks",
                                2.0F / 255.0F, ParamCateg);
       
       //! Parameter \relates jevois::PreProcessor
-      JEVOIS_DECLARE_PARAMETER(mean, cv::Scalar, "Mean BGR value subtracted from input image",
+      JEVOIS_DECLARE_PARAMETER(mean, cv::Scalar, "Mean values subtracted from input image, in the same RGB/BGR "
+                               "order as the network's input",
                                cv::Scalar(127.5F, 127.5F, 127.5F), ParamCateg);
+
+      //! Parameter \relates jevois::PreProcessor
+      JEVOIS_DECLARE_PARAMETER(stdev, cv::Scalar, "Input image is divided by stdev after mean subtraction and scale "
+                               "factor are applied. This is rarely used. Same RGB/BGR order as the network's input",
+                               cv::Scalar(1.0F, 1.0F, 1.0F), ParamCateg);
 
       //! Parameter \relates jevois::PreProcessor
       JEVOIS_DECLARE_PARAMETER(letterbox, bool, "When true, extract the largest possible box from the input image "
@@ -59,27 +67,45 @@ namespace jevois
       //! Parameter \relates jevois::PreProcessor
       JEVOIS_DECLARE_PARAMETER(showin, bool, "Show outline of cropped image fed to network",
                                true, ParamCateg);
+
+      //! Parameter \relates jevois::PreProcessorPython
+      JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(pypre, std::string, "Full path of the python pre-processor file. Name of "
+                                             "class defined in the file must match the file name without the "
+                                             "trailing '.py'",
+                                             "", ParamCateg);
+
+      //! Parameter \relates jevois::PreProcessor
+      JEVOIS_DECLARE_PARAMETER(details, bool, "Show more details about the pre-processing steps",
+                               false, ParamCateg);
+
+      //! Enum for image resizing modes \relates jevois::PreProcessor
+      JEVOIS_DEFINE_ENUM_CLASS(InterpMode, (Nearest) (Linear) (Cubic) (Area) (Lanczos4));
+
+      //! Parameter \relates jevois::PreProcessor
+      JEVOIS_DECLARE_PARAMETER(interp, InterpMode, "Image interpolation to use when resizing the input image "
+                               "from camera to network input dims",
+                               InterpMode::Nearest, InterpMode_Values, ParamCateg);
     }
 
     //! Pre-Processor for neural network pipeline
     /*! This is the first step in a deep neural network processing Pipeline.
 
         Derived classes must implement the pure virtual methods:
-        - process(cv::Mat const & img, bool isrgb): process and input image and generate some tensors (blobs)
-        - sendreport(): describe what process() did to humans
+        - process(): process an input image and generate some tensors (blobs)
+        - report(): describe what process() did to humans
         - freeze(): freeze/unfreeze parameters that users should not change at runtime
 
-        They should keep some internal state about what to report, since sendreport() is always called on
+        They should keep some internal state about what to report, since report() is always called on
         every frame, but process() may be called less often if the network is slow.
         
         \ingroup dnn */
     class PreProcessor : public jevois::Component,
-                         public jevois::Parameter<preprocessor::rgb, preprocessor::showin>
+                         public jevois::Parameter<preprocessor::rgb, preprocessor::showin, preprocessor::details>
     {
       public:
         
-        //! Inherited constructor ok
-        using jevois::Component::Component;
+        //! Constructor
+        PreProcessor(std::string const & instance);
 
         //! Destructor
         virtual ~PreProcessor();
@@ -120,6 +146,9 @@ namespace jevois
         //! Get unscaled crop rectangle in image coordinates
         /*! This is useful to display an image overlay on top of the input image. */
         void getUnscaledCropRect(size_t blobnum, int & tlx, int & tly, int & brx, int & bry);
+
+        //! Get a pointer to our python-friendly interface
+        std::shared_ptr<PreProcessorForPython> getPreProcForPy() const;
         
       protected:
         //! Extract blobs from input image
@@ -140,6 +169,9 @@ namespace jevois
         
         cv::Size itsImageSize;
         unsigned int itsImageFmt;
+
+        // Helper class exposed to python
+        std::shared_ptr<PreProcessorForPython> itsPP;
     };
     
   } // namespace dnn

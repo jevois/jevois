@@ -88,6 +88,14 @@ namespace jevois
       /*! Throws if draw() has not been previously called. */
       ImVec2 i2ds(ImVec2 const & p);
       
+      //! Convert coordinates of a point from on-screen to within a rendered image
+      /*! Throws if draw() has not been previously called. */
+      ImVec2 d2i(ImVec2 const & p);
+      
+      //! Convert a 2D size from on-screen to within a rendered image
+      /*! Throws if draw() has not been previously called. */
+      ImVec2 d2is(ImVec2 const & p);
+      
     protected:
       void setInternal(unsigned int width, unsigned int height, unsigned int fmt, unsigned char const * data);
       

@@ -24,6 +24,16 @@ jevois::dnn::Network::~Network()
 { }
 
 // ####################################################################################################
+void jevois::dnn::Network::onParamChange(network::outreshape const & JEVOIS_UNUSED_PARAM(param),
+                                         std::string const & val)
+{
+  itsReshape.clear();
+  if (val.empty()) return;
+
+  itsReshape = jevois::dnn::parseTensorSpecs(val);
+}
+  
+// ####################################################################################################
 void jevois::dnn::Network::waitBeforeDestroy()
 {
   // Do not destroy a network that is loading, and do not throw...
@@ -73,11 +83,28 @@ std::vector<cv::Mat> jevois::dnn::Network::process(std::vector<cv::Mat> const & 
 
   // Run processing on the derived class:
   info.emplace_back("* Network");
+  std::string const c = comment::get();
+  if (c.empty() == false) info.emplace_back(c);
+  
   std::vector<cv::Mat> outs = doprocess(blobs, info);
 
   // Show info about output tensors:
   info.emplace_back("* Output Tensors");
   for (size_t i = 0; i < outs.size(); ++i) info.emplace_back("- " + jevois::dnn::shapestr(outs[i]));
+
+  // Possibly reshape the tensors:
+  if (itsReshape.empty() == false)
+  {
+    if (itsReshape.size() != outs.size())
+      LFATAL("Received " << outs.size() << " but outreshape has " << itsReshape.size() << " entries");
+
+    info.emplace_back("* Reshaped Output Tensors");
+    for (size_t i = 0; i < outs.size(); ++i)
+    {
+      outs[i] = outs[i].reshape(1, jevois::dnn::attrdims(itsReshape[i]));
+      info.emplace_back("- " + jevois::dnn::shapestr(outs[i]));
+    }
+  }
   
   return outs;
 }

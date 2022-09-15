@@ -208,12 +208,16 @@ void jevois::VideoDisplayBackend::init(unsigned short JEVOIS_UNUSED_PARAM(w), un
 // ##############################################################################################################
 void jevois::VideoDisplayBackend::uninit()
 {
-  eglBindAPI(EGL_OPENGL_ES_API);
-  eglMakeCurrent(itsDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, itsContext);
-  eglMakeCurrent(itsDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-  if (itsSurface) eglDestroySurface(itsDisplay, itsSurface);
-  eglDestroyContext(itsDisplay, itsContext);
-  eglTerminate(itsDisplay);
+  if (itsDisplay != EGL_NO_DISPLAY)
+  {
+    eglBindAPI(EGL_OPENGL_ES_API);
+    eglMakeCurrent(itsDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, itsContext);
+    eglMakeCurrent(itsDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+    if (itsSurface) { eglDestroySurface(itsDisplay, itsSurface); itsSurface = 0; }
+    eglDestroyContext(itsDisplay, itsContext); itsContext = EGL_NO_CONTEXT;
+    eglTerminate(itsDisplay); itsDisplay = EGL_NO_DISPLAY;
+    itsConfig = 0;
+  }
 }
 
 // ##############################################################################################################

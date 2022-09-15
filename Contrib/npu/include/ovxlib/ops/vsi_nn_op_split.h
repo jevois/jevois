@@ -44,7 +44,7 @@ typedef struct _vsi_nn_split_param
     /* local data must be the first. */
     vsi_nn_split_lcl_data * lcl_data;
     uint32_t axis;
-    uint32_t *slices;
+    const uint32_t *slices;
     uint32_t slices_num;
 } vsi_nn_split_param;
 

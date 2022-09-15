@@ -16,8 +16,11 @@
 /*! \file */
 
 #include <jevois/Core/PythonModule.H>
+#include <jevois/Core/PythonSupport.H>
 #include <jevois/Core/UserInterface.H>
 #include <jevois/Debug/PythonException.H>
+#include <jevois/DNN/Utils.H>
+#include <jevois/DNN/PreProcessorPython.H>
 
 // ####################################################################################################
 // ####################################################################################################
@@ -370,6 +373,34 @@ ImVec2 jevois::GUIhelperPython::i2ds1(float x, float y, char const * name)
 }
 
 // ####################################################################################################
+ImVec2 jevois::GUIhelperPython::d2i(ImVec2 p, char const * name)
+{
+  if (itsGUIhelper == nullptr) LFATAL("Internal error");
+  return itsGUIhelper->d2i(p, name);
+}
+
+// ####################################################################################################
+ImVec2 jevois::GUIhelperPython::d2i1(float x, float y, char const * name)
+{
+  if (itsGUIhelper == nullptr) LFATAL("Internal error");
+  return itsGUIhelper->d2i(x, y, name);
+}
+
+// ####################################################################################################
+ImVec2 jevois::GUIhelperPython::d2is(ImVec2 p, char const * name)
+{
+  if (itsGUIhelper == nullptr) LFATAL("Internal error");
+  return itsGUIhelper->d2is(p, name);
+}
+
+// ####################################################################################################
+ImVec2 jevois::GUIhelperPython::d2is1(float x, float y, char const * name)
+{
+  if (itsGUIhelper == nullptr) LFATAL("Internal error");
+  return itsGUIhelper->d2is(x, y, name);
+}
+
+// ####################################################################################################
 void jevois::GUIhelperPython::drawLine(float x1, float y1, float x2, float y2, ImU32 col)
 {
   if (itsGUIhelper == nullptr) LFATAL("Internal error");
@@ -401,16 +432,24 @@ void jevois::GUIhelperPython::drawPoly1(std::vector<cv::Point2f> const & pts, Im
 void jevois::GUIhelperPython::drawPoly2(cv::Mat const & pts, ImU32 col, bool filled)
 {
   if (itsGUIhelper == nullptr) LFATAL("Internal error");
-  if (pts.type() != CV_32FC2) LFATAL("Incorrect type: should be 32FC2");
+  if (pts.total() == 0) return;
   
-  // Convert mat to vector of Point2f:
-  std::vector<cv::Point2f> p;
-  size_t const sz = pts.total() * 2;
-  float const * ptr = pts.ptr<float>(0);
-  for (size_t i = 0; i < sz; i += 2) p.emplace_back(cv::Point2f(ptr[i], ptr[i+1]));
+  // Convert mat to vectors of Point2f (one poly per mat row), and draw each poly:
+  int imax;
+  if (pts.type() == CV_32FC2) imax = pts.cols * 2;
+  else if (pts.type() == CV_32F) imax = pts.cols;
+  else LFATAL("Incorrect input " << jevois::dnn::shapestr(pts) << ": should be 32F or 32FC2");
 
-  // Draw:
-  itsGUIhelper->drawPoly(p, col, filled);
+  if (imax < 4) return; // need at least 2 vertices
+  
+  float const * ptr = pts.ptr<float>(0);
+    
+  for (int j = 0; j < pts.rows; ++j)
+  {
+    std::vector<cv::Point2f> p;
+    for (int i = 0; i < imax; i += 2) { p.emplace_back(cv::Point2f(ptr[0], ptr[1])); ptr += 2; }
+    itsGUIhelper->drawPoly(p, col, filled);
+  }
 }
 
 // ####################################################################################################
@@ -496,59 +535,26 @@ void jevois::GUIhelperPython::reportAndRethrowException(std::string const & pref
 // ####################################################################################################
 // ####################################################################################################
 // ####################################################################################################
-namespace
+jevois::PythonModule::PythonModule(jevois::VideoMapping const & m) : jevois::Module(m.modulename), itsPyPath(m.sopath())
 {
-  // from https://stackoverflow.com/questions/39924912/finding-if-member-function-exists-in-a-boost-pythonobject
-  bool hasattr(boost::python::object & o, char const * name) { return PyObject_HasAttrString(o.ptr(), name); }
+  if (m.ispython == false) LFATAL("Passed video mapping is not for a python module");
 }
 
 // ####################################################################################################
-// ####################################################################################################
-// ####################################################################################################
-jevois::PythonModule::PythonModule(jevois::VideoMapping const & m) :
-    jevois::Module(m.modulename), itsMainModule(), itsMainNamespace(), itsInstance(), itsConstructionError()
+void jevois::PythonModule::preInit()
 {
-  if (m.ispython == false) LFATAL("Passed video mapping is not for a python module");
+  // Load the python code and instantiate the python class:
+  PythonWrapper::pythonload(itsPyPath);
 
-  // Do not throw during construction because we need users to be able to save modified code from JeVois Inventor, which
-  // requires a valid module with a valid path being set by Engine:
-  try
-  {
-    // Get the python interpreter going:
-    itsMainModule = boost::python::import("__main__");
-    itsMainNamespace = itsMainModule.attr("__dict__");
-    
-    // Import the module. Note that we import the whole directory:
-    std::string const pypath = m.sopath();
-    std::string const pydir = pypath.substr(0, pypath.rfind('/'));
-    std::string const execstr =
-      "import sys\n"
-      "sys.path.append(\"/usr/lib\")\n" // To find libjevois[pro] module in /usr/lib
-      "sys.path.append(\"" JEVOIS_CONFIG_PATH "\")\n" // To find pyjevois.py config
-      "sys.path.append(\"" JEVOIS_OPENCV_PYTHON_PATH "\")\n" // To find cv2 module
-      "sys.path.append(\"" + pydir + "\")\n" +
-      "import " + m.modulename + "\n" +
-      "import importlib\n" +
-      "importlib.reload(" + m.modulename + ")\n"; // reload so we are always fresh if file changed on SD card
-
-    boost::python::exec(execstr.c_str(), itsMainNamespace, itsMainNamespace);
-    
-    // Create an instance of the python class defined in the module:
-    itsInstance = boost::python::eval((m.modulename + "." + m.modulename + "()").c_str(),
-                                      itsMainNamespace, itsMainNamespace);
-  }
-  catch (boost::python::error_already_set & e)
-  {
-    itsConstructionError = "Initialization of Module " + m.modulename + " failed:\n\n" +
-      jevois::getPythonExceptionString(e);
-  }
+  // Call python module's init() function if implemented:
+  if (jevois::python::hasattr(PythonWrapper::pyinst(), "init")) PythonWrapper::pyinst().attr("init")();
 }
 
 // ####################################################################################################
 void jevois::PythonModule::postUninit()
 {
   // Call python module's uninit() function if implemented:
-  if (hasattr(itsInstance, "uninit")) itsInstance.attr("uninit")();
+  if (jevois::python::hasattr(PythonWrapper::pyinst(), "uninit")) PythonWrapper::pyinst().attr("uninit")();
 }
 
 // ####################################################################################################
@@ -558,20 +564,16 @@ jevois::PythonModule::~PythonModule()
 // ####################################################################################################
 void jevois::PythonModule::process(InputFrame && inframe, OutputFrame && outframe)
 {
-  if (itsInstance.is_none()) throw std::runtime_error(itsConstructionError);
-  
   jevois::InputFramePython inframepy(&inframe);
   jevois::OutputFramePython outframepy(&outframe);
-  itsInstance.attr("process")(boost::ref(inframepy), boost::ref(outframepy));
+  PythonWrapper::pyinst().attr("process")(boost::ref(inframepy), boost::ref(outframepy));
 }
 
 // ####################################################################################################
 void jevois::PythonModule::process(InputFrame && inframe)
 {
-  if (itsInstance.is_none()) throw std::runtime_error(itsConstructionError);
-  
   jevois::InputFramePython inframepy(&inframe);
-  itsInstance.attr("processNoUSB")(boost::ref(inframepy));
+  PythonWrapper::pyinst().attr("processNoUSB")(boost::ref(inframepy));
 }
 
 #ifdef JEVOIS_PRO
@@ -579,11 +581,9 @@ void jevois::PythonModule::process(InputFrame && inframe)
 // ####################################################################################################
 void jevois::PythonModule::process(InputFrame && inframe, GUIhelper & helper)
 {
-  if (itsInstance.is_none()) throw std::runtime_error(itsConstructionError);
-  
   jevois::InputFramePython inframepy(&inframe);
   jevois::GUIhelperPython helperpy(&helper);
-  itsInstance.attr("processGUI")(boost::ref(inframepy), boost::ref(helperpy));
+  PythonWrapper::pyinst().attr("processGUI")(boost::ref(inframepy), boost::ref(helperpy));
 }
 
 #endif
@@ -591,9 +591,9 @@ void jevois::PythonModule::process(InputFrame && inframe, GUIhelper & helper)
 // ####################################################################################################
 void jevois::PythonModule::parseSerial(std::string const & str, std::shared_ptr<UserInterface> s)
 {
-  if (hasattr(itsInstance, "parseSerial"))
+  if (jevois::python::hasattr(PythonWrapper::pyinst(), "parseSerial"))
   {
-    boost::python::object ret = itsInstance.attr("parseSerial")(str);
+    boost::python::object ret = PythonWrapper::pyinst().attr("parseSerial")(str);
     std::string retstr = boost::python::extract<std::string>(ret);
     if (retstr.empty() == false) s->writeString(retstr);
   }
@@ -603,12 +603,33 @@ void jevois::PythonModule::parseSerial(std::string const & str, std::shared_ptr<
 // ####################################################################################################
 void jevois::PythonModule::supportedCommands(std::ostream & os)
 {
-  if (hasattr(itsInstance, "supportedCommands"))
+  if (jevois::python::hasattr(PythonWrapper::pyinst(), "supportedCommands"))
   {
-    boost::python::object ret = itsInstance.attr("supportedCommands")();
+    boost::python::object ret = PythonWrapper::pyinst().attr("supportedCommands")();
     std::string retstr = boost::python::extract<std::string>(ret);
     if (retstr.empty() == false) os << retstr;
   } else jevois::Module::supportedCommands(os);
 }
 
- 
+// ####################################################################################################
+// ####################################################################################################
+// ####################################################################################################
+jevois::dnn::PreProcessorForPython::PreProcessorForPython(PreProcessor * pp) : itsPP(pp)
+{ }
+
+cv::Size jevois::dnn::PreProcessorForPython::imagesize() const
+{ return itsPP->imagesize(); }
+
+boost::python::list jevois::dnn::PreProcessorForPython::blobs() const
+{ return jevois::python::pyVecToList(itsPP->blobs()); }
+
+cv::Size jevois::dnn::PreProcessorForPython::blobsize(size_t num) const
+{ return itsPP->blobsize(num); }
+        
+cv::Point2f jevois::dnn::PreProcessorForPython::b2i(float x, float y, size_t blobnum)
+{ cv::Point2f p(x, y); itsPP->b2i(p.x, p.y, blobnum); return p; }
+
+cv::Rect jevois::dnn::PreProcessorForPython::getUnscaledCropRect(size_t blobnum)
+{ return itsPP->getUnscaledCropRect(blobnum); }
+
+

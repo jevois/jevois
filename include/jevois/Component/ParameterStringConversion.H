@@ -57,12 +57,12 @@ namespace jevois
   void paramStringToVal(std::string const & valstring, T & result);
 
    //! Machine-readable output to a string, for use in jevois::Parameter: outputs [\c Element1, \c Element2, ...]
-   /*! Specialization for std::vector<T> which supports nesting of other vectors and vectors of other types  */
+   /*! Overload for std::vector<T> which supports nesting of other vectors and vectors of other types  */
   template <typename Q>
   void paramValToString(std::vector<Q> const & val, std::string & result);
 
   //! Machine-readable input from a string, for use in jevois::Parameter: reads [\c Element1, \c Element2, ...]
-  /*! Specialization for std::vector<T> which supports nesting of other vectors and vectors of other types */
+  /*! Overload for std::vector<T> which supports nesting of other vectors and vectors of other types */
   template <typename Q>
   void paramStringToVal(std::string const & valstring, std::vector<Q> & result);
 
@@ -100,19 +100,21 @@ namespace jevois
 
 #ifdef JEVOIS_PRO  
   //! Machine-readable output to a string, for use in jevois::Parameter: outputs \c R \c G \c B \c A, each 0..255
-  void paramValToString(ImColor const & val, std::string & result);
+  template <>
+  void paramValToString<ImColor>(ImColor const & val, std::string & result);
 
   //! Machine-readable input from a string, for use in jevois::Parameter: reads \c R \c G \c B \c A, each 0..255
-  void paramStringToVal(std::string const & valstring, ImColor & result);
+  template <>
+  void paramStringToVal<ImColor>(std::string const & valstring, ImColor & result);
 #endif
   
   //! Machine-readable output to a string, for use in jevois::Parameter: outputs [\c Key1:Value1, \c Key2:Value2, ...]
-   /*! Specialization for std::map which supports nesting of other maps/vectors */
+   /*! Overload for std::map which supports nesting of other maps/vectors */
   template <typename K, typename V>
   void paramValToString(std::map<K,V> const & val, std::string & result);
 
   //! Machine-readable input from a string, for use in jevois::Parameter: reads [\c Key1:Value1, \c Key2:Value2, ...]
-  /*! Specialization for std::map which supports nesting of other maps/vectors */
+  /*! Overload for std::map which supports nesting of other maps/vectors */
   template <typename K, typename V>
   void paramStringToVal(std::string const & valstring, std::map<K,V> & result);
 
@@ -128,6 +130,7 @@ namespace jevois
       a bool Parameter are:
 
       - "true" or "false"
+      - "True" or "False"
       - "t" or "f"
       - "yes" or "no"
       - "y" or "n"

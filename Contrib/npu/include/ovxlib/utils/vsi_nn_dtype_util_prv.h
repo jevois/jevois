@@ -49,6 +49,7 @@ static inline vsi_bool type_is_integer
     case VSI_NN_TYPE_UINT16:
     case VSI_NN_TYPE_UINT32:
     case VSI_NN_TYPE_UINT64:
+    case VSI_NN_TYPE_BOOL8:
         ret = TRUE;
         break;
     default:
@@ -193,11 +194,11 @@ static inline int32_t fp32_to_dfp
     type_get_range( type, &max_range, &min_range );
     if( fl > 0 )
     {
-        data = (int32_t)vsi_rint( in * (float)( 1 << fl ) );
+        data = (int32_t)vsi_rint( in * (float)( (int64_t)1 << fl ) );
     }
     else
     {
-        data = (int32_t)vsi_rint( in * ( 1.0f / (float)( 1 << -fl ) ) );
+        data = (int32_t)vsi_rint( in * ( 1.0f / (float)( (int64_t)1 << -fl ) ) );
     }
     data = vsi_nn_min( data, (int32_t)max_range );
     data = vsi_nn_max( data, (int32_t)min_range );
@@ -214,11 +215,11 @@ static inline float dfp_to_fp32
     float result;
     if( fl > 0 )
     {
-        result = (float)val * ( 1.0f / ( (float) ( 1 << fl ) ) );
+        result = (float)val * ( 1.0f / ( (float) ( (int64_t)1 << fl ) ) );
     }
     else
     {
-        result = (float)val * ( (float) ( 1 << -fl ) );
+        result = (float)val * ( (float) ( (int64_t)1 << -fl ) );
     }
     return result;
 } /* dfp_to_fp32() */
@@ -437,6 +438,7 @@ static inline vsi_status float32_to_dtype
     case VSI_NN_TYPE_UINT8:
     case VSI_NN_TYPE_INT16:
     case VSI_NN_TYPE_INT32:
+    case VSI_NN_TYPE_UINT32:
         {
             int32_t dst_value = 0;
             switch( dst_dtype->qnt_type )
@@ -505,7 +507,7 @@ vsi_bool vsi_nn_dtype_convert_float_to_quantize_asymm8
 vsi_bool vsi_nn_dtype_convert_float_to_quantize_symm8_perchannel
     (
     const float * buffer, size_t size,
-    const int32_t * shape, size_t rank,
+    const vsi_size_t * shape, size_t rank,
     const float * scale, size_t scale_size,
     const int32_t * zero_point, size_t zero_point_size,
     int32_t channel_dim,
@@ -550,7 +552,7 @@ vsi_bool vsi_nn_dtype_convert_quantize_asymm8_to_float
 vsi_bool vsi_nn_dtype_convert_quantize_symm8_perchannel_to_float
     (
     const int8_t * buffer, size_t size,
-    const int32_t * shape, size_t rank,
+    const vsi_size_t * shape, size_t rank,
     const float * scale, size_t scale_size,
     const int32_t * zero_point, size_t zero_point_size,
     int32_t channel_dim,

@@ -41,14 +41,14 @@ namespace jevois
       //! Parameter \relates jevois::Pipeline
       JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(zooroot, std::string, "Path where to find zoo files (.yml). "
                                              "If not absolute, it is relative to this module's path",
-                                             std::string(JEVOIS_SHARE_PATH) + "/dnn", ParamCateg);
+                                             JEVOIS_SHARE_PATH "/dnn", ParamCateg);
 
       //! Parameter \relates jevois::Pipeline
       JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(zoo, std::string, "Filename for neural network zoo file (.yml). "
                                              "If not absolute, it is relative to zooroot",
                                              "models.yml", ParamCateg);
       //! Enum \relates jevois::Pipeline
-      JEVOIS_DEFINE_ENUM_CLASS(Filter, (All) (OpenCV) (TPU) (NPU) (VPU) );
+      JEVOIS_DEFINE_ENUM_CLASS(Filter, (All) (OpenCV) (TPU) (NPU) (VPU) (VPUX) (NPUX) (SPU) );
 
       //! Parameter \relates jevois::Pipeline
       JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(filter, Filter, "Filter to possibly only show as options in "
@@ -57,11 +57,15 @@ namespace jevois
 
       //! Parameter \relates jevois::Pipeline
       JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(pipe, std::string, "Pipeline to use, which should correspond to a "
-                                             "top-level entry in the zoo file",
+                                             "top-level entry in the zoo file. Network execution types are: OpenCV: "
+                                             "on CPU, NPU: on JeVois NPU accelerator, TPU: on Coral Edge TPU if "
+                                             "available, VPU: on MyriadX VPU if available, NPUX: on NPU via TimVX "
+                                             "OpenCV extension, VPUX: on CPU via ARM-Compute OpenVino emulation "
+                                             "of VPU, and SPU: on Hailo8 SPU if available.",
                                              "", ParamCateg);
       
       //! Enum \relates jevois::Pipeline
-      JEVOIS_DEFINE_ENUM_CLASS(PreProc, (Blob) (Custom) );
+      JEVOIS_DEFINE_ENUM_CLASS(PreProc, (Blob) (Python) (Custom) );
 
       //! Parameter \relates jevois::Pipeline
       JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(preproc, PreProc, "Pre-Processor to use, usually set automatically "
@@ -69,9 +73,9 @@ namespace jevois
                                              PreProc::Blob, PreProc_Values, ParamCateg);
       //! Enum \relates jevois::Pipeline
 #ifdef JEVOIS_PRO
-      JEVOIS_DEFINE_ENUM_CLASS(NetType, (OpenCV) (NPU) (TPU) (Custom) );
+      JEVOIS_DEFINE_ENUM_CLASS(NetType, (OpenCV) (NPU) (TPU) (SPU) (Python) (Custom) );
 #else
-      JEVOIS_DEFINE_ENUM_CLASS(NetType, (OpenCV) (Custom) );
+      JEVOIS_DEFINE_ENUM_CLASS(NetType, (OpenCV) (Python) (Custom) );
 #endif
 
       //! Parameter \relates jevois::Pipeline
@@ -79,7 +83,7 @@ namespace jevois
                                              "automatically by selecting a pipeline from the zoo file",
                                              NetType::OpenCV, NetType_Values, ParamCateg);
       //! Enum \relates jevois::Pipeline
-      JEVOIS_DEFINE_ENUM_CLASS(PostProc, (Classify) (Detect) (Segment) (Custom) );
+      JEVOIS_DEFINE_ENUM_CLASS(PostProc, (Classify) (Detect) (Segment) (YuNet) (Python) (Stub) (Custom) );
 
       //! Parameter \relates jevois::Pipeline
       JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(postproc, PostProc, "Post-Processor to use, usually set automatically "
@@ -91,13 +95,24 @@ namespace jevois
       //! Parameter \relates jevois::Pipeline
       JEVOIS_DECLARE_PARAMETER(processing, Processing, "Type of processing: Sync runs pre-processing, "
                                "network, and post-processing sequentially for every frame. Use for fast "
-                               "networks. Async runs the network in a thread and should be used for "
-                               "networks slower than the camera framerate.",
+                               "networks only, otherwise it will slow down the GUI... Async runs the network in "
+                               "a thread and should be used for networks slower than the camera framerate.",
                                Processing::Async, Processing_Values, ParamCateg);
       
       //! Parameter \relates jevois::Pipeline
       JEVOIS_DECLARE_PARAMETER(overlay, bool, "Show some pipeline info as an overlay over output or GUI video",
                                true, ParamCateg);
+
+      //! Parameter \relates jevois::Pipeline
+      JEVOIS_DECLARE_PARAMETER(paramwarn, bool, "Issue warning if parameters are specified in the zoo file for "
+                               "a pipeline, but the pipeline's component is not using them. Warnings appear "
+                               "in the console when the pipeline is loaded.",
+                               true, ParamCateg);
+
+      //! Parameter \relates jevois::Pipeline
+      JEVOIS_DECLARE_PARAMETER(statsfile, std::string, "Appends pre/net/post timing statistics in HTML table format "
+                               "to the specified file if not empty. If path is relative, it is to " JEVOIS_SHARE_PATH,
+                               "", ParamCateg);
     }
     
     //! Neural processing pipeline
@@ -111,8 +126,9 @@ namespace jevois
         pre-processing, network, and post-processing to use, and that sets the parameters for those.  \ingroup dnn */
     class Pipeline : public jevois::Component,
                      public jevois::Parameter<pipeline::zooroot, pipeline::zoo, pipeline::filter, pipeline::pipe,
-                                              pipeline::processing, pipeline::preproc,
-                                              pipeline::nettype, pipeline::postproc, pipeline::overlay>
+                                              pipeline::processing, pipeline::preproc, pipeline::nettype,
+                                              pipeline::postproc, pipeline::overlay, pipeline::paramwarn,
+                                              pipeline::statsfile>
     {
       public:
         //! Constructor
@@ -121,7 +137,7 @@ namespace jevois
         //! Destructor
         virtual ~Pipeline();
 
-        //! Returns true when all three or preproc, net, and postproc are ready
+        //! Returns true when all three of preproc, net, and postproc are ready
         bool ready() const;
         
         //! Process an input image, send results to serial/image/gui
@@ -143,7 +159,7 @@ namespace jevois
             \code
             // Create an instance of our custom pre-processor and attach it as a sub-component of our pipeline
             auto sptr = itsPipeline->addSubComponent<MyCustomPreProc>("preproc");
-            itsPipeline->setCustomPreProcessor(std::static_pointer_cast<jevois::dnn::PreProcessor>(sptr);
+            itsPipeline->setCustomPreProcessor(std::static_pointer_cast<jevois::dnn::PreProcessor>(sptr));
             \endcode
 
             And you are ready to rock. */
@@ -191,13 +207,16 @@ namespace jevois
         double itsSecsSum = 0.0, itsSecsAvg = 0.0;
         int itsSecsSumNum = 0;
         bool itsPipeThrew = false;
-        void scanZoo(std::string const & zoofile, std::string const & filt, std::vector<std::string> & pipes,
+        void scanZoo(std::filesystem::path const & zoofile, std::string const & filt, std::vector<std::string> & pipes,
                      std::string const & indent);
         bool selectPipe(std::string const & zoofile, std::vector<std::string> const & tok);
-        void setZooParam(cv::FileNode & item, std::string const & zf, cv::FileNode const & node);
+        void setZooParam(std::string const & name, std::string const & value, std::string const & zf,
+                         cv::FileNode const & node);
         int itsOutImgY = 0;
 
         std::map<std::string, size_t> itsAccelerators;
+        std::vector<double> itsPreStats, itsNetStats, itsPstStats;
+        bool itsStatsWarmup = true;
     };
 
   } // namespace dnn

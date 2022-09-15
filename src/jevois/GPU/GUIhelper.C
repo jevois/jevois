@@ -23,11 +23,14 @@
 #define IMGUI_DEFINE_MATH_OPERATORS // Access to math operators
 #include <imgui_internal.h>
 #include <algorithm> // for tweak demo
+
 #include <jevois/GPU/GUIhelper.H>
 #include <jevois/GPU/GUIconsole.H>
 #include <jevois/GPU/GPUimage.H>
 #include <jevois/Core/Module.H>
+#include <jevois/GPU/GUIeditor.H>
 #include <jevois/Debug/SysInfo.H>
+#include <jevois/Util/Utils.H>
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <glm/gtc/matrix_transform.hpp> // glm::translate, glm::rotate, glm::scale, glm::perspective
@@ -38,6 +41,7 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <jevois/Debug/PythonException.H>
 
 // ##############################################################################################################
 jevois::GUIhelper::GUIhelper(std::string const & instance, bool conslock) :
@@ -45,43 +49,59 @@ jevois::GUIhelper::GUIhelper(std::string const & instance, bool conslock) :
 {
   // We defer OpenGL init to startFrame() so that all OpenGL code is in the same thread.
 
+  // If auto-detecting screen size, get the framebuffer size here so we can use it later:
+  if (winsize::get().width == 0)
+  {
+    // Query the framebuffer if no window size was given:
+    int w = 1920, h = 1080;  // defaults in case we fail to read from framebuffer
+    try
+    {
+      std::string const ws = jevois::getFileString("/sys/class/graphics/fb0/virtual_size");
+      std::vector<std::string> const tok = jevois::split(ws, "\\s*[,;x]\\s*");
+      if (tok.size() == 2) { w = std::stoi(tok[0]); h = std::stoi(tok[1]) / 2; } // Reported height is double...
+      LINFO("Detected framebuffer size: " << w << 'x' << h);
+    }
+    catch (...) { } // silently ignore any errors
+
+    winsize::set(cv::Size(w, h));
+  }
+
   itsWindowTitle = "JeVois-Pro v" + std::string(JEVOIS_VERSION_STRING);
 
-  // Create some config files:
-  itsCfgItems.emplace_back(CfgItem { JEVOIS_ROOT_PATH "/config/videomappings.cfg",
-                                     "JeVois videomappings.cfg",
-                                     "",
-                                     CfgSaveAction::RefreshMappings } );
-  
-  itsCfgItems.emplace_back(CfgItem { JEVOIS_ROOT_PATH "/config/initscript.cfg",
-                                     "JeVois initscript.cfg",
-                                     "",
-                                     CfgSaveAction::Reboot } );
-  
-  itsCfgItems.emplace_back(CfgItem { "params.cfg",
-                                     "Module's params.cfg",
-                                     "",
-                                     CfgSaveAction::Reload } );
-  
-  itsCfgItems.emplace_back(CfgItem { "script.cfg",
-                                     "Module's script.cfg",
-                                     "",
-                                     CfgSaveAction::Reload } );
-  
-  itsCfgItems.emplace_back(CfgItem { JEVOIS_ROOT_PATH "/share/dnn/models.yml",
-                                     "JeVois models.yml DNN Zoo",
-                                     "",
-                                     CfgSaveAction::Reload } );
+  // Create some config files for the config editor:
+  std::vector<EditorItem> fixedcfg
+    {
+     { JEVOIS_ROOT_PATH "/config/videomappings.cfg", "JeVois videomappings.cfg", EditorSaveAction::RefreshMappings },
+     { JEVOIS_ROOT_PATH "/config/initscript.cfg", "JeVois initscript.cfg", EditorSaveAction::Reboot },
+     { "params.cfg", "Module's params.cfg", EditorSaveAction::Reload },
+     { "script.cfg", "Module's script.cfg", EditorSaveAction::Reload },
+     { JEVOIS_ROOT_PATH "/share/dnn/models.yml",
+       "JeVois models.yml DNN Zoo Root", EditorSaveAction::Reload },
+     { JEVOIS_ROOT_PATH "/share/dnn/opencv.yml",
+       "JeVois opencv.yml DNN Zoo for OpenCV models", EditorSaveAction::Reload },
+     { JEVOIS_ROOT_PATH "/share/dnn/npu.yml",
+       "JeVois npu.yml DNN Zoo for A311D NPU models", EditorSaveAction::Reload },
+     { JEVOIS_ROOT_PATH "/share/dnn/spu.yml",
+       "JeVois spu.yml DNN Zoo for Hailo SPU models", EditorSaveAction::Reload },
+     { JEVOIS_ROOT_PATH "/share/dnn/tpu.yml",
+       "JeVois tpu.yml DNN Zoo for Coral TPU models", EditorSaveAction::Reload },
+     { JEVOIS_ROOT_PATH "/share/dnn/vpu.yml",
+       "JeVois vpu.yml DNN Zoo for Myriad-X VPU models", EditorSaveAction::Reload },
+    };
 
-  itsNumFixedCfgItems = itsCfgItems.size();
+  // Create the config editor:
+  itsCfgEditor.reset(new jevois::GUIeditor(this, "cfg", std::move(fixedcfg), JEVOIS_CUSTOM_DNN_PATH, "Custom DNN ",
+                                           { ".yaml", ".yml" }));
   
-  // Configure the config-file text editor:
-  auto cfglang = TextEditor::LanguageDefinition::JeVoisCfg();
-  itsCfgEditor.SetLanguageDefinition(cfglang);
+  // Create some config files for the code editor:
+  std::vector<EditorItem> fixedcode
+    {
+     { "*", "Module's source code", EditorSaveAction::Reload },
+    };
 
-  // Configure the code editor:
-  auto codelang = TextEditor::LanguageDefinition::CPlusPlus();
-  itsCodeEditor.SetLanguageDefinition(codelang);
+  // Create the code editor:
+  itsCodeEditor.reset(new jevois::GUIeditor(this, "code", std::move(fixedcode), JEVOIS_PYDNN_PATH, "PyDNN ",
+                                            { ".py", ".C", ".H", ".cpp", ".hpp", ".c", ".h" }));
 }
 
 // ##############################################################################################################
@@ -106,11 +126,15 @@ void jevois::GUIhelper::reset(bool modulechanged)
   itsModAuth.clear();
   itsModLang.clear();
   itsModDoc.clear();
-  itsRefreshCfgList = true;
 
   if (modulechanged)
   {
-    itsCodeFileName.clear();
+    itsCfgEditor->refresh();
+    itsCodeEditor->refresh();
+  }
+
+  {
+    // Clear old error messages:
     std::lock_guard<std::mutex> _(itsErrorMtx);
     itsErrors.clear();
   }
@@ -146,11 +170,18 @@ bool jevois::GUIhelper::startFrame(unsigned short & w, unsigned short & h)
   if (w == 0)
   {
     // Need to init the display:
-    auto const siz = winsize::get(); winsize::freeze();
-    auto const fs = fullscreen::get(); fullscreen::freeze();
+    cv::Size const siz = winsize::get();
+    bool const fs = fullscreen::get();
     LINFO("OpenGL init " << siz.width << 'x' << siz.height << (fs ? " fullscreen" : ""));
     itsBackend.init(siz.width, siz.height, fs, scale::get(), itsConsLock);
     rounding::set(int(rounding::get() * scale::get() + 0.499F));
+
+    // Get the actual window size and update our param:
+    unsigned short winw, winh; itsBackend.getWindowSize(winw, winh); winsize::set(cv::Size(winw, winh));
+    winsize::freeze();
+    fullscreen::freeze();
+
+    // Reset the GUI:
     reset();
   }
 
@@ -203,21 +234,21 @@ void jevois::GUIhelper::onParamChange(jevois::gui::style const & JEVOIS_UNUSED_P
   {
   case jevois::gui::GuiStyle::Dark:
     ImGui::StyleColorsDark();
-    itsCfgEditor.SetPalette(TextEditor::GetDarkPalette());
-    itsCodeEditor.SetPalette(TextEditor::GetDarkPalette());
+    itsCfgEditor->SetPalette(TextEditor::GetDarkPalette());
+    itsCodeEditor->SetPalette(TextEditor::GetDarkPalette());
     break;
     
   case jevois::gui::GuiStyle::Light:
     ImGui::StyleColorsLight();
     ImGui::GetStyle().Colors[ImGuiCol_WindowBg] = ImVec4(0.94f, 0.94f, 0.94f, 0.92f); // a bit transparent
-    itsCfgEditor.SetPalette(TextEditor::GetLightPalette());
-    itsCodeEditor.SetPalette(TextEditor::GetLightPalette());
+    itsCfgEditor->SetPalette(TextEditor::GetLightPalette());
+    itsCodeEditor->SetPalette(TextEditor::GetLightPalette());
     break;
     
   case jevois::gui::GuiStyle::Classic:
     ImGui::StyleColorsClassic();
-    itsCfgEditor.SetPalette(TextEditor::GetRetroBluePalette());
-    itsCodeEditor.SetPalette(TextEditor::GetRetroBluePalette());
+    itsCfgEditor->SetPalette(TextEditor::GetRetroBluePalette());
+    itsCodeEditor->SetPalette(TextEditor::GetRetroBluePalette());
     break;
   }
 }
@@ -433,10 +464,10 @@ void jevois::GUIhelper::drawPolyInternal(ImVec2 const * pts, size_t npts, ImU32 
 
   if (filled) dlb->AddConvexPolyFilled(pts, npts, applyFillAlpha(col));
 
-  if (npts)
+  if (npts > 1)
   {
     for (size_t i = 0; i < npts - 1; ++i) dlb->AddLine(pts[i], pts[i + 1], col, thick);
-    dlb->AddLine(pts[npts - 1], pts[0], col, thick);
+    dlb->AddLine(pts[npts - 1], pts[0], col, thick); // close the polygon
   }
 }
 
@@ -554,6 +585,80 @@ void jevois::GUIhelper::releaseImage2(char const * name)
 }
 
 // ##############################################################################################################
+ImVec2 jevois::GUIhelper::d2i(ImVec2 p, char const * name)
+{
+  // Find the image:
+  GPUimage * img;
+  float fx = 1.0F, fy = 1.0F;
+
+  if (name == nullptr)
+  {
+    if (itsLastDrawnImage == nullptr) throw std::range_error("You need to call drawImage() or drawInputFrame() first");
+    img = itsLastDrawnImage;
+    if (itsUsingScaledImage) { fx = 1.0F / itsScaledImageFacX; fy = 1.0F / itsScaledImageFacY; }
+  }
+  else
+  {
+    std::string nstr = name;
+    auto itr = itsImages.find(nstr);
+    if (itr == itsImages.end())
+    {
+      // Add a zero in case we are dealing with a camera frame (drawImage() and drawInputFrame() add suffixes, but all
+      // image buffers are the same size):
+      itr = itsImages.find(nstr + '0');
+      if (itr == itsImages.end()) throw std::range_error("No previously drawn image with name [" + nstr + "] found");
+    }
+    img = & itr->second;
+  }
+
+  // Delegate:
+  ImVec2 ret = img->d2i(p);
+  ret.x *= fx; ret.y *= fy;
+  return ret;
+}
+
+// ##############################################################################################################
+ImVec2 jevois::GUIhelper::d2i(float x, float y, char const * name)
+{ return d2i(ImVec2(x, y), name); }
+
+// ##############################################################################################################
+ImVec2 jevois::GUIhelper::d2is(ImVec2 p, char const * name)
+{
+  // Find the image:
+  GPUimage * img;
+  float fx = 1.0F, fy = 1.0F;
+  
+  if (name == nullptr)
+  {
+    if (itsLastDrawnImage == nullptr) throw std::range_error("You need to call drawImage() or drawInputFrame() first");
+    img = itsLastDrawnImage;
+    if (itsUsingScaledImage) { fx = 1.0F / itsScaledImageFacX; fy = 1.0F / itsScaledImageFacY; }
+  }
+  else
+  {
+    std::string nstr = name;
+    auto itr = itsImages.find(nstr);
+    if (itr == itsImages.end())
+    {
+      // Add a zero in case we are dealing with a camera frame (drawImage() and drawInputFrame() add suffixes, but all
+      // image buffers are the same size):
+      itr = itsImages.find(nstr + '0');
+      if (itr == itsImages.end()) throw std::range_error("No previously drawn image with name [" + nstr + "] found");
+    }
+    img = & itr->second;
+  }
+
+  // Delegate:
+  ImVec2 ret = img->d2is(p);
+  ret.x *= fx; ret.y *= fy;
+  return ret;
+}
+
+// ##############################################################################################################
+ImVec2 jevois::GUIhelper::d2is(float x, float y, char const * name)
+{ return d2is(ImVec2(x, y), name); }
+
+// ##############################################################################################################
 void jevois::GUIhelper::endFrame()
 {
   // Decide whether to show mouse cursor based on idle state:
@@ -584,55 +689,48 @@ void jevois::GUIhelper::drawJeVoisGUI()
       
       if (ImGui::BeginTabItem("Info"))
       {
-        itsRefreshCfgList = true;
         drawInfo();
         ImGui::EndTabItem();
       }
       
       if (ImGui::BeginTabItem("Parameters"))
       {
-        itsRefreshCfgList = true;
         drawParameters();
         ImGui::EndTabItem();
       }
       
       if (ImGui::BeginTabItem("Console"))
       {
-        itsRefreshCfgList = true;
         drawConsole();
         ImGui::EndTabItem();
       }
       
       if (ImGui::BeginTabItem("Camera"))
       {
-        itsRefreshCfgList = true;
         drawCamCtrls();
         ImGui::EndTabItem();
       }
       
       if (ImGui::BeginTabItem("Config"))
       {
-        drawCfgEditor();
+        itsCfgEditor->draw();
         ImGui::EndTabItem();
       }
       
       if (ImGui::BeginTabItem("Code"))
       {
-        itsRefreshCfgList = true;
-        drawCodeEditor();
+        itsCodeEditor->draw();
         ImGui::EndTabItem();
       }
       
       if (ImGui::BeginTabItem("System"))
       {
-        itsRefreshCfgList = true;
         drawSystem();
         ImGui::EndTabItem();
       }
       
       if (ImGui::BeginTabItem("Tweaks"))
       {
-        itsRefreshCfgList = true;
         drawTweaks();
         ImGui::EndTabItem();
       }
@@ -828,10 +926,10 @@ void jevois::GUIhelper::drawInfo()
     // Get the html doc if we have not yet parsed it:
     if (itsModName.empty())
     {
-      std::string fname = m->absolutePath("modinfo.html");
+      std::filesystem::path fname = m->absolutePath("modinfo.html");
       std::ifstream ifs(fname);
       if (ifs.is_open() == false)
-        itsModAuth = ("Cannot read file: " + fname).c_str();
+        itsModAuth = ("Cannot read file: " + fname.string()).c_str();
       else
       {
         int state = 0;
@@ -1297,11 +1395,15 @@ void jevois::GUIhelper::drawCamCtrls()
 }
 
 // ##############################################################################################################
-int jevois::GUIhelper::modal(std::string const & title, char const * text, bool & dont_ask_me_next_time,
+int jevois::GUIhelper::modal(std::string const & title, char const * text, int * default_val,
                              char const * b1txt, char const * b2txt)
 {
-  int ret = 0;
-
+  // Handle optional default_val pointer:
+  int ret = 0; int * retptr = default_val ? default_val : &ret;
+  
+  // Do we want to just return the default value?
+  if (*retptr == 1 || *retptr == 2) return *retptr;
+  
   // Open the modal if needed, and remember it:
   if (itsOpenModals.find(title) == itsOpenModals.end())
   {
@@ -1310,327 +1412,35 @@ int jevois::GUIhelper::modal(std::string const & title, char const * text, bool 
   }
 
   // Display the modal and get any button clicks:
+  bool dont_ask_me_next_time = (*retptr == 3);
+  
   if (ImGui::BeginPopupModal(title.c_str(), NULL, ImGuiWindowFlags_AlwaysAutoResize))
   {
     ImGui::TextUnformatted(text);
     ImGui::Separator();
-    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
-    ImGui::Checkbox("Don't ask me next time", &dont_ask_me_next_time);
-    ImGui::PopStyleVar();
-
+    if (default_val)
+    {
+      ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
+      ImGui::Checkbox("Don't ask me next time", &dont_ask_me_next_time);
+      ImGui::PopStyleVar();
+    }
     if (ImGui::Button(b1txt, ImVec2(120, 0))) ret = 1;
     ImGui::SetItemDefaultFocus();
     ImGui::SameLine();
-    if (ImGui::Button(b2txt, ImVec2(120, 0))) ret = 2;
+    if (ImGui::Button(b2txt, ImVec2(120, 0))) ret = 2; 
     ImGui::EndPopup();
   }
-
-  // Close and remove from our set of open modals if a button was clicked:
-  if (ret)
+  
+  // Close the modal if button clicked:
+  if (ret == 1 || ret == 2)
   {
     ImGui::CloseCurrentPopup();
     itsOpenModals.erase(title);
+    if (dont_ask_me_next_time) *retptr = ret; // remember the choice as new default choice
   }
+  else *retptr = dont_ask_me_next_time ? 3 : 0; // propagate checkbox status
   
   return ret;
-}
-
-// ##############################################################################################################
-void jevois::GUIhelper::loadEditorFile(TextEditor & e, std::string const & fn, std::string const & failtxt, bool failro)
-{
-  LINFO("Loading " << fn << " ...");
-
-  std::ifstream t(fn);
-  if (t.good())
-  {
-    std::string str((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
-    e.SetText(str);
-    e.SetReadOnly(false);
-  }
-  else
-  {
-    e.SetText(failtxt);
-    e.SetReadOnly(failro);
-  }
-}
-
-// ##############################################################################################################
-void jevois::GUIhelper::saveEditorFile(TextEditor & e, std::string const & fn)
-{
-  LINFO("Saving " << fn << " ...");
-  std::ofstream os(fn);
-  if (os.is_open() == false) { reportError("Cannot write " + fn); return; }
-
-  std::string const txt = e.GetText();
-  os << txt;
-
-  // Mark as un-edited:
-  e.SetEdited(false);
-}
-
-// ##############################################################################################################
-void jevois::GUIhelper::drawEditorMenu(TextEditor & e)
-{
-  if (ImGui::BeginMenuBar())
-  {
-    if (ImGui::BeginMenu("Edit"))
-    {
-      bool ro = e.IsReadOnly();
-
-      ImGui::Separator();
-      if (ImGui::MenuItem("Read-only mode", nullptr, &ro)) e.SetReadOnly(ro);
-      ImGui::Separator();
-      
-      if (ImGui::MenuItem("Undo", "ALT-Backspace", nullptr, !ro && e.CanUndo())) e.Undo();
-      if (ImGui::MenuItem("Redo", "Ctrl-Y", nullptr, !ro && e.CanRedo())) e.Redo();
-      
-      ImGui::Separator();
-      
-      if (ImGui::MenuItem("Copy", "Ctrl-C", nullptr, e.HasSelection())) e.Copy();
-      if (ImGui::MenuItem("Cut", "Ctrl-X", nullptr, !ro && e.HasSelection())) e.Cut();
-      if (ImGui::MenuItem("Delete", "Del", nullptr, !ro && e.HasSelection())) e.Delete();
-      if (ImGui::MenuItem("Paste", "Ctrl-V", nullptr, !ro && ImGui::GetClipboardText()!=nullptr)) e.Paste();
-      
-      ImGui::Separator();
-      
-      if (ImGui::MenuItem("Select all", nullptr, nullptr))
-        e.SetSelection(TextEditor::Coordinates(), TextEditor::Coordinates(e.GetTotalLines(), 0));
-      
-      ImGui::EndMenu();
-    }
-    ImGui::EndMenuBar();
-  }
-}
-
-// ##############################################################################################################
-void jevois::GUIhelper::drawEditor(TextEditor & e)
-{
-  auto cpos = e.GetCursorPosition();
-
-  ImGui::Text("%6d/%-6d %6d lines  | %s | %s | %s", cpos.mLine + 1, cpos.mColumn + 1, e.GetTotalLines(),
-              e.IsOverwrite() ? "Ovr" : "Ins",
-              e.IsEdited() ? "*" : " ",
-              e.GetLanguageDefinition().mName.c_str());
-  
-  e.Render("JeVois-Pro Configuration Editor");
-}
-
-// ##############################################################################################################
-void jevois::GUIhelper::drawCfgEditor()
-{
-  // Refresh our list of files if needed:
-  if (itsRefreshCfgList)
-  {
-    // Remove all dynamic files:
-    while (itsCfgItems.size() > itsNumFixedCfgItems) itsCfgItems.pop_back();
-
-    // Rescan the custom dnn directory:
-    DIR * dirp = opendir(JEVOIS_CUSTOM_DNN_PATH);
-    if (dirp)
-    {
-      struct dirent * dent;
-      while ((dent = readdir(dirp)) != nullptr)
-      {
-        std::string const node = dent->d_name;
-        size_t const nl = node.length();
-        if ((nl > 4 && node.substr(nl-4) == ".yml") || (nl > 5 && node.substr(nl-5) == ".yaml"))
-          itsCfgItems.emplace_back(CfgItem { jevois::absolutePath(JEVOIS_CUSTOM_DNN_PATH, node),
-                                             "Custom DNN " + node,
-                                             "",
-                                             CfgSaveAction::Reload });
-      }
-      closedir(dirp);
-    }
-    itsRefreshCfgList = false;
-
-    // If the currently open file is not in our list anymore, load file 0:
-    if (itsCfgCurrentItem >= int(itsNumFixedCfgItems)) { itsCfgNewItem = 0; itsCfgWantLoad = true;}
-  }
-
-  // Create combo entries for imgui:
-  char const * items[itsCfgItems.size()];
-  for (int i = 0; CfgItem const & c : itsCfgItems) items[i++] = c.displayname.c_str();
-
-  // Check if the user is trying to select a different file:
-  if (ImGui::Combo("##cfgeditorcombo", &itsCfgNewItem, items, itsCfgItems.size())) itsCfgWantLoad = true;
-
-  // Want to load a new file? check if we need to save the current one first:
-  if (itsCfgWantLoad && itsCfgWantAction == false)
-  {
-    if (itsCfgEditor.IsEdited())
-    {
-      static bool discard_edits_dont_ask = false;
-      int ret = modal("Discard edits?", "File was edited. Discard all edits? This cannot be undone.",
-                      discard_edits_dont_ask, "Discard", "Save");
-      switch (ret)
-      {
-      case 0: break; // Need to wait
-      case 1: itsCfgWantAction = false; itsCfgOkToLoad = true; break; // Discard selected
-      case 2: saveEditorFile(itsCfgEditor, itsCfgFileName); itsCfgWantAction = true; break; // save selected
-      default: break;
-      }
-    }
-    else
-    {
-      itsCfgWantLoad = false;
-      itsCfgOkToLoad = true;
-    }
-  }
-  
-  // Need to execute an action after a save?
-  if (itsCfgWantAction)
-  {
-    switch (itsCfgCurrentAction)
-    {
-    case CfgSaveAction::None:
-      itsCfgWantAction = false;
-      break;
-
-    case CfgSaveAction::Reload:
-    {
-      static bool reload_dont_ask = false;
-      int ret = modal("Reload Module?", "Reload Machine Vision Module for changes to take effect?",
-                      reload_dont_ask, "Reload", "Later");
-      switch (ret)
-      {
-      case 0: break; // Need to wait
-      case 1:  // Reload selected
-        engine()->requestSetFormat(-1);
-        itsCfgWantAction = false;
-        itsCfgOkToLoad = itsCfgWantLoad;
-        break;
-        
-      case 2: // Later selected: we don't want action anymore
-        itsCfgWantAction = false;
-        itsCfgOkToLoad = itsCfgWantLoad;
-        break;
-
-      default: break;
-      }
-    }
-    break;
-
-    case CfgSaveAction::Reboot:
-    {
-      static bool reboot_dont_ask = false;
-      int ret = modal("Restart?", "Restart JeVois-Pro for changes to take effect?",
-                      reboot_dont_ask, "Restart", "Later");
-      switch (ret)
-      {
-      case 0: break; // Need to wait
-
-      case 1: // Reboot selected
-        engine()->reboot();
-        itsCfgWantAction = false;
-        break;
-        
-      case 2: // Later selected: we don't want action anymore
-        itsCfgWantAction = false;
-        break;
-
-      default: break;
-      }
-    }
-    break;
-
-    case CfgSaveAction::RefreshMappings:
-    {
-      engine()->reloadVideoMappings();
-      itsRefreshVideoMappings = true;
-      itsCfgWantAction = false;
-    }
-    break;
-    }
-  }
-  
-  // Ready to load a new file?
-  if (itsCfgOkToLoad)
-  {
-    itsCfgOkToLoad = false;
-    itsCfgCurrentItem = itsCfgNewItem;
-    itsCfgCurrentAction = itsCfgItems[itsCfgCurrentItem].action;
-      
-    // If path is relative, make it within the module's path (if any):
-    if (items[itsCfgCurrentItem][0] != '/')
-    {
-      auto m = engine()->module();
-      if (m) itsCfgFileName = m->absolutePath(itsCfgItems[itsCfgCurrentItem].filename);
-      else itsCfgFileName = itsCfgItems[itsCfgCurrentItem].filename;
-    }
-    else itsCfgFileName = itsCfgItems[itsCfgCurrentItem].filename;
-    
-    // Load the file:
-    loadEditorFile(itsCfgEditor, itsCfgFileName, "", false);
-  }
-
-  // Draw a save button:
-  ImGui::SameLine();
-  ImGui::TextUnformatted("   "); ImGui::SameLine();
-  if (ImGui::Button("Save")) { saveEditorFile(itsCfgEditor, itsCfgFileName); itsCfgWantAction = true; }
-  ImGui::Separator();
-
-  // Add a menu for editor actions:
-  drawEditorMenu(itsCfgEditor);
-
-  // Render the editor in a child window so it can scroll correctly:
-  drawEditor(itsCfgEditor);  
-}
-
-// ##############################################################################################################
-void jevois::GUIhelper::drawCodeEditor()
-{
-  // If we do not have a module, do nothing:
-  std::shared_ptr<jevois::Module> m = engine()->module();
-
-  if (!m)
-  {
-    itsCodeEditor.SetText("No machine vision module loaded."); 
-    itsCodeEditor.SetReadOnly(true);
-    return;
-  }
-
-  // Load the code if needed:
-  static bool ispython = false;
-  if (itsCodeFileName.empty())
-  {
-    // Get module type:
-    VideoMapping const & vm = engine()->getCurrentVideoMapping();
-    itsCodeFileName = vm.srcpath();
-    ispython = vm.ispython;
-
-    // Set the language:
-    if (ispython)
-    {
-      auto codelang = TextEditor::LanguageDefinition::Python();
-      itsCodeEditor.SetLanguageDefinition(codelang);
-    }
-    else
-    {
-      auto codelang = TextEditor::LanguageDefinition::CPlusPlus();
-      itsCodeEditor.SetLanguageDefinition(codelang);
-    }
-    
-    // Load the file:
-    loadEditorFile(itsCodeEditor, itsCodeFileName, "Failed to load " + itsCodeFileName, true);
-  }
-
-  if (ispython)
-  {
-    // Draw a save button:
-    if (ImGui::Button("Save and Restart Module"))
-    {
-      saveEditorFile(itsCodeEditor, itsCodeFileName);
-      engine()->requestSetFormat(-1);
-    }
-    ImGui::Separator();
-  }
-  else itsCodeEditor.SetReadOnly(true);
-
-  // Add a menu for editor actions:
-  drawEditorMenu(itsCodeEditor);
-
-  // Render the editor in a child window so it can scroll correctly:
-  drawEditor(itsCodeEditor);  
 }
 
 // ##############################################################################################################
@@ -1655,7 +1465,7 @@ void jevois::GUIhelper::drawSystem()
   
   static int refresh = 1;
   static std::string cpu, mem, ver;
-  static size_t npu, tpu, vpu; static int fan;
+  static size_t npu, tpu, vpu, spu; static int fan;
   if (--refresh == 0)
   {
     refresh = 60;
@@ -1665,12 +1475,13 @@ void jevois::GUIhelper::drawSystem()
     npu = jevois::getNumInstalledNPUs();
     tpu = jevois::getNumInstalledTPUs();
     vpu = jevois::getNumInstalledVPUs();
+    spu = jevois::getNumInstalledSPUs();
     fan = jevois::getFanSpeed();
   }
   ImGui::Text("JeVois-Pro v%s -- %s", JEVOIS_VERSION_STRING, ver.c_str());
   ImGui::Text(cpu.c_str());
   ImGui::Text(mem.c_str());
-  ImGui::Text("NPU: %d, TPU: %d, VPU: %d. Fan: %d%%", npu, tpu, vpu, fan);
+  ImGui::Text("NPU: %d, TPU: %d, VPU: %d, SPU: %d. Fan: %d%%", npu, tpu, vpu, spu, fan);
   ImGui::Separator();
   
   // #################### Create new module:
@@ -2134,7 +1945,7 @@ void jevois::GUIhelper::drawNewModuleForm()
         engine()->foreachVideoMapping([&](VideoMapping const & mm) { if (m.isSameAs(mm)) foundidx = idx; ++idx; });
         if (foundidx != 12345678) engine()->requestSetFormat(foundidx);
         itsRefreshVideoMappings = true; // Force a refresh of our list of video mappings
-        itsRefreshCfgList = true; // Force a refresh of videomappings.cfg in the config editor
+        /////itsRefreshCfgList = true; // Force a refresh of videomappings.cfg in the config editor
         itsVideoMappingListType = templ; // Switch to the mapping list that contains our new module
         
         // Clear a few things before the next module:
@@ -2183,8 +1994,8 @@ void jevois::GUIhelper::drawTweaks()
   static float fudgex = 0.375f;
   static float fudgey = 0.375f;
   static float fudgez = 0.0f;
-  int winw = 1920, winh = 1080;
-  
+  unsigned short winw, winh; itsBackend.getWindowSize(winw, winh);
+
   ImGui::SliderFloat("OpenGL Camera z", &camz, -2.0f * winh, -1.0f);
   ImGui::SliderAngle("OpenGL yaw", &yaw, -179.0f, 180.0f);
   ImGui::SliderAngle("OpenGL pitch", &pitch, -179.0f, 180.0f);
@@ -2248,6 +2059,9 @@ void jevois::GUIhelper::reportError(std::string const & err)
   // Did we already report this error? If so, just update the last received time:
   for (auto & e : itsErrors) if (e.err == err) { e.lasttime = now; return; }
 
+  // Too many errors already?
+  if (itsErrors.size() > 10) { LERROR("Too many errors -- TRUNCATING"); return; }
+  
   // It's a new error, push a new entry into our list:
   ErrorData d { err, now, now };
   itsErrors.emplace(itsErrors.end(), std::move(d));
@@ -2256,19 +2070,34 @@ void jevois::GUIhelper::reportError(std::string const & err)
 }
 
 // ##############################################################################################################
+void jevois::GUIhelper::clearErrors()
+{
+  std::lock_guard<std::mutex> _(itsErrorMtx);
+  itsErrors.clear();
+}
+
+// ##############################################################################################################
 void jevois::GUIhelper::reportAndIgnoreException(std::string const & prefix)
 {
   if (prefix.empty())
   {
     try { throw; }
-    catch (std::exception const & e) { reportError(e.what()); }
-    catch (...) { reportError("Unknown error"); }
+    catch (std::exception const & e)
+    { reportError(e.what()); }
+    catch (boost::python::error_already_set & e)
+    { reportError("Python error:\n"+jevois::getPythonExceptionString(e)); }
+    catch (...)
+    { reportError("Unknown error"); }
   }
   else
   {
     try { throw; }
-    catch (std::exception const & e) { reportError(prefix + ": " + e.what()); }
-    catch (...) { reportError(prefix + ": Unknown error"); }
+    catch (std::exception const & e)
+    { reportError(prefix + ": " + e.what()); }
+    catch (boost::python::error_already_set & e)
+    { reportError(prefix + ": Python error:\n"+jevois::getPythonExceptionString(e)); }
+    catch (...)
+    { reportError(prefix + ": Unknown error"); }
   }
 }
 

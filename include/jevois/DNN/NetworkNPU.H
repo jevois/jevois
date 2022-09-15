@@ -27,11 +27,12 @@ namespace jevois
 {
   namespace dnn
   {
-    //! Wrapper around an DNN neural network running on Amlogic A311D NPU accelerator
+    //! Wrapper around a DNN neural network running on Amlogic A311D NPU accelerator (Verisilicon)
     /*! \ingroup dnn */
     class NetworkNPU : public jevois::dnn::Network,
                        public jevois::Parameter<network::intensors, network::outtensors, network::dataroot,
-                                                network::config, network::model, network::flattenoutputs>
+                                                network::model, network::dequant, network::verifygraph,
+                                                network::ovxver>
     {
       public:
         //! Inherited constructor ok

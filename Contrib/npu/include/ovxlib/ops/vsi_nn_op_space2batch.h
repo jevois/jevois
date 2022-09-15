@@ -41,7 +41,7 @@ typedef struct _vsi_nn_space2batch_param
     /* local data must be the first. */
     vsi_nn_space2batch_lcl_data_t local;
 
-    int32_t *block_size;
+    const int32_t *block_size;
     uint32_t block_size_num;
     int32_t pad[4]; // [left, right, top, bottom]
 } vsi_nn_space2batch_param;

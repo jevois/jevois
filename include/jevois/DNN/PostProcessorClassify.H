@@ -28,7 +28,7 @@ namespace jevois
     /*! This is the last step in a deep neural network processing Pipeline. \ingroup dnn */
     class PostProcessorClassify : public PostProcessor,
                                   public Parameter<postprocessor::classoffset, postprocessor::classes,
-                                                   postprocessor::top, postprocessor::thresh, postprocessor::softmax,
+                                                   postprocessor::top, postprocessor::cthresh, postprocessor::softmax,
                                                    postprocessor::scorescale>
     {
       public:
@@ -55,6 +55,7 @@ namespace jevois
 
       private:
         std::vector<jevois::ObjReco> itsObjRec;
+        bool itsFirstTime = true;
     };
     
   } // namespace dnn

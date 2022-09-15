@@ -29,11 +29,11 @@
  * dilation [dilation height, dilation width]
  */
 void npuref_interface_quant_conv2d(
-    const void* input_buffer, const vsi_nn_tensor_attr_t* input_attr,
-    const void* kernel_buffer, const vsi_nn_tensor_attr_t* kernel_attr,
+    const void* input_buffer, const vsi_nn_kernel_tensor_attr_t* input_attr,
+    const void* kernel_buffer, const vsi_nn_kernel_tensor_attr_t* kernel_attr,
     const void* bias_buffer,
     const int* pad, const int* strides, const int* dilation,
-    const vsi_nn_tensor_attr_t* output_attr, void* output_buffer);
+    const vsi_nn_kernel_tensor_attr_t* output_attr, void* output_buffer);
 
 /** npu reference for quant deconv2d
  * pad      [pad top, pad bottom, pad left, pad right]
@@ -41,11 +41,11 @@ void npuref_interface_quant_conv2d(
  * dilation [dilation height, dilation width]
  */
 void npuref_interface_quant_deconv2d(
-    const void* input_buffer, const vsi_nn_tensor_attr_t* input_attr,
-    const void* kernel_buffer, const vsi_nn_tensor_attr_t* kernel_attr,
+    const void* input_buffer, const vsi_nn_kernel_tensor_attr_t* input_attr,
+    const void* kernel_buffer, const vsi_nn_kernel_tensor_attr_t* kernel_attr,
     const void* bias_buffer,
     const int* pad, const int* strides, const int* dilation,
-    const vsi_nn_tensor_attr_t* output_attr, void* output_buffer);
+    const vsi_nn_kernel_tensor_attr_t* output_attr, void* output_buffer);
 
 
 /** npu reference for quant depthwise conv2d

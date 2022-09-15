@@ -179,13 +179,13 @@ void jevois::paramStringToVal(std::string const & valstring, jevois::StepRange<T
   if (splitVec.size() != 3) throw std::range_error("Error parsing StepRange from [" + valstring + "]: missing '...'");
 
   T mi = 0, st = 0, ma = 0;
-  try { jevois::paramStringToVal<T>(splitVec[0], mi); }
+  try { jevois::paramStringToVal(splitVec[0], mi); }
   catch (...) { throw std::range_error("Error parsing StepRange from [" + valstring + "]: invalid min value"); }
 
-  try { jevois::paramStringToVal<T>(splitVec[1], st); }
+  try { jevois::paramStringToVal(splitVec[1], st); }
   catch (...) { throw std::range_error("Error parsing StepRange from [" + valstring + "]: invalid step value"); }
 
-  try { jevois::paramStringToVal<T>(splitVec[2], ma); }
+  try { jevois::paramStringToVal(splitVec[2], ma); }
   catch (...) { throw std::range_error("Error parsing StepRange from [" + valstring + "]: invalid max value"); }
 
   result = jevois::StepRange<T>(mi, st, ma);

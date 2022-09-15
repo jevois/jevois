@@ -21,20 +21,84 @@
 #include <jevois/Util/Async.H>
 #include <jevois/Image/RawImageOps.H>
 #include <jevois/Debug/SysInfo.H>
+#include <jevois/DNN/Utils.H>
+#include <jevois/Core/Engine.H>
 
 #include <jevois/DNN/NetworkOpenCV.H>
 #include <jevois/DNN/NetworkNPU.H>
 #include <jevois/DNN/NetworkTPU.H>
+#include <jevois/DNN/NetworkPython.H>
+#include <jevois/DNN/NetworkHailo.H>
 
 #include <jevois/DNN/PreProcessorBlob.H>
+#include <jevois/DNN/PreProcessorPython.H>
 
 #include <jevois/DNN/PostProcessorClassify.H>
 #include <jevois/DNN/PostProcessorDetect.H>
 #include <jevois/DNN/PostProcessorSegment.H>
+#include <jevois/DNN/PostProcessorYuNet.H>
+#include <jevois/DNN/PostProcessorPython.H>
+#include <jevois/DNN/PostProcessorStub.H>
 
 #include <opencv2/core/utils/filesystem.hpp>
 
-#include <dirent.h>
+#include <fstream>
+
+// ####################################################################################################
+
+// Simple class to hold a list of <name, value> pairs for our parameters, with updating the value of existing parameer
+// names if they are set several times (e.g., first set as a global, then set again for a particular network). Note that
+// here we do not check the validity of the parameters. This is delegated to Pipeline::setZooParam():
+namespace
+{
+  class ParHelper
+  {
+    public:
+      // ----------------------------------------------------------------------------------------------------
+      // Set a param from an entry in our yaml file
+      void set(cv::FileNode const & item, std::string const & zf, cv::FileNode const & node)
+      {
+        std::string k = item.name();
+        std::string v;
+        switch (item.type())
+        {
+        case cv::FileNode::INT: v = std::to_string((int)item); break;
+        case cv::FileNode::REAL: v = std::to_string((float)item); break;
+        case cv::FileNode::STRING: v = (std::string)item; break;
+        default:
+          if (&node == &item)
+            LFATAL("Invalid global zoo parameter " << k << " type " << item.type() << " in " << zf);
+          else
+            LFATAL("Invalid zoo parameter " << k << " type " << item.type() << " in " << zf << " node " << node.name());
+        }
+
+        // Update value if param already exists, or add new key,value pair:
+        for (auto & p : params) if (p.first == k) { p.second = v; return; }
+        params.emplace_back(std::make_pair(k, v));
+      }
+
+      // ----------------------------------------------------------------------------------------------------
+      // Get a value for entry subname under item if found, otherwise try our table of globals, otherwise empty
+      std::string pget(cv::FileNode & item, std::string const & subname)
+      {
+        std::string const v = (std::string)item[subname];
+        if (v.empty() == false) return v;
+        for (auto const & p : params) if (p.first == subname) return p.second;
+        return std::string();
+      }
+
+      // ----------------------------------------------------------------------------------------------------
+      // Un-set a previously set global
+      void unset(std::string const & name)
+      {
+        for (auto itr = params.begin(); itr != params.end(); ++itr)
+          if (itr->first == name) { params.erase(itr); return; }
+      }
+      
+      // Ordering matters, so use a vector instead of map or unordered_map
+      std::vector<std::pair<std::string /* name */, std::string /* value */>> params;
+  };
+}
 
 // ####################################################################################################
 jevois::dnn::Pipeline::Pipeline(std::string const & instance) :
@@ -43,10 +107,19 @@ jevois::dnn::Pipeline::Pipeline(std::string const & instance) :
   itsAccelerators["TPU"] = jevois::getNumInstalledTPUs();
   itsAccelerators["VPU"] = jevois::getNumInstalledVPUs();
   itsAccelerators["NPU"] = jevois::getNumInstalledNPUs();
-  itsAccelerators["OpenCV"] = 1;
-  
-  LINFO("Detected " << itsAccelerators["NPU"] << " JeVois-Pro NPUs, " << itsAccelerators["TPU"] <<
-        " Coral TPUs, " << itsAccelerators["VPU"] << " Myriad-X VPUs.");
+  itsAccelerators["SPU"] = jevois::getNumInstalledSPUs();
+  itsAccelerators["OpenCV"] = 1; // OpenCV always available
+  itsAccelerators["Python"] = 1; // Python always available
+#ifdef JEVOIS_PLATFORM_PRO
+  itsAccelerators["VPUX"] = 1; // VPU emulation on CPU always available through OpenVino
+#endif
+  itsAccelerators["NPUX"] = 1; // NPU over Tim-VX always available since compiled into OpenCV
+    
+  LINFO("Detected " <<
+        itsAccelerators["NPU"] << " JeVois-Pro NPUs, " <<
+        itsAccelerators["SPU"] << " Hailo8 SPUs, " <<
+        itsAccelerators["TPU"] << " Coral TPUs, " <<
+        itsAccelerators["VPU"] << " Myriad-X VPUs.");
 }
 
 // ####################################################################################################
@@ -146,67 +219,101 @@ void jevois::dnn::Pipeline::onParamChange(pipeline::zoo const & JEVOIS_UNUSED_PA
 }
 
 // ####################################################################################################
-void jevois::dnn::Pipeline::scanZoo(std::string const & zoofile, std::string const & filt,
+void jevois::dnn::Pipeline::scanZoo(std::filesystem::path const & zoofile, std::string const & filt,
                                     std::vector<std::string> & pipes, std::string const & indent)
 {
   LINFO(indent << "Scanning model zoo file " << zoofile << " with filter [" << filt << "]...");
   int ntot = 0, ngood = 0;
+
+  bool has_vpu = false;
+  auto itr = itsAccelerators.find("VPU");
+  if (itr != itsAccelerators.end() && itr->second > 0) has_vpu = true;
   
   // Scan the zoo file to update the parameter def of the pipe parameter:
   cv::FileStorage fs(zoofile, cv::FileStorage::READ);
   if (fs.isOpened() == false) LFATAL("Could not open zoo file " << zoofile);
   cv::FileNode fn = fs.root();
-
+  ParHelper ph;
+  
   for (cv::FileNodeIterator fit = fn.begin(); fit != fn.end(); ++fit)
   {
     cv::FileNode item = *fit;
 
     // Process include: directives recursively:
     if (item.name() == "include")
+    {
       scanZoo(jevois::absolutePath(zooroot::get(), (std::string)item), filt, pipes, indent + "  ");
-
-    // Process includedir: directives (only one level of directory is scanned):
-    if (item.name() == "includedir")
-    {
-      std::string const dir = jevois::absolutePath(zooroot::get(), (std::string)item);
-      DIR *dirp = opendir(dir.c_str());
-      if (dirp == nullptr) LFATAL("includedir: " << dir << " in zoo file " << zoofile << ": cannot read directory");
-      struct dirent * dent;
-      while ((dent = readdir(dirp)) != nullptr)
-      {
-        std::string const node = dent->d_name;
-        size_t const nl = node.length();
-        if ((nl > 4 && node.substr(nl-4) == ".yml") || (nl > 5 && node.substr(nl-5) == ".yaml"))
-          scanZoo(dir + "/" + node, filt, pipes, indent + "  ");
-      }
-      closedir(dirp);
     }
-    
-    // Process map types, ignore others:
-    if (item.isMap() == false) continue;
-
-    ++ntot;
-
-    // As a prefix, we use OpenCV for OpenCV models on CPU/OpenCL backends, and VPU for InferenceEngine backend with
-    // Myriad target:
-    std::string typ = (std::string)item["nettype"];
-    if (typ == "OpenCV" &&
-        (std::string)item["backend"] == "InferenceEngine" &&
-        (std::string)item["target"] == "Myriad")
-      typ = "VPU";
-
-    // Do not consider a model if we do not have the accelerator for it:
-    bool has_accel = false;
-    auto itr = itsAccelerators.find(typ);
-    if (itr != itsAccelerators.end() && itr->second > 0) has_accel = true;
-
-    // Add this pipe if it matches our filter and we have the accelerator for it:
-    if ((filt == "All" || typ == filt) && has_accel)
+    // Process includedir: directives (only one level of directory is scanned):
+    else if (item.name() == "includedir")
     {
-      pipes.emplace_back(typ + ':' + (std::string)item["postproc"] + ':' + item.name());
-      ++ngood;
+      std::filesystem::path const dir = jevois::absolutePath(zooroot::get(), (std::string)item);
+      for (auto const & dent : std::filesystem::recursive_directory_iterator(dir))
+        if (dent.is_regular_file())
+        {
+          std::filesystem::path const path = dent.path();
+          std::filesystem::path const ext = path.extension();
+          if (ext == ".yml" || ext == ".yaml") scanZoo(path, filt, pipes, indent + "  ");
+        }
+    }
+    // Unset a previously set global?
+    else if (item.name() == "unset")
+    {
+      ph.unset((std::string)item);
+    }
+    // Set a global:
+    else if (! item.isMap())
+    {
+      ph.set(item, zoofile, item);
+    }
+    // Map type (model definition):
+    else
+    {
+      ++ntot;
+      
+      // As a prefix, we use OpenCV for OpenCV models on CPU/OpenCL backends, and VPU for InferenceEngine backend with
+      // Myriad target, VPUX for InferenceEngine/CPU (arm-compute OpenVino plugin, only works on platform), and NPUX for
+      // TimVX/NPU (NPU using TimVX OpenCV extension, uses NPU on platform or emulator on host):
+
+      // Set then get nettype to account for globals:
+      std::string typ = ph.pget(item, "nettype");
+      
+      if (typ == "OpenCV")
+      {
+        std::string backend = ph.pget(item, "backend");
+        std::string target = ph.pget(item, "target");
+
+        if (backend == "InferenceEngine")
+        {
+          if (target == "Myriad")
+          {
+            if (has_vpu) typ = "VPU"; // run VPU models on VPU if MyriadX accelerator is present
+#ifdef JEVOIS_PLATFORM_PRO
+            else typ = "VPUX"; // emulate VPU models on CPU through ARM-Compute if MyriadX accelerator not present
+#else
+            else continue; // VPU emulation does not work on host...
+#endif
+          }
+          else if (target == "CPU") typ = "VPUX";
+        }
+        else if (backend == "TimVX" && target == "NPU") typ = "NPUX";
+      }
+      
+      // Do not consider a model if we do not have the accelerator for it:
+      bool has_accel = false;
+      itr = itsAccelerators.find(typ);
+      if (itr != itsAccelerators.end() && itr->second > 0) has_accel = true;
+      
+      // Add this pipe if it matches our filter and we have the accelerator for it:
+      if ((filt == "All" || typ == filt) && has_accel)
+      {
+        std::string const postproc = ph.pget(item, "postproc");
+        pipes.emplace_back(typ + ':' + postproc + ':' + item.name());
+        ++ngood;
+      }
     }
   }
+  
   LINFO(indent << "Found " << ntot << " pipelines, " << ngood << " passed the filter.");
 }
 
@@ -217,6 +324,9 @@ void jevois::dnn::Pipeline::onParamChange(pipeline::pipe const & JEVOIS_UNUSED_P
   itsPipeThrew = false;
   freeze(false);
 
+  // Clear any errors related to previous pipeline:
+  engine()->clearErrors();
+  
   // Find the desired pipeline, and set it up:
   std::string const z = jevois::absolutePath(zooroot::get(), zoo::get());
   std::vector<std::string> tok = jevois::split(val, ":");
@@ -229,13 +339,26 @@ void jevois::dnn::Pipeline::onParamChange(pipeline::pipe const & JEVOIS_UNUSED_P
 // ####################################################################################################
 bool jevois::dnn::Pipeline::selectPipe(std::string const & zoofile, std::vector<std::string> const & tok)
 {
+  // We might have frozen processing to Sync if we ran a NetworkPython previously, so unfreeze here:
+  processing::freeze(false);
+  processing::set(jevois::dnn::pipeline::Processing::Async);
+
+  // Check if we have a VPU, to use VPU vs VPUX:
+  bool has_vpu = false;
+  auto itr = itsAccelerators.find("VPU");
+  if (itr != itsAccelerators.end() && itr->second > 0) has_vpu = true;
+  bool vpu_emu = false;
+
+  // Clear any old stats:
+  itsPreStats.clear(); itsNetStats.clear(); itsPstStats.clear();
+  itsStatsWarmup = true; // warmup before computing new stats
+  
   // Open the zoo file:
   cv::FileStorage fs(zoofile, cv::FileStorage::READ);
   if (fs.isOpened() == false) LFATAL("Could not open zoo file " << zoofile);
 
   // Find the desired pipeline:
-  std::vector<cv::FileNodeIterator> globals;
-  
+  ParHelper ph;
   cv::FileNode fn = fs.root(), node;
 
   for (cv::FileNodeIterator fit = fn.begin(); fit != fn.end(); ++fit)
@@ -249,47 +372,67 @@ bool jevois::dnn::Pipeline::selectPipe(std::string const & zoofile, std::vector<
     }
 
     // Process includedir: directives (only one level of directory is scanned), end recursion if we found our pipe:
-    if (item.name() == "includedir")
+    else if (item.name() == "includedir")
     {
-      std::string const dir = jevois::absolutePath(zooroot::get(), (std::string)item);
-      DIR *dirp = opendir(dir.c_str());
-      if (dirp == nullptr) LFATAL("includedir: " << dir << " in zoo file " << zoofile << ": cannot read directory");
-      struct dirent * dent;
-      while ((dent = readdir(dirp)) != nullptr)
-      {
-        std::string const node = dent->d_name;
-        size_t const nl = node.length();
-        if ((nl > 4 && node.substr(nl-4) == ".yml") || (nl > 5 && node.substr(nl-5) == ".yaml"))
+      std::filesystem::path const dir = jevois::absolutePath(zooroot::get(), (std::string)item);
+      for (auto const & dent : std::filesystem::recursive_directory_iterator(dir))
+        if (dent.is_regular_file())
         {
-          if (selectPipe(dir + "/" + node, tok)) { closedir(dirp); return true; }
+          std::filesystem::path const path = dent.path();
+          std::filesystem::path const ext = path.extension();
+          if (ext == ".yml" || ext == ".yaml") if (selectPipe(path, tok)) return true;
         }
-      }
-      closedir(dirp);
     }
     
+    // Unset a previously set global?
+    else if (item.name() == "unset")
+    {
+      ph.unset((std::string)item);
+    }
+    // Set a global:
+    else if (! item.isMap())
+    {
+      ph.set(item, zoofile, node);
+    }
     // This is an entry for a pipeline with a bunch of params under it:
-    else if (item.isMap())
+    else
     {
       if (item.name() != tok.back()) continue;
       if (tok.size() == 1) { node = item; break; }
       if (tok.size() != 3) LFATAL("Malformed pipeline name: " << jevois::join(tok, ":"));
       
+      // Skip if postproc is no match:
+      std::string postproc = ph.pget(item, "postproc");
+      if (postproc != tok[1] && postproc::strget() != tok[1]) continue;
+      
+      std::string nettype = ph.pget(item, "nettype");
+      std::string backend = ph.pget(item, "backend");
+      std::string target = ph.pget(item, "target");
+      
       if (tok[0] == "VPU")
       {
-        if ((std::string)item["nettype"] == "OpenCV" &&
-            ((std::string)item["postproc"] == tok[1] || postproc::strget() == tok[1]) &&
-            (std::string)item["backend"] == "InferenceEngine")
+        if (nettype == "OpenCV" && backend == "InferenceEngine" && target == "Myriad")
+        { node = item; break; }
+      }
+      else if (tok[0] == "VPUX")
+      {
+        if (nettype == "OpenCV" && backend == "InferenceEngine")
+        {
+          if (target == "Myriad" && has_vpu == false) { vpu_emu = true; node = item; break; }
+          else if (target == "CPU") { node = item; break; }
+        }
+      }
+      else if (tok[0] == "NPUX")
+      {
+        if (nettype == "OpenCV" && backend == "TimVX" && target == "NPU")
         { node = item; break; }
       }
       else
       {
-        if ((std::string)item["nettype"] == tok[0] &&
-            ((std::string)item["postproc"] == tok[1] || postproc::strget() == tok[1]))
+        if (nettype == tok[0])
         { node = item; break; }
       }
     }
-    // Global parameter in the current file, keep it for later, if we find our pipe:
-    else globals.emplace_back(fit);
   }
   
   // If the spec was not a match with any entries in the file, return false:
@@ -297,39 +440,46 @@ bool jevois::dnn::Pipeline::selectPipe(std::string const & zoofile, std::vector<
       
   // Found the pipe. First nuke our current pre/net/post:
   asyncNetWait();
-  itsPreProcessor.reset(); try { removeSubComponent("preproc"); } catch (...) { }
-  itsNetwork.reset(); try { removeSubComponent("network"); } catch (...) { }
-  itsPostProcessor.reset(); try { removeSubComponent("postproc"); } catch (...) { }
+  itsPreProcessor.reset(); removeSubComponent("preproc", false);
+  itsNetwork.reset(); removeSubComponent("network", false);
+  itsPostProcessor.reset(); removeSubComponent("postproc", false);
 
   // Then set all the global parameters of the current file:
-  for (cv::FileNodeIterator fit : globals)
-  {
-    cv::FileNode item = *fit;
-    setZooParam(item, zoofile, fs.root());
-  }
+  //for (auto const & pp : ph.params)
+  //  setZooParam(pp.first, pp.second, zoofile, fs.root());
   
-  // Then iterate over all pipeline params and set them:
+  // Then iterate over all pipeline params and set them: first update our table, then set params from the whole table:
   for (cv::FileNodeIterator fit = node.begin(); fit != node.end(); ++fit)
+    ph.set(*fit, zoofile, node);
+
+  for (auto const & pp : ph.params)
   {
-    cv::FileNode item = *fit;
-    setZooParam(item, zoofile, node);
+    if (vpu_emu && pp.first == "target") setZooParam(pp.first, "CPU", zoofile, node);
+    else setZooParam(pp.first, pp.second, zoofile, node);
   }
+
+  // Running a python net async segfaults instantly if we are also concurrently running pre or post processing in
+  // python, as python is not re-entrant... so force sync here:
+  if (dynamic_cast<jevois::dnn::NetworkPython *>(itsNetwork.get()) &&
+      (dynamic_cast<jevois::dnn::PreProcessorPython *>(itsPreProcessor.get()) ||
+       dynamic_cast<jevois::dnn::PostProcessorPython *>(itsPostProcessor.get())))
+  {
+    if (processing::get() != jevois::dnn::pipeline::Processing::Sync)
+    {
+      LERROR("Network of type Python cannot run Async if pre- or post- processor are also Python "
+             "-- FORCING Sync processing");
+      processing::set(jevois::dnn::pipeline::Processing::Sync);
+    }
+    processing::freeze(true);
+  }
+
   return true;
 }
-
-// ####################################################################################################
-void jevois::dnn::Pipeline::setZooParam(cv::FileNode & item, std::string const & zf, cv::FileNode const & node)
-{
-  std::string k = item.name();
-  std::string v;
-  switch (item.type())
-  {
-  case cv::FileNode::INT: v = std::to_string((int)item); break;
-  case cv::FileNode::REAL: v = std::to_string((float)item); break;
-  case cv::FileNode::STRING: v = (std::string)item; break;
-  default: LFATAL("Invalid zoo parameter " << k << " type " << item.type() << " in " << zf << " node " << node.name());
-  }
   
+// ####################################################################################################
+void jevois::dnn::Pipeline::setZooParam(std::string const & k, std::string const & v,
+                                        std::string const & zf, cv::FileNode const & node)
+{
   // The zoo file may contain extra params, like download URL, etc. To ignore those while still catching invalid
   // values on our parameters, we first check whether the parameter exists, and, if so, try to set it:
   bool hasparam = false;
@@ -345,18 +495,24 @@ void jevois::dnn::Pipeline::setZooParam(cv::FileNode & item, std::string const &
     catch (...)
     { LFATAL("While parsing [" << node.name() << "] in model zoo file " << zf << ": unknown error"); }
   }
+  else if (paramwarn::get())
+    engine()->reportError("WARNING: Unused parameter [" + k + "] in " + zf + " node [" + node.name() + "]");
 }
 
 // ####################################################################################################
 void jevois::dnn::Pipeline::onParamChange(pipeline::preproc const & JEVOIS_UNUSED_PARAM(param),
                                           pipeline::PreProc const & val)
 {
-  itsPreProcessor.reset(); try { removeSubComponent("preproc"); } catch (...) { }
+  itsPreProcessor.reset(); removeSubComponent("preproc", false);
   
   switch (val)
   {
   case jevois::dnn::pipeline::PreProc::Blob:
     itsPreProcessor = addSubComponent<jevois::dnn::PreProcessorBlob>("preproc");
+    break;
+
+  case jevois::dnn::pipeline::PreProc::Python:
+    itsPreProcessor = addSubComponent<jevois::dnn::PreProcessorPython>("preproc");
     break;
 
   case jevois::dnn::pipeline::PreProc::Custom:
@@ -371,7 +527,7 @@ void jevois::dnn::Pipeline::onParamChange(pipeline::preproc const & JEVOIS_UNUSE
 // ####################################################################################################
 void jevois::dnn::Pipeline::setCustomPreProcessor(std::shared_ptr<jevois::dnn::PreProcessor> pp)
 {
-  itsPreProcessor.reset(); try { removeSubComponent("preproc"); } catch (...) { }
+  itsPreProcessor.reset(); removeSubComponent("preproc", false);
   itsPreProcessor = pp;
   preproc::set(jevois::dnn::pipeline::PreProc::Custom);
 
@@ -385,7 +541,7 @@ void jevois::dnn::Pipeline::onParamChange(pipeline::nettype const & JEVOIS_UNUSE
 {
   asyncNetWait(); // If currently processing async net, wait until done
 
-  itsNetwork.reset(); try { removeSubComponent("network"); } catch (...) { }
+  itsNetwork.reset(); removeSubComponent("network", false);
   
   switch (val)
   {
@@ -403,11 +559,19 @@ void jevois::dnn::Pipeline::onParamChange(pipeline::nettype const & JEVOIS_UNUSE
 #endif
     break;
     
+  case jevois::dnn::pipeline::NetType::SPU:
+    itsNetwork = addSubComponent<jevois::dnn::NetworkHailo>("network");
+    break;
+
   case jevois::dnn::pipeline::NetType::TPU:
     itsNetwork = addSubComponent<jevois::dnn::NetworkTPU>("network");
     break;
 #endif
     
+  case jevois::dnn::pipeline::NetType::Python:
+    itsNetwork = addSubComponent<jevois::dnn::NetworkPython>("network");
+    break;
+
   case jevois::dnn::pipeline::NetType::Custom:
     // Nothing here, user must call setCustomNetwork() later
     break;
@@ -416,14 +580,27 @@ void jevois::dnn::Pipeline::onParamChange(pipeline::nettype const & JEVOIS_UNUSE
   if (itsNetwork) LINFO("Instantiated network of type " << itsNetwork->className());
   else LINFO("No network");
 
+  // We already display a "loading..." message while the network is loading, but some OpenCV networks take a long time
+  // to process their first frame after they are loaded (e.g., YuNet initializes all the anchors on first frame). So
+  // here we set some placeholder text that will appear after the network is loaded and is processing the first frame:
   itsInputAttrs.clear();
+  itsNetInfo.clear();
+  itsNetInfo.emplace_back("* Input Tensors");
+  itsNetInfo.emplace_back("Initializing network...");
+  itsNetInfo.emplace_back("* Network");
+  itsNetInfo.emplace_back("Initializing network...");
+  itsNetInfo.emplace_back("* Output Tensors");
+  itsNetInfo.emplace_back("Initializing network...");
+  itsAsyncNetInfo = itsNetInfo;
+  itsAsyncNetworkTime = "Network: -";
+  itsAsyncNetworkSecs = 0.0;
 }
 
 // ####################################################################################################
 void jevois::dnn::Pipeline::setCustomNetwork(std::shared_ptr<jevois::dnn::Network> n)
 {
   asyncNetWait(); // If currently processing async net, wait until done
-  itsNetwork.reset(); try { removeSubComponent("network"); } catch (...) { }
+  itsNetwork.reset(); removeSubComponent("network", false);
   itsNetwork = n;
   nettype::set(jevois::dnn::pipeline::NetType::Custom);
 
@@ -439,7 +616,7 @@ void jevois::dnn::Pipeline::onParamChange(pipeline::postproc const & JEVOIS_UNUS
 {
   asyncNetWait(); // If currently processing async net, wait until done
 
-  itsPostProcessor.reset(); try { removeSubComponent("postproc"); } catch (...) { }
+  itsPostProcessor.reset(); removeSubComponent("postproc", false);
 
   switch (val)
   {
@@ -452,6 +629,14 @@ void jevois::dnn::Pipeline::onParamChange(pipeline::postproc const & JEVOIS_UNUS
   case jevois::dnn::pipeline::PostProc::Segment:
     itsPostProcessor = addSubComponent<jevois::dnn::PostProcessorSegment>("postproc");
     break;
+  case jevois::dnn::pipeline::PostProc::YuNet:
+    itsPostProcessor = addSubComponent<jevois::dnn::PostProcessorYuNet>("postproc");
+    break;
+  case jevois::dnn::pipeline::PostProc::Python:
+    itsPostProcessor = addSubComponent<jevois::dnn::PostProcessorPython>("postproc");
+    break;
+  case jevois::dnn::pipeline::PostProc::Stub:
+    itsPostProcessor = addSubComponent<jevois::dnn::PostProcessorStub>("postproc");
   case jevois::dnn::pipeline::PostProc::Custom:
     // Nothing here, user must call setCustomPostProcessor() later
     break;
@@ -465,7 +650,7 @@ void jevois::dnn::Pipeline::onParamChange(pipeline::postproc const & JEVOIS_UNUS
 void jevois::dnn::Pipeline::setCustomPostProcessor(std::shared_ptr<jevois::dnn::PostProcessor> pp)
 {
   asyncNetWait(); // If currently processing async net, wait until done
-  itsPostProcessor.reset(); try { removeSubComponent("postproc"); } catch (...) { }
+  itsPostProcessor.reset(); removeSubComponent("postproc", false);
   itsPostProcessor = pp;
   postproc::set(jevois::dnn::pipeline::PostProc::Custom);
 
@@ -662,8 +847,68 @@ void jevois::dnn::Pipeline::process(jevois::RawImage const & inimg, jevois::StdM
 
   // Update our rolling average of total processing time:
   itsSecsSum += itsProcSecs[0] + itsProcSecs[1] + itsProcSecs[2];
-  ++itsSecsSumNum;
-  if (itsSecsSumNum == 20) { itsSecsAvg = itsSecsSum / itsSecsSumNum; itsSecsSum = 0.0; itsSecsSumNum = 0; }
+  if (++itsSecsSumNum == 20) { itsSecsAvg = itsSecsSum / itsSecsSumNum; itsSecsSum = 0.0; itsSecsSumNum = 0; }
+
+  // If computing benchmarking stats, update them now:
+  if (statsfile::get().empty() == false && ready())
+  {
+    itsPreStats.push_back(itsProcSecs[0]);
+    itsNetStats.push_back(itsProcSecs[1]);
+    itsPstStats.push_back(itsProcSecs[2]);
+    
+    // Discard data for a few warmup frames after we start a new net:
+    if (itsStatsWarmup && itsPreStats.size() == 30)
+    { itsStatsWarmup = false; itsPreStats.clear(); itsNetStats.clear(); itsPstStats.clear(); }
+
+    if (itsPreStats.size() == 200)
+    {
+      // Compute totals:
+      std::vector<double> tot;
+      for (size_t i = 0; i < itsPreStats.size(); ++i)
+        tot.emplace_back(itsPreStats[i] + itsNetStats[i] + itsPstStats[i]);
+      
+      // Append to stats file:
+      std::string const fn = jevois::absolutePath(JEVOIS_SHARE_PATH, statsfile::get());
+      std::ofstream ofs(fn, std::ios_base::app);
+      if (ofs.is_open())
+      {
+        ofs << "<tr><td class=jvpipe>" << pipe::get() << " </td>";
+
+        std::vector<std::string> insizes;
+        for (cv::Mat const & m : itsBlobs)
+          insizes.emplace_back(jevois::replaceAll(jevois::dnn::shapestr(m), " ", "&nbsp;"));
+        ofs << "<td class=jvnetin>" << jevois::join(insizes, ", ") << "</td>";
+
+        std::vector<std::string> outsizes;
+        for (cv::Mat const & m : itsOuts)
+          outsizes.emplace_back(jevois::replaceAll(jevois::dnn::shapestr(m), " ", "&nbsp;"));
+        ofs << "<td class=jvnetout>" << jevois::join(outsizes, ", ") << "</td>";
+
+        ofs <<
+          "<td class=jvprestats>" << jevois::replaceAll(jevois::secs2str(itsPreStats), " ", "&nbsp;") << "</td>"
+          "<td class=jvnetstats>" << jevois::replaceAll(jevois::secs2str(itsNetStats), " ", "&nbsp;") << "</td>"
+          "<td class=jvpststats>" << jevois::replaceAll(jevois::secs2str(itsPstStats), " ", "&nbsp;") << "</td>"
+          "<td class=jvtotstats>" << jevois::replaceAll(jevois::secs2str(tot), " ", "&nbsp;") << "</td>";
+
+        // Finally report average fps:
+        double avg = 0.0;
+        for (double t : tot) avg += t;
+        avg /= tot.size();
+        if (avg) avg = 1.0 / avg; // from s/frame to frames/s
+        ofs << "<td class=jvfps>" << std::fixed << std::showpoint << std::setprecision(1) <<
+          avg << "&nbsp;fps</td></tr>" << std::endl;
+
+        // Ready for next round:
+        itsPreStats.clear();
+        itsNetStats.clear();
+        itsPstStats.clear();
+        LINFO("Network stats appended to " << fn);
+#ifdef JEVOIS_PRO
+        if (helper) helper->drawCircle(100, 100, 95);
+#endif
+      }
+    }
+  }
   
 #ifdef JEVOIS_PRO
   // Report processing times and close info window if we opened it:

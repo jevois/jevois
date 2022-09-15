@@ -137,17 +137,17 @@ bool jevois::sensorSupportsFormat(jevois::CameraSensor s, unsigned int fmt, unsi
     // 120fps. Sensor also supports 1280x720 and cropping from 1920x1080, but the A311D ISP has issues with these (frame
     // collision as soon as capture height is not 1080). So we always capture at 1920x1080 and use the ISP to
     // crop/rescale to any other resolution. Any size (multiple of 4) is supported through cropping & rescaling.
-
+    
     /* Supported formats as reported by the Amlogic camera ISP kernel driver:
-
-      Supported format 0 is [32-bit A/XRGB 8-8-8-8] fcc 0x34424752 [RGB4]
-      Supported format 1 is [24-bit RGB 8-8-8] fcc 0x33424752 [RGB3]
-      Supported format 2 is [Y/CbCr 4:2:0] fcc 0x3231564e [NV12]
-      Supported format 3 is [16-bit A/XYUV 4-4-4-4] fcc 0x34343459 [Y444]
-      Supported format 4 is [YUYV 4:2:2] fcc 0x56595559 [YUYV]
-      Supported format 5 is [UYVY 4:2:2] fcc 0x59565955 [UYVY]
-      Supported format 6 is [8-bit Greyscale] fcc 0x59455247 [GREY]
-      Supported format 7 is [16-bit Bayer BGBG/GRGR (Exp.)] fcc 0x32525942 [BYR2] */
+       
+       Supported format 0 is [32-bit A/XRGB 8-8-8-8] fcc 0x34424752 [RGB4]
+       Supported format 1 is [24-bit RGB 8-8-8] fcc 0x33424752 [RGB3]
+       Supported format 2 is [Y/CbCr 4:2:0] fcc 0x3231564e [NV12]
+       Supported format 3 is [16-bit A/XYUV 4-4-4-4] fcc 0x34343459 [Y444]
+       Supported format 4 is [YUYV 4:2:2] fcc 0x56595559 [YUYV]
+       Supported format 5 is [UYVY 4:2:2] fcc 0x59565955 [UYVY]
+       Supported format 6 is [8-bit Greyscale] fcc 0x59455247 [GREY]
+       Supported format 7 is [16-bit Bayer BGBG/GRGR (Exp.)] fcc 0x32525942 [BYR2] */
     switch (fmt)
     {
       // Here is what we support:
@@ -163,12 +163,52 @@ bool jevois::sensorSupportsFormat(jevois::CameraSensor s, unsigned int fmt, unsi
       // Everything else is unsupported:
     default: return false;
     }
-
+    
     // Any size up to 1080P is supported. Beware that some image processing algorithms may require image width to be a
     // multiple of 8 or 16. Here, we do not impose this constraint as some neural nets do not have it (some even use odd
     // input image sizes). The sensor supports up to 120fps:
     if (w <= 1920 && h <= 1080 && fps <= 120.0) return true;
-
+    
+    return false;
+    
+    // ----------------------------------------------------------------------------------------------------
+  case jevois::CameraSensor::os08a10:
+    // This sensor supports: BAYER, GREY, YUYV, RGB24, ARGB32, and more. Native size is 3840x2160 at up to 60fps. Sensor
+    // also supports 1920x1080, 1280x720 and cropping, but the A311D ISP may have issues with these (frame collision
+    // problem as with the imx290 when not at native resolution). Any size (multiple of 4) is supported through cropping
+    // & rescaling.
+    
+    /* Supported formats as reported by the Amlogic camera ISP kernel driver:
+       
+       Supported format 0 is [32-bit A/XRGB 8-8-8-8] fcc 0x34424752 [RGB4]
+       Supported format 1 is [24-bit RGB 8-8-8] fcc 0x33424752 [RGB3]
+       Supported format 2 is [Y/CbCr 4:2:0] fcc 0x3231564e [NV12]
+       Supported format 3 is [16-bit A/XYUV 4-4-4-4] fcc 0x34343459 [Y444]
+       Supported format 4 is [YUYV 4:2:2] fcc 0x56595559 [YUYV]
+       Supported format 5 is [UYVY 4:2:2] fcc 0x59565955 [UYVY]
+       Supported format 6 is [8-bit Greyscale] fcc 0x59455247 [GREY]
+       Supported format 7 is [16-bit Bayer BGBG/GRGR (Exp.)] fcc 0x32525942 [BYR2] */
+    switch (fmt)
+    {
+      // Here is what we support:
+    case V4L2_PIX_FMT_SBGGR16:
+    case V4L2_PIX_FMT_RGB32:
+    case V4L2_PIX_FMT_RGB24:
+    case V4L2_PIX_FMT_YUYV:
+    case V4L2_PIX_FMT_GREY:
+      //case V4L2_PIX_FMT_NV12: not supported yet, uses 3 planes: 12-bit (8 for Y, 8 for UV half size) Y/CbCr 4:2:0
+      //case V4L2_PIX_FMT_YUV444: not supported: 16-bit xxxxyyyy uuuuvvvv
+      //case V4L2_PIX_FMT_UYVY: not supported to avoid confusions with YUYV
+      break;
+      // Everything else is unsupported:
+    default: return false;
+    }
+    
+    // Any size up to 4k is supported. Beware that some image processing algorithms may require image width to be a
+    // multiple of 8 or 16. Here, we do not impose this constraint as some neural nets do not have it (some even use odd
+    // input image sizes). The sensor supports up to 60fps:
+    if (w <= 3840 && h <= 2160 && fps <= 60.0) return true;
+    
     return false;
   }
 
@@ -183,6 +223,7 @@ bool jevois::sensorHasIMU(CameraSensor s)
     // These sensors have an ICM20948 IMU:
   case jevois::CameraSensor::ar0135:
   case jevois::CameraSensor::imx290:
+  case jevois::CameraSensor::os08a10:
     return true;
 
     // All other sensors do not have an IMU:

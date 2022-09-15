@@ -140,6 +140,7 @@ namespace jevois
       
       input_event_state itsInputState = { };
       char itsInputBuffer[256] = { 0 };
+      bool itsInitialized = false;
   };
   
 } // namespace jevois

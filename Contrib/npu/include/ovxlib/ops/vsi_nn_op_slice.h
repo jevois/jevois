@@ -40,8 +40,8 @@ typedef struct _vsi_nn_slice_lcl_data
 typedef struct _vsi_nn_slice_param
 {
     uint32_t   dims;
-    uint32_t * start;
-    uint32_t * length;
+    const uint32_t * start;
+    const uint32_t * length;
 
     vsi_nn_slice_lcl_data  *lcl_data;
 } vsi_nn_slice_param;

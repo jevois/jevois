@@ -1,0 +1,435 @@
+/*! \page UserDNNnpu Converting and running neural networks for JeVois-Pro NPU
+
+\jvpro includes a 5-TOPS neural processing unit (NPU) that is integrated into the Amlogic A311D processor. This neural
+accelerator has the fastest connection to the main memory (direct DMA access) and hence data transfers and network
+execution can be very fast. Also, it does not suffer from having limited on-chip memory like some of the other
+accelerators do, thus quite large networks can run on the NPU.
+
+\note \jvpro only. This accelerator is not supported on \jva33.
+
+Supported neural network frameworks
+===================================
+
+- Caffe
+- TensorFlow
+- TensorFlow-Lite
+- ONNX (and pyTorch via conversion to ONNX)
+- Darknet
+- Keras
+
+The NPU can run models quantized to uint8, int8, or int16 weights. It does not support float weights and hence
+quantization and conversion are necessary.  A limited number of operations and layer types is supported by the hardware,
+which further constrains what can run on it. But it is manyfold faster than a standard CPU.
+
+For execution on NPU, your model will be quantized and then converted on a Linux desktop to a proprietary blob format
+that can then be transferred to JeVois-Pro microSD for execution.
+
+Procedure
+=========
+
+- Read and understand the JeVois docs about \ref UserDNNoverview
+
+- Make sure you understand the quantization concepts in \ref UserDNNconv
+
+- Check out the [NPU SDK docs](https://github.com/khadas/aml_npu_sdk/tree/master/docs). Of particular interest is the
+  [Model Transcoding and Running User Guide](https://github.com/khadas/aml_npu_sdk/blob/master/docs/).
+
+- The NPU only supports a specific set of layer types. If you try to convert a network that contains unsupported layers,
+  the conversion may sometimes seem to succeed but your converted network may fail to run. Check the [Layer and
+  Operation Support Guide](https://github.com/khadas/aml_npu_sdk/blob/master/docs/) before you attempt to convert a
+  network.
+
+- You need to download and install the Amlogic NPU SDK to convert/quantize your model on a desktop computer running
+  Linux Ubuntu 20.04.
+
+- Everything you need at runtime (NPU runtime libraries) is pre-installed on your JeVois-Pro microSD.
+
+- Obtain a model: train your own, or download a pretrained model.
+
+- Obtain some parameters about the model (e.g., pre-processing mean, stdev, scale, expected input image size, RGB or
+  BGR, packed (NWHC) or planar (NCHW) pixels, etc).
+
+- Copy model to JeVois-Pro microSD card under JEVOIS[PRO]:/share/dnn/custom/
+
+- Create a JeVois model zoo entry for your model, where you specify the model parameters and the location where you
+  copied your model files. Typically this is a YAML file under JEVOIS[PRO]:/share/dnn/custom/
+
+- Launch the JeVois \jvmod{DNN} module. It will scan the custom directory for any valid YAML file, and make your model
+  available as one available value for the \p pipe parameter of the DNN module's Pipeline component. Select that pipe to
+  run your model.
+
+Setting up the NPU SDK
+======================
+
+\note Everything below is to be run on a fast x86_64 desktop computer running Ubuntu 20.04 Linux, not on your JeVois-Pro
+camera. At the end, we will copy the converted model to microSD and then run inference on JeVois-Pro with that model.
+
+The Amlogic/VeriSilicon NPU SDK is distributed by Khadas, which manufactures a development board that uses the same
+Amlogic A311D processor as \jvpro.
+
+\code{.py}
+git clone --recursive https://github.com/khadas/aml_npu_sdk.git
+cd aml_npu_sdk/acuity-toolkit/demo
+\endcode
+
+No need to install Ubuntu packages or Python wheels, everything is included in that git repo.
+
+There are 3 scripts in there that will need to be edited and then run in sequence on your desktop:
+
+- **0_import_model.sh**: Converts from the source framework (Caffe, TensorFlow, etc) to an intermediate representation,
+    and then computes some stats about the ranges of values encountered on each layer on a sample dataset. These ranges
+    of values will be used to set quantization parameters.
+
+- **1_quantize_model.sh**: Quantize the model using asymmetric affine uint8, or dynamic fixed point int8 or int16. This
+    yields the model that we will run on \jvpro, in a <b>.nb</b> proprietary binary blob format.
+
+- **2_export_case_code.sh**: Creates some C code that can be compiled on a target platform (like JeVois-Pro) to create a
+    standalone app that will load and run the model on one image. We will not use that code since the JeVois software
+    provides its own code that directly links the model to the camera sensor and to the GUI. However, we will inspect it
+    so we can get input and output specifications for our YAML zoo file.
+
+For step 2, we need a representative sample dataset, which typically would be about 100 images from your
+training or validation set. This is very important as it will set the quantization parameters.
+
+Example: Object Detection using YOLOv7-tiny
+===========================================
+
+We choose YOLOv7-tiny for this tutorial because:
+
+- It is available in Darknet format, using only operations and layers supported by the NPU
+- JeVois already provides a post-processor for it
+
+1. Get the model
+----------------
+
+- Go to https://github.com/AlexeyAB/darknet
+
+- Let's download YOLOv7-tiny which runs on 416x416 inputs. Either click on the latest Release and then on \b
+  yolov7-tiny.weights in the list of assets at the bottom, or run this:
+  \code{.py}
+wget https://github.com/AlexeyAB/darknet/releases/download/yolov4/yolov7-tiny.weights
+  \endcode
+
+- We also need a description of the network's structure, which we find in the **cfg** folder of the repo:
+  \code{.py}
+wget https://raw.githubusercontent.com/AlexeyAB/darknet/master/cfg/yolov7-tiny.cfg
+ \endcode
+
+2. Get a sample dataset
+-----------------------
+
+- This model was trained on the [COCO dataset](https://cocodataset.org). Let's download the [2017 validation
+  set](http://images.cocodataset.org/zips/val2017.zip):
+  \code{.py}
+wget http://images.cocodataset.org/zips/val2017.zip
+unzip val2017.zip
+  \endcode
+
+- That's 5,000 images which is more than we need. The unix command `shuf` can randomly shuffle a list of names and take
+  the first \p n, so let's use it to grab 100 random images from the dataset. We save a list of those file paths to
+  <b>dataset.txt</b> that will be used by **0_import_model.sh**:
+  \code{.py}
+ls ./val2017/*.jpg | shuf -n 100 > dataset.txt
+  \endcode
+
+- **dataset.txt** should now contain 100 lines (your results will vary since shuf is random):
+  \code{.unparsed}
+./val2017/000000382030.jpg
+./val2017/000000436617.jpg
+./val2017/000000138550.jpg
+./val2017/000000226154.jpg
+./val2017/000000319369.jpg
+...
+  \endcode
+
+3. Edit and run 0_import_model.sh
+---------------------------------
+
+- The file contains various commented out examples for various frameworks. Here we need to:
+  + change the NAME
+  
+  + enable the Darknet blurb, comment out the other frameworks. Note: pegasus is run twice, first for import, and then
+    to generate metadata about the input. We only replace the first one by the framework we want to import from.
+
+  + (not needed for Darknet, maybe needed for others) set the input-size-list to our input size, which here is
+    1x3x416x416 accouding to **yolov7-tiny.cfg**.
+  
+  + we need to know input pre-processing scale, mean, stdev. Tiny YOLO v7 just expects RGB images with pixel values in
+    [0.0 .. 1.0]. Hence we will use mean=[0 0 0], stdev=[1 1 1], scale=1/255=0.0039215686, rgb=true.
+
+  + Below, **channel-mean-value** expects 4 values: 3 means for 3 color channels, and 1 scale.
+
+- We end up with this modified **0_import_model.sh**:
+  \code{.py}
+#!/bin/bash
+
+NAME=yolov7-tiny                                   # JEVOIS edited
+ACUITY_PATH=../bin/
+
+pegasus=${ACUITY_PATH}pegasus
+if [ ! -e "$pegasus" ]; then
+    pegasus=${ACUITY_PATH}pegasus.py
+fi
+
+$pegasus import darknet\
+    --model  ${NAME}.cfg \
+	--weights  ${NAME}.weights \
+    --output-model ${NAME}.json \
+    --output-data ${NAME}.data \
+    
+$pegasus generate inputmeta \
+	--model ${NAME}.json \
+	--input-meta-output ${NAME}_inputmeta.yml \
+	--channel-mean-value "0 0 0 0.0039215686" \    # JEVOIS edited
+	--source-file dataset.txt
+  \endcode
+
+- Run it, it should complete with no errors:
+  \code{.py}
+./0_import_model.sh
+  \endcode
+
+- You can check out yolov7-tiny_inputmeta.yml for a description of the input parameters, and yolov7-tiny.json for a
+  description of the model graph.
+
+4. Edit and run 1_quantize_model.sh
+-----------------------------------
+
+- Because our input range is [0.0 .. 1.0], this calls for uint8 asymmetric affine quantization so that our
+  pre-processing followed by quantization will reduce to a no-op (see \ref UserDNNconv).
+
+- So we enable that and also change the model NAME, end up with this modified **1_quantize_model.sh**:
+  \code{.py}
+#!/bin/bash
+
+NAME=yolov7-tiny                       # JEVOIS edited
+ACUITY_PATH=../bin/
+
+pegasus=${ACUITY_PATH}pegasus
+if [ ! -e "$pegasus" ]; then
+    pegasus=${ACUITY_PATH}pegasus.py
+fi
+
+$pegasus  quantize \
+	--quantizer asymmetric_affine \    # JEVOIS edited
+	--qtype uint8 \                    # JEVOIS edited
+	--rebuild \
+	--with-input-meta  ${NAME}_inputmeta.yml \
+	--model  ${NAME}.json \
+	--model-data  ${NAME}.data
+  \endcode
+
+- Run it, it should complete with no errors:
+  \code{.py}
+./1_quantize_model.sh
+  \endcode
+
+- You can check out yolov7-tiny.quantize to see the min/max value range for each layer on the sample dataset, and how
+  every layer was accordingly quantized. This file will be deleted when the next script runs.
+
+5. Edit and run 2_export_case_code.sh
+-------------------------------------
+
+- Here, we just need to set the model NAME, and also select the correct NPU model, which for the A311D processor in
+  \jvpro is **VIPNANOQI_PID0X88**. We end up with:
+  \code{.py}
+#!/bin/bash
+
+NAME=yolov7-tiny # JEVOIS edited
+ACUITY_PATH=../bin/
+
+pegasus=$ACUITY_PATH/pegasus
+if [ ! -e "$pegasus" ]; then
+    pegasus=$ACUITY_PATH/pegasus.py
+fi
+
+$pegasus export ovxlib \
+    --model ${NAME}.json \
+    --model-data ${NAME}.data \
+    --model-quantize ${NAME}.quantize \
+    --with-input-meta ${NAME}_inputmeta.yml \
+    --dtype quantized \
+    --optimize VIPNANOQI_PID0X88  \    # JEVOIS edited
+    --viv-sdk ${ACUITY_PATH}vcmdtools \
+    --pack-nbg-unify
+
+rm -rf ${NAME}_nbg_unify
+
+mv ../*_nbg_unify ${NAME}_nbg_unify
+
+cd ${NAME}_nbg_unify
+
+mv network_binary.nb ${NAME}.nb
+
+cd ..
+
+#save normal case demo export.data 
+mkdir -p ${NAME}_normal_case_demo
+mv  *.h *.c .project .cproject *.vcxproj BUILD *.linux *.export.data ${NAME}_normal_case_demo
+
+# delete normal_case demo source
+#rm  *.h *.c .project .cproject *.vcxproj  BUILD *.linux *.export.data
+
+rm *.data *.quantize *.json *_inputmeta.yml
+  \endcode
+
+- Run it, it should complete with no errors:
+  \code{.py}
+./2_export_case_code.sh
+  \endcode
+
+- All right, everything we need is in yolov7-tiny_nbg_unify/
+  + Converted model: yolov7-tiny.nb
+  + C code: vnn_yolov7tiny.c which we will inspect to derive our input and output tensor specifications.
+
+6. Create YAML zoo file
+-----------------------
+
+- We start with the **YoloV4** entry from zoo file npu.yml already in the JeVois microSD (and available in the Config
+  tab of the GUI).
+
+- To get the specs of the quantized input and outputs, we inspect yolov7-tiny_nbg_unify/vnn_yolov7tiny.c and look for
+  tensor definitions. We find this (comments added to explain the next step):
+  \code
+/*-----------------------------------------
+  Tensor initialize
+ -----------------------------------------*/
+    attr.dtype.fmt = VSI_NN_DIM_FMT_NCHW;
+    /* @input_0:out0 */
+    attr.size[0] = 416;                                       // JEVOIS: last dimension (fastest varying; here, W)
+    attr.size[1] = 416;                                       // JEVOIS: next dimension (here, H)
+    attr.size[2] = 3;                                         // JEVOIS: next dimension (here, C)
+    attr.size[3] = 1;                                         // JEVOIS: first dimension (here, N)
+    attr.dim_num = 4;                                         // JEVOIS: input should be a 4D tensor
+    attr.dtype.scale = 0.003921568393707275;                  // JEVOIS: scale for AA quantization
+    attr.dtype.zero_point = 0;                                // JEVOIS: zero point for AA quantization
+    attr.dtype.qnt_type = VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC;  // JEVOIS: that is AA quantization
+    NEW_NORM_TENSOR(norm_tensor[0], attr, VSI_NN_TYPE_UINT8); // JEVOIS: that is 8U type
+
+    /* @output_90_198:out0 */
+    attr.size[0] = 52;
+    attr.size[1] = 52;
+    attr.size[2] = 255;
+    attr.size[3] = 1;
+    attr.dim_num = 4;
+    attr.dtype.scale = 0.0038335032295435667;
+    attr.dtype.zero_point = 0;
+    attr.dtype.qnt_type = VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC;
+    NEW_NORM_TENSOR(norm_tensor[1], attr, VSI_NN_TYPE_UINT8);
+
+    /* @output_94_205:out0 */
+    attr.size[0] = 26;
+    attr.size[1] = 26;
+    attr.size[2] = 255;
+    attr.size[3] = 1;
+    attr.dim_num = 4;
+    attr.dtype.scale = 0.0038371747359633446;
+    attr.dtype.zero_point = 0;
+    attr.dtype.qnt_type = VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC;
+    NEW_NORM_TENSOR(norm_tensor[2], attr, VSI_NN_TYPE_UINT8);
+
+    /* @output_98_212:out0 */
+    attr.size[0] = 13;
+    attr.size[1] = 13;
+    attr.size[2] = 255;
+    attr.size[3] = 1;
+    attr.dim_num = 4;
+    attr.dtype.scale = 0.003918845672160387;
+    attr.dtype.zero_point = 0;
+    attr.dtype.qnt_type = VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC;
+    NEW_NORM_TENSOR(norm_tensor[3], attr, VSI_NN_TYPE_UINT8);
+  \endcode
+
+  So we have one input and three outputs (for 3 YOLO scales), and we derive their JeVois specs from the above generated
+  code as follows (see \ref UserDNNconv):
+  \code{.py}
+intensors: "NCHW:8U:1x3x416x416:AA:0.003921568393707275:0"
+outtensors: "8U:1x255x52x52:AA:0.0038335032295435667:0, 8U:1x255x26x26:AA:0.0038371747359633446:0, 8U:1x255x13x13:AA:0.003918845672160387:0"
+  \endcode
+
+- For YOLO post-processing, we need definitions of anchors. We just get those from yolov7-tiny.cfg:
+  \code{.py}
+anchors = 10,13, 16,30, 33,23, 30,61, 62,45, 59,119, 116,90, 156,198, 373,326
+  \endcode
+  In the YAML file below, we will split this list by YOLO scales (here, the 9 w,h pairs correspond to 3 pairs each for 3
+  scales. We separate scales by semicolon below).
+
+- Because YOLOv7 uses the "new style" of YOLO coordinates, we need to disable Post-Processor sigmoid and set
+  Post-Processor scalexy to 2.0. You would want that for YOLOv5/v7, and set sigmoid to true and scalexy to 0.0 to use
+  old-style box coordinates for YOLOv2/v3/v4. You can look at the differences in
+  jevois::dnn::PostProcessorDetectYOLO::yolo_one()
+
+- We just modify the name and file locations, bring all the global definitions into our file (like preproc, nettype, etc
+  which were set globally in npu.yml and hence not repeated for the YoloV4 entry we are copying from), and end up with
+  the following **yolov7-tiny.yml** (pre-processor mean and scale are as we used them in 0_import_model.sh):
+  \code{.py}
+%YAML 1.0
+---
+
+yolov7-tiny:
+  preproc: Blob
+  mean: "0 0 0"
+  scale: 0.0039215686
+  nettype: NPU
+  model: "dnn/custom/yolov7-tiny.nb"
+  intensors: "NCHW:8U:1x3x416x416:AA:0.003921568393707275:0"
+  outtensors: "8U:1x255x52x52:AA:0.0038335032295435667:0, 8U:1x255x26x26:AA:0.0038371747359633446:0, 8U:1x255x13x13:AA:0.003918845672160387:0"
+  postproc: Detect
+  detecttype: RAWYOLO
+  classes: "npu/detection/coco-labels.txt"
+  anchors: "10,13, 16,30, 33,23;   30,61, 62,45, 59,119;   116,90, 156,198, 373,326"
+  sigmoid: false
+  scalexy: 2.0
+  \endcode
+
+- We copy yolov7-tiny.yml and yolov7-tiny.nb to /jevoispro/share/dnn/custom/ on JeVois-Pro and let's try it!
+
+7. Test the model and adjust any parameters
+-------------------------------------------
+
+- Select the \jvmod{DNN} machine vision module
+
+- Set the \p pipe parameter to **NPU:Detect:yolov7-tiny**
+
+\jvimg{yolov7tiny-npu.png, 70%}
+
+It works! Quite fast too, around 55 fps for the network inference only (the part that runs on NPU).
+
+\note You can repeat this tutorial using int8-DFP quantization instead in **1_quantize_model.sh**. You then only need to
+change the intensors and outtensors specs in your YAML to the obtained DFP parameters. We did it, and the network is
+running fine, but about half the speed (about 22.5 fps). So AA quantization is the way to go with this network.
+
+Tips
+====
+
+- If you get a "Graph verification failed" when you try to run your network, maybe you entered the tensor specifications
+  incorrectly. Under the Config tab of the GUI you can edit your yolov7-tiny.yml and fix it.
+
+- Khadas has their own docs which you may want to check out since their VIM3 board uses the same Amlogic A311D processor
+  as JeVois-Pro. But note that on JeVois we skip using the generated C code as JeVois-Pro already provides all the code
+  we need to run NPU models.
+  + https://docs.khadas.com/linux/vim3/NPUSDK.html
+  + https://docs.khadas.com/linux/vim3/ConvertToUseNPU.html
+  + https://docs.khadas.com/linux/vim3/NPUPerformanceUsage.html
+  + https://docs.khadas.com/linux/vim3/NPUOperationTimes.html
+
+- When converting from pyTorch, if you get some strange error like
+  \verbatim
+ RuntimeError: [enforce fail at inline_container.cc:208] . file not found: archive/constants.pkl
+  \endverbatim
+  maybe your model was saved with a version of pyTorch more recent than the one included in the NPU SDK. You may need
+  to save your model to ONNX instead, and then try to convert again from ONNX. Or it might be that the model uses
+  layer types or operations that the NPU does not support, in which case converting to ONNX will not help. You would
+  need to change your network to only include layers and operations that can be mapped to NPU.
+
+  \note Thus far, we have not been able to successfully convert directly from pyTorch using the NPU SDK, we always get
+  some kind of error. But first exporting the source model to ONNX and then running the NPU SDK on that works fine, as
+  long as only NPU-supported operations are used in the source model.
+
+- For examples of how we sometimes skip unsupported last layers (e.g., which do reshaping, detection box decoding,
+  non-maximum suppresion over boxes, etc), see \ref UserDNNvpu and \ref UserDNNspu.
+
+- Also see \ref UserDNNtips
+
+*/
+

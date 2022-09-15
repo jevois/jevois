@@ -57,36 +57,35 @@ void jevois::dnn::PostProcessorSegment::postInit()
 }
 
 // ####################################################################################################
-void jevois::dnn::PostProcessorSegment::process(std::vector<cv::Mat> const & outs, jevois::dnn::PreProcessor * preproc)
+template <typename T>
+void jevois::dnn::PostProcessorSegment::process(cv::Mat const & results)
 {
-  if (outs.empty()) return;
+  int const bgclass = bgid::get();
+  uint32_t const alph = alpha::get() << 24;
+  cv::MatSize const rs = results.size;
+  T const * r = reinterpret_cast<T const *>(results.data);
 
   switch (segtype::get())
   {
     // ----------------------------------------------------------------------------------------------------
-  case jevois::dnn::postprocessor::SegType::Classes:
+  case jevois::dnn::postprocessor::SegType::ClassesHWC:
   {
-    // tensor should be 4D 1xHxWxN, where N is the number of classes. We pick the class index with max value and
+    // tensor should be 4D 1xHxWxC, where C is the number of classes. We pick the class index with max value and
     // apply the colormap to it:
-    cv::Mat results = outs[0]; cv::MatSize rs = results.size;
-    if (rs.dims() != 4 || rs[0] != 1 || results.type() != CV_8UC1)
-      LFATAL("Output tensor is " << jevois::dnn::shapestr(results) << ", but need 4D UINT8 with 1 as first size");
+    if (rs.dims() != 4 || rs[0] != 1)
+      LFATAL("Output tensor is " << jevois::dnn::shapestr(results) << ", but need 1xHxWxC for C classes");
     int const numclass = rs[3]; int const siz = rs[1] * rs[2] * numclass;
     
-    // Apply colormap, converting from RGB to RGBA. If the background class ID is 0, change its color in the colormap:
-    uint32_t const alph = alpha::get() << 24;
-    int const bgclass = bgid::get(); if (bgclass != 0) itsColor[0] = 0xff0000; else itsColor[0] = 0;
-    
+    // Apply colormap, converting from RGB to RGBA:
     itsOverlay = cv::Mat(rs[1], rs[2], CV_8UC4);
     uint32_t * im = reinterpret_cast<uint32_t *>(itsOverlay.data);
-    uint8_t * r = reinterpret_cast<uint8_t *>(results.data);
 
     for (int i = 0; i < siz; i += numclass)
     {
-      int maxc = -1; int maxval = -1;
+      int maxc = -1; T maxval = 0;
       for (int c = 0; c < numclass; ++c)
       {
-        int v = *r++;
+        T v = *r++;
         if (v > maxval) { maxval = v; maxc = c; }
       }
       
@@ -95,33 +94,29 @@ void jevois::dnn::PostProcessorSegment::process(std::vector<cv::Mat> const & out
     }
   }
   break;
-
-  // ----------------------------------------------------------------------------------------------------
-  case jevois::dnn::postprocessor::SegType::Classes2:
+  
+    // ----------------------------------------------------------------------------------------------------
+  case jevois::dnn::postprocessor::SegType::ClassesCHW:
   {
-    // tensor should be 4D 1xNxHxW, where N is the number of classes. We pick the class index with max value and
+    // tensor should be 4D 1xCxHxW, where C is the number of classes. We pick the class index with max value and
     // apply the colormap to it:
-    cv::Mat results = outs[0]; cv::MatSize rs = results.size;
-    if (rs.dims() != 4 || rs[0] != 1 || results.type() != CV_32FC1)
-      LFATAL("Output tensor is " << jevois::dnn::shapestr(results) << ", but need 4D FLOAT32 with 1 as first size");
-    int const numclass = rs[1]; int const siz = rs[2] * rs[3];
+    if (rs.dims() != 4 || rs[0] != 1)
+      LFATAL("Output tensor is " << jevois::dnn::shapestr(results) << ", but need 1xCxHxW for C classes");
+    int const numclass = rs[1]; int const hw = rs[2] * rs[3];
     
-    // Apply colormap, converting from RGB to RGBA. If the background class ID is 0, change its color in the colormap:
-    uint32_t const alph = alpha::get() << 24;
-    int const bgclass = bgid::get(); if (bgclass != 0) itsColor[0] = 0xff0000; else itsColor[0] = 0;
-    
+    // Apply colormap, converting from RGB to RGBA:
     itsOverlay = cv::Mat(rs[2], rs[3], CV_8UC4);
     uint32_t * im = reinterpret_cast<uint32_t *>(itsOverlay.data);
-    
-    for (int i = 0; i < siz; ++i)
+
+    for (int i = 0; i < hw; ++i)
     {
-      int maxc = -1; float maxval = -1.0F;
+      int maxc = -1; T maxval = 0;
       for (int c = 0; c < numclass; ++c)
       {
-        float v = results.at<float>(i + c*siz);
+        T v = results.at<T>(i + c * hw);
         if (v > maxval) { maxval = v; maxc = c; }
       }
-    
+      
       // Use full transparent for class bgclass or if out of bounds, otherwise colormap:
       if (maxc < 0 || maxc > 255 || maxc == bgclass) *im++ = 0; else *im++ = itsColor[maxc] | alph;
     }
@@ -131,19 +126,14 @@ void jevois::dnn::PostProcessorSegment::process(std::vector<cv::Mat> const & out
   // ----------------------------------------------------------------------------------------------------
   case jevois::dnn::postprocessor::SegType::ArgMax:
   {
-    // tensor should be 3D 1xHxW INT32 and contain class ID in each pixel:
-    cv::Mat results = outs[0]; cv::MatSize rs = results.size;
-    if (rs.dims() != 3 || rs[0] != 1 || results.type() != CV_32SC1)
-      LFATAL("Output tensor is " << jevois::dnn::shapestr(results) << ", but need 3D INT32 with 1 as first size");
+    // tensor should be 2D HxW, 3D 1xHxW, or 4D 1xHxWx1 and contain class ID in each pixel:
+    if (rs.dims() != 2 && (rs.dims() != 3 || rs[0] != 1) && (rs.dims() != 4 || rs[0] != 1 || rs[3] != 1))
+      LFATAL("Output tensor is " << jevois::dnn::shapestr(results) << ", but need HxW, 1xHxW, or 1xHxWx1");
     int const siz = rs[1] * rs[2];
     
-    // Apply colormap, converting from RGB to RGBA. If the background class ID is 0, change its color in the colormap:
-    uint32_t const alph = alpha::get() << 24;
-    int const bgclass = bgid::get(); if (bgclass != 0) itsColor[0] = 0xff0000; else itsColor[0] = 0;
-    
+    // Apply colormap, converting from RGB to RGBA:
     itsOverlay = cv::Mat(rs[1], rs[2], CV_8UC4);
     uint32_t * im = reinterpret_cast<uint32_t *>(itsOverlay.data);
-    int32_t const * r = reinterpret_cast<int32_t const *>(results.data);
     
     for (int i = 0; i < siz; ++i)
     {
@@ -153,6 +143,27 @@ void jevois::dnn::PostProcessorSegment::process(std::vector<cv::Mat> const & out
     }
   }
   break;
+  }
+}
+
+// ####################################################################################################
+void jevois::dnn::PostProcessorSegment::process(std::vector<cv::Mat> const & outs, jevois::dnn::PreProcessor * preproc)
+{
+  if (outs.size() != 1) LFATAL("Need exactly one output blob, received " << outs.size());
+
+  // Patch up the colormap if background class ID is 0:
+  if (bgid::get() != 0) itsColor[0] = 0xff0000; else itsColor[0] = 0;
+
+  // Post-process:
+  cv::Mat const & results = outs[0];
+
+  switch (results.type())
+  {
+  case CV_8UC1: process<uint8_t>(results); break;
+  case CV_32FC1: process<float>(results); break;
+  case CV_32SC1: process<int32_t>(results); break;
+
+  default: LFATAL("Unsupported data type in tensor " << jevois::dnn::shapestr(results));
   }
 
   // Compute overlay corner coords within the input image, for use in report():

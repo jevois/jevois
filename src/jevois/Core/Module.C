@@ -69,10 +69,6 @@ void jevois::Module::supportedCommands(std::ostream & os)
 { os << "None" << std::endl; }
 
 // ####################################################################################################
-size_t jevois::Module::frameNum() const
-{ return engine()->frameNum(); }
-
-// ####################################################################################################
 // ####################################################################################################
 jevois::StdModule::StdModule(std::string const & instance) :
     jevois::Module(instance)

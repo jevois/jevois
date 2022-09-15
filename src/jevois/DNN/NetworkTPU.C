@@ -55,8 +55,12 @@ void jevois::dnn::NetworkTPU::freeze(bool doit)
 std::vector<vsi_nn_tensor_attr_t> jevois::dnn::NetworkTPU::inputShapes()
 {
   if (ready() == false) LFATAL("Network is not ready");
-  return jevois::dnn::parseTensorSpecs(intensors::get());
-  /*
+  
+  // Shapes are embedded in the network file, but can be overridden:
+  std::string const inshapes = intensors::get();
+  if (inshapes.empty() == false) return jevois::dnn::parseTensorSpecs(inshapes);
+
+  // Get the shapes from the network:
   std::vector<vsi_nn_tensor_attr_t> ret;
   auto const & input_indices = itsInterpreter->inputs();
 
@@ -65,17 +69,21 @@ std::vector<vsi_nn_tensor_attr_t> jevois::dnn::NetworkTPU::inputShapes()
     TfLiteTensor const * itensor = itsInterpreter->tensor(input_indices[i]);
     if (itensor == nullptr) LFATAL("Network has Null input tensor " << i);
     ret.emplace_back(jevois::dnn::tensorattr(itensor));
+    LINFO("Input " << i << ": " << jevois::dnn::attrstr(ret.back()));
   }
   return ret;
-  */
 }
 
 // ####################################################################################################
 std::vector<vsi_nn_tensor_attr_t> jevois::dnn::NetworkTPU::outputShapes()
 {
   if (ready() == false) LFATAL("Network is not ready");
-  return jevois::dnn::parseTensorSpecs(outtensors::get());
-  /*
+
+  // Shapes are embedded in the network file, but can be overridden:
+  std::string const outshapes = outtensors::get();
+  if (outshapes.empty() == false) return jevois::dnn::parseTensorSpecs(outshapes);
+
+  // Get the shapes from the network:
   std::vector<vsi_nn_tensor_attr_t> ret;
   auto const & output_indices = itsInterpreter->outputs();
 
@@ -84,9 +92,9 @@ std::vector<vsi_nn_tensor_attr_t> jevois::dnn::NetworkTPU::outputShapes()
     TfLiteTensor const * otensor = itsInterpreter->tensor(output_indices[i]);
     if (otensor == nullptr) LFATAL("Network has Null output tensor " << i);
     ret.emplace_back(jevois::dnn::tensorattr(otensor));
+    LINFO("Output " << i << ": " << jevois::dnn::attrstr(ret.back()));
   }
   return ret;
-  */
 }
 
 // ####################################################################################################
@@ -223,12 +231,11 @@ std::vector<cv::Mat> jevois::dnn::NetworkTPU::doprocess(std::vector<cv::Mat> con
         // Dequantize UINT8 to FLOAT32:
         uint8_t const * output = tflite::GetTensorData<uint8_t>(otensor);
         if (output == nullptr) LFATAL("Network produced Null output tensor data " << o);
-        cv::Mat cvout(cvdims, CV_32F); float * cvoutdata = (float *)cvout.data;
-
-        for (size_t i = 0; i < sz; ++i)
-          *cvoutdata++ = (output[i] - otensor->params.zero_point) * otensor->params.scale;
-
-        info.emplace_back("- Converted " + otname + " output tensor " + std::to_string(o) + " to FLOAT32");
+        cv::Mat const cvi(cvdims, CV_8U, (void *)output);
+        cv::Mat cvout; cvi.convertTo(cvout, CV_32F);
+        cvout -= otensor->params.zero_point;
+        cvout *= otensor->params.scale;
+        info.emplace_back("- Dequantized " + otname + " output tensor " + std::to_string(o) + " to FLOAT32");
         outs.emplace_back(cvout);
         notdone = false;
       }
@@ -283,14 +290,12 @@ std::vector<cv::Mat> jevois::dnn::NetworkTPU::doprocess(std::vector<cv::Mat> con
   }
 
   // Report the TPU temperature:
-  size_t tn = tpunum::get();
-  std::string fn = jevois::sformat("/sys/class/apex/apex_%zu/temp", tpunum::get());
-  try
-  {
-    int temp = std::stoi(jevois::getFileString(fn.c_str()));
-    info.emplace_back(jevois::sformat("- TPU%zu temp %dC", tn, temp / 1000));
-  }
-  catch (...) { } // silently ignore any errors
+  static int temp = 0;
+  size_t const tn = tpunum::get();
+  if ((jevois::frameNum() % 50) == 0)
+    try { temp = std::stoi(jevois::getFileString(jevois::sformat("/sys/class/apex/apex_%zu/temp", tn).c_str())); }
+    catch (...) { } // silently ignore any errors
+  info.emplace_back(jevois::sformat("- TPU%zu temp %dC", tn, temp / 1000));
   
   return outs;
 }

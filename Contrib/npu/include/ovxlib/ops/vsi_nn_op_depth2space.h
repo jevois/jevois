@@ -41,6 +41,7 @@ typedef struct _vsi_nn_depth2space_param
     vsi_nn_depth2space_lcl_data_t local;
 
     int32_t block_size;
+    vsi_nn_depth2space_mode_e mode;
 } vsi_nn_depth2space_param;
 
 #ifdef __cplusplus

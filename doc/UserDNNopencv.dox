@@ -1,0 +1,174 @@
+/*! \page UserDNNopencv Running neural networks on JeVois-A33 or JeVois-Pro using OpenCV
+
+OpenCV provides a %DNN module that allows one to run neural network inference on \jva33 and \jvpro. This is usually the
+easiest way to run a neural net, as no conversion, quantizationm etc is needed. However, this is also the slowest for
+\jvpro as the inference runs on CPU, which is slower than some of the dedicated hardware accelerators available on
+\jvpro.
+
+Supported neural network frameworks
+===================================
+
+- Caffe
+- TensorFlow
+- ONNX (and pyTorch via conversion to ONNX)
+- Darknet
+
+Procedure
+=========
+
+- Read and understand the JeVois docs about \ref UserDNNoverview
+
+- Check out the [official OpenCV DNN docs](https://docs.opencv.org/4.x/d2/d58/tutorial_table_of_content_dnn.html)
+
+- Everything you need for runtime inference (OpenCV full, with all available backends, targets, etc) is pre-installed on
+  your JeVois microSD.
+
+- Obtain a model: train your own, or download a pretrained model.
+
+- Obtain some parameters about the model (e.g., pre-processing mean, stdev, scale, expected input image size, RGB or
+  BGR, packed (NWHC) or planar (NCHW) pixels, etc).
+
+- Copy model to JeVois microSD card under JEVOIS[PRO]:/share/dnn/custom/
+
+- Create a JeVois model zoo entry for your model, where you specify the model parameters and the location where you
+  copied your model files. Typically this is a YAML file under JEVOIS[PRO]:/share/dnn/custom/
+
+- Launch the JeVois \jvmod{DNN} module. It will scan the custom directory for any valid YAML file, and make your model
+  available as one available value for the \p pipe parameter of the DNN module's Pipeline component. Select that pipe to
+  run your model.
+
+Example: Image Classification with ResNet-18 in Caffe
+=====================================================
+
+Let's run a ResNet-18 image classification model. Here, we will just get a pretrained model on the ImageNet dataset, but
+the steps should be very similar for a model that you have trained on your own custom dataset.
+
+A quick web search for "ResNet-18 Caffe" turns up this link that seems to have everything we need:
+https://github.com/HolmesShuan/ResNet-18-Caffemodel-on-ImageNet
+
+1. Get the model and copy to microSD
+------------------------------------
+
+First we donwload the model. With Caffe, that is two files: a \b .prototxt file that describes the network's layers, and
+a \b .caffemodel file that contains the trained weights.
+
+Out of the available files on that GitHub link, we want **deploy.prototxt** which is the one used for runtime inference;
+we will save it as **JEVOIS[PRO]:/share/dnn/custom/resnet-18.prototxt**. Then we get the trained weights and save those
+to **JEVOIS[PRO]:/share/dnn/custom/resnet-18.caffemodel**.
+
+\note On \jva33, the easiest way to save to microSD is to eject it from the camera and connect it to your desktop. On
+\jvpro, you may want to connect the camera to a network (see \ref ProNetwork) and use the methods explained in \ref
+ProUserQuick for a smoother workflow: in particular, see the section about booting up in console mode, so that one can
+then easily switch between running X to browse the web, download files, etc and then back to the console to start the
+JeVois software.
+
+\note On \jvpro running, the JEVOISPRO: partition of the microSD is mounted on /jevoispro, so the files go into
+/jevoispro/share/dnn/custom/
+
+2. Get some information about pre-processing
+--------------------------------------------
+
+Now we need pre-processing parameters, such as image size, means and scale, etc. We look at **train.prototxt** to find
+any clues, and we find:
+
+- **crop_size: 224** (that means the model expects 224x224 input images)
+
+- **mean_value: 104; mean_value: 117; mean_value: 123** (we will use these means; unclear here whether they are
+  in RGB or BGR order).
+
+- it is not clear at this point whether the model expects RGB or BGR, NCHW or NHWC, we don't know about scale or stdev
+  of the inputs...  We can play with those once the model is running.
+
+- To find out the input shape, we can use Lutz Roeder's great [Netron](https://netron.app/) online model inspection
+  tool:
+  + Point your browser to https://netron.app/
+  + click "Open Model..."
+  + upload resnet-18.prototxt
+  + click on the boxes for the input and output layers to see some info about them
+  + We find out that for this resnet-18, input shape is 1x3x224x224, which is NCHW order (planar RGB color)
+
+- Intel OpenVino staff are very good as documenting model inputs and outputs. Though the particular model we are using
+  here may not be exactly the same as the one they used, a quick search for "openvino resnet-18" turns up
+  https://docs.openvino.ai/latest/omz_models_model_resnet_18_pytorch.html which gives us some interesting information on
+  the original model:
+  + input shape NCWH:1x3x224x224
+  + mean [123.675, 116.28, 103.53]
+  + scale [58.395, 57.12, 57.375]
+  + channel order RGB
+
+Let's use those. As explained in \ref UserDNNconv, in JeVois, preprocessing \p scale is a scalar of usually small value
+(like 0.0078125), but pre-processing \p stdev is also available, which is a triplet usually around [64 64 64]; so it
+looks like scale given here should be interpreted as \p stdev for our purposes.
+
+\note Ideally, you will know all these parameters by virtue of having trained your own custom model yourself, as opposed
+to just downloading a generic pre-trained model as we do here.
+
+3. Create a YAML zoo file so that JeVois can run our model
+----------------------------------------------------------
+
+We model our YAML file after some other classification models that run in OpenCV using Caffe on \jvpro. For example, in
+<b>opencv.yml</b> (available in the Config tab of \jvpro), we find that SqueezeNet also is a caffemodel. So we create
+our own YAML file **JEVOIS[PRO]:/share/dnn/custom/resnet-18.yml** inspired by the one from SqueezeNet:
+
+\code{.py}
+%YAML 1.0
+---
+
+ResNet-18:
+  preproc: Blob
+  nettype: OpenCV
+  postproc: Classify
+  model: "dnn/custom/resnet-18.caffemodel"
+  config: "dnn/custom/resnet-18.prototxt"
+  intensors: "NCHW:32F:1x3x224x224"
+  mean: "123.675 116.28 103.53"
+  scale: 1.0
+  stdev: "58.395 57.12 57.375" # see below, will need to be adjusted!
+  rgb: true
+  classes: "coral/classification/imagenet_labels.txt"
+  classoffset: 1
+\endcode
+
+\note For \p classes, we use an existing ImageNet label file that is already pre-loaded on our microSD, since the GitHub
+repo used above did not provide one. Because that label file has a first entry for "background", which is not used in
+many models, we may have to use a \p classoffset of 1 to shift the class labels in case our network does not use that
+extra class name. If you use a custom-trained model, you should also copy a file **resnet-18.labels** to microSD, that
+describes your class names (one class label per line), and then set the classes parameter to that file.
+
+If you wonder what the various entries in the YAML file mean, check out \ref UserDNNoverview, each one is documented in
+the classes that use them (jevois::dnn::PreProcessor, jevois::dnn::Network, jevois::dnn::PostProcessor,
+jevois::dnn::Pipeline).
+
+4. Test the model and adjust any parameters
+-------------------------------------------
+
+- Select the \jvmod{DNN} machine vision module
+
+- Set the \p pipe parameter to **OpenCV:Classify:ResNet-18**
+
+- If you do not see the outputs you were expecting, try adjusting the PreProcessor parameters live in the JeVois
+  GUI. Here, for example, initially the network did not show any output classes above threshold. Since we were unsure
+  about \p stdev, we can set it to [1 1 1] in the GUI, and now we see the expected outputs!
+
+- If you need to adjust the YAML file settings, in \jvpro you can find that file under the Config tab.  So here we edit
+  our YAML file to change:
+  \code{.py}
+  stdev: "1 1 1"
+  \endcode
+  Or, since [1 1 1] is the default, we can just delete the **stdev:** line.
+
+\jvimg{resnet18-opencv.png, 70%}
+
+It works (here shown on JeVois-Pro)! Not the fastest since it runs on CPU, but a successful model
+import. Bookcase/bookshop classification outputs is usually what we get for classification models trained on ImageNet,
+when pointing the camera to that bookshelf.
+
+Maybe we have an incorrect order for the means (RGB vs. BGR). Once you confirm whether your model expects RGB or BGR,
+and which mean value is for R, G, and B, then you can adjust the mean parameter live in the GUI or in the YAML file.
+
+5. Tips
+-------
+
+See \ref UserDNNtips
+
+*/

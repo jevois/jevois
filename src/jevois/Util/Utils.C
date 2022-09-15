@@ -32,6 +32,7 @@
 #include <stdexcept>
 #include <array>
 #include <cctype> // for std::isspace()
+#include <cmath> // for std::sqrt()
 
 #include <opencv2/core/hal/interface.h> // for CV_MAT_DEPTH_MASK
 
@@ -344,19 +345,36 @@ size_t jevois::replaceStringAll(std::string & str, std::string const & from, std
 }
 
 // ####################################################################################################
-std::string jevois::absolutePath(std::string const & root, std::string const & path)
+// Code from https://stackoverflow.com/questions/3418231/replace-part-of-a-string-with-another-string
+std::string jevois::replaceAll(std::string const & str, std::string const & from, std::string const & to)
+{
+  if (from.empty()) return str;
+  std::string ret = str;
+  
+  size_t start_pos = 0;
+  while((start_pos = ret.find(from, start_pos)) != std::string::npos)
+  {
+    ret.replace(start_pos, from.length(), to);
+    start_pos += to.length(); // In case 'to' contains 'from', like replacing 'x' with 'yx'
+  }
+
+  return ret;
+}
+
+// ####################################################################################################
+std::filesystem::path jevois::absolutePath(std::filesystem::path const & root, std::filesystem::path const & path)
 {
   // If path is empty, return root (be it empty of not):
   if (path.empty()) return root;
 
   // no-op if the given path is already absolute:
-  if (path[0] == '/') return path;
+  if (path.is_absolute()) return path;
 
   // no-op if root is empty:
   if (root.empty()) return path;
 
   // We know root is not empty and path does not start with a / and is not empty; concatenate both:
-  return root + '/' + path;
+  return root / path;
 }
 
 // ####################################################################################################
@@ -441,12 +459,57 @@ std::string jevois::secs2str(double secs)
 }
 
 // ####################################################################################################
+std::string jevois::secs2str(std::vector<double> secs)
+{
+  if (secs.empty()) return "0.0 +/- 0.0s";
+  double sum = 0.0, sumsq = 0.0;
+  for (double s : secs) { sum += s; sumsq += s*s; }
+  double const avg = sum / secs.size();
+  double const std = std::sqrt(sumsq/secs.size() - avg*avg); // E[(X-E[X])^2] = E[X^2]-E[X]^2
+  
+  if (avg < 1.0e-6) return jevois::sformat("%.1f +/- %.1f ns", avg * 1.0e9, std * 1.0e9);
+  else if (avg < 1.0e-3) return jevois::sformat("%.1f +/- %.1f us", avg * 1.0e6, std * 1.0e6);
+  else if (avg < 1.0) return jevois::sformat("%.1f +/- %.1f ms", avg * 1.0e3, std * 1.0e3);
+  else return jevois::sformat("%.1f +/- %.1f s", avg, std);
+}
+
+// ####################################################################################################
 void jevois::secs2str(std::ostringstream & ss, double secs)
 {
   if (secs < 1.0e-6) ss << secs * 1.0e9 << "ns";
   else if (secs < 1.0e-3) ss << secs * 1.0e6 << "us";
   else if (secs < 1.0) ss << secs * 1.0e3 << "ms";
   else ss << secs << 's';
+}
+
+// ####################################################################################################
+std::string jevois::num2str(double n)
+{
+  if (n < 1.0e3) return jevois::sformat("%.2f", n);
+  else if (n < 1.0e6) return jevois::sformat("%.2fK", n / 1.0e3);
+  else if (n < 1.0e9) return jevois::sformat("%.2fM", n / 1.0e6);
+  else if (n < 1.0e12) return jevois::sformat("%.2fG", n / 1.0e9);
+  else if (n < 1.0e15) return jevois::sformat("%.2fT", n / 1.0e12);
+  else if (n < 1.0e18) return jevois::sformat("%.2fP", n / 1.0e15);
+  else if (n < 1.0e21) return jevois::sformat("%.2fE", n / 1.0e18);
+  else if (n < 1.0e24) return jevois::sformat("%.2fZ", n / 1.0e21);
+  else if (n < 1.0e27) return jevois::sformat("%.2fY", n / 1.0e24);
+  else return jevois::sformat("%.2f", n);
+}
+
+// ####################################################################################################
+void jevois::num2str(std::ostringstream & ss, double n)
+{
+  if (n < 1.0e3) ss << n;
+  else if (n < 1.0e6) ss << n / 1.0e3 << 'K';
+  else if (n < 1.0e9) ss << n / 1.0e6 << 'M';
+  else if (n < 1.0e12) ss << n / 1.0e9 << 'G';
+  else if (n < 1.0e15) ss << n / 1.0e12 << 'T';
+  else if (n < 1.0e18) ss << n / 1.0e15 << 'P';
+  else if (n < 1.0e21) ss << n / 1.0e18 << 'E';
+  else if (n < 1.0e24) ss << n / 1.0e21 << 'Z';
+  else if (n < 1.0e27) ss << n / 1.0e24 << 'Y';
+  else ss << n;
 }
 
 // ####################################################################################################

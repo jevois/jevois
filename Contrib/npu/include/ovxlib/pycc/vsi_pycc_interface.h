@@ -49,7 +49,7 @@ typedef struct _vsi_pycc_params_t
     uint32_t   dilation_w;
 
     uint32_t   pool_type;
-    uint32_t   pool_round_type;
+    vsi_nn_round_type_e   pool_round_type;
     uint32_t   pool_ksize_h;
     uint32_t   pool_ksize_w;
     uint32_t   pool_stride_h;

@@ -37,7 +37,7 @@ typedef struct _vsi_nn_permute_lcl_data
 
 typedef struct _vsi_nn_permute_param
 {
-    uint32_t * perm;
+    const uint32_t * perm;
     uint32_t   dim_num;
 
     /* reshape layer local data structure */

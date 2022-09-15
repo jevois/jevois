@@ -51,6 +51,7 @@
 #include <algorithm>
 #include <cstdlib> // for std::system()
 #include <cstdio> // for std::remove()
+#include <regex>
 
 #ifdef JEVOIS_PRO
 #include <imgui_internal.h>
@@ -210,9 +211,15 @@ namespace
 
 
 // ####################################################################################################
+namespace jevois { namespace engine { static std::atomic<size_t> frameNumber(0); } }
+
+size_t jevois::frameNum()
+{ return jevois::engine::frameNumber.load(); }
+
+// ####################################################################################################
 jevois::Engine::Engine(std::string const & instance) :
     jevois::Manager(instance), itsMappings(), itsRunning(false), itsStreaming(false), itsStopMainLoop(false),
-    itsShellMode(false), itsTurbo(false), itsManualStreamon(false), itsVideoErrors(false), itsFrame(0),
+    itsShellMode(false), itsTurbo(false), itsManualStreamon(false), itsVideoErrors(false),
     itsNumSerialSent(0), itsRequestedFormat(-2)
 {
   JEVOIS_TRACE(1);
@@ -223,13 +230,15 @@ jevois::Engine::Engine(std::string const & instance) :
   itsCheckMassStorageFut = jevois::async_little(&jevois::Engine::checkMassStorage, this);
   while (itsCheckingMassStorage.load() == false) std::this_thread::sleep_for(std::chrono::milliseconds(5));
 #endif
+
+  jevois::engine::frameNumber.store(0);
 }
 
 // ####################################################################################################
 jevois::Engine::Engine(int argc, char const* argv[], std::string const & instance) :
     jevois::Manager(argc, argv, instance), itsMappings(), itsRunning(false), itsStreaming(false),
     itsStopMainLoop(false), itsShellMode(false), itsTurbo(false), itsManualStreamon(false), itsVideoErrors(false),
-    itsFrame(0), itsNumSerialSent(0), itsRequestedFormat(-2)
+    itsNumSerialSent(0), itsRequestedFormat(-2)
 {
   JEVOIS_TRACE(1);
   
@@ -239,6 +248,8 @@ jevois::Engine::Engine(int argc, char const* argv[], std::string const & instanc
   itsCheckMassStorageFut = jevois::async_little(&jevois::Engine::checkMassStorage, this);
   while (itsCheckingMassStorage.load() == false) std::this_thread::sleep_for(std::chrono::milliseconds(5));
 #endif
+
+  jevois::engine::frameNumber.store(0);
 }
 
 // ####################################################################################################
@@ -495,7 +506,7 @@ void jevois::Engine::postInit()
   if (python::get())
   {
     LINFO("Initalizing Python...");
-    jevois::pythonModuleSetEngine(this);
+    jevois::python::setEngine(this);
   }
   
   // Instantiate a camera: If device names starts with "/dev/v", assume a hardware camera, otherwise a movie file:
@@ -792,9 +803,9 @@ void jevois::Engine::setFormatInternal(jevois::VideoMapping const & m, bool relo
     try { itsGadget->setFormat(m); }
     catch (...)
     {
+      jevois::warnAndIgnoreException();
       itsModuleConstructionError = "Gadget did not accept format:\n\n" + m.ostr() +
         "\n\nCheck videomappings.cfg for any unsupported output formats.";
-      jevois::warnAndIgnoreException();
       return;
     }
   }
@@ -803,7 +814,7 @@ void jevois::Engine::setFormatInternal(jevois::VideoMapping const & m, bool relo
   itsCurrentMapping = m;
   
   // Reset our master frame counter on each module load:
-  itsFrame.store(0);
+  jevois::engine::frameNumber.store(0);
   
   // Instantiate the module. If the constructor throws, code is bogus, for example some syntax error in a python module
   // that is detected at load time. We get the exception's error message for later display into video frames in the main
@@ -931,10 +942,6 @@ int jevois::Engine::mainLoop()
           itsStreaming.store(false);
         }
         
-#ifdef JEVOIS_PRO
-        // Reset the GUI to clear various texture caches and such:
-        if (itsGUIhelper) itsGUIhelper->reset( (rf != -1) );
-#endif
         // Set new format or reload current module:
         if (rf == -1)
         {
@@ -944,6 +951,11 @@ int jevois::Engine::mainLoop()
         }
         else setFormat(rf);
         
+#ifdef JEVOIS_PRO
+        // Reset the GUI to clear various texture caches and such:
+        if (itsGUIhelper) itsGUIhelper->reset( (rf != -1) );
+#endif
+
         // Restart camera and gadget if we stopped them:
         if (rf != -1 && itsCurrentMapping.ofmt != 0)
         {
@@ -969,7 +981,7 @@ int jevois::Engine::mainLoop()
       }
       catch (...)
       {
-        reportError();
+        reportErrorInternal();
 
         // Stream off:
         try
@@ -993,7 +1005,7 @@ int jevois::Engine::mainLoop()
       if (itsModuleConstructionError.empty() == false)
       {
         // If we have a module construction error, report it now to GUI/USB/console:
-        reportError(itsModuleConstructionError);
+        reportErrorInternal(itsModuleConstructionError);
 
         // Also get one camera frame to avoid accumulation of stale buffers:
         //try { (void)jevois::InputFrame(itsCamera, itsTurbo).get(); }
@@ -1041,13 +1053,13 @@ int jevois::Engine::mainLoop()
           // If process() did not throw, no need to sleep:
           dosleep = false;
         }
-        catch (...) { reportError(); }
+        catch (...) { reportErrorInternal(); }
 
         // For standard modules, indicate frame start stop if user wants it:
         if (stdmod) stdmod->sendSerialMarkStop();
 
         // Increment our master frame counter
-        ++ itsFrame;
+        ++ jevois::engine::frameNumber;
         itsNumSerialSent.store(0);
       }
     }
@@ -1165,8 +1177,27 @@ void jevois::Engine::sendSerial(std::string const & str, bool islog)
 void jevois::Engine::reportError(std::string const & err)
 {
 #ifdef JEVOIS_PRO
+  if (itsGUIhelper) itsGUIhelper->reportError(err);
+#endif
+  LERROR(err);
+}
+
+// ####################################################################################################
+void jevois::Engine::clearErrors()
+{
+#ifdef JEVOIS_PRO
+  // If using a GUI, clear errors in the GUI:
+  if (itsGUIhelper) itsGUIhelper->clearErrors();
+#endif
+  // Otherwise, no need to clear anything, other errors are not persistently displayed.
+}
+
+// ####################################################################################################
+void jevois::Engine::reportErrorInternal(std::string const & err)
+{
+#ifdef JEVOIS_PRO
   // If using a GUI, report error to GUI:
-  if (itsGUIhelper)
+  if (itsGUIhelper && itsCurrentMapping.ofmt == JEVOISPRO_FMT_GUI)
   {
     if (itsGUIhelper->frameStarted() == false) { unsigned short w, h; itsGUIhelper->startFrame(w, h); }
     if (err.empty()) itsGUIhelper->reportError(jevois::warnAndIgnoreException());
@@ -1208,10 +1239,6 @@ void jevois::Engine::reportError(std::string const & err)
     else LERROR(err);
   }
 }
-
-// ####################################################################################################
-size_t jevois::Engine::frameNum() const
-{ return itsFrame; }
 
 // ####################################################################################################
 std::shared_ptr<jevois::Module> jevois::Engine::module() const
@@ -1646,6 +1673,7 @@ void jevois::Engine::cmdInfo(std::shared_ptr<UserInterface> s, bool showAll, std
   s->writeString(pfx, "sync - commit any pending data write to microSD");
   s->writeString(pfx, "date [date and time] - get or set the system date and time");
 
+  s->writeString(pfx, "!<string> - execute <string> as a Linux shell command. Use with caution!");
   s->writeString(pfx, "shell <string> - execute <string> as a Linux shell command. Use with caution!");
   s->writeString(pfx, "shellstart - execute all subsequent commands as Linux shell commands. Use with caution!");
   s->writeString(pfx, "shellstop - stop executing all subsequent commands as Linux shell commands.");
@@ -1729,10 +1757,20 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
     // in the arduino to be printed out to the user:
     if (str[0] == '#') { sendSerial(str, true); return true; }
 
-    // Get the first word, i.e., the command:
-    size_t const idx = str.find(' '); std::string cmd, rem;
-    if (idx == str.npos) cmd = str; else { cmd = str.substr(0, idx); if (idx < str.length()) rem = str.substr(idx+1); }
-    
+    // If the string starts with "!", this is like the "shell" command, but parsed differently:
+    std::string cmd, rem;
+    if (str[0] == '!')
+    {
+      cmd = "shell"; rem = str.substr(1);
+    }
+    else
+    {
+      // Get the first word, i.e., the command:
+      size_t const idx = str.find(' ');
+      if (idx == str.npos) cmd = str;
+      else { cmd = str.substr(0, idx); if (idx < str.length()) rem = str.substr(idx+1); }
+    }
+  
     // ----------------------------------------------------------------------------------------------------
     if (cmd == "help")
     {
@@ -2330,7 +2368,7 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
     // ----------------------------------------------------------------------------------------------------
     if (cmd == "runscript")
     {
-      std::string const fname = itsModule ? itsModule->absolutePath(rem) : rem;
+      std::string const fname = itsModule ? itsModule->absolutePath(rem).string() : rem;
       
       try { runScriptFromFile(fname, s, true); return true; }
       catch (...) { errmsg = "Script " + fname + " execution failed"; }
@@ -2400,7 +2438,7 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
         errmsg = "File transfer only supported over USB or Hard serial ports";
       else
       {
-        std::string const abspath = itsModule ? itsModule->absolutePath(rem) : rem;
+        std::string const abspath = itsModule ? itsModule->absolutePath(rem).string() : rem;
         ser->fileGet(abspath);
         return true;
       }
@@ -2414,7 +2452,7 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
         errmsg = "File transfer only supported over USB or Hard serial ports";
       else
       {
-        std::string const abspath = itsModule ? itsModule->absolutePath(rem) : rem;
+        std::string const abspath = itsModule ? itsModule->absolutePath(rem).string() : rem;
         ser->filePut(abspath);
         if (std::system("sync")) { } // quietly ignore any errors on sync
         return true;
@@ -2679,4 +2717,32 @@ void jevois::Engine::camCtrlGUI(struct v4l2_queryctrl & qc, std::set<int> & done
 
 // ####################################################################################################
 #endif // JEVOIS_PRO
+
 // ####################################################################################################
+void jevois::Engine::registerPythonComponent(jevois::Component * comp, void * pyinst)
+{
+  LDEBUG(comp->instanceName() << " -> " << std::hex << pyinst);
+  std::lock_guard<std::mutex> _(itsPyRegMtx);
+  auto itr = itsPythonRegistry.find(pyinst);
+  if (itr != itsPythonRegistry.end()) LFATAL("Trying to register twice -- ABORT");
+  itsPythonRegistry.insert(std::make_pair(pyinst, comp));
+}
+
+// ####################################################################################################
+void jevois::Engine::unRegisterPythonComponent(Component * comp)
+{
+  LDEBUG(comp->instanceName());
+  std::lock_guard<std::mutex> _(itsPyRegMtx);
+  auto itr = itsPythonRegistry.begin(), stop = itsPythonRegistry.end();
+  while (itr != stop) if (itr->second == comp) itr = itsPythonRegistry.erase(itr); else ++itr;
+}
+  
+// ####################################################################################################
+jevois::Component * jevois::Engine::getPythonComponent(void * pyinst) const
+{
+  LDEBUG(std::hex << pyinst);
+  std::lock_guard<std::mutex> _(itsPyRegMtx);
+  auto itr = itsPythonRegistry.find(pyinst);
+  if (itr == itsPythonRegistry.end()) LFATAL("Python instance not registered -- ABORT");
+  return itr->second;
+}

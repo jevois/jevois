@@ -36,6 +36,7 @@ void jevois::VideoDisplayBackendMALI::init(unsigned short w, unsigned short h, b
 {
   // On platform, use an fbdev_window to draw to the framebuffer directly. No other initialization is needed:
   itsWindow.width = w; itsWindow.height = h;
+  LINFO("Display surface size: " << w << 'x' << h);
 
   // Initialize OpenGL. Will turn itsDisplayReady to true:
   jevois::VideoDisplayBackend::init(w, h, (EGLNativeWindowType)(&itsWindow));

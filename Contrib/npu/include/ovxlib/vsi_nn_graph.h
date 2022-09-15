@@ -59,6 +59,14 @@
  * */
 #define VSI_NN_POSTPROC_NODE_UID_BASE   20000
 
+/**
+ * Default data convert node base uid.
+ * When add new data convert node in
+ * graph, node uid is set based on it.
+ * @see vsi_nn_AddPreprocNode
+ * */
+#define VSI_NN_DATACONVERT_NODE_UID_BASE    30000
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -157,6 +165,8 @@ struct _vsi_nn_graph
          * so please keep it NULL.*/
         vsi_nn_tensor_t* tensor;
     } complete_signal;
+
+    vsi_bool isAllowFastMode;
 };
 
 /**
@@ -229,7 +239,39 @@ OVXLIB_API vsi_status vsi_nn_VerifyGraph
  */
 OVXLIB_API vsi_status vsi_nn_RunGraph
     (
+    const vsi_nn_graph_t * graph
+    );
+
+/**
+ * Genearate NBG cache
+ * Genearate NBG cache
+ *
+ * @param[in] graph Graph handle
+ * @param[in] nbg buffer pointer
+ * @param[in] nbg buffer size
+ * @return VSI_SUCCESS on success, or appropriate error code otherwise
+ */
+OVXLIB_API vsi_status vsi_nn_GenerateNBG(
+    vsi_nn_graph_t * graph,
+    void * nbg_buffer,
+    size_t * size
+    );
+
+/**
+ * Run graph in asynch way
+ * Invoke the all nodes in graph.
+ *
+ * @param[in] graph Graph handle
+ * @return VSI_SUCCESS on success, or appropriate error code otherwise
+ */
+OVXLIB_API vsi_status vsi_nn_AsyncRunGraph
+    (
     vsi_nn_graph_t * graph
+    );
+
+OVXLIB_API vsi_status vsi_nn_AsyncRunWait
+    (
+        vsi_nn_graph_t * graph
     );
 
 /**
@@ -356,7 +398,7 @@ void vsi_nn_DeleteTensor
  */
 OVXLIB_API vsi_nn_tensor_t * vsi_nn_GetTensor
     (
-    vsi_nn_graph_t   * graph,
+    const vsi_nn_graph_t   * graph,
     vsi_nn_tensor_id_t tensor_id
     );
 
@@ -371,7 +413,7 @@ OVXLIB_API vsi_nn_tensor_t * vsi_nn_GetTensor
  */
 OVXLIB_API vsi_nn_node_t * vsi_nn_GetNode
     (
-    vsi_nn_graph_t   * graph,
+    const vsi_nn_graph_t   * graph,
     vsi_nn_node_id_t   id
     );
 
@@ -616,7 +658,7 @@ OVXLIB_API vsi_status vsi_nn_ResetRNNBuffers
  */
 OVXLIB_API vsi_bool vsi_nn_HasRNN
     (
-    vsi_nn_graph_t* graph
+    const vsi_nn_graph_t* graph
     );
 
 /**
@@ -637,6 +679,11 @@ OVXLIB_API vsi_status vsi_nn_TrySetupCompleteSignalNode
     vsi_nn_graph_t* graph
     );
 
+vsi_status vsi_nn_setup_binary_graph_inputs_outputs
+    (
+    vsi_nn_graph_t* graph
+    );
+
 void  vsi_nn_get_tensor_consumers
     (
     vsi_nn_graph_t* graph,
@@ -652,6 +699,35 @@ void vsi_nn_get_tensor_provider
     vsi_nn_node_t** node
     );
 
+OVXLIB_API vsi_status vsi_nn_SetGraphPreloadSize
+    (
+    vsi_nn_graph_t* graph,
+    vsi_nn_graph_attr_preload_type_e attr,
+    uint32_t size
+    );
+
+vsi_nn_tensor_id_t vsi_nn_get_tensor_id
+    (
+    vsi_nn_graph_t* graph,
+    const vsi_nn_tensor_t * tensor
+    );
+
+OVXLIB_API vsi_status vsi_nn_SetGraphPriority
+    (
+    vsi_nn_graph_t* graph,
+    uint32_t priority
+    );
+
+OVXLIB_API vsi_status vsi_nn_SetGraphFastMode
+    (
+    vsi_nn_graph_t* graph,
+    vsi_bool fastmode
+    );
+
+OVXLIB_API vsi_bool vsi_nn_IsGraphFastMode
+    (
+    const vsi_nn_graph_t* graph
+    );
 #ifdef __cplusplus
 }
 #endif

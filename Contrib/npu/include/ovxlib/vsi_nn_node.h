@@ -50,6 +50,13 @@ extern "C"{
 /*------------------------------------
                 Types
   -----------------------------------*/
+typedef struct _vsi_nn_node_attr_t
+{
+    int32_t const_tensor_preload_type;
+    int32_t enable_op_constraint_check;
+    int32_t reserved[6];
+} vsi_nn_node_attr_t;
+
 /** Node structure */
 struct _vsi_nn_node
 {
@@ -88,6 +95,7 @@ struct _vsi_nn_node
     uint32_t uid;
     /** Node's internal node wksp */
     void* internal_node_wksp;
+    vsi_nn_node_attr_t attr;
 };
 
 /*------------------------------------
@@ -109,8 +117,8 @@ OVXLIB_API vsi_nn_node_t * vsi_nn_NewNode
     (
     vsi_nn_graph_t * graph,
     vsi_nn_op_t      op,
-    uint32_t         input_num,
-    uint32_t         output_num
+    vsi_size_t         input_num,
+    vsi_size_t         output_num
     );
 
 /**
@@ -145,6 +153,35 @@ OVXLIB_API void vsi_nn_PrintNode
     (
     vsi_nn_node_t * node,
     vsi_nn_node_id_t id
+    );
+
+/**
+ * Update node attribute
+ * Update openvx node attribute based on ovxlib's node attribute
+ *
+ * @param[in] node Node handle.
+ */
+vsi_status vsi_nn_update_node_attr
+    (
+    vsi_nn_node_t *node
+    );
+
+/**
+ * Set node inputs and outputs
+ *
+ * @param[in] node Node to set IO
+ * @param[in] inputs Input tensors
+ * @param[in] input_num Input tensors' number
+ * @param[in] outputs Output tensors
+ * @param[in] output_num Output tensors' number
+ */
+vsi_status vsi_nn_SetNodeInputsAndOutputs
+    (
+    vsi_nn_node_t * node,
+    vsi_nn_tensor_t * const inputs[],
+    int input_num,
+    vsi_nn_tensor_t * const outputs[],
+    int output_num
     );
 
 #if defined(__cplusplus)

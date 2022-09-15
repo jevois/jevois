@@ -56,7 +56,9 @@
 #include "ops/vsi_nn_op_elu.h"
 #include "ops/vsi_nn_op_reverse.h"
 #include "ops/vsi_nn_op_space2depth.h"
+#include "ops/vsi_nn_op_space2depth_internal.h"
 #include "ops/vsi_nn_op_depth2space.h"
+#include "ops/vsi_nn_op_depth2space_internal.h"
 #include "ops/vsi_nn_op_maximum.h"
 #include "ops/vsi_nn_op_scale.h"
 #include "ops/vsi_nn_op_slice.h"
@@ -104,8 +106,11 @@
 #include "ops/vsi_nn_op_addn.h"
 #include "ops/vsi_nn_op_softmax_internal.h"
 #include "ops/vsi_nn_op_pre_process_yuv420.h"
+#include "ops/vsi_nn_op_pre_process_yuv444.h"
+#include "ops/vsi_nn_op_pre_process_nv12.h"
 #include "ops/vsi_nn_op_extra_ending.h"
 #include "ops/vsi_nn_op_gather.h"
+#include "ops/vsi_nn_op_scatter_nd.h"
 #include "ops/vsi_nn_op_tile.h"
 #include "ops/vsi_nn_op_grouped_conv2d.h"
 #include "ops/vsi_nn_op_topk.h"
@@ -142,8 +147,38 @@
 #include "ops/vsi_nn_op_variable.h"
 #include "ops/vsi_nn_op_rnncell_ovxlib.h"
 #include "ops/vsi_nn_op_l2_normalize.h"
+#include "ops/vsi_nn_op_dataconvert.h"
 #include "ops/vsi_nn_op_swish.h"
+#include "ops/vsi_nn_op_cast.h"
 #include "ops/vsi_nn_op_depthwise_conv1d.h"
+#include "ops/vsi_nn_op_grucell_activation_internal.h"
+#include "ops/vsi_nn_op_grucell_activation_internal_sma.h"
+#include "ops/vsi_nn_op_linear.h"
+#include "ops/vsi_nn_op_batchnorm_single.h"
+#include "ops/vsi_nn_op_moments.h"
+#include "ops/vsi_nn_op_squeeze.h"
+#include "ops/vsi_nn_op_expand_broadcast.h"
+#include "ops/vsi_nn_op_deconvolution1d.h"
+#include "ops/vsi_nn_op_interp.h"
+#include "ops/vsi_nn_op_resize_1d.h"
+#include "ops/vsi_nn_op_resize_1d_bilinear_internal.h"
+#include "ops/vsi_nn_op_resize_1d_nearest_internal.h"
+#include "ops/vsi_nn_op_upsamplescale.h"
+#include "ops/vsi_nn_op_groupnormalize.h"
+#include "ops/vsi_nn_op_sequence_mask.h"
+#include "ops/vsi_nn_op_repeat.h"
+#include "ops/vsi_nn_op_one_hot.h"
+#include "ops/vsi_nn_op_nms.h"
+#include "ops/vsi_nn_op_grouped_conv1d.h"
+#include "ops/vsi_nn_op_scatter_nd_update.h"
+#include "ops/vsi_nn_op_gelu.h"
+#include "ops/vsi_nn_op_conv2d_lstm.h"
+#include "ops/vsi_nn_op_conv2d_lstm_cell.h"
+#include "ops/vsi_nn_op_gru.h"
+#include "ops/vsi_nn_op_grucell.h"
+#include "ops/vsi_nn_op_grucell_activation.h"
+#include "ops/vsi_nn_op_reshape2.h"
+#include "ops/vsi_nn_op_hard_sigmoid.h"
 /* custom node head define define */
 #include "custom/vsi_nn_custom_node_type.h"
 
@@ -186,7 +221,9 @@ typedef union _vsi_nn_nn_param
     vsi_nn_elu_param                elu;
     vsi_nn_reverse_param            reverse;
     vsi_nn_space2depth_param        space2depth;
+    vsi_nn_space2depth_internal_param space2depth_internal;
     vsi_nn_depth2space_param        depth2space;
+    vsi_nn_depth2space_internal_param depth2space_internal;
     vsi_nn_maximum_param            maximum;
     vsi_nn_scale_param              scale;
     vsi_nn_slice_param              slice;
@@ -233,8 +270,11 @@ typedef union _vsi_nn_nn_param
     vsi_nn_addn_param               addn;
     vsi_nn_softmax_internal_param   softmax_internal;
     vsi_nn_pre_process_yuv420_param pre_process_yuv420;
+    vsi_nn_pre_process_yuv444_param pre_process_yuv444;
+    vsi_nn_pre_process_nv12_param   pre_process_nv12;
     vsi_nn_extra_ending_param       extra_ending;
     vsi_nn_gather_param             gather;
+    vsi_nn_scatter_nd_param         scatter_nd;
     vsi_nn_tile_param               tile;
     vsi_nn_grouped_conv2d_param     grouped_conv2d;
     vsi_nn_topk_param               topk;
@@ -273,7 +313,37 @@ typedef union _vsi_nn_nn_param
     vsi_nn_rnncell_ovxlib_param     rnncell_ovxlib;
     vsi_nn_l2_normalize_param       l2_normalize;
     vsi_nn_depthwise_conv1d_param   depthwise_conv1d;
+    vsi_nn_cast_param               cast;
     vsi_nn_swish_param              swish;
+    vsi_nn_dataconvert_param        dataconvert;
+    vsi_nn_grucell_activation_internal_param grucell_activation_internal;
+    vsi_nn_grucell_activation_internal_sma_param grucell_activation_internal_sma;
+    vsi_nn_linear_param             linear;
+    vsi_nn_batchnorm_single_param   batchnorm_single;
+    vsi_nn_moments_param            moments;
+    vsi_nn_squeeze_param            squeeze;
+    vsi_nn_expand_broadcast_param   expand_broadcast;
+    vsi_nn_deconvolution1d_param    deconvolution1d;
+    vsi_nn_interp_param             interp;
+    vsi_nn_resize_1d_param          resize_1d;
+    vsi_nn_resize_1d_bilinear_internal_param resize_1d_bilinear_internal;
+    vsi_nn_resize_1d_nearest_internal_param resize_1d_nearest_internal;
+    vsi_nn_upsamplescale_param      upsamplescale;
+    vsi_nn_groupnormalize_param     groupnorm;
+    vsi_nn_sequence_mask_param      sequence_mask;
+    vsi_nn_repeat_param             repeat;
+    vsi_nn_one_hot_param            one_hot;
+    vsi_nn_nms_param                nms;
+    vsi_nn_grouped_conv1d_param     grouped_conv1d;
+    vsi_nn_scatter_nd_update_param  scatter_nd_update;
+    vsi_nn_gelu_param               gelu;
+    vsi_nn_conv2d_lstm_param        conv2d_lstm;
+    vsi_nn_conv2d_lstm_cell_param   conv2d_lstm_cell;
+    vsi_nn_gru_param                gru;
+    vsi_nn_grucell_param            grucell;
+    vsi_nn_grucell_activation_param grucell_activation;
+    vsi_nn_reshape2_param           reshape2;
+    vsi_nn_hard_sigmoid_param       hard_sigmoid;
     uint8_t                         client_param[128];
 
     /* custom node data struct define */

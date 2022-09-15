@@ -43,4 +43,12 @@ vsi_nn_tensor_t* vsi_nn_ConvertTensorDtype
     const vsi_nn_dtype_t* dst_dtype
     );
 
+vsi_nn_tensor_t* vsi_nn_TensorAdd
+    (
+    vsi_nn_graph_t* graph,
+    vsi_nn_tensor_t** tensors,
+    uint32_t tensor_num,
+    vsi_nn_tensor_attr_t output_attr
+    );
+
 #endif

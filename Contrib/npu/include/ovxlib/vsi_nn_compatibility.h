@@ -97,6 +97,8 @@ typedef    enum vx_nn_activation_function_e                                vx_co
 #define    VX_CONVOLUTIONAL_NETWORK_ACTIVATION_RSQRT                       VX_NN_ACTIVATION_RSQRT
 #define    VX_CONVOLUTIONAL_NETWORK_ACTIVATION_LEAKYRELU_MAX_POOLING       VX_NN_ACTIVATION_LEAKYRELU_MAX_POOLING
 #define    VX_CONVOLUTIONAL_NETWORK_ACTIVATION_NONE                        VX_NN_ACTIVATION_NONE
+#define    VX_CONVOLUTIONAL_NETWORK_ACTIVATION_SWISH                       VX_NN_ACTIVATION_SWISH
+#define    VX_CONVOLUTIONAL_NETWORK_ACTIVATION_HWISH                       VX_NN_ACTIVATION_HSWISH
 
 /*
   keep the backward compatibility with spec 1.1 for vxCopyTensorPatch_11

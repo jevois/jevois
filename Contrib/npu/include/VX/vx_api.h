@@ -23,7 +23,7 @@
  * \brief The API definition for OpenVX.
  */
 
-#ifdef __cplusplus
+#ifdef  __cplusplus
 extern "C" {
 #endif
 
@@ -875,29 +875,29 @@ VX_API_ENTRY vx_status VX_API_CALL vxUnloadKernels(vx_context context, const vx_
  * org.khronos.openvx.hough_lines_p
 
  * org.khronos.openvx.tensor_multiply
-
+ 
  * org.khronos.openvx.tensor_add
-
+ 
  * org.khronos.openvx.tensor_subtract
-
+ 
  * org.khronos.openvx.tensor_table_lookup
-
+ 
  * org.khronos.openvx.tensor_transpose
-
+ 
  * org.khronos.openvx.tensor_convert_depth
-
+ 
  * org.khronos.openvx.tensor_matrix_multiply
-
+ 
  * org.khronos.openvx.copy
-
+ 
  * org.khronos.openvx.non_max_suppression
-
+ 
  * org.khronos.openvx.scalar_operation
-
+ 
  * org.khronos.openvx.hog_features
-
+ 
  * org.khronos.openvx.hog_cells
-
+ 
  * org.khronos.openvx.bilateral_filter
 
  * org.khronos.openvx.select
@@ -2068,7 +2068,7 @@ VX_API_ENTRY vx_threshold VX_API_CALL vxCreateThresholdForImage(vx_context conte
                                                                 vx_df_image output_format);
 
 /*! \brief Creates an opaque reference to a threshold object without direct user access.
- *
+ * 
  * \param [in] graph The reference to the parent graph.
  * \param [in] thresh_type The type of thresholding operation.
  * \param [in] input_format The format of images that will be used as input of
@@ -3190,7 +3190,7 @@ vxConfigTarget(
  * \param [in] context The reference to the implementation context.
  * \param [in] number_of_dims The number of dimensions.
  * \param [in] dims Dimensions sizes in elements.
- * \param [in] data_type The <tt>\ref vx_type_e</tt> that represents the data type of the tensor data elements.
+ * \param [in] data_type The <tt>\ref vx_type_e</tt> that represents the data type of the tensor data elements. 
  * \param [in] fixed_point_position Specifies the fixed point position when the input element type is integer. if 0, calculations are performed in integer math.
  * \return A tensor data reference. Any possible errors preventing a
  * successful creation should be checked using <tt>\ref vxGetStatus</tt>.
@@ -3428,7 +3428,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryTensor(vx_tensor tensor, vx_enum attri
  */
 VX_API_ENTRY vx_status VX_API_CALL vxReleaseTensor(vx_tensor *tensor);
 
-#ifdef __cplusplus
+#ifdef  __cplusplus
 }
 #endif
 

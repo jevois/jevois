@@ -141,6 +141,15 @@ jevois::Log<Level>::Log(char const * fullFileName, char const * functionName, st
 }
 
 // ##############################################################################################################
+template <>
+jevois::Log<LOG_ALERT>::Log(char const * JEVOIS_UNUSED_PARAM(fullFileName),
+                            char const * JEVOIS_UNUSED_PARAM(functionName), std::string * outstr) :
+    itsOutStr(outstr)
+{
+  // No prefix added here, will just throw the user message
+}
+
+// ##############################################################################################################
 #ifdef JEVOIS_USE_SYNC_LOG
 
 template <int Level>
@@ -187,6 +196,7 @@ namespace jevois
   template class Log<LOG_INFO>;
   template class Log<LOG_ERR>;
   template class Log<LOG_CRIT>;
+  template class Log<LOG_ALERT>;
 }
 
 // ##############################################################################################################
@@ -200,7 +210,9 @@ void jevois::warnAndRethrowException(std::string const & prefix)
 
   catch (std::exception const & e)
   {
-    LERROR(pfx << "Passing through std::exception: " << e.what());
+    LERROR(pfx << "Passing through std::exception:");
+    std::vector<std::string> lines = jevois::split(e.what(), "\\n");
+    for (std::string const & li : lines) LERROR(li);
     throw;
   }
 
@@ -209,7 +221,7 @@ void jevois::warnAndRethrowException(std::string const & prefix)
     LERROR(pfx << "Received exception from the Python interpreter:");
     std::string str = jevois::getPythonExceptionString(e);
     std::vector<std::string> lines = jevois::split(str, "\\n");
-    for (std::string const & li : lines) LERROR("   " << li);
+    for (std::string const & li : lines) LERROR(li);
     throw;
   }
   
@@ -233,7 +245,9 @@ std::string jevois::warnAndIgnoreException(std::string const & prefix)
 
   catch (std::exception const & e)
   {
-    retvec.emplace_back(pfx + "Caught std::exception [" + std::string(e.what()) + ']');
+    retvec.emplace_back(pfx + "Caught std::exception:");
+    std::vector<std::string> lines = jevois::split(e.what(), "\\n");
+    for (std::string const & li : lines) retvec.emplace_back(li);
   }
 
   catch (boost::python::error_already_set & e)
@@ -241,7 +255,7 @@ std::string jevois::warnAndIgnoreException(std::string const & prefix)
     retvec.emplace_back(pfx + "Caught exception from the Python interpreter:");
     std::string str = jevois::getPythonExceptionString(e);
     std::vector<std::string> lines = jevois::split(str, "\\n");
-    for (std::string const & li : lines) retvec.emplace_back("   " + li);
+    for (std::string const & li : lines) retvec.emplace_back(li);
   }
   
   catch (...)
@@ -254,6 +268,32 @@ std::string jevois::warnAndIgnoreException(std::string const & prefix)
   for (std::string & m : retvec) { LERROR(m); ret += m + "\n"; }
 
   return ret;
+}
+
+// ##############################################################################################################
+void jevois::warnAndRethrowParamCallbackException[[noreturn]](std::string const & descriptor,
+                                                              std::string const & strval)
+{
+  LERROR("Parameter " << descriptor << ": Provided value [" << strval << "] rejected by callback:");
+  
+  // great trick to get back the type of an exception caught via a catch(...), just rethrow it and catch again:
+  try { throw; }
+
+  catch (std::exception const & e)
+  {
+    throw std::runtime_error(e.what());
+  }
+
+  catch (boost::python::error_already_set & e)
+  {
+    LERROR("Python exception:");
+    throw std::runtime_error(jevois::getPythonExceptionString(e));
+  }
+  
+  catch (...)
+  {
+    throw std::runtime_error("Caught unknown exception");
+  }
 }
 
 // ##############################################################################################################

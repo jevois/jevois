@@ -233,7 +233,7 @@ namespace jevois
           setCallback() so you won't confuse users of your class. In most cases, just use the convenience
           JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK() macro.
 
-          The callback should examine the candidate value newval and (1) if it does not like it, throw and
+          The callback should examine the candidate value newval and (1) if it does not like it, throw an
           std::range_error with a descriptive message of why the value is rejected, (2) otherwise, it is assumed that
           the value is accepted and the callback can then allocate resources or do other work with that value (the
           actual modification of the Parameter object is handled upstream and the callback does not need to worry about
@@ -382,7 +382,38 @@ namespace jevois
                     "jevois::Parameter<...> template arguments must all be parameters "
                     "(derive from jevois::ParameterBase");
   };
-  
+
+  // ######################################################################
+  //! Dynamic parameter added to a component at runtime
+  /*! Dynamic parameters can only be accessed by descriptor at the Component level (using getParamVal(), setParamVal(),
+      etc), since there is no unique class type for them and the owning Component does not inherit from them. Typically
+      for use via Component::addDynamicParameter(). Use with caution. Mainly developed to enable endowing python modules
+      with JeVois parameters. */
+  template <typename T>
+  class DynamicParameter : public jevois::ParameterCore<T>
+  {
+    public:
+      
+      //! Our type
+      typedef DynamicParameter<T> type;
+
+      //! Constructor
+      DynamicParameter(Component * comp, ParameterDef<T> const & pdef);
+
+      //! Destructor
+      virtual ~DynamicParameter();
+
+      //! Handle to owning component
+      virtual Component const * owner() const override;
+
+      //! Access to our parameter def
+      ParameterDef<T> const & def() const;
+      
+    private:
+      Component * itsComp;
+      ParameterDef<T> itsDef; // we keep a copy of the def so the caller's can run out of scope
+  };
+
   /*! @} */ // **********************************************************************
 
 } // namespace jevois

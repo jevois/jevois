@@ -37,6 +37,35 @@ extern "C"{
 #define inline __inline
 #endif
 
+#if (defined(_MSC_VER) || defined(__MINGW32))
+    #define SIZE_T_SPECIFIER "Iu"
+    #define SSIZE_T_SPECIFIER "Id"
+    #ifdef VSI_40BIT_VA_SUPPORT
+        #define VSI_SIZE_T_SPECIFIER "Iu"
+        #define VSI_SSIZE_T_SPECIFIER "Id"
+    #else
+        #define VSI_SIZE_T_SPECIFIER "u"
+        #define VSI_SSIZE_T_SPECIFIER "d"
+    #endif
+#else
+    #define SIZE_T_SPECIFIER "zu"
+    #define SSIZE_T_SPECIFIER "zd"
+    #ifdef VSI_40BIT_VA_SUPPORT
+        #define VSI_SIZE_T_SPECIFIER "zu"
+        #define VSI_SSIZE_T_SPECIFIER "zd"
+    #else
+        #define VSI_SIZE_T_SPECIFIER "u"
+        #define VSI_SSIZE_T_SPECIFIER "d"
+    #endif
+#endif
+
+#if defined(_MSC_VER)
+#include <BaseTsd.h>
+typedef SSIZE_T ssize_t;
+#else
+#include <sys/types.h>
+#endif
+
 /** Enumuration type */
 typedef int32_t  vsi_enum;
 /** Status type */
@@ -47,6 +76,16 @@ typedef int32_t   vsi_bool;
 typedef uint16_t vsi_float16;
 /** Truncate float16 */
 typedef uint16_t vsi_bfloat16;
+/** Tensor size */
+#ifdef VSI_40BIT_VA_SUPPORT
+typedef size_t vsi_size_t;
+typedef ssize_t vsi_ssize_t;
+#else
+typedef uint32_t vsi_size_t;
+typedef int32_t vsi_ssize_t;
+#endif
+
+#define VSI_SIZE_T
 
 #ifndef TRUE
 #define TRUE 1
@@ -93,7 +132,17 @@ typedef enum
     VSI_NN_OPTIMIZE_FORWARD,
     VSI_NN_OPTIMIZE_BACKWARD
 } vsi_nn_opt_direction_e;
-
+#ifdef VX_CREATE_TENSOR_SUPPORT_PHYSICAL
+typedef enum
+{
+    VSI_MEMORY_TYPE_NONE = VX_MEMORY_TYPE_NONE,
+    VSI_MEMORY_TYPE_HOST = VX_MEMORY_TYPE_HOST,
+    VSI_MEMORY_TYPE_DMABUF = VX_MEMORY_TYPE_DMABUF,
+    VSI_MEMORY_TYPE_INERNAL = VX_MEMORY_TYPE_INTERNAL,
+    VSI_MEMORY_TYPE_UNCACHED = VX_MEMORY_TYPE_HOST_UNCACHED,
+    VSI_MEMORY_TYPE_PHYSICAL = VX_MEMORY_TYPE_HOST_PHYSICAL,
+}vsi_memory_type_e;
+#endif
 /** Type enum */
 typedef enum
 {
@@ -151,6 +200,30 @@ typedef int32_t vsi_nn_activation_e; enum
     VSI_NN_GRU_ACT_HARD_SIGMOID = 31
 };
 
+typedef enum
+{
+    VSI_NN_DEPTH2SPACE_DCR = 0,
+    VSI_NN_DEPTH2SPACE_CRD
+} vsi_nn_depth2space_mode_e;
+
+typedef enum
+{
+    VSI_NN_GRAPH_PRELOAD_VIPSRAM,
+    VSI_NN_GRAPH_PRELOAD_AXISRAM
+} vsi_nn_graph_attr_preload_type_e;
+
+typedef enum _vsi_nn_node_attr_preload_type_e
+{
+    VSI_NN_NODE_PRELOAD_NONE,
+    VSI_NN_NODE_PRELOAD_VIPSRAM,
+    VSI_NN_NODE_PRELOAD_AXISRAM
+} vsi_nn_node_attr_preload_type_e;
+
+typedef enum _vsi_nn_con2d_lstm_dataformat
+{
+    CONV2D_LSTM_CHANNELS_LAST,
+    CONV2D_LSTM_CHANNELS_FIRST
+} vsi_nn_con2d_lstm_dataformat;
 
 /** Deprecated */
 typedef uint32_t vsi_nn_size_t;

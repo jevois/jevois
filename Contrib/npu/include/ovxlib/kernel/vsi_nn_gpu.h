@@ -32,6 +32,7 @@
 #define gpu_max(x, y)       (((x) >= (y)) ?  (x) :  (y))
 
 #define gpu_postshift( x )  (gpu_min( x, GPU_MAX_POST_SHIFT_BITS))
+#define gpu_multiplier( x )  (gpu_min( x, GPU_MAX_MULTIPLIER_NUM))
 
 // Alignment with a power of two value.
 #define gpu_align_np2(n, align) (((n) + (align) - 1) - (((n) + (align) - 1) % (align)))

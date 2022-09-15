@@ -54,8 +54,9 @@ void jevois::dnn::NetworkOpenCV::load()
 
   std::string const m = jevois::absolutePath(dataroot::get(), model::get());
   std::string const c = jevois::absolutePath(dataroot::get(), config::get());
-  LINFO("Loading " << m << " / " << c << " ...");
-  
+
+  if (config::get().empty()) LINFO("Loading " << m << " ..."); else LINFO("Loading " << m << " / " << c << " ...");
+    
   // Create and load the network:
   itsNet = cv::dnn::readNet(m, c);
   
@@ -64,6 +65,7 @@ void jevois::dnn::NetworkOpenCV::load()
 #ifdef JEVOIS_PRO
   case network::Backend::OpenCV: itsNet.setPreferableBackend(cv::dnn::DNN_BACKEND_OPENCV); break;
   case network::Backend::InferenceEngine: itsNet.setPreferableBackend(cv::dnn::DNN_BACKEND_INFERENCE_ENGINE); break;
+  case network::Backend::TimVX: itsNet.setPreferableBackend(cv::dnn::DNN_BACKEND_TIMVX); break;
 #else
   case network::Backend::Default: itsNet.setPreferableBackend(cv::dnn::DNN_BACKEND_DEFAULT); break;
 #endif
@@ -76,13 +78,15 @@ void jevois::dnn::NetworkOpenCV::load()
   case network::Target::OpenCL: itsNet.setPreferableTarget(cv::dnn::DNN_TARGET_OPENCL); break;
   case network::Target::OpenCL_FP16: itsNet.setPreferableTarget(cv::dnn::DNN_TARGET_OPENCL_FP16); break;
   case network::Target::Myriad: itsNet.setPreferableTarget(cv::dnn::DNN_TARGET_MYRIAD); break;
+  case network::Target::NPU: itsNet.setPreferableTarget(cv::dnn::DNN_TARGET_NPU); break;
 #endif
   }
   LINFO("Backend: " << backend::get() << ", Target: " << target::get());
   
   // Get names of the network's output layers:
   itsOutNames = itsNet.getUnconnectedOutLayersNames();
-  for (auto const & s : itsOutNames) LINFO("Output layer: " << s);
+  int i = 0;
+  for (auto const & s : itsOutNames) LINFO("Output layer " << i++ << ": " << s);
 }
 
 // ####################################################################################################
@@ -98,14 +102,19 @@ std::vector<cv::Mat> jevois::dnn::NetworkOpenCV::doprocess(std::vector<cv::Mat> 
   itsNet.forward(outs, itsOutNames);
 
   // Show some info:
-  std::vector<cv::dnn::MatShape> inshapes;
-  for (size_t i = 0; i < blobs.size(); ++i)
+  if (itsFLOPS.empty())
   {
-    cv::dnn::MatShape s; cv::MatSize const & ms = blobs[i].size;
-    for (int k = 0; k < ms.dims(); ++k) s.emplace_back(ms[k]);
-    inshapes.emplace_back(s);
+    std::vector<cv::dnn::MatShape> inshapes;
+    for (size_t i = 0; i < blobs.size(); ++i)
+    {
+      cv::dnn::MatShape s; cv::MatSize const & ms = blobs[i].size;
+      for (int k = 0; k < ms.dims(); ++k) s.emplace_back(ms[k]);
+      inshapes.emplace_back(s);
+    }
+    itsFLOPS = jevois::num2str(itsNet.getFLOPS(inshapes)) + "OPS";
   }
-  info.emplace_back("Forward Network FLOPS: " + std::to_string(itsNet.getFLOPS(inshapes)));
+  
+  info.emplace_back("Forward Network: " + itsFLOPS);
   
   return outs;
 }

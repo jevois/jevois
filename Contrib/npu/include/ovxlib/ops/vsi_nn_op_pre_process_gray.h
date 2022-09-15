@@ -26,6 +26,10 @@
 
 #include "vsi_nn_types.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 enum
 {
     PRE_PROCESS_GRAY_INPUT = 0,
@@ -35,23 +39,6 @@ enum
     PRE_PROCESS_GRAY_OUTPUT = 0,
 
     PRE_PROCESS_GRAY_OUTPUT_CNT
-};
-
-
-enum {
-    PRE_PROCESS_GRAY_CPU_KERNEL,
-
-    PRE_PROCESS_GRAY_F16_KERNEL,
-    PRE_PROCESS_GRAY_I16_KERNEL,
-    PRE_PROCESS_GRAY_I8_KERNEL,
-    PRE_PROCESS_GRAY_U8_KERNEL,
-
-    PRE_PROCESS_GRAY_F16_COPY_KERNEL,
-    PRE_PROCESS_GRAY_I16_COPY_KERNEL,
-    PRE_PROCESS_GRAY_I8_COPY_KERNEL,
-    PRE_PROCESS_GRAY_U8_COPY_KERNEL,
-
-    PRE_PROCESS_GRAY_KERNEL_COUNTS,
 };
 
 typedef struct _vsi_nn_pre_process_gray_lcl_data
@@ -73,7 +60,7 @@ typedef struct _vsi_nn_pre_process_gray_param
 
     struct
     {
-        uint32_t   *size;
+        vsi_size_t   *size;
         uint32_t   dim_num;
     } output_attr;
 
@@ -84,5 +71,8 @@ typedef struct _vsi_nn_pre_process_gray_param
     vsi_nn_pre_process_gray_lcl_data local;
 } vsi_nn_pre_process_gray_param;
 
+#ifdef __cplusplus
+}
 #endif
 
+#endif

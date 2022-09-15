@@ -21,6 +21,7 @@
 #include <vector>
 #include <type_traits> // for std::is_integral
 #include <sstream>
+#include <filesystem>
 
 //! Metadata V4L2 format used by Amlogic A311D camera ISP
 #define ISP_V4L2_PIX_FMT_META v4l2_fourcc( 'M', 'E', 'T', 'A' )
@@ -85,7 +86,7 @@ namespace jevois
   /*! Note that if str is shorter than prefix, return is false (like in strncmp()). */ 
   bool stringStartsWith(std::string const & str, std::string const & prefix);
 
-  //! Replace white space characters in a string with underscore (default) or another characters
+  //! Replace white space characters in a string with underscore (default) or another character
   std::string replaceWhitespace(std::string const & str, char rep = '_');
 
   //! Strip white space (including CR, LF, tabs, etc) from the end of a string
@@ -103,10 +104,14 @@ namespace jevois
   /*! Returns the number of replacements made. */
   size_t replaceStringAll(std::string & str, std::string const & from, std::string const & to);
   
+  //! Replace all instances of 'from' with 'to'
+  /*! Returns the number of replacements made. */
+  std::string replaceAll(std::string const & str, std::string const & from, std::string const & to);
+  
   //! Compute an absolute path from two paths
   /*! Parameter \p path contains a path that could be either absolute or relative; parameter \p root should contain a
       root path. If path is absolute, it is returned; otherwise, root is prepended to it and the result is returned. */
-  std::string absolutePath(std::string const & root, std::string const & path);
+  std::filesystem::path absolutePath(std::filesystem::path const & root, std::filesystem::path const & path);
   
   //! Create a string using printf style arguments
   /*! Example:
@@ -161,9 +166,19 @@ namespace jevois
   //! Report a duration given in seconds with variable units (ns, us, ms, or s), with precision of 2 decimal points
   std::string secs2str(double secs);
 
+  //! Report avg+/-std duration given in seconds with variable units (ns, us, ms, or s), with 1 decimal point
+  std::string secs2str(std::vector<double> secs);
+
   //! Report a duration given in seconds with variable units (ns, us, ms, or s)
   /*! You should decide on precision using std::setprecision(n) in your stream before calling this function. */
   void secs2str(std::ostringstream & ss, double secs);
+
+  //! Report a number with variable multipliers (K, M, G, T, P, E, Z, Y), with precision of 2 decimal points
+  std::string num2str(double n);
+
+  //! Report a number with variable multipliers (K, M, G, T, P, E, Z, Y)
+  /*! You should decide on precision using std::setprecision(n) in your stream before calling this function. */
+  void num2str(std::ostringstream & ss, double n);
 
   //! Read one line from a file and return it as a string
   /*! Useful to get info from virtual kernel filesystems, such as CPU temperature, etc. Parameter \p skip optionally

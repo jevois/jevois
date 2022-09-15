@@ -86,34 +86,41 @@ set(JEVOIS_PLATFORM_FORTRAN_COMPILER "${CROSS_COMPILE}gfortran-${JEVOIS_COMPILER
 
 set(OPENCV_LIBS_FOR_JEVOIS "-lopencv_core -lopencv_imgproc -lopencv_features2d -lopencv_flann -lopencv_ml \
 -lopencv_objdetect -lopencv_imgcodecs -lopencv_tracking -lopencv_video -lopencv_videoio -lopencv_dnn_objdetect \
--lopencv_dnn -lopencv_highgui -lngraph -linference_engine_ir_reader -linference_engine_preproc \
--lMultiDevicePlugin -linference_engine_legacy -linference_engine -lmyriadPlugin \
--lHeteroPlugin -linference_engine_lp_transformations -linference_engine_transformations \
--linference_engine_c_api -linference_engine_onnx_reader")
+-lopencv_dnn -lopencv_highgui -lopenvino_auto_batch_plugin")
 
-# These do not exist on platform: -lclDNNPlugin -lMKLDNNPlugin -lGNAPlugin; added below to host only
+# openvino libs for platform, from:
+# /usr/share/jevoispro-sdk/jevoispro-sysroot/usr/share/jevoispro-openvino-2022.1/runtime/lib/aarch64/
+set(JEVOIS_PLATFORM_OPENVINO_LIBS "-lopenvino_arm_cpu_plugin -lopenvino_auto_plugin -lopenvino_gapi_preproc \
+-lopenvino_intel_myriad_plugin -lopenvino_onnx_frontend -lopenvino -lopenvino_auto_batch_plugin -lopenvino_c \
+-lopenvino_hetero_plugin -lopenvino_ir_frontend -lopenvino_paddle_frontend -lopenvino_tensorflow_fe")
 
+# openvino libs for host, from /usr/share/jevoispro-openvino-2022.1/runtime/lib/intel64/
+set(JEVOIS_HOST_OPENVINO_LIBS "-lopenvino -lopenvino_c -lopenvino_auto_plugin \
+-lgna -lopenvino_onnx_frontend -lopenvino_intel_gna_plugin -lopenvino_intel_cpu_plugin -lopenvino_ir_frontend \
+-lopenvino_paddle_frontend -lopenvino_hetero_plugin -lopenvino_intel_gpu_plugin -lopenvino_intel_myriad_plugin \
+-lopenvino_tensorflow_fe -lopenvino_gapi_preproc -lopenvino_auto_batch_plugin")
+
+# Ok, set the libs and paths for opencv and openvino:
 set(JEVOIS_PLATFORM_OPENCV_PREFIX "${JEVOIS_BUILD_BASE}/usr/share/${JEVOIS}-opencv-${JEVOIS_OPENCV_VERSION}")
 set(JEVOIS_PLATFORM_OPENVINO_PREFIX "${JEVOIS_BUILD_BASE}/usr/share/${JEVOIS}-openvino-${JEVOIS_OPENVINO_VERSION}")
 set(JEVOIS_PLATFORM_OPENCV_INCLUDE "-I${JEVOIS_PLATFORM_OPENCV_PREFIX}/include/opencv4")
 set(JEVOIS_PLATFORM_OPENCV_LIBS
   "-L${JEVOIS_BUILD_BASE}/usr/lib/aarch64-linux-gnu \
    -L${JEVOIS_PLATFORM_OPENCV_PREFIX}/lib \
-   -L${JEVOIS_PLATFORM_OPENVINO_PREFIX}/deployment_tools/ngraph/lib \
-   -L${JEVOIS_PLATFORM_OPENVINO_PREFIX}/deployment_tools/inference_engine/external/tbb/lib \
-   -L${JEVOIS_PLATFORM_OPENVINO_PREFIX}/deployment_tools/inference_engine/lib/aarch64 \
-   ${OPENCV_LIBS_FOR_JEVOIS}")
+   -L${JEVOIS_PLATFORM_OPENVINO_PREFIX}/runtime/lib/aarch64 \
+   -L${JEVOIS_PLATFORM_OPENVINO_PREFIX}/runtime/3rdparty/tbb/lib \
+   ${OPENCV_LIBS_FOR_JEVOIS} \
+   ${JEVOIS_PLATFORM_OPENVINO_LIBS}")
 
 set(JEVOIS_HOST_OPENCV_PREFIX "/usr/share/${JEVOIS}-opencv-${JEVOIS_OPENCV_VERSION}")
 set(JEVOIS_HOST_OPENVINO_PREFIX "/usr/share/${JEVOIS}-openvino-${JEVOIS_OPENVINO_VERSION}")
 set(JEVOIS_HOST_OPENCV_INCLUDE "-I${JEVOIS_HOST_OPENCV_PREFIX}/include/opencv4")
 set(JEVOIS_HOST_OPENCV_LIBS
   "-L${JEVOIS_HOST_OPENCV_PREFIX}/lib \
-   -L${JEVOIS_HOST_OPENVINO_PREFIX}/deployment_tools/ngraph/lib \
-   -L${JEVOIS_HOST_OPENVINO_PREFIX}/deployment_tools/inference_engine/external/gna/lib \
-   -L${JEVOIS_HOST_OPENVINO_PREFIX}/deployment_tools/inference_engine/external/tbb/lib \
-   -L${JEVOIS_HOST_OPENVINO_PREFIX}/deployment_tools/inference_engine/lib/intel64 \
-   ${OPENCV_LIBS_FOR_JEVOIS} -lclDNNPlugin -lMKLDNNPlugin -lGNAPlugin")
+   -L${JEVOIS_HOST_OPENVINO_PREFIX}/runtime/lib/intel64 \
+   -L${JEVOIS_HOST_OPENVINO_PREFIX}/runtime/3rdparty/tbb/lib \
+   ${OPENCV_LIBS_FOR_JEVOIS} \
+   ${JEVOIS_HOST_OPENVINO_LIBS}")
 
 # Use TBB and kernel includes for platform from the buildroot installation.  On the host, we may have local packages,
 # eg, latest opencv compiled from source:

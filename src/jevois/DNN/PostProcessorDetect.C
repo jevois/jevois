@@ -16,7 +16,7 @@
 /*! \file */
 
 #include <jevois/DNN/PostProcessorDetect.H>
-#include <jevois/DNN/PostProcessNPUhelpers.H>
+#include <jevois/DNN/PostProcessorDetectYOLO.H>
 #include <jevois/DNN/PreProcessor.H>
 #include <jevois/DNN/Utils.H>
 #include <jevois/Util/Utils.H>
@@ -36,7 +36,7 @@ void jevois::dnn::PostProcessorDetect::freeze(bool doit)
 {
   classes::freeze(doit);
   detecttype::freeze(doit);
-  anchors::freeze(doit);
+  if (itsYOLO) itsYOLO->freeze(doit);
 }
 
 // ####################################################################################################
@@ -52,21 +52,16 @@ void jevois::dnn::PostProcessorDetect::onParamChange(postprocessor::classes cons
 
   itsLabels = jevois::dnn::readLabelsFile(jevois::absolutePath(dataroot, val));
 }
-
 // ####################################################################################################
-void jevois::dnn::PostProcessorDetect::onParamChange(postprocessor::anchors const & JEVOIS_UNUSED_PARAM(param),
-                                                     std::string const & val)
+void jevois::dnn::PostProcessorDetect::onParamChange(postprocessor::detecttype const & JEVOIS_UNUSED_PARAM(param),
+                                                     postprocessor::DetectType const & val)
 {
-  if (val.empty()) { itsAnchors.clear(); return; }
-  auto tok = jevois::split(val, "\\s*;\\s*");
-  if (tok.size() >= 64) LFATAL("Maximum 32 anchors is supported");
-  for (std::string const & t : tok)
+  if (val == postprocessor::DetectType::RAWYOLO)
+    itsYOLO = addSubComponent<jevois::dnn::PostProcessorDetectYOLO>("yolo");
+  else
   {
-    std::array<float, 64> a { };
-    auto atok = jevois::split(t, "\\s*,\\s*");
-    int i = 0;
-    for (std::string const & at : atok) a[i++] = std::stoi(at);
-    itsAnchors.emplace_back(std::move(a));
+    itsYOLO.reset();
+    removeSubComponent("yolo", false);
   }
 }
 
@@ -76,7 +71,8 @@ void jevois::dnn::PostProcessorDetect::process(std::vector<cv::Mat> const & outs
   if (outs.empty()) LFATAL("No outputs received, we need at least one.");
   cv::Mat const & out = outs[0]; cv::MatSize const & msiz = out.size;
 
-  float const confThreshold = thresh::get() * 0.01F;
+  float const confThreshold = cthresh::get() * 0.01F;
+  float const boxThreshold = dthresh::get() * 0.01F;
   float const nmsThreshold = nms::get() * 0.01F;
   int const fudge = classoffset::get();
   itsImageSize = preproc->imagesize();
@@ -93,6 +89,7 @@ void jevois::dnn::PostProcessorDetect::process(std::vector<cv::Mat> const & outs
   std::vector<int> classIds;
   std::vector<float> confidences;
   std::vector<cv::Rect> boxes;
+  size_t const maxbox = maxnbox::get();
 
   // Here we just scale the coords from [0..1]x[0..1] to blobw x blobh:
   try
@@ -105,8 +102,8 @@ void jevois::dnn::PostProcessorDetect::process(std::vector<cv::Mat> const & outs
       // Network produces output blob with a shape 1x1xNx7 where N is a number of detections and an every detection is
       // a vector of values [batchId, classId, confidence, left, top, right, bottom]
       if (outs.size() != 1 || msiz.dims() != 4 || msiz[0] != 1 || msiz[1] != 1 || msiz[3] != 7)
-        throw std::runtime_error("Expected 1 output blob with shape 1x1xNx7 for N detections with values "
-                                 "[batchId, classId, confidence, left, top, right, bottom]");
+        LTHROW("Expected 1 output blob with shape 1x1xNx7 for N detections with values "
+               "[batchId, classId, confidence, left, top, right, bottom]");
       
       float const * data = (float const *)out.data;
       for (size_t i = 0; i < out.total(); i += 7)
@@ -123,6 +120,7 @@ void jevois::dnn::PostProcessorDetect::process(std::vector<cv::Mat> const & outs
           classIds.push_back((int)(data[i + 1]) + fudge);  // Skip 0th background class id.
           boxes.push_back(cv::Rect(left, top, width, height));
           confidences.push_back(confidence);
+          if (classIds.size() > maxbox) break; // Stop if too many boxes
         }
       }
     }
@@ -134,8 +132,8 @@ void jevois::dnn::PostProcessorDetect::process(std::vector<cv::Mat> const & outs
       // Network produces output blob with a shape 1x1xNx7 where N is a number of detections and an every detection is
       // a vector of values [batchId, classId, confidence, left, top, right, bottom]
       if (outs.size() != 1 || msiz.dims() != 4 || msiz[0] != 1 || msiz[1] != 1 || msiz[3] != 7)
-        throw std::runtime_error("Expected 1 output blob with shape 1x1xNx7 for N detections with values "
-                                 "[batchId, classId, confidence, left, top, right, bottom]");
+        LTHROW("Expected 1 output blob with shape 1x1xNx7 for N detections with values "
+               "[batchId, classId, confidence, left, top, right, bottom]");
     
       float const * data = (float const *)out.data;
       for (size_t i = 0; i < out.total(); i += 7)
@@ -152,6 +150,7 @@ void jevois::dnn::PostProcessorDetect::process(std::vector<cv::Mat> const & outs
           classIds.push_back((int)(data[i + 1]) + fudge);  // Skip 0th background class id.
           boxes.push_back(cv::Rect(left, top, width, height));
           confidences.push_back(confidence);
+          if (classIds.size() > maxbox) break; // Stop if too many boxes
         }
       }
     }
@@ -163,18 +162,16 @@ void jevois::dnn::PostProcessorDetect::process(std::vector<cv::Mat> const & outs
       // Network produces 4 output blobs with shapes 4xN for boxes, N for IDs, N for scores, and 1x1 for count
       // (see GetDetectionResults in detection/adapter.cc of libcoral):
       if (outs.size() != 4)
-        throw std::runtime_error("Expected 4 output blobs with shapes 4xN for boxes, N for IDs, N for scores, "
-                                 "and 1x1 for count");
+        LTHROW("Expected 4 output blobs with shapes 4xN for boxes, N for IDs, N for scores, and 1x1 for count");
       cv::Mat const & bboxes = outs[0];
       cv::Mat const & ids = outs[1];
       cv::Mat const & scores = outs[2];
       cv::Mat const & count = outs[3];
       if (bboxes.total() != 4 * ids.total() || bboxes.total() != 4 * scores.total() || count.total() != 1)
-        throw std::runtime_error("Expected 4 output blobs with shapes 4xN for boxes, N for IDs, N for scores, "
-                                 "and 1x1 for count");
+        LTHROW("Expected 4 output blobs with shapes 4xN for boxes, N for IDs, N for scores, and 1x1 for count");
 
       size_t num = count.at<float>(0);
-      if (num > ids.total()) LFATAL("Too many detections: " << num << " for only " << ids.total() << " ids");
+      if (num > ids.total()) LTHROW("Too many detections: " << num << " for only " << ids.total() << " ids");
       float const * bb = (float const *)bboxes.data;
       
       for (size_t i = 0; i < num; ++i)
@@ -190,6 +187,7 @@ void jevois::dnn::PostProcessorDetect::process(std::vector<cv::Mat> const & outs
         classIds.push_back((int)(ids.at<float>(i)) + fudge);  // Skip 0th background class id.
         boxes.push_back(cv::Rect(left, top, width, height));
         confidences.push_back(scores.at<float>(i));
+        if (classIds.size() > maxbox) break; // Stop if too many boxes
       }
     }
     break;
@@ -199,127 +197,169 @@ void jevois::dnn::PostProcessorDetect::process(std::vector<cv::Mat> const & outs
     {
       for (size_t i = 0; i < outs.size(); ++i)
       {
-        // Network produces output blob with a shape Nx(5+C) where N is a number of detected objects and C is a number
-        // of classes + 5 where the first 5 numbers are [center_x, center_y, width, height, box score]
+        // Network produces output blob(s) with shape Nx(5+C) where N is a number of detected objects and C is a number
+        // of classes + 5 where the first 5 numbers are [center_x, center_y, width, height, box score].
         cv::Mat const & out = outs[i];
-        if (out.size.dims() != 2 || out.cols <= 5)
-          throw std::runtime_error("Expected 1 or more output blobs with shape Nx(5+C) where N is the number of "
-                                   "detected objects, C is the number of classes, and the first 5 columns are "
-                                   "[center_x, center_y, width, height, box score]. Incorrect size for output " +
-                                   std::to_string(i) + ": need Nx(5+C)");
+        cv::MatSize const & ms = out.size; int const nd = ms.dims();
+        int nbox = -1, ndata = -1;
         
-        float const * data = (float const *)out.data;
-        for (int j = 0; j < out.rows; ++j, data += out.cols)
+        if (nd >= 2)
         {
-          cv::Mat scores = out.row(j).colRange(5, out.cols);
-          cv::Point classIdPoint;
-          double confidence;
+          nbox = ms[nd-2];
+          ndata = ms[nd-1];
+          for (int i = 0; i < nd-2; ++i) if (ms[i] != 1) nbox = -1; // reject if more than 2 effective dims
+        }
+
+        if (nbox < 0 || ndata < 5)
+          LTHROW("Expected 1 or more output blobs with shape Nx(5+C) where N is the number of "
+                 "detected objects, C is the number of classes, and the first 5 columns are "
+                 "[center_x, center_y, width, height, box score]. // "
+                 "Incorrect size " << jevois::dnn::shapestr(out) << " for output " << i <<
+                 ": need Nx(5+C) or 1xNx(5+C)");
+
+        // Some networks, like YOLOv5 or YOLOv7, output 3D 1xNx(5+C), so here we slice off the last 2 dims:
+        int sz2[] = { nbox, ndata };
+        cv::Mat const out2(2, sz2, out.type(), out.data);
+        
+        float const * data = (float const *)out2.data;
+        for (int j = 0; j < nbox; ++j, data += ndata)
+        {
+          if (data[4] < boxThreshold) continue; // skip if box score is too low
+          
+          cv::Mat scores = out2.row(j).colRange(5, ndata);
+          cv::Point classIdPoint; double confidence;
           cv::minMaxLoc(scores, 0, &confidence, 0, &classIdPoint);
-          if (confidence > confThreshold)
+
+          if (confidence < confThreshold) continue; // skip if class score too low
+
+          // YOLO<5 produces boxes in [0..1[x[0..1[ and 2D output blob:
+          int centerX, centerY, width, height;
+          if (nd == 2)
           {
-            int centerX = (int)(data[0] * bsiz.width);
-            int centerY = (int)(data[1] * bsiz.height);
-            int width = (int)(data[2] * bsiz.width);
-            int height = (int)(data[3] * bsiz.height);
-            int left = centerX - width / 2;
-            int top = centerY - height / 2;
-            
-            classIds.push_back(classIdPoint.x);
-            confidences.push_back((float)confidence);
-            boxes.push_back(cv::Rect(left, top, width, height));
+            centerX = (int)(data[0] * bsiz.width);
+            centerY = (int)(data[1] * bsiz.height);
+            width = (int)(data[2] * bsiz.width);
+            height = (int)(data[3] * bsiz.height);
           }
+          else
+          {
+            // YOLOv5, YOLOv7 produce boxes already scaled by input blob size, and 3D output blob:
+            centerX = (int)(data[0]);
+            centerY = (int)(data[1]);
+            width = (int)(data[2]);
+            height = (int)(data[3]);
+          }
+          
+          int left = centerX - width / 2;
+          int top = centerY - height / 2;
+          boxes.push_back(cv::Rect(left, top, width, height));
+          classIds.push_back(classIdPoint.x);
+          confidences.push_back((float)confidence);
+          if (classIds.size() > maxbox) break; // Stop if too many boxes
         }
       }
     }
     break;
-    
+    /*
     // ----------------------------------------------------------------------------------------------------
     case jevois::dnn::postprocessor::DetectType::RAWYOLOface:
-    {
-      if (outs.size() != 1)
-        throw std::runtime_error("Expected 1 raw YOLO output tensor 1x6xHxW");
-
-      static float const defaultbiases[10]
-                                      {1.08*8,1.19*8, 3.42*8,4.41*8, 6.63*8,11.38*8, 9.42*8,5.11*8, 16.62*8,10.52*8};
-      float const * biases = itsAnchors.size() >= 1 ? itsAnchors[0].data() : defaultbiases;
-      jevois::dnn::npu::yolo(outs[0], classIds, confidences, boxes, itsLabels.size(), biases, 0,
-                             confThreshold, bsiz, fudge);
-    }
-    break;
-    
-    // ----------------------------------------------------------------------------------------------------
     case jevois::dnn::postprocessor::DetectType::RAWYOLOv2:
     {
-      if (outs.size() != 1)
-        throw std::runtime_error("Expected 1 raw YOLO output tensor 1x(5+C)xHxW for C classes");
+      if (outs.size() != 1) LTHROW("Expected 1 raw YOLO output tensor 1x(5+C)xHxW for C classes");
 
-      static float const defaultbiases[10] { 0.738768*8,0.874946*8,2.422040*8,2.657040*8,4.309710*8,
-          7.044930*8,10.246000*8,4.594280*8,12.686800*8,11.874100*8 };
-      float const * biases = itsAnchors.size() >= 1 ? itsAnchors[0].data() : defaultbiases;
+      // Default: 5 anchors, one scale:
+      static float const defaultbiases[10] { 0.57273*8,0.677385*8, 1.87446*8,2.06253*8, 3.33843*8,5.47434*8,
+          7.88282*8,3.52778*8, 9.77052*8,9.16828*8 };
+      
       // Myriad-X model gives [1, 21125], reshape to [5, 25, 13, 13] for VOC or
-      // [1,71825] for COCO with 8 classes
+      // [1,71825] for COCO with 80 classes
       if (outs[0].size.dims() == 2)
       {
         int const n = outs[0].size[1] / (13 * 13);
         cv::Mat o = outs[0].reshape(0, { 1, n, 13, 13 });
-        jevois::dnn::npu::yolo(o, classIds, confidences, boxes, itsLabels.size(), biases, 0,
-                               confThreshold, bsiz, fudge);
+        jevois::dnn::npu::yolo(o, defaultbiases, 10, itsAnchors, classIds, confidences, boxes, itsLabels.size(),
+                               boxThreshold, confThreshold, bsiz, fudge, maxbox, sigmoid, scale_xy, itsOutMtx);
       }
       else
-        jevois::dnn::npu::yolo(outs[0], classIds, confidences, boxes, itsLabels.size(), biases, 0,
-                               confThreshold, bsiz, fudge);
+        jevois::dnn::npu::yolo(outs, defaultbiases, 10, itsAnchors, classIds, confidences, boxes, itsLabels.size(),
+                               boxThreshold, confThreshold, bsiz, fudge, maxbox, sigmoid, scale_xy, itsOutMtx);
     }
     break;
     
     // ----------------------------------------------------------------------------------------------------
+    case jevois::dnn::postprocessor::DetectType::RAWYOLOv7tiny:
+      scale_xy = 2.0F;
+      // fall-through...
     case jevois::dnn::postprocessor::DetectType::RAWYOLOv3:
     case jevois::dnn::postprocessor::DetectType::RAWYOLOv4:
     {
       if (outs.size() != 3)
-        throw std::runtime_error("Expected 3 raw YOLO v3/v4 output tensors 1x(5+C)xHxW; 1x(5+C)xHxW; 1x(5+C)xHxW "
-                                 "for C classes");
+        LTHROW("Expected 3 raw YOLO output tensors [1x(5+C)xHxW; 1x(5+C)xHxW; 1x(5+C)xHxW] "
+               "or [1xHxWx(5+C); 1xHxWx(5+C); 1xHxWx(5+C)] for C classes");
 
-      static float const defaultbiases[18] {10, 13, 16, 30, 33, 23, 30, 61, 62, 45,
-          59, 119, 116, 90, 156, 198, 373, 326};
-      float const * b0 = itsAnchors.size() >= 1 ? itsAnchors[0].data() : defaultbiases;
-      float const * b1 = itsAnchors.size() >= 2 ? itsAnchors[1].data() : b0;
-      float const * b2 = itsAnchors.size() >= 3 ? itsAnchors[2].data() : b1;
-      jevois::dnn::npu::yolo(outs[0], classIds, confidences, boxes, itsLabels.size(), b2, 2,
-                             confThreshold, bsiz, fudge);
-      jevois::dnn::npu::yolo(outs[1], classIds, confidences, boxes, itsLabels.size(), b1, 1,
-                             confThreshold, bsiz, fudge);
-      jevois::dnn::npu::yolo(outs[2], classIds, confidences, boxes, itsLabels.size(), b0, 0,
-                             confThreshold, bsiz, fudge);
+      // Default: 3 anchors per scale (w, h for each), 3 scales:
+      static float const defaultbiases[18] { 10,13, 16,30, 33,23,   30,61, 62,45, 59,119,   116,90, 156,198, 373,326 };
+
+      jevois::dnn::npu::yolo(outs, defaultbiases, 18, itsAnchors, classIds, confidences, boxes, itsLabels.size(),
+                             boxThreshold, confThreshold, bsiz, fudge, maxbox, sigmoid, scale_xy, itsOutMtx);
     }
     break;
     
     // ----------------------------------------------------------------------------------------------------
+    case jevois::dnn::postprocessor::DetectType::RAWYOLOv5:
+      sigmoid = false;
+      // fall-through...
+    case jevois::dnn::postprocessor::DetectType::RAWYOLOv7:
+    {
+      scale_xy = 2.0F;
+      
+      if (outs.size() != 3)
+        LTHROW("Expected 3 raw YOLO v7 output tensors [1x((5+C)A)xHxW; 1x((5+C)A)xHxW; 1x((5+C)A)xHxW] "
+               "or [1xHxWx((5+C)A); 1xHxWx((5+C)A); 1xHxWx((5+C)A)] for C classes and A anchors/scale");
+
+      // Default: 3 anchors per scale (w, h for each), 3 scales:
+      static float const defaultbiases[18] { 12,16, 19,36, 40,28, 36,75, 76,55, 72,146, 142,110, 192,243, 459,401 };
+
+      jevois::dnn::npu::yolo(outs, defaultbiases, 18, itsAnchors, classIds, confidences, boxes, itsLabels.size(),
+                             boxThreshold, confThreshold, bsiz, fudge, maxbox, sigmoid, scale_xy, itsOutMtx);
+    }
+    break;
+
+    // ----------------------------------------------------------------------------------------------------
     case jevois::dnn::postprocessor::DetectType::RAWYOLOv3tiny:
     {
       if (outs.size() != 2)
-        throw std::runtime_error("Expected 2 raw YOLO v3-tiny output tensors 1x(5+C)xHxW; 1x(5+C)xHxW "
-                                 "for C classes");
+        LTHROW("Expected 2 raw YOLO v3-tiny output tensors 1x(5+C)xHxW; 1x(5+C)xHxW for C classes");
 
-      static float const defaultbiases[12] {10, 14, 23, 27, 37, 58, 81, 82, 135, 169, 344, 319};
-      float const * b0 = itsAnchors.size() >= 1 ? itsAnchors[0].data() : defaultbiases;
-      float const * b1 = itsAnchors.size() >= 2 ? itsAnchors[1].data() : b0;
-      jevois::dnn::npu::yolo(outs[0], classIds, confidences, boxes, itsLabels.size(), b1, 1,
-                             confThreshold, bsiz, fudge);
-      jevois::dnn::npu::yolo(outs[1], classIds, confidences, boxes, itsLabels.size(), b0, 0,
-                             confThreshold, bsiz, fudge);
+      // Default: 3 anchors, 2 scales:
+      static float const defaultbiases[12] { 10,14, 23,27, 37,58,   81/2,82/2, 135/2,169/2, 344/2,319/2 };
+
+      jevois::dnn::npu::yolo(outs, defaultbiases, 12, itsAnchors, classIds, confidences, boxes, itsLabels.size(),
+                             boxThreshold, confThreshold, bsiz, fudge, maxbox, sigmoid, scale_xy, itsOutMtx);
+    }
+    break;
+    */
+    // ----------------------------------------------------------------------------------------------------
+    case jevois::dnn::postprocessor::DetectType::RAWYOLO:
+    {
+      if (itsYOLO) itsYOLO->yolo(outs, classIds, confidences, boxes, itsLabels.size(), boxThreshold, confThreshold,
+                                 bsiz, fudge, maxbox);
+      else LFATAL("Internal error -- no YOLO subcomponent");
     }
     break;
     
     default:
-      LFATAL("Post-processor detecttype " << detecttype::strget() << " not available on this hardware");
+      // Do not use strget() here as it will throw!
+      LTHROW("Unsupported Post-processor detecttype " << int(detecttype::get()));
     }
   }
   // Abort here if the received outputs were malformed:
   catch (std::exception const & e)
   {
-    std::string err = "With detecttype " + detecttype::strget() + ", error: " + e.what() + "\n\n"
-      "Your network produced the following outputs:\n\n";
+    std::string err = "Selected detecttype is " + detecttype::strget() + " and network produced:\n\n";
     for (cv::Mat const & m : outs) err += "- " + jevois::dnn::shapestr(m) + "\n";
+    err += "\nFATAL ERROR(s):\n\n";
+    err += e.what();
     LFATAL(err);
   }
 

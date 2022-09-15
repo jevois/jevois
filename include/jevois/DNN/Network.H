@@ -36,6 +36,14 @@ namespace jevois
       static jevois::ParameterCategory const ParamCateg("DNN Network Options");
 
       //! Parameter \relates jevois::Network
+      JEVOIS_DECLARE_PARAMETER(comment, std::string, "Optional comment about the network",
+                               "", ParamCateg);
+
+      //! Parameter \relates jevois::Network
+      JEVOIS_DECLARE_PARAMETER(url, std::string, "Optional URL for the network",
+                               "", ParamCateg);
+
+      //! Parameter \relates jevois::Network
       JEVOIS_DECLARE_PARAMETER(dataroot, std::string, "Root directory to use when config or model parameters "
                                "are relative paths.",
                                JEVOIS_SHARE_PATH, ParamCateg);
@@ -55,7 +63,7 @@ namespace jevois
       
 #ifdef JEVOIS_PRO
       //! Enum \relates jevois::Network
-      JEVOIS_DEFINE_ENUM_CLASS(Target, (CPU) (OpenCL) (OpenCL_FP16) (Myriad) );
+      JEVOIS_DEFINE_ENUM_CLASS(Target, (CPU) (OpenCL) (OpenCL_FP16) (Myriad) (NPU) );
 #else
       //! Enum \relates jevois::Network
       JEVOIS_DEFINE_ENUM_CLASS(Target, (CPU) );
@@ -67,7 +75,7 @@ namespace jevois
                                Target::CPU, Target_Values, ParamCateg);
 #ifdef JEVOIS_PRO
       //! Enum \relates jevois::Network
-      JEVOIS_DEFINE_ENUM_CLASS(Backend, (OpenCV) (InferenceEngine) );
+      JEVOIS_DEFINE_ENUM_CLASS(Backend, (OpenCV) (InferenceEngine) (TimVX) );
 #define JEVOIS_BACKEND_DEFAULT Backend::OpenCV
 #else
       //! Enum \relates jevois::Network
@@ -83,14 +91,6 @@ namespace jevois
                                "Changes will take effect next time you load a model.",
                                JEVOIS_BACKEND_DEFAULT, Backend_Values, ParamCateg);
 
-#ifdef JEVOIS_PRO
-      //! Parameter \relates jevois::Network
-      JEVOIS_DECLARE_PARAMETER(tpunum, size_t, "Coral EdgeTPU number to use to run this model, typically 0, or can be "
-                               "1 when using a dual-TPU add-on board, or more when using additional TPUs connected "
-                               "to USB ports",
-                               0, ParamCateg);
-#endif
-
       //! Parameter \relates jevois::Network
       JEVOIS_DECLARE_PARAMETER(intensors, std::string, "Specification of input tensors",
                                "", ParamCateg);
@@ -100,19 +100,58 @@ namespace jevois
                                "", ParamCateg);
 
       //! Parameter \relates jevois::Network
-      JEVOIS_DECLARE_PARAMETER(dequant, bool, "Dequantize output tensors",
-                               true, ParamCateg);
+      JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(outreshape, std::string, "Specification of reshaped output tensors; "
+                               "sometimes useful to re-interpret tensors to what a post-processor expects; for "
+                               "example, TPU YoloV4-Int-VOC outputs 5D tensors 32F:1x52x52x3x85, 32F:1x26x26x3x85, "
+                               "32F:1x13x13x3x85 but the YOLO post-processor expects 4D, which would be specified here "
+                               "as 32F:1x52x52x255, 32F:1x26x26x255, 32F:1x13x13x255. Note that this only changes "
+                               "the description of dimensions, but does not move any pixel data around (e.g., cannot "
+                               "convert from NCHW to NHWC, convert data types, etc). Use sparingly and with caution.",
+                               "", ParamCateg);
 
       //! Parameter \relates jevois::Network
-      JEVOIS_DECLARE_PARAMETER(flattenoutputs, bool, "Dequant, flatten and concatenate all NPU outputs into a "
-                               "single 1D vector",
-                               false, ParamCateg);
+      JEVOIS_DECLARE_PARAMETER(dequant, bool, "Dequantize output tensors to float32 from their native quantized type",
+                               true, ParamCateg);
+
+      //! Parameter \relates jevois::NetworkPython
+      JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(pynet, std::string, "Full path of the python network processor file. "
+                                             "Name of class defined in the file must match the file name without "
+                                             "the trailing '.py'",
+                                             "", ParamCateg);
+#ifdef JEVOIS_PRO
+      //! Parameter \relates jevois::Network
+      JEVOIS_DECLARE_PARAMETER(tpunum, size_t, "Coral EdgeTPU number to use to run this model, typically 0, or can be "
+                               "1 when using a dual-TPU add-on board, or more when using additional TPUs connected "
+                               "to USB ports",
+                               0, ParamCateg);
+
+      //! Parameter \relates jevois::Network
+      JEVOIS_DECLARE_PARAMETER(spunum, size_t, "Hailo8 device number to use to run this model, typically 0 unless "
+                               "several Hailo8 accelerators are connected to the system",
+                               0, ParamCateg);
+
+      //! Parameter \relates jevois::NetworkNPU
+      JEVOIS_DECLARE_PARAMETER(verifygraph, bool, "Verify NPU graph after loading it",
+                               true, ParamCateg);
+
+      //! Parameter \relates jevois::NetworkNPU
+      JEVOIS_DECLARE_PARAMETER(ovxver, std::string, "ovxlib version to use with NPU network, or leave blank "
+                               "to use latest version",
+                               "", boost::regex("^$|^[0-9]+\\.[0-9]+\\.[0-9]+$"), ParamCateg);
+
+      //! Parameter \relates jevois::NetworkHailo
+      JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(turbo, bool, "Turbo mode. Has no significant effect on small or "
+                                             "fast networks. Use with caution as it may lead to overheating, not "
+                                             "recommended for production",
+                                             false, ParamCateg);
+#endif
     }
     
     //! Abstract class to represent a neural network
-    /*! Derived classes provide implementation via OpenCV (on CPU, OpenCL, or OpenVino), Amlogic/Vivante NPU, or Google
-        Coral TPU. \ingroup dnn */
-    class Network : public jevois::Component
+    /*! Derived classes provide implementation via OpenCV (on CPU, OpenCL, or OpenVino/Myriad-X), Amlogic/Vivante NPU,
+        Hailo-8, Python, or Google Coral TPU. \ingroup dnn */
+    class Network : public Component,
+                    public Parameter<network::comment, network::url, network::outreshape>
     {
       public:
         //! Inherited constructor ok
@@ -152,10 +191,13 @@ namespace jevois
         virtual std::vector<cv::Mat> doprocess(std::vector<cv::Mat> const & blobs,
                                                std::vector<std::string> & info) = 0;
 
+        void onParamChange(network::outreshape const & param, std::string const & val) override;
+        
       private:
         std::atomic<bool> itsLoading = false;
         std::atomic<bool> itsLoaded = false;
-        std::future<void> itsLoadFut;        
+        std::future<void> itsLoadFut;
+        std::vector<vsi_nn_tensor_attr_t> itsReshape;
     };
     
   } // namespace dnn

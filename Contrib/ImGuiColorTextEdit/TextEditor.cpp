@@ -3,8 +3,16 @@
 #include <string>
 #include <regex>
 #include <cmath>
+#include <functional> // JEVOIS
 
 #include "TextEditor.h"
+
+// JEVOIS: we need raw key codes to handle CTRL-S
+#ifdef JEVOIS_PLATFORM
+#include <linux/input-event-codes.h>
+#else
+#include <SDL.h>
+#endif
 
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui.h" // for imGui::GetCurrentWindow()
@@ -697,6 +705,9 @@ ImU32 TextEditor::GetGlyphColor(const Glyph & aGlyph) const
 	return color;
 }
 
+void TextEditor::SetSaveCallback(std::function<void(void)> && cb)
+{ mSaveCallback = cb; } // JEVOIS
+
 void TextEditor::HandleKeyboardInputs()
 {
 	ImGuiIO& io = ImGui::GetIO();
@@ -713,7 +724,17 @@ void TextEditor::HandleKeyboardInputs()
 		io.WantCaptureKeyboard = true;
 		io.WantTextInput = true;
 
-		if (!IsReadOnly() && ctrl && !shift && !alt && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Z)))
+		if (!IsReadOnly() && ctrl && !shift && !alt &&
+#ifdef JEVOIS_PLATFORM
+            ImGui::IsKeyPressed(KEY_S)
+#else
+            ImGui::IsKeyPressed(SDL_SCANCODE_S)
+#endif
+            )
+        { if (mSaveCallback) mSaveCallback(); } // JEVOIS
+		else if (!IsReadOnly() && !ctrl && !shift && alt && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Backspace)))
+            Undo();
+        else if (!IsReadOnly() && ctrl && !shift && !alt && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Z)))
 			Undo();
 		else if (!IsReadOnly() && !ctrl && !shift && alt && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Backspace)))
 			Undo();
@@ -1087,6 +1108,7 @@ void TextEditor::Render()
 		}
 
 		// Draw a tooltip on known identifiers/preprocessor symbols
+        /* JEVOIS those tooltips are not helpful, but we want to keep the coloring of identifiers
 		if (ImGui::IsMousePosValid())
 		{
 			auto id = GetWordAt(ScreenPosToCoordinates(ImGui::GetMousePos()));
@@ -1111,6 +1133,7 @@ void TextEditor::Render()
 				}
 			}
 		}
+        */
 	}
 
 
@@ -2032,9 +2055,9 @@ const TextEditor::Palette & TextEditor::GetDarkPalette()
 			0x800020ff, // ErrorMarker
 			0x40f08000, // Breakpoint
 			0xff707000, // Line number
-			0x40000000, // Current line fill
-			0x40808080, // Current line fill (inactive)
-			0x40a0a0a0, // Current line edge
+			0x10000000, // Current line fill
+			0x10808080, // Current line fill (inactive)
+			0x20a0a0a0, // Current line edge
 		} };
 	return p;
 }
@@ -2060,9 +2083,9 @@ const TextEditor::Palette & TextEditor::GetLightPalette()
 			0xa00010ff, // ErrorMarker
 			0x80f08000, // Breakpoint
 			0xff505000, // Line number
-			0x40000000, // Current line fill
-			0x40808080, // Current line fill (inactive)
-			0x40000000, // Current line edge
+			0x10000000, // Current line fill
+			0x10808080, // Current line fill (inactive)
+			0x20000000, // Current line edge
 		} };
 	return p;
 }
@@ -2088,9 +2111,9 @@ const TextEditor::Palette & TextEditor::GetRetroBluePalette()
 			0xa00000ff, // ErrorMarker
 			0x80ff8000, // Breakpoint
 			0xff808000, // Line number
-			0x40000000, // Current line fill
-			0x40808080, // Current line fill (inactive)
-			0x40000000, // Current line edge
+			0x10000000, // Current line fill
+			0x10808080, // Current line fill (inactive)
+			0x20000000, // Current line edge
 		} };
 	return p;
 }

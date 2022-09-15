@@ -143,6 +143,7 @@ enum vx_kernel_libnnext_offset_e
     KERNEL_ENUM_REDUCEANY_INTERNAL,
     KERNEL_ENUM_RESIZE_INTERNAL,
     KERNEL_ENUM_RESIZE_NEAREST_INTERNAL,
+    KERNEL_ENUM_PRE_PROCESS_YUV444,
 };
 
 //! [KERNEL NAME]
@@ -344,7 +345,6 @@ enum vx_kernel_libnnext_offset_e
 #define VX_KERNEL_NAME_TENSORCROP_INT16                    VIVANTE_NAMESPACE ".vxcTensorCrop_Int16"
 #define VX_KERNEL_NAME_TENSORCROP_INT8                     VIVANTE_NAMESPACE ".vxcTensorCrop_Int8"
 #define VX_KERNEL_NAME_TENSORCROP_INT16_FP16               VIVANTE_NAMESPACE ".vxcTensorCrop_Int16_Fp16"
-#define VX_KERNEL_NAME_DROPOUT                             VIVANTE_NAMESPACE ".dropoutVXC"
 #define VX_KERNEL_NAME_SHUFFLECHANNEL                      VIVANTE_NAMESPACE ".shuffleChannelVXC"
 #define VX_KERNEL_NAME_SHUFFLECHANNEL8BITS                 VIVANTE_NAMESPACE ".shuffleChannel8BitsVXC"
 #define VX_KERNEL_NAME_SHUFFLECHANNEL16BITS_AXIS1          VIVANTE_NAMESPACE ".shuffleChannel16Bits_Axis1"
@@ -372,20 +372,6 @@ enum vx_kernel_libnnext_offset_e
 #define VX_KERNEL_NAME_GRAYSCALETOTENSOR_INT16_COPY        VIVANTE_NAMESPACE ".GrayScaletoTensor_Int16_copy"
 #define VX_KERNEL_NAME_GRAYSCALETOTENSOR_UINT8             VIVANTE_NAMESPACE ".GrayScaletoTensor_UInt8"
 #define VX_KERNEL_NAME_GRAYSCALETOTENSOR_UINT8_COPY        VIVANTE_NAMESPACE ".GrayScaletoTensor_UInt8_copy"
-#define VX_KERNEL_NAME_GEMM                                VIVANTE_NAMESPACE ".gemm_block4x4_fp16"
-#define VX_KERNEL_NAME_GEMM_UINT8                          VIVANTE_NAMESPACE ".gemm_block4x4_u8"
-#define VX_KERNEL_NAME_GEMM_FP16U8_Fp16                    VIVANTE_NAMESPACE ".gemm_block4x4_fp16_u8_fp16"
-#define VX_KERNEL_NAME_GEMM_FP16U8_U8                      VIVANTE_NAMESPACE ".gemm_block4x4_fp16_u8_u8"
-#define VX_KERNEL_NAME_GEMM_TRANSB_FP16U8TOFP16            VIVANTE_NAMESPACE ".gemmTransBFp16U8toFp16"
-#define VX_KERNEL_NAME_GEMM_TRANSB_FP16U8TOU8              VIVANTE_NAMESPACE ".gemmTransBFp16U8toU8"
-#define VX_KERNEL_NAME_GEMM_TRANSB_U8U8TOFP16              VIVANTE_NAMESPACE ".gemmTransBU8U8toFp16"
-#define VX_KERNEL_NAME_GEMM_TRANSB_U8U8TOU8                VIVANTE_NAMESPACE ".gemmTransBU8U8toU8"
-#define VX_KERNEL_NAME_GEMM_FP16FP16_U8                    VIVANTE_NAMESPACE ".gemm_block4x4_fp16_fp16_u8"
-#define VX_KERNEL_NAME_GEMM_TRANSB_FP16FP16TOFP16          VIVANTE_NAMESPACE ".gemmTransBFp16Fp16toFp16"
-#define VX_KERNEL_NAME_LAYERNORM                           VIVANTE_NAMESPACE ".vxcLayerNorm"
-#define VX_KERNEL_NAME_LAYERNORM_UINT8                     VIVANTE_NAMESPACE ".vxcLayerNorm_u8"
-#define VX_KERNEL_NAME_LAYERNORM_FP16TOU8                  VIVANTE_NAMESPACE ".vxcLayerNormFP16toU8"
-#define VX_KERNEL_NAME_LAYERNORM_U8TOFP16                  VIVANTE_NAMESPACE ".vxcLayerNormU8toFp16"
 #define VX_KERNEL_NAME_TENSORSTACKCONCAT                   VIVANTE_NAMESPACE ".vxcTensorStackConcat"
 #define VX_KERNEL_NAME_TENSORSTACKCONCAT8BITS              VIVANTE_NAMESPACE ".vxcTensorStackConcat8Bits"
 #define VX_KERNEL_NAME_SIGNALFRAME_WIDTH                   VIVANTE_NAMESPACE ".vxcSignalFrame_width"
@@ -441,40 +427,12 @@ enum vx_kernel_libnnext_offset_e
 #define VX_KERNEL_NAME_CLIP_U8TOU8_2D                      VIVANTE_NAMESPACE ".vxcTensorClip_U8toU8_2D"
 #define VX_KERNEL_NAME_CLIP_U8TOU8                         VIVANTE_NAMESPACE ".vxcTensorClip_U8toU8"
 //! pre process gray kernel
-#define VX_KERNEL_NAME_PRE_PROCESS_GRAY_F16                VIVANTE_NAMESPACE ".vxGrayScaletoTensor_F16"
-#define VX_KERNEL_NAME_PRE_PROCESS_GRAY_I16                VIVANTE_NAMESPACE ".vxGrayScaletoTensor_I16"
-#define VX_KERNEL_NAME_PRE_PROCESS_GRAY_I8                 VIVANTE_NAMESPACE ".vxGrayScaletoTensor_I8"
-#define VX_KERNEL_NAME_PRE_PROCESS_GRAY_U8                 VIVANTE_NAMESPACE ".vxGrayScaletoTensor_U8"
-#define VX_KERNEL_NAME_PRE_PROCESS_GRAY_F16_COPY           VIVANTE_NAMESPACE ".vxGrayScaletoTensor_F16_copy"
-#define VX_KERNEL_NAME_PRE_PROCESS_GRAY_I16_COPY           VIVANTE_NAMESPACE ".vxGrayScaletoTensor_I16_copy"
-#define VX_KERNEL_NAME_PRE_PROCESS_GRAY_I8_COPY            VIVANTE_NAMESPACE ".vxGrayScaletoTensor_I8_copy"
-#define VX_KERNEL_NAME_PRE_PROCESS_GRAY_U8_COPY            VIVANTE_NAMESPACE ".vxGrayScaletoTensor_U8_copy"
 #define VX_KERNEL_NAME_UNSTACK                             VIVANTE_NAMESPACE ".vxcUnstack"
-#define VX_KERNEL_NAME_PRE_PROCESS_RGB_F16                 VIVANTE_NAMESPACE ".vxRGBScaletoTensor_F16"
-#define VX_KERNEL_NAME_PRE_PROCESS_RGB_I16                 VIVANTE_NAMESPACE ".vxRGBScaletoTensor_I16"
-#define VX_KERNEL_NAME_PRE_PROCESS_RGB_I8                  VIVANTE_NAMESPACE ".vxRGBScaletoTensor_I8"
-#define VX_KERNEL_NAME_PRE_PROCESS_RGB_U8                  VIVANTE_NAMESPACE ".vxRGBScaletoTensor_U8"
-#define VX_KERNEL_NAME_PRE_PROCESS_RGB_F16_COPY            VIVANTE_NAMESPACE ".vxRGBScaletoTensor_F16_copy"
-#define VX_KERNEL_NAME_PRE_PROCESS_RGB_I16_COPY            VIVANTE_NAMESPACE ".vxRGBScaletoTensor_I16_copy"
-#define VX_KERNEL_NAME_PRE_PROCESS_RGB_I8_COPY             VIVANTE_NAMESPACE ".vxRGBScaletoTensor_I8_copy"
-#define VX_KERNEL_NAME_PRE_PROCESS_RGB_U8_COPY             VIVANTE_NAMESPACE ".vxRGBScaletoTensor_U8_copy"
-#define VX_KERNEL_NAME_PRE_PROCESS_RGB_F16_NHWC            VIVANTE_NAMESPACE ".vxRGBScaletoTensor_F16_NHWC"
-#define VX_KERNEL_NAME_PRE_PROCESS_RGB_I16_NHWC            VIVANTE_NAMESPACE ".vxRGBScaletoTensor_I16_NHWC"
-#define VX_KERNEL_NAME_PRE_PROCESS_RGB_I8_NHWC             VIVANTE_NAMESPACE ".vxRGBScaletoTensor_I8_NHWC"
-#define VX_KERNEL_NAME_PRE_PROCESS_RGB_U8_NHWC             VIVANTE_NAMESPACE ".vxRGBScaletoTensor_U8_NHWC"
-#define VX_KERNEL_NAME_PRE_PROCESS_RGB_F16_COPY_NHWC       VIVANTE_NAMESPACE ".vxRGBScaletoTensor_F16_copy_NHWC"
-#define VX_KERNEL_NAME_PRE_PROCESS_RGB_I16_COPY_NHWC       VIVANTE_NAMESPACE ".vxRGBScaletoTensor_I16_copy_NHWC"
-#define VX_KERNEL_NAME_PRE_PROCESS_RGB_I8_COPY_NHWC        VIVANTE_NAMESPACE ".vxRGBScaletoTensor_I8_copy_NHWC"
-#define VX_KERNEL_NAME_PRE_PROCESS_RGB_U8_COPY_NHWC        VIVANTE_NAMESPACE ".vxRGBScaletoTensor_U8_copy_NHWC"
 #define VX_KERNEL_NAME_ADDN                                VIVANTE_NAMESPACE ".vxcAddn"
 #define VX_KERNEL_NAME_EXTRA_ENDING_I16                    VIVANTE_NAMESPACE ".vxcExtra_ending_i16"
 #define VX_KERNEL_NAME_EXTRA_ENDING_I8                     VIVANTE_NAMESPACE ".vxcExtra_ending_i8"
 #define VX_KERNEL_NAME_EXTRA_ENDING_U8                     VIVANTE_NAMESPACE ".vxcExtra_ending_u8"
-#define VX_KERNEL_NAME_TILE                                VIVANTE_NAMESPACE ".vxcTile"
 #define VX_KERNEL_NAME_TOPK                                VIVANTE_NAMESPACE ".vxcTopk"
-#define VX_KERNEL_NAME_PRE_PROCESS_BGRA                    VIVANTE_NAMESPACE ".vxcPre_process_bgra"
-#define VX_KERNEL_NAME_PRE_PROCESS_BGRA_TRANS              VIVANTE_NAMESPACE ".vxcPre_process_bgra_trans"
-#define VX_KERNEL_NAME_PRE_PROCESS_BGRA_COPY               VIVANTE_NAMESPACE ".vxcPre_process_bgra_copy"
 #define VX_KERNEL_NAME_LOGICAL_NOT_INT8                    VIVANTE_NAMESPACE ".vxcLogical_not_i8"
 #define VX_KERNEL_NAME_LOGICAL_NOT_INT16                   VIVANTE_NAMESPACE ".vxcLogical_not_i16"
 #define VX_KERNEL_NAME_LOGICAL_NOT_UINT8                   VIVANTE_NAMESPACE ".vxcLogical_not_u8"
@@ -847,6 +805,8 @@ enum vx_kernel_libnnext_ext_e
             VX_KERNEL_BASE(VX_ID_DEFAULT, VX_LIBRARY_LIBNNEXT) + KERNEL_ENUM_RESIZE_INTERNAL,
     VX_KERNEL_ENUM_RESIZE_NEAREST_INTERNAL =
             VX_KERNEL_BASE(VX_ID_DEFAULT, VX_LIBRARY_LIBNNEXT) + KERNEL_ENUM_RESIZE_NEAREST_INTERNAL,
+    VX_KERNEL_ENUM_PRE_PROCESS_YUV444   =
+            VX_KERNEL_BASE(VX_ID_DEFAULT, VX_LIBRARY_LIBNNEXT) + KERNEL_ENUM_PRE_PROCESS_YUV444,
     // up to 0xFFF kernel enums can be created.
 };
 

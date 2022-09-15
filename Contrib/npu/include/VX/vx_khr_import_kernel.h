@@ -50,7 +50,7 @@ define type for vxImportKernelFromURL() function
 #define VX_VIVANTE_IMPORT_KERNEL_FROM_LABEL         "vx_vivante_label"
 #define VX_VIVANTE_IMPORT_KERNEL_FROM_POINTER       "vx_vivante_pointer"
 
-#ifdef __cplusplus
+#ifdef  __cplusplus
 extern "C" {
 #endif
 
@@ -80,7 +80,7 @@ VX_API_ENTRY vx_kernel VX_API_CALL vxImportKernelFromURL(
         const vx_char * url
     );
 
-#ifdef __cplusplus
+#ifdef  __cplusplus
 }
 #endif
 

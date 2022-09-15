@@ -26,6 +26,10 @@
 
 #include "vsi_nn_types.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define VSI_NN_REDUCEMIN_SH_KERNEL_IDX(_AXIS, _INPUT_TYPE, _OUTPUT_TYPE, _IMAGE_DIMS) \
     VSI_NN_REDUCEMIN_AXIS##_AXIS##_##_INPUT_TYPE##TO##_OUTPUT_TYPE##_##_IMAGE_DIMS##_KERNEL,
 
@@ -108,10 +112,13 @@ typedef struct _vsi_nn_reducemin_lcl_data
 typedef struct _vsi_nn_reducemin_internal_param
 {
     vsi_nn_reducemin_lcl_data  local;
-    vx_uint32   *axis;
+    vx_int32    *axis;
     vx_uint32   axis_num;
     vx_bool     keep_dim;
 } vsi_nn_reducemin_internal_param;
 
+#ifdef __cplusplus
+}
 #endif
 
+#endif

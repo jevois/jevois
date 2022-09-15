@@ -1,4 +1,4 @@
-/*
+/* 
 
  * Copyright (c) 2012-2017 The Khronos Group Inc.
  *
@@ -153,7 +153,7 @@ enum _vx_extra_df_image {
     VX_DF_IMAGE_F32 = VX_DF_IMAGE('F','0','3','2'),
 };
 
-#ifdef __cplusplus
+#ifdef  __cplusplus
 extern "C" {
 #endif
 
@@ -213,7 +213,7 @@ vx_node vxHarrisScoreNode(vx_graph graph,
                          vx_scalar sensitivity,
                          vx_scalar grad_size,
                          vx_scalar block_size,
-                         vx_scalar shift,
+                         vx_scalar shift, 
                          vx_image score);
 
 vx_status vxuHarrisScore(vx_context context, vx_image gx,
@@ -221,7 +221,7 @@ vx_status vxuHarrisScore(vx_context context, vx_image gx,
                          vx_scalar sensitivity,
                          vx_scalar grad_size,
                          vx_scalar block_size,
-                         vx_scalar shift,
+                         vx_scalar shift, 
                          vx_image score);
 
 vx_node vxEuclideanNonMaxHarrisNode(vx_graph graph,
@@ -244,7 +244,7 @@ vx_node vxElementwiseNormNode(vx_graph graph, vx_image input_x, vx_image input_y
 
 vx_node vxEdgeTraceNode(vx_graph graph, vx_image norm, vx_threshold threshold, vx_image output);
 
-#ifdef __cplusplus
+#ifdef  __cplusplus
 }
 #endif
 

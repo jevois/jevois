@@ -103,7 +103,6 @@ void jevois::ParameterCore<T>::set(T const & newVal)
     throw std::range_error(os.str());
   }
 
-  
   // Is the value authorized, depending on the type of valid values we have:
   if (itsDef.itsValidValuesSpec->checkValueValidity(newVal) == false)
   {
@@ -118,19 +117,10 @@ void jevois::ParameterCore<T>::set(T const & newVal)
   if (itsCallback)
   {
     try { itsCallback(newVal); }
-    catch (std::exception const & e)
-    {
-      std::ostringstream os;
-      std::string strval; jevois::paramValToString(newVal, strval);
-      os << descriptor() << ": Provided value [" << strval << "] rejected by callback with reason [" << e.what() << ']';
-      throw std::range_error(os.str());
-    }
     catch (...)
     {
-      std::ostringstream os;
       std::string strval; jevois::paramValToString(newVal, strval);
-      os << descriptor() << ": Provided value [" << strval << "] rejected by callback with unknown reason";
-      throw std::range_error(os.str());
+      jevois::warnAndRethrowParamCallbackException(descriptor(), strval);
     }
 
     // We have been set at least once now:
@@ -216,3 +206,36 @@ jevois::ParameterSummary const jevois::ParameterCore<T>::summary() const
   
   return ps;
 }
+
+// ######################################################################
+// ######################################################################
+template <typename T> inline
+jevois::DynamicParameter<T>::DynamicParameter(jevois::Component * comp, jevois::ParameterDef<T> const & pdef) :
+    jevois::ParameterCore<T>(pdef), itsComp(comp), itsDef(pdef)
+{
+  if (comp == nullptr) LFATAL("Called with null component");
+  LDEBUG("Adding dynamic parameter [" << itsDef.name() << "] to component [" << itsComp->instanceName() << ']');
+  itsComp->jevois::ParameterRegistry::addParameter(this);
+} 
+
+// ######################################################################
+template <typename T> inline
+jevois::DynamicParameter<T>::~DynamicParameter()
+{
+  LDEBUG("Removing dynamic parameter [" << itsDef.name() << "] from component [" << itsComp->instanceName() << ']');
+  itsComp->jevois::ParameterRegistry::removeParameter(this);
+}
+
+// ######################################################################
+template <typename T> inline
+jevois::Component const * jevois::DynamicParameter<T>::owner() const
+{
+  return itsComp;
+}
+// ######################################################################
+template <typename T> inline
+jevois::ParameterDef<T> const & jevois::DynamicParameter<T>::def() const
+{
+  return itsDef;
+}
+

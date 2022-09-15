@@ -24,7 +24,7 @@ set(JEVOIS_VENDOR "JeVois")
 ########################################################################################################################
 # Project version:
 set(JEVOIS_VERSION_MAJOR  1)
-set(JEVOIS_VERSION_MINOR  17)
+set(JEVOIS_VERSION_MINOR  18)
 set(JEVOIS_VERSION_PATCH  0)
 set(JEVOIS_SOVERSION "${JEVOIS_VERSION_MAJOR}.${JEVOIS_VERSION_MINOR}.${JEVOIS_VERSION_PATCH}" )
 
@@ -32,11 +32,11 @@ set(JEVOIS_SOVERSION "${JEVOIS_VERSION_MAJOR}.${JEVOIS_VERSION_MINOR}.${JEVOIS_V
 ########################################################################################################################
 # OpenCV version to use with JeVois:
 set(JEVOIS_OPENCV_MAJOR 4)
-set(JEVOIS_OPENCV_MINOR 5)
-set(JEVOIS_OPENCV_PATCH 4)
+set(JEVOIS_OPENCV_MINOR 6)
+set(JEVOIS_OPENCV_PATCH 0)
 set(JEVOIS_OPENCV_VERSION "${JEVOIS_OPENCV_MAJOR}.${JEVOIS_OPENCV_MINOR}.${JEVOIS_OPENCV_PATCH}")
 
-set(JEVOIS_OPENVINO_VERSION "2021.4")
+set(JEVOIS_OPENVINO_VERSION "2022.1")
 
 message(STATUS "JeVois OpenCV: ${JEVOIS_OPENCV_VERSION}")
 message(STATUS "JeVois OpenVino: ${JEVOIS_OPENVINO_VERSION}")
@@ -220,12 +220,24 @@ if (JEVOIS_PRO)
   if (JEVOIS_PLATFORM)
     add_definitions(-DLINUX -D_REENTRANT -DgcdENABLE_3D=1 -DgcdENABLE_2D=0 -DgcdENABLE_VG=0 -DgcdUSE_VX=1 -DUSE_VDK=1
       -DgcdMOVG=0 -DEGL_API_FB -DgcdSTATIC_LINK=0 -DgcdFPGA_BUILD=0 -DGC_ENABLE_LOADTIME_OPT=1 -DgcdUSE_VXC_BINARY=0
-      -DgcdGC355_MEM_PRINT=0 -DgcdGC355_PROFILER=0 -DVIVANTE_PROFILER=1 -DVIVANTE_PROFILER_CONTEXT=1)
+      -DgcdGC355_MEM_PRINT=0 -DgcdGC355_PROFILER=0 -DVIVANTE_PROFILER=0 -DVIVANTE_PROFILER_CONTEXT=0)
 
     # Link libraries. These are all pre-installed in jevoispro-sysroot:
     target_link_libraries(${JEVOIS} OpenVX OpenVXU CLC VSC GAL ovxlib)
+  else ()
+    # Link libraries. These are all pre-installed in jevois/Contrib and upated when OpenCV is built:
+    target_link_libraries(${JEVOIS} -L${CMAKE_CURRENT_SOURCE_DIR}/Contrib/npu/x86_64_linux/lib
+      OpenVX OpenVXU OpenVXC CLC VSC GAL Emulator ArchModelSw NNArchPerf vdtproxy)
   endif()
+  
 endif()
+
+########################################################################################################################
+# Hailo neural accelerator libraries
+if (JEVOIS_PRO)
+  # Link libraries. These are all pre-installed in jevoispro-sysroot:
+  target_link_libraries(${JEVOIS} hailort)
+endif ()
 
 ########################################################################################################################
 # Coral edge TPU libraries and associated TensorFlow. We install libtensorflowlite.so later as part of our package:
@@ -411,10 +423,14 @@ if (JEVOIS_PRO)
   else ()
     # Install it for jevoispro-host:
     install(DIRECTORY "Contrib/npu/include/VX" DESTINATION "include" COMPONENT bin)
+    install(DIRECTORY "Contrib/npu/include/CL" DESTINATION "include" COMPONENT bin)
+    file(GLOB JEVOIS_VX_HOST_LIBS "Contrib/npu/x86_64_linux/lib/lib*")
+    install(FILES ${JEVOIS_VX_HOST_LIBS} DESTINATION "/usr/lib" COMPONENT bin)
   endif ()
 else()
   # and also for jevois-host and jevois-platform:
   install(DIRECTORY "Contrib/npu/include/VX" DESTINATION "include" COMPONENT bin)
+  install(DIRECTORY "Contrib/npu/include/CL" DESTINATION "include" COMPONENT bin)
 endif ()
 
 ########################################################################################################################

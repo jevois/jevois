@@ -385,4 +385,18 @@ ImVec2 jevois::GPUimage::i2ds(ImVec2 const & p)
   return ImVec2(p.x * itsDrawWidth / itsTextureWidth, p.y * itsDrawHeight / itsTextureHeight);
 }
 
+// ##############################################################################################################
+ImVec2 jevois::GPUimage::d2i(ImVec2 const & p)
+{
+  if (itsDrawWidth == 0) throw std::runtime_error("Need to call set() then draw() first");
+  return ImVec2((p.x - itsDrawX) * itsTextureWidth / itsDrawWidth, (p.y - itsDrawY) * itsTextureHeight / itsDrawHeight);
+}
+
+// ##############################################################################################################
+ImVec2 jevois::GPUimage::d2is(ImVec2 const & p)
+{
+  if (itsDrawWidth == 0) throw std::runtime_error("Need to call set() then draw() first");
+  return ImVec2(p.x * itsTextureWidth / itsDrawWidth, p.y * itsTextureHeight / itsDrawHeight);
+}
+
 #endif // JEVOIS_PRO

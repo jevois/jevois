@@ -42,6 +42,9 @@ namespace jevois
   //! Get the number of JeVois-Pro NPUs present on this system
   size_t getNumInstalledNPUs();
 
+  //! Get the number of Hailo8 SPUs present on this system
+  size_t getNumInstalledSPUs();
+
   //! Get fan speed in percent, only meaningful on JeVois-Pro Platform, all others return 0
   int getFanSpeed();
   

@@ -65,6 +65,12 @@ typedef enum
     VSI_NN_SOURCE_LAYOUT_NCHW,
 } vsi_nn_preprocess_source_layout_e;
 
+typedef enum
+{
+    VSI_NN_DEST_LAYOUT_NHWC = 0,
+    VSI_NN_DEST_LAYOUT_NCHW,
+} vsi_nn_preprocess_dest_layout_e;
+
 /**
  * Input source format
  */
@@ -75,7 +81,9 @@ typedef enum
     VSI_NN_SOURCE_FORMAT_IMAGE_RGB,
     VSI_NN_SOURCE_FORMAT_IMAGE_YUV420,
     VSI_NN_SOURCE_FORMAT_IMAGE_BGRA,
-    VSI_NN_SOURCE_FORMAT_IMAGE_RGB888_PLANAR
+    VSI_NN_SOURCE_FORMAT_IMAGE_RGB888_PLANAR,
+    VSI_NN_SOURCE_FORMAT_IMAGE_YUV444,
+    VSI_NN_SOURCE_FORMAT_IMAGE_NV12,
 } vsi_nn_preprocess_source_format_e;
 
 /**
@@ -173,6 +181,7 @@ vsi_status vsi_nn_add_single_preproc_node
     (
     vsi_nn_graph_t* graph,
     uint32_t input_idx,
+    vsi_nn_tensor_id_t input,
     vsi_nn_node_t** first_node,
     uint32_t nodes_count,
     vsi_nn_preprocess_base_t* preprocess,
@@ -225,7 +234,6 @@ OVXLIB_API vsi_status vsi_nn_AddGraphPostProcess
     vsi_nn_postprocess_base_t* postprocess,
     uint32_t count
     );
-
 
 #ifdef __cplusplus
 }

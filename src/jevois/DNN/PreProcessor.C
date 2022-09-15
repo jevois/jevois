@@ -20,6 +20,12 @@
 #include <jevois/Image/RawImageOps.H>
 #include <jevois/Util/Utils.H>
 #include <jevois/Core/Engine.H>
+#include <jevois/Core/PythonModule.H>
+
+// ####################################################################################################
+jevois::dnn::PreProcessor::PreProcessor(std::string const & instance) :
+    jevois::Component(instance), itsPP(new jevois::dnn::PreProcessorForPython(this))
+{ }
 
 // ####################################################################################################
 jevois::dnn::PreProcessor::~PreProcessor()
@@ -86,6 +92,10 @@ void jevois::dnn::PreProcessor::getUnscaledCropRect(size_t num, int & tlx, int &
 }
 
 // ####################################################################################################
+std::shared_ptr<jevois::dnn::PreProcessorForPython> jevois::dnn::PreProcessor::getPreProcForPy() const
+{ return itsPP; }
+
+// ####################################################################################################
 std::vector<cv::Mat> jevois::dnn::PreProcessor::process(jevois::RawImage const & img,
                                                         std::vector<vsi_nn_tensor_attr_t> const & attrs)
 {
@@ -98,9 +108,9 @@ std::vector<cv::Mat> jevois::dnn::PreProcessor::process(jevois::RawImage const &
 
   // Do the pre-processing:
   if (img.fmt == V4L2_PIX_FMT_RGB24)
-    itsBlobs = process(jevois::rawimage::cvImage(img), rgb::get(), itsAttrs, itsCrops);
-  else if (img.fmt == V4L2_PIX_FMT_BGR24)
     itsBlobs = process(jevois::rawimage::cvImage(img), ! rgb::get(), itsAttrs, itsCrops);
+  else if (img.fmt == V4L2_PIX_FMT_BGR24)
+    itsBlobs = process(jevois::rawimage::cvImage(img), rgb::get(), itsAttrs, itsCrops);
   else if (rgb::get())
     itsBlobs = process(jevois::rawimage::convertToCvRGB(img), false, itsAttrs, itsCrops);
   else
@@ -125,11 +135,14 @@ void jevois::dnn::PreProcessor::sendreport(jevois::StdModule * mod, jevois::RawI
       if (rgb::get()) ImGui::BulletText("Convert to RGB");
       else ImGui::BulletText("Convert to BGR");
     }
+
+    // Now a report from the derived class:
+    report(mod, outimg, helper, overlay, idle);
   }
 #endif
 
-  // Now a report from the derived class:
-  report(mod, outimg, helper, overlay, idle);
+  // Now a report from the derived class, when not using a GUI helper:
+  if (helper == nullptr) report(mod, outimg, helper, overlay, idle);
 
   // If desired, draw a rectangle around the network input:
   if (showin::get())
@@ -139,8 +152,6 @@ void jevois::dnn::PreProcessor::sendreport(jevois::StdModule * mod, jevois::RawI
       for (cv::Rect const & r : itsCrops)
         ImGui::GetBackgroundDrawList()->AddRect(helper->i2d(r.x, r.y),
                                                 helper->i2d(r.x + r.width, r.y + r.height), 0x80808080, 0, 0, 5);
-#else
-    (void)helper; // keep compiler happy
 #endif
     
     if (outimg)
@@ -148,9 +159,9 @@ void jevois::dnn::PreProcessor::sendreport(jevois::StdModule * mod, jevois::RawI
         jevois::rawimage::drawRect(*outimg, r.x, r.y, r.width, r.height, 3, jevois::yuyv::MedGrey);
   }
 
-  // Finally some info about the blobs:
+  // Finally some info about the blobs, if detailed info was not requested (detailed info is provided by derived class):
 #ifdef JEVOIS_PRO
-  if (helper && idle == false)
+  if (helper && idle == false && details::get() == false)
   {
     int idx = 0;
     for (cv::Mat const & blob : itsBlobs)

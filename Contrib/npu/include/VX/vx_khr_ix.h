@@ -26,7 +26,7 @@
 
 #include <VX/vx_import.h>
 
-#ifdef __cplusplus
+#ifdef  __cplusplus
 extern "C" {
 #endif
 
@@ -151,7 +151,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxExportObjectsToMemory(
 VX_API_ENTRY vx_status VX_API_CALL vxReleaseExportedMemory(
     vx_context context, const vx_uint8 ** ptr);
 
-#ifdef __cplusplus
+#ifdef  __cplusplus
 }
 #endif
 

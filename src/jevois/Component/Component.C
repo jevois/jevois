@@ -375,9 +375,13 @@ void jevois::Component::setParamStringUnique(std::string const & descriptor, std
 {
   JEVOIS_TRACE(7);
 
+  // Try a get before we set to make sure we only have one hit:
+  std::vector<std::pair<std::string, std::string> > test = getParamString(descriptor);
+  if (test.size() > 1) throw std::range_error("Ambiguous multiple matches for descriptor [" + descriptor + ']');
+
+  // Ok, set it, ret should always have size 1:
   std::vector<std::string> ret = setParamString(descriptor, val);
-  if (ret.size() > 1)
-    throw std::range_error("Multiple matches for descriptor [" + descriptor + "] while only one is allowed");
+  if (ret.size() > 1) throw std::range_error("Ambiguous multiple matches for descriptor [" + descriptor + ']');
 }
 
 // ######################################################################
@@ -403,8 +407,7 @@ std::string jevois::Component::getParamStringUnique(std::string const & descript
   JEVOIS_TRACE(8);
 
   std::vector<std::pair<std::string, std::string> > ret = getParamString(descriptor);
-  if (ret.size() > 1)
-    throw std::range_error("Multiple matches for descriptor [" + descriptor + "] while only one is allowed");
+  if (ret.size() > 1) throw std::range_error("Ambiguous multiple matches for descriptor [" + descriptor + ']');
 
   // We know that ret is not empty because getParamString() throws if the param is not found:
   return ret[0].second;
@@ -512,10 +515,22 @@ void jevois::Component::setPath(std::string const & path)
 }
 
 // ######################################################################
-std::string jevois::Component::absolutePath(std::string const & path)
+void jevois::Component::removeDynamicParameter(std::string const & name)
+{
+  std::lock_guard<std::mutex> _(itsDynParMtx);
+
+  auto itr = itsDynParams.find(name);
+  if (itr == itsDynParams.end()) LFATAL("No dynamic parameter with name [" << name << ']');
+
+  // Upon erase, DynamicParameter destructor will remove the param from the registry:
+  itsDynParams.erase(itr);
+}
+
+// ######################################################################
+std::filesystem::path jevois::Component::absolutePath(std::filesystem::path const & path)
 {
   JEVOIS_TRACE(6);
-  return jevois::absolutePath(itsPath, path);
+  return jevois::absolutePath(std::filesystem::path(itsPath), path);
 }
 
 // ######################################################################

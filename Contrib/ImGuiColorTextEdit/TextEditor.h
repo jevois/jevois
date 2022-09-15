@@ -271,6 +271,8 @@ public:
 	static const Palette& GetLightPalette();
 	static const Palette& GetRetroBluePalette();
 
+    void SetSaveCallback(std::function<void(void)> && cb); // JEVOIS
+    
 private:
 	typedef std::vector<std::pair<std::regex, PaletteIndex>> RegexList;
 
@@ -392,4 +394,5 @@ private:
 
 	float mLastClick;
     bool mEdited;
+    std::function<void(void)> mSaveCallback; // JEVOIS
 };

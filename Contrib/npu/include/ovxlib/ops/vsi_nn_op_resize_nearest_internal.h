@@ -26,22 +26,9 @@
 
 #include "vsi_nn_types.h"
 
-#define VSI_NN_NEAREST_INTERNAL_SH_KERNEL_IDX(SRC_TYPE, DST_TYPE, INSTR) \
-    VSI_NN_NEATEST_INTERNAL_##SRC_TYPE##TO##DST_TYPE##_##INSTR##_KERNEL,
-
-
-enum {
-    NEAREST_INTERNAL_CPU_KERNEL,
-    VSI_NN_NEAREST_INTERNAL_SH_KERNEL_IDX(F16, F16, LARGE)
-    VSI_NN_NEAREST_INTERNAL_SH_KERNEL_IDX(I16, I16, LARGE)
-    VSI_NN_NEAREST_INTERNAL_SH_KERNEL_IDX(I8, I8, LARGE)
-    VSI_NN_NEAREST_INTERNAL_SH_KERNEL_IDX(U8, U8, LARGE)
-    VSI_NN_NEAREST_INTERNAL_SH_KERNEL_IDX(F16, F16, SMALL)
-    VSI_NN_NEAREST_INTERNAL_SH_KERNEL_IDX(I16, I16, SMALL)
-    VSI_NN_NEAREST_INTERNAL_SH_KERNEL_IDX(I8, I8, SMALL)
-    VSI_NN_NEAREST_INTERNAL_SH_KERNEL_IDX(U8, U8, SMALL)
-    NEAREST_INTERNAL_KERNEL_COUNTS,
-};
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef struct _vsi_nn_resize_nearest_in_lcl_data
 {
@@ -52,11 +39,13 @@ typedef struct _vsi_nn_resize_nearest_in_lcl_data
 typedef struct _vsi_nn_resize_nearest_internal_param
 {
     vsi_nn_resize_nearest_in_lcl_data *lcl_data_ptr;
-    vx_bool_e    align_corners;
-    vx_bool_e    half_pixel_centers;
+    vsi_bool    align_corners;
+    vsi_bool    half_pixel_centers;
     float        factor;
 } vsi_nn_resize_nearest_internal_param;
 
-
+#ifdef __cplusplus
+}
 #endif
 
+#endif

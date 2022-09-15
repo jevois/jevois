@@ -59,6 +59,7 @@ namespace jevois
       private:
         cv::dnn::Net itsNet;
         std::vector<cv::String> itsOutNames;
+        std::string itsFLOPS;
     };
     
   } // namespace dnn

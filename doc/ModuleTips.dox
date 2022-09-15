@@ -20,7 +20,7 @@ memory when nobody is referencing it anymore.
 Thus, instead of:
 
 \code
-void process(jevois:InputFrame && inframe)
+void process(jevois::InputFrame && inframe)
 {
   char * tmpdata = new char[100];
 
@@ -33,7 +33,7 @@ void process(jevois:InputFrame && inframe)
 which would leak the \c tmpdata memory in case of an exception, just use:
 
 \code
-void process(jevois:InputFrame && inframe)
+void process(jevois::InputFrame && inframe)
 {
   std::shared_ptr<char> tmpdata(new char[100]);
 

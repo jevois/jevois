@@ -1,0 +1,73 @@
+/*! \page UserDNNtips Tips for running custom neural networks
+
+Tips for YAML zoo files
+-----------------------
+
+- keys supported in the YAML files: each one is documented in the classes that use them, in the
+  `JEVOIS_DECLARE_PARAMETER(...)` directives at the beginning of each header file):
+  + jevois::dnn::PreProcessor
+  + jevois::dnn::Network
+  + jevois::dnn::PostProcessor
+  + jevois::dnn::Pipeline
+
+- If you create a custom python pre-processor, network, or post-processor and define JeVois parameters in there, you can
+  set those parameters in your YAML file too.
+
+- Order matters: when a component is instantiated (e.g., **preproc: Blob** will instantiate a
+  jevois::dnn::PreProcessorBlob), its parameters are brought into existence, but they do not exist before. So, for
+  example, since \p rgb is a pre-processor parameter, it should be specified in the YAML file after \p preproc has been
+  set.\n
+  This is especially true for Python pre/net/post:
+  + first select that you will use Python, e.g., **preproc: Python**
+  + this only exposes a new parameter \p pypre to select which python file to load
+  + when you then set, e.g., **pypre: "pydnn/pre/PyPreBlob.py"** the selected python code is loaded and initialized
+  + during initialization, the python code may create new JeVois parameters; here, \p scale and \p mean
+  + thus, only now you can set **scale: 0.0078125** or similar.
+
+- Parameters have default values specified in their definition (in jevois::dnn::PreProcessor, etc). You can remove lines
+  in your YAML file that would set parameters to those default values (e.g., **rgb: true** could be removed because
+  the default for \p rgb is true). This will make your YAML file more concise.
+
+Tips for pre-processing
+-----------------------
+
+- \p classes is optional. If you just want to check how fast a model will run on your JeVois camera but don't have the
+  class list handy, just remove the \p classes parameter from your YAML. JeVois will just display class numbers instead
+  of class names.
+
+- for \p classoffset: likely you have a computer keyboard around, and those tend to be easily recognized by models
+  trained on ImageNet. So just point your camera to the keyboard and play with \p classoffset in the JeVois GUI until
+  you get "computer keyboard" as output.
+
+- \p mean and \p stdev values should be in the same order as your model's input images (RGB or BGR, as specified by the
+  \p rgb parameter).
+
+Tips for post-processing
+------------------------
+
+- Classification is the easiest case. Detection usually requires more work, as a suitable post-processor is needed to
+  decode the network outputs into boxes than can be drawn on screen. JeVois provides standard post-processors for the
+  YOLO series, SSD, FasterRCNN, etc and you can also write your own in Python.
+
+- YOLOv2 anchors may need to be multiplied by 8 to work with the JeVois PostProcessor. You can do this in a
+  terminal as follows (here, just cutting and pasting the anchors from yolov2-voc.cfg):
+  \code{.py}
+for x in 1.3221, 1.73145, 3.19275, 4.00944, 5.05587, 8.09892, 9.47112, 4.84053, 11.2364, 10.0071; do echo "scale=4; ${x/,/} * 8" | bc; echo ','; done | xargs
+  \endcode
+  Remove the last comma and place some semicolons to separate the YOLO scales if needed, and you are good to go.
+  See https://medium.com/nerd-for-tech/yolo-v2-configuration-file-explained-879e2219191 for some details.
+ 
+Tips for model conversion
+-------------------------
+
+- When converting a model, we may have some questions: Is our model using NCHW or NHWC? What are the names of the inputs
+  and output layers? We can answer those using Lutz Roeder's great [Netron](https://netron.app/) online model inspection
+  tool:
+  + Point your browser to https://netron.app/
+  + click "Open Model..."
+  + upload your model
+  + click on the boxes for the input and output layers to see some info about them
+  
+
+*/
+

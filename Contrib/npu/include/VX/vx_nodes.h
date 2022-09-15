@@ -198,7 +198,7 @@ VX_API_ENTRY vx_node VX_API_CALL vxThresholdNode(vx_graph graph, vx_image input,
  * \param [in] input The input image in <tt>\ref VX_DF_IMAGE_U8</tt> or <tt>\ref VX_DF_IMAGE_S16</tt> format.
  * \param [in] mask [optional] Constrict suppression to a ROI. The mask image is of type <tt>\ref VX_DF_IMAGE_U8</tt> and must be the same dimensions as the input image.
  * \param [in] win_size The size of window over which to perform the localized non-maxima suppression. Must be odd, and less than or equal to the smallest dimension of the input image.
- * \param [out] output The output image, of the same type and size as the input, that has been non-maxima suppressed.
+ * \param [out] output The output image, of the same type and size as the input, that has been non-maxima suppressed. 
  * \ingroup group_vision_function_nms
  * \return <tt>\ref vx_node</tt>.
  * \retval vx_node A node reference. Any possible errors preventing a successful creation should be checked using <tt>\ref vxGetStatus</tt>
@@ -516,7 +516,7 @@ VX_API_ENTRY vx_node VX_API_CALL vxConvertDepthNode(vx_graph graph, vx_image inp
 /*! \brief [Graph] Creates a Canny Edge Detection Node.
  * \param [in] graph The reference to the graph.
  * \param [in] input The input <tt>\ref VX_DF_IMAGE_U8</tt> image.
- * \param [in] hyst The double threshold for hysteresis. The <tt>\ref VX_THRESHOLD_INPUT_FORMAT</tt> shall be either
+ * \param [in] hyst The double threshold for hysteresis. The <tt>\ref VX_THRESHOLD_INPUT_FORMAT</tt> shall be either 
  * <tt>\ref VX_DF_IMAGE_U8</tt> or <tt>\ref VX_DF_IMAGE_S16</tt>. The <tt>\ref VX_THRESHOLD_OUTPUT_FORMAT</tt> is ignored.
  * \param [in] gradient_size The size of the Sobel filter window, must support at least 3, 5, and 7.
  * \param [in] norm_type A flag indicating the norm used to compute the gradient, <tt>\ref VX_NORM_L1</tt> or <tt>\ref VX_NORM_L2</tt>.
@@ -729,7 +729,7 @@ VX_API_ENTRY vx_node VX_API_CALL vxLBPNode(vx_graph graph, vx_image in, vx_enum 
  * Each pixel votes for a specific cell histogram bin based on its gradient orientation.  The vote itself is the pixel's gradient magnitude.
  * \f[bins(c, n) = \sum\limits_{w=0}^{cell\_width} \sum\limits_{h=0}^{cell\_height} G_c(w,h) * 1[B_c(w, h, num\_bins) == n]\f]
  * where \f$B_c\f$ produces the histogram bin number based on the gradient orientation of the pixel at location (\f$w\f$, \f$h\f$) in cell \f$c\f$ based on
- * the \f$num\_bins\f$ and \f[1[B_c(w, h, num\_bins) == n]\f] is a delta-function with value 1 when \f$B_c(w, h, num\_bins) == n\f$ or 0 otherwise.
+ * the \f$num\_bins\f$ and \f[1[B_c(w, h, num\_bins) == n]\f] is a delta-function with value 1 when \f$B_c(w, h, num\_bins) == n\f$ or 0 otherwise. 
  * \param [in] graph The reference to the graph.
  * \param [in] input The input image of type <tt>\ref VX_DF_IMAGE_U8</tt>.
  * \param [in] cell_width The histogram cell width of type <tt>\ref VX_TYPE_INT32</tt>.
@@ -785,7 +785,7 @@ VX_API_ENTRY vx_node VX_API_CALL vxHOGCellsNode(vx_graph graph, vx_image input, 
 VX_API_ENTRY vx_node VX_API_CALL vxHOGFeaturesNode(vx_graph graph, vx_image input, vx_tensor magnitudes, vx_tensor bins, const vx_hog_t *params, vx_size hog_param_size, vx_tensor features);
 
 /*! \brief [Graph] Finds the Probabilistic Hough Lines detected in the input binary image, each line is stored in the output array as a set of points (x1, y1, x2, y2) .
- * \details Some implementations of the algorithm may have a random or non-deterministic element. If the target application is in a safety-critical environment this
+ * \details Some implementations of the algorithm may have a random or non-deterministic element. If the target application is in a safety-critical environment this 
  * should be borne in mind and steps taken in the implementation, the application or both to achieve the level of determinism required by the system design.
  * \param [in] graph graph handle
  * \param [in] input 8 bit, single channel binary source image
@@ -818,7 +818,7 @@ VX_API_ENTRY vx_node VX_API_CALL vxBilateralFilterNode(vx_graph graph, vx_tensor
 /*! \brief [Graph] Performs element wise multiplications on element values in the input tensor data with a scale.
  * \param [in] graph The handle to the graph.
  * \param [in] input1 Input tensor data.  Implementations must support input tensor data type <tt>\ref VX_TYPE_INT16</tt> with fixed_point_position 8,
- * and tensor data types <tt>\ref VX_TYPE_UINT8</tt> and <tt>\ref VX_TYPE_INT8</tt>, with fixed_point_position 0.
+ * and tensor data types <tt>\ref VX_TYPE_UINT8</tt> and <tt>\ref VX_TYPE_INT8</tt>, with fixed_point_position 0.  
  * \param [in] input2 Input tensor data. The dimensions and sizes of input2 match those of input1, unless the vx_tensor of one or more dimensions in input2 is 1.
  * In this case, those dimensions are treated as if this tensor was expanded to match the size of the corresponding dimension of input1,
  * and data was duplicated on all terms in that dimension. After this expansion, the dimensions will be equal.
@@ -838,11 +838,11 @@ VX_API_ENTRY vx_node VX_API_CALL vxTensorMultiplyNode(vx_graph graph, vx_tensor 
 /*! \brief [Graph] Performs arithmetic addition on element values in the input tensor data.
  * \param [in] graph The handle to the graph.
  * \param [in] input1 Input tensor data.  Implementations must support input tensor data type <tt>\ref VX_TYPE_INT16</tt> with fixed_point_position 8,
- * and tensor data types <tt>\ref VX_TYPE_UINT8</tt> and <tt>\ref VX_TYPE_INT8</tt>, with fixed_point_position 0.
+ * and tensor data types <tt>\ref VX_TYPE_UINT8</tt> and <tt>\ref VX_TYPE_INT8</tt>, with fixed_point_position 0.  
  * \param [in] input2 Input tensor data. The dimensions and sizes of input2 match those of input1, unless the vx_tensor of one or more dimensions in input2 is 1.
  * In this case, those dimensions are treated as if this tensor was expanded to match the size of the corresponding dimension of input1,
- * and data was duplicated on all terms in that dimension. After this expansion, the dimensions will be equal.
- * The data type must match the data type of Input1.
+ * and data was duplicated on all terms in that dimension. After this expansion, the dimensions will be equal. 
+ * The data type must match the data type of Input1. 
  * \param [in] policy A <tt>\ref vx_convert_policy_e</tt> enumeration.
  * \param [out] output The output tensor data with the same dimensions as the input tensor data.
  * \ingroup group_vision_function_tensor_add
@@ -855,11 +855,11 @@ VX_API_ENTRY vx_node VX_API_CALL vxTensorAddNode(vx_graph graph, vx_tensor input
 /*! \brief [Graph] Performs arithmetic subtraction on element values in the input tensor data.
  * \param [in] graph The handle to the graph.
  * \param [in] input1 Input tensor data.  Implementations must support input tensor data type <tt>\ref VX_TYPE_INT16</tt> with fixed_point_position 8,
- * and tensor data types <tt>\ref VX_TYPE_UINT8</tt> and <tt>\ref VX_TYPE_INT8</tt>, with fixed_point_position 0.
+ * and tensor data types <tt>\ref VX_TYPE_UINT8</tt> and <tt>\ref VX_TYPE_INT8</tt>, with fixed_point_position 0.  
  * \param [in] input2 Input tensor data. The dimensions and sizes of input2 match those of input1, unless the vx_tensor of one or more dimensions in input2 is 1.
  * In this case, those dimensions are treated as if this tensor was expanded to match the size of the corresponding dimension of input1,
- * and data was duplicated on all terms in that dimension. After this expansion, the dimensions will be equal.
- * The data type must match the data type of Input1.
+ * and data was duplicated on all terms in that dimension. After this expansion, the dimensions will be equal. 
+ * The data type must match the data type of Input1. 
  * \param [in] policy A <tt>\ref vx_convert_policy_e</tt> enumeration.
  * \param [out] output The output tensor data with the same dimensions as the input tensor data.
  * \ingroup group_vision_function_tensor_subtract
@@ -871,8 +871,8 @@ VX_API_ENTRY vx_node VX_API_CALL vxTensorSubtractNode(vx_graph graph, vx_tensor 
 
 /*! \brief [Graph] Performs LUT on element values in the input tensor data.
  * \param [in] graph The handle to the graph.
- * \param [in] input1 Input tensor data. Implementations must support input tensor data type <tt>\ref VX_TYPE_INT16</tt> with fixed_point_position 8,
- * and tensor data types <tt>\ref VX_TYPE_UINT8</tt>, with fixed_point_position 0.
+ * \param [in] input1 Input tensor data. Implementations must support input tensor data type <tt>\ref VX_TYPE_INT16</tt> with fixed_point_position 8, 
+ * and tensor data types <tt>\ref VX_TYPE_UINT8</tt>, with fixed_point_position 0. 
  * \param [in] lut The look-up table to use, of type <tt>\ref vx_lut</tt>.
  * The elements of input1 are treated as unsigned integers to determine an index into the look-up table.
  * The data type of the items in the look-up table must match that of the output tensor.
@@ -888,7 +888,7 @@ VX_API_ENTRY vx_node VX_API_CALL vxTensorTableLookupNode(vx_graph graph, vx_tens
  * The node transpose the tensor according to a specified 2 indexes in the tensor (0-based indexing)
  * \param [in] graph The handle to the graph.
  * \param [in] input Input tensor data, Implementations must support input tensor data type <tt>\ref VX_TYPE_INT16</tt> with fixed_point_position 8,
- * and tensor data types <tt>\ref VX_TYPE_UINT8</tt> and <tt>\ref VX_TYPE_INT8</tt>, with fixed_point_position 0.
+ * and tensor data types <tt>\ref VX_TYPE_UINT8</tt> and <tt>\ref VX_TYPE_INT8</tt>, with fixed_point_position 0. 
  * \param [out] output output tensor data,
  * \param [in] dimension1 Dimension index that is transposed with dim 2.
  * \param [in] dimension2 Dimension index that is transposed with dim 1.
@@ -905,7 +905,7 @@ VX_API_ENTRY vx_node VX_API_CALL vxTensorTransposeNode(vx_graph graph, vx_tensor
  * \param [in] policy A <tt>\ref VX_TYPE_ENUM</tt> of the <tt>\ref vx_convert_policy_e</tt> enumeration.
  * \param [in] norm A scalar containing a <tt>\ref VX_TYPE_FLOAT32</tt> of the normalization value.
  * \param [in] offset A scalar containing a <tt>\ref VX_TYPE_FLOAT32</tt> of the offset value subtracted before normalization.
- * \param [out] output The output tensor. Implementations must support input tensor data type <tt>\ref VX_TYPE_INT16</tt>. with fixed_point_position 8.
+ * \param [out] output The output tensor. Implementations must support input tensor data type <tt>\ref VX_TYPE_INT16</tt>. with fixed_point_position 8. 
  * And <tt>\ref VX_TYPE_UINT8</tt> with fixed_point_position 0.
  * \ingroup group_vision_function_tensor_convert_depth
  * \return <tt>\ref vx_node</tt>.
@@ -939,6 +939,29 @@ VX_API_ENTRY vx_node VX_API_CALL vxTensorMatrixMultiplyNode(vx_graph graph, vx_t
  * \ingroup group_vision_function_copy
  */
 VX_API_ENTRY vx_node VX_API_CALL vxCopyNode(vx_graph graph, vx_reference input, vx_reference output);
+
+/*! \brief Create a batch gemm node, the calcution formula is output = matrix_a * matrix_b + matrix_c.
+ * \param [in] graph The reference to the graph.
+ * \param [in] matrix_a The first input tensor.
+ * \param [in] matrix_b The second input tensor. Must be in the same data type and batch count as first input tensor.
+ * \param [in] matrix_c The third input tensor. Must be in the same data type and batch count as first input tensor. [optional]
+ * \param [in] trans_a If true, the matrix_a has been transposed before calcution.
+ * \param [in] trans_b If true, the matrix_b has been transposed before calcution.
+ * \param [in] trans_c If true, the matrix_c has been transposed before calcution. [optional]
+ * \param [out] output The output tensor. Output dimension must agree the formula in the description.
+ * \return <tt>\ref vx_node</tt>.
+ * \retval vx_node A node reference. Any possible errors preventing a successful creation
+ * should be checked using <tt>\ref vxGetStatus</tt>
+ * \ingroup group_vision_function_gemm
+ */
+VX_API_ENTRY vx_node VX_API_CALL vxBatchGemmNode(vx_graph graph,
+                                                 vx_tensor matrix_a,
+                                                 vx_tensor matrix_b,
+                                                 vx_tensor matrix_c,
+                                                 vx_scalar trans_a,
+                                                 vx_scalar trans_b,
+                                                 vx_scalar trans_c,
+                                                 vx_tensor output);
 
 #ifdef __cplusplus
 }

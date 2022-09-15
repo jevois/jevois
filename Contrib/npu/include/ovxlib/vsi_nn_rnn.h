@@ -73,12 +73,12 @@ typedef vsi_bool (*vsi_rnn_rnn_process_output_func_t)
 **********************************************************/
 vsi_status vsi_nn_rnn_feed_internal_state
     (
-    vsi_nn_graph_t* graph
+    const vsi_nn_graph_t* graph
     );
 
 vsi_status vsi_nn_rnn_save_internal_state
     (
-    vsi_nn_graph_t* graph
+    const vsi_nn_graph_t* graph
     );
 
 vsi_status vsi_nn_rnn_DeinitWksp

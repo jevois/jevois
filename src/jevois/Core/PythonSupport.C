@@ -22,6 +22,7 @@
 #include <jevois/Image/RawImage.H>
 #include <jevois/Image/RawImageOps.H>
 #include <jevois/Core/PythonModule.H>
+#include <jevois/Core/PythonParameter.H>
 #include <jevois/Core/UserInterface.H>
 #include <jevois/Core/StdioInterface.H>
 #include <jevois/Core/Serial.H>
@@ -33,6 +34,8 @@
 #include <jevois/Debug/SysInfo.H>
 #include <jevois/Core/Camera.H>
 #include <jevois/Core/IMU.H>
+#include <jevois/Component/ParameterStringConversion.H>
+#include <jevois/DNN/PreProcessorPython.H>
 
 #define PY_ARRAY_UNIQUE_SYMBOL pbcvt_ARRAY_API
 #include <jevois/Core/PythonOpenCV.H>
@@ -43,7 +46,7 @@
   boost::python::def(#funcname, jevois::funcname)
 
 // Convenience macro to define a Python binding for a free function in the jevois::rawimage namespace
-#define JEVOIS_PYTHON_RAWIMAGE_FUNC(funcname)                   \
+#define JEVOIS_PYTHON_RAWIMAGE_FUNC(funcname)               \
   boost::python::def(#funcname, jevois::rawimage::funcname)
 
 // Convenience macro to define a python enum value where the value is in jevois::rawimage
@@ -55,6 +58,9 @@
 // Convenience macro to define a constant that exists in the global C++ namespace
 #define JEVOIS_PYTHON_CONSTANT(cst) boost::python::scope().attr(#cst) = cst;
 
+// Convenience macro to define a Python binding for a free function in the jevois:dnn namespace
+#define JEVOIS_PYTHON_DNN_FUNC(funcname)                \
+  boost::python::def(#funcname, jevois::dnn::funcname)
 
 // ####################################################################################################
 // Helper to provide jevois.sendSerial() function that emulates a C++ module's sendSerial()
@@ -84,10 +90,23 @@ namespace
   }
 }
 
-void jevois::pythonModuleSetEngine(jevois::Engine * e)
+void jevois::python::setEngine(jevois::Engine * e)
 {
   jevois::python::engineForPythonModule = e;
   init_numpy();
+}
+
+jevois::Engine * jevois::python::engine()
+{
+  if (jevois::python::engineForPythonModule == nullptr) LFATAL("Internal error");
+  return jevois::python::engineForPythonModule;
+}
+
+// ####################################################################################################
+// from https://stackoverflow.com/questions/39924912/finding-if-member-function-exists-in-a-boost-pythonobject
+bool jevois::python::hasattr(boost::python::object & o, char const * name)
+{
+  return PyObject_HasAttrString(o.ptr(), name);
 }
 
 // ####################################################################################################
@@ -96,61 +115,49 @@ void jevois::pythonModuleSetEngine(jevois::Engine * e)
 namespace
 {
   void pythonSendSerial(std::string const & str)
-  {
-    if (jevois::python::engineForPythonModule == nullptr) LFATAL("internal error");
-    jevois::python::engineForPythonModule->sendSerial(str);
-  }
+  { jevois::python::engine()->sendSerial(str); }
   
   size_t pythonFrameNum()
-  {
-    if (jevois::python::engineForPythonModule == nullptr) LFATAL("internal error");
-    return jevois::python::engineForPythonModule->frameNum();
-  }
+  { return jevois::frameNum(); }
 
   void pythonWriteCamRegister(unsigned short reg, unsigned short val)
   {
-    if (jevois::python::engineForPythonModule == nullptr) LFATAL("internal error");
-    auto cam = jevois::python::engineForPythonModule->camera();
+    auto cam = jevois::python::engine()->camera();
     if (!cam) LFATAL("Not using a Camera for video input");
     cam->writeRegister(reg, val);
   }
 
   unsigned short pythonReadCamRegister(unsigned short reg)
   {
-    if (jevois::python::engineForPythonModule == nullptr) LFATAL("internal error");
-    auto cam = jevois::python::engineForPythonModule->camera();
+    auto cam = jevois::python::engine()->camera();
     if (!cam) LFATAL("Not using a Camera for video input");
     return cam->readRegister(reg);
   }
 
   void pythonWriteIMUregister(unsigned short reg, unsigned short val)
   {
-    if (jevois::python::engineForPythonModule == nullptr) LFATAL("internal error");
-    auto imu = jevois::python::engineForPythonModule->imu();
+    auto imu = jevois::python::engine()->imu();
     if (!imu) LFATAL("No IMU driver loaded");
     imu->writeRegister(reg, val);
   }
   
   unsigned short pythonReadIMUregister(unsigned short reg)
   {
-    if (jevois::python::engineForPythonModule == nullptr) LFATAL("internal error");
-    auto imu = jevois::python::engineForPythonModule->imu();
+    auto imu = jevois::python::engine()->imu();
     if (!imu) LFATAL("No IMU driver loaded");
     return imu->readRegister(reg);
   }
 
   void pythonWriteDMPregister(unsigned short reg, unsigned short val)
   {
-    if (jevois::python::engineForPythonModule == nullptr) LFATAL("internal error");
-    auto imu = jevois::python::engineForPythonModule->imu();
+    auto imu = jevois::python::engine()->imu();
     if (!imu) LFATAL("No IMU driver loaded");
     imu->writeDMPregister(reg, val);
   }
   
   unsigned short pythonReadDMPregister(unsigned short reg)
   {
-    if (jevois::python::engineForPythonModule == nullptr) LFATAL("internal error");
-    auto imu = jevois::python::engineForPythonModule->imu();
+    auto imu = jevois::python::engine()->imu();
     if (!imu) LFATAL("No IMU driver loaded");
     return imu->readDMPregister(reg);
   }
@@ -164,8 +171,25 @@ namespace
   void pythonLERROR(std::string const & logmsg) { LERROR(logmsg); }
   void pythonLFATAL(std::string const & logmsg) { LFATAL(logmsg); }
 
+
+  // ####################################################################################################
+  // Python parameter access support
+  std::string pythonGetParamStringUnique(boost::python::object & pyinst, std::string const & descriptor)
+  {
+    jevois::Component * comp = jevois::python::engine()->getPythonComponent(pyinst.ptr()->ob_type);
+    return comp->getParamStringUnique(descriptor);
+  }
+
+  void pythonSetParamStringUnique(boost::python::object & pyinst, std::string const & descriptor,
+                                  std::string const & val)
+  {
+    jevois::Component * comp = jevois::python::engine()->getPythonComponent(pyinst.ptr()->ob_type);
+    comp->setParamStringUnique(descriptor, val);
+  }
+
 } // anonymous namespace
 
+// ####################################################################################################
 namespace jevois
 {
   namespace python
@@ -189,6 +213,30 @@ BOOST_PYTHON_MODULE(libjevois)
   boost::python::to_python_converter<cv::Mat, pbcvt::matToNDArrayBoostConverter>();
   pbcvt::matFromNDArrayBoostConverter();
   
+  // #################### Define a few constants for python users:
+  // jevois.pro is True if running on JeVois-Pro
+#ifdef JEVOIS_PRO
+  boost::python::scope().attr("pro") = true;
+#else
+  boost::python::scope().attr("pro") = false;
+#endif
+
+  // jevois.platform is True if running on platform hardware
+#ifdef JEVOIS_PLATFORM
+  boost::python::scope().attr("platform") = true;
+#else
+  boost::python::scope().attr("platform") = false;
+#endif
+
+  // Jevois software version:
+  boost::python::scope().attr("version_major") = JEVOIS_VERSION_MAJOR;
+  boost::python::scope().attr("version_minor") = JEVOIS_VERSION_MINOR;
+  boost::python::scope().attr("version_patch") = JEVOIS_VERSION_PATCH;
+
+  // Location of shared directories: jevois.share points to /jevois/share or /jevoispro/share
+  boost::python::scope().attr("share") = JEVOIS_SHARE_PATH;
+  boost::python::scope().attr("pydnn") = JEVOIS_PYDNN_PATH;
+
   // #################### module sendSerial() and other functions emulation:
   boost::python::def("sendSerial", pythonSendSerial);
   boost::python::def("frameNum", pythonFrameNum);
@@ -416,10 +464,22 @@ BOOST_PYTHON_MODULE(libjevois)
 
 #ifdef JEVOIS_PRO
   // #################### GUIhelper.H
-  boost::python::class_<ImVec2>("ImVec2");
-  boost::python::class_<ImColor>("ImColor");
+  boost::python::class_<ImVec2>("ImVec2", boost::python::init<float, float>())
+    .def_readwrite("x", &ImVec2::x)
+    .def_readwrite("y", &ImVec2::y);
 
-  boost::python::class_<jevois::GUIhelperPython>("GUIhelper")
+  boost::python::class_<ImVec4>("ImVec4", boost::python::init<float, float, float, float>())
+    .def_readwrite("x", &ImVec4::x)
+    .def_readwrite("y", &ImVec4::y)
+    .def_readwrite("z", &ImVec4::z)
+    .def_readwrite("w", &ImVec4::w);
+
+  boost::python::class_<ImColor>("ImColor", boost::python::init<int, int, int, int>())
+    .def(boost::python::init<float, float, float, float>())
+    .def(boost::python::init<ImU32>())
+    .def_readwrite("Value", &ImColor::Value);
+
+  boost::python::class_<jevois::GUIhelperPython>("GUIhelper", boost::python::init<jevois::GUIhelper *>())
     .def("startFrame", &jevois::GUIhelperPython::startFrame)
     .def("frameStarted", &jevois::GUIhelperPython::frameStarted)
     .def("drawImage", &jevois::GUIhelperPython::drawImage)
@@ -443,10 +503,50 @@ BOOST_PYTHON_MODULE(libjevois)
     .def("releaseImage", &jevois::GUIhelperPython::releaseImage)
     .def("releaseImage2", &jevois::GUIhelperPython::releaseImage2)
     .def("endFrame", &jevois::GUIhelperPython::endFrame)
+    .def("d2i", &jevois::GUIhelperPython::d2i)
+    .def("d2i", &jevois::GUIhelperPython::d2i1)
+    .def("d2is", &jevois::GUIhelperPython::d2is)
+    .def("d2is", &jevois::GUIhelperPython::d2is1)
     .def("reportError", &jevois::GUIhelperPython::reportError)
     .def("reportAndIgnoreException", &jevois::GUIhelperPython::reportAndIgnoreException)
     .def("reportAndRethrowException", &jevois::GUIhelperPython::reportAndRethrowException)
     ;
 #endif
   
+  // #################### ParameterDef.H
+  boost::python::class_<jevois::ParameterCategory>("ParameterCategory", boost::python::init<std::string, std::string>())
+    .def_readonly("name", &jevois::ParameterCategory::name)
+    .def_readonly("description", &jevois::ParameterCategory::description)
+    ;
+
+  // #################### Parameter support:
+  boost::python::def("getParamStr", pythonGetParamStringUnique);
+  boost::python::def("setParamStr", pythonSetParamStringUnique);
+
+  // #################### Dynamic parameter support:
+  boost::python::class_<jevois::PythonParameter>("Parameter", boost::python::init<boost::python::object &,
+                                                 std::string const &, std::string const &, std::string const &,
+                                                 boost::python::object const &, jevois::ParameterCategory const &>())
+    .def("name", &jevois::PythonParameter::name,
+         boost::python::return_value_policy<boost::python::reference_existing_object>())
+    .def("descriptor", &jevois::PythonParameter::descriptor)
+    .def("get", &jevois::PythonParameter::get)
+    .def("set", &jevois::PythonParameter::set)
+    .def("strget", &jevois::PythonParameter::strget)
+    .def("strset", &jevois::PythonParameter::strset)
+    .def("freeze", &jevois::PythonParameter::freeze)
+    .def("reset", &jevois::PythonParameter::reset)
+    .def("setCallback", &jevois::PythonParameter::setCallback)
+    ;
+
+  // #################### Allow python code to access dnn::PreProcessor helper functions:
+  // python cannot construct PreProcessor, but PostProcessorPython can use an existing one.
+  boost::python::class_<jevois::dnn::PreProcessorForPython>("PreProcessor", boost::python::no_init)
+    .def("imagesize", &jevois::dnn::PreProcessorForPython::imagesize)
+    .def("blobs", &jevois::dnn::PreProcessorForPython::blobs)
+    .def("blobsize", &jevois::dnn::PreProcessorForPython::blobsize)
+    .def("b2i", &jevois::dnn::PreProcessorForPython::b2i)
+    .def("getUnscaledCropRect", &jevois::dnn::PreProcessorForPython::getUnscaledCropRect)
+    ;
+
 }

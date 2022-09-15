@@ -1,0 +1,245 @@
+namespace jevois { namespace dnn {
+
+/*! \page UserDNNconv Converting and Quantizing Deep Neural Networks for JeVois-Pro
+
+Conversion process overview
+===========================
+
+Some hardware accelerators running \jvpro require that the DNN models be optimized, quantized, and converted to
+the operation set supported by the hardware, before they can run in the camera. In this tutorial, we explore conversion
+for the following runtime frameworks:
+
+- **OpenCV:** Accepts many models as-is, and is quite fast at runtime compared to native frameworks (e.g.,
+  Caffe). However, mainly runs on CPU, which is slow compared to dedicated neural accelerators. Exceptions include:
+
+  + **OpenCV + Inference %Engine backend + Myriad-X target (1.4 TOPS):** Models run on the Myriad-X VPU through the
+    OpenCV and OpenVino frameworks. This is the main way to run Myriad-X models on \jvpro.
+
+  + **OpenCV + TIM-VX backend + NPU target (5 TOPS):** Quantized models run on Verisilicon NPU integrated into the
+    \jvpro processor. Perhaps an easier way to run models on the NPU than converting them specifically for NPU (see
+    below). However, models still need to be quantized before they can use this backend, loading and initializing a
+    model with this method is quite slow, and runtime performance may not be as good as when running the same model as
+    NPU native.
+  
+  The JeVois DNN framework supports OpenCV with CPU, Myriad-X, and TIM-VX, through the NetworkOpenCV class.
+
+- **Verisilicon / Amlogic A311D NPU integrated into the JeVois-Pro processor (5 TOPS):** The NPU SDK provided by
+  Verisilicon/Amlogic allows one to convert and quantize a model for native operation on the NPU. At runtime, the NPU is
+  directly connected to the main memory of JeVois-Pro and hence provides the fastest data transfer rates. JeVois
+  supports the NPU through the NetworkNPU class.
+
+- **Hailo-8 (26 TOPS):** Models are first quantized and optimized using the Hailo Dataflow Compiler, then run using a
+  runtime interface provided by the Hailo Runtime Library. JeVois DNN supports Hailo networks through the NetworkHailo
+  class. Hailo-8 is connected over PICe which is quite fast (5 GBits/s).
+
+- **Google Coral Edge TPU (4 TOPS/chip, dual chip board possible):** Models are quantized using Tensorflow-Lite and then
+  compiled into instructions supported by the hardware accelerator using the Coral EdgeTPU compiler. JeVois DNN supports
+  Coral through the NetworkTPU class. Coral TPU can either be connected to PCIe (5 GBits/s) when using an M.2 board, or
+  USB (only USB 2.0 is available on JeVois-Pro as the A311D processor only has one 5 GBits/s interface, which we use for
+  PCIe, which is only 480 Mbits/s).
+
+Quantization
+============
+
+%Network quantization is the process of converting network weights from 32-bit float values that are usually used on
+server-grade GPUs to smaller representations, e.g., 8-bit wide. This both makes the model smaller, faster to load, and
+faster to execute using dedicated embedded hardware processors that are designed to operate using 8-bit weights.
+
+When quantizing, the goal is to use as much of the reduced available bits to represent the original float values. For
+example, if float values are known to always be, during training, in some range, say, [-12.4 .. 24.7], then one would
+want to quantize such that -12.4 would become quantized 0, and 24.7 would become quantized 255. In that way, the whole
+8-bit range [0..255] will be used to represent the original float numbers with maximal accuracy given the reduction to 8
+bits.
+
+Thus, successful quantization requires that one has a good idea of the range of values that every layer in a network
+will be processing. This is achieved either during training (by using so-called <em>quantization-aware training</em>
+that will keep track of the range of values for every layer during training), or afterwards using a representative
+sample dataset (<em>post-training quantization</em> where the sample dataset will be passed through the already trained
+network and the range of values processed at every layer will be recorded).
+
+JeVois supports the following quantization methods:
+
+Affine asymmetric (AA)
+----------------------
+
+Weights are represented as an unsigned 8-bit value [0..255], plus scale and zero-point attributes that describe how
+that 8-bit value is to be interpreted as a floating point number:
+
+\code
+  int_val = float_val / scale + zero_point // quantize from float to int
+  
+  float_val = (int_val - zero_point) * scale // dequantize from int to float
+\endcode
+
+Usually, only one scale and zero-point are used for a whole network layer, so that we do not have to carry these extra
+parameters for every weight in the network.
+
+For example, say a network originally expected float input values in [0.0 .. 1.0]. We can quantize that using scale =
+1/255 and zero_point = 0. Now 0.0 maps to 0 and 1.0 maps to 255.
+
+If the network used inputs in [-1.0 .. 1.0], we can quantize using scale = 1/127.5 and zero-point = 127.5.
+
+Dynamic fixed point (DFP)
+-------------------------
+
+Weights are represented as integer values (typically signed int8 or signed int16) that have a special bitwise
+interpretation:
+  
+  + Most significant bit: sign (0 for positive, 1 for negative)
+  
+  + next m bits: integer part; e.g., if original float values were in range [-3.99 .. 3.99] then m=2 bits is enough to
+    represent integers of absolute value in [0 .. 3].
+    
+  + next fl bits: decimal part (in base 2).
+
+Typically, dynamic fixed point specs only specify the \p fl value, with the understanding that m is just the number of
+bits in the chosen type (e.g., 8 for 8-bit) minus 1 bit reserved for sign and minus fl bits for the decimal part.
+
+DFP is also specified for a whole layer, so that we do not have to carry a different fl value for every weight in the
+network.
+
+\note Which method you use is up to you and/or up to what the framework supports. For example, Coral TPU and Hailo SPU
+use 8-bit asymmetric affine. OpenCV usually uses unquantized float32. Myriad-X VPU uses unquantized float16. Verisilicon
+NPU is the most general as it supports 8-bit asymmetric affine as well as 8-bit and 16-bit dynamic fixed point. Google's
+Tensorflow team typically recommends uint8 asymmetric affine.
+
+JeVois Tensor specification
+===========================
+
+JeVois uses the following specification to describe input and output tensors of neural networks:
+
+\verbatim
+[NCHW:|NHWC:|NA:|AUTO:]Type:[NxCxHxW|NxHxWxC|...][:QNT[:fl|:scale:zero]]
+\endverbatim
+
+- First field (optional): A hint on how channels (typically, red, green, and blue for color input tensors) are
+  organized; either:
+  
+  + **packed (NHWC):** Tensor dimensions are batch size N (number of images to be processed in a batch, so far always 1
+    on JeVois since we want to process every camera image as soon as possible), then height, then width, then
+    channels. So, channels is the fastest varying index and, for 3 RGB channels, the data is hence organized in memory
+    as RGBRGBRGB...
+
+  + **planar (NCHW):** Now height and width vary faster than channels, hence for 3 RGB channels this gives rise to 3
+    successive single-channel images or planes in memory: RRR...GGG...BBB...
+
+  + or it could be something else if the input is not an RGB image.
+
+  Mainly this is used as some networks do expect planar ordering (which is somewhat easier to use from the standpoint of
+  a network designer, since one can just process the various color planes independently; but it is not what most image
+  formats like JPEG, PNG, etc or camera sensors provide), while others expect packed pixels (which may make a network
+  design more complex, but has the advantage that now images in native packed format can directly be fed to the
+  network).
+
+- **Type:** value type, e.g., 32F for float32, 8U for uint8, etc.
+
+- NxCxHxW (replacing N, C, H, W by values, e.g., 1x3x224x224) or NxHxWxC or any other specification of tensor size
+
+- **QNT:** Quantization type: can be \p NONE (no quantization, assumed if no quantization spec is given), \p DFP:fl
+  (dynamic fixed point, with \p fl bits for the decimal part; e.g., int8 with DFP:7 can represent numbers in [-0.99
+  .. 0.99] since the most significant bit is used for sign, 0 bits are used for the integer part, and 7 bits are used
+  for the decimal part), or \p AA:scale:zero_point (affine asymmetric). In principle, \p APS (affine per-channel
+  asymmetric) is also possible, but we have not yet encountered it and thus it is currently not supported (let us know
+  if you need it).
+
+Internally, JeVois uses the \p vsi_nn_tensor_attr_t struct from the NPU SDK to represent these specifications, as this
+is the most general one compared to their equivalent structures provided by TensorFlow, OpenCV, etc. This struct and the
+related specifications for quantization type, etc are defined in
+https://github.com/jevois/jevois/blob/master/Contrib/npu/include/ovxlib/vsi_nn_tensor.h
+
+Pre-processing and its effect on quantization
+=============================================
+
+Most DNN use some form of pre-processing, which is to prepare input pixel values into a range that the network is
+expecting. This is separate from quantization but we will see below that the two can interact.
+
+For example, a DNN designer may decide that float input pixel values in the range [-1.0 .. 1.0] give rise to the easiest
+to train, best converging, and best performing network. Thus, when images are presented to the original network that
+uses floats, pre-processing consists of first converting pixel values from [0 .. 255], as usually used in most image
+formats like PNG, JPEG, etc, into that [-1.0 .. 1.0] range.
+
+Most pre-trained networks should provide the following pre-processing information along with the pre-trained weights:
+
+- mean: what is the mean values of inputs (typically learned during training)?
+- scale: how should pixel values be scaled into float values for input into the network?
+- stdev: what is the standard deviation of input values?
+
+Usually either one of scale or stdev is specified, but in rare occasions both may be used. The mean and stdev values
+are triplets for red, green, and blue, while the scale value is a single scalar number.
+
+Pre-processing then computes the float pixel values to be fed into the network from the original uint8 ones from an
+image or camera frame as follows:
+
+\code
+float_pix = (int_pix - mean) * scale / stdev
+\endcode
+
+Pre-processing is specified by a network designer that designed a network to operate on float values. It is originally
+unrelated to quantization, which is desired by people who want to run networks efficiently on hardware
+accelerators. Yet, as mentioned above, the two may interact, and sometimes actually cancel each other. For example:
+
+- assume original float network uses inputs in the [0.0 .. 1.0] range with pre-processing mean [0 0 0], pre-processing
+  scale 1/255, pre-processing stdev [1 1 1].
+
+- we want to quantize this using uint8 asymmetric affine, e.g., to run on Coral TPU. We would then use quantizer
+  zero-point 0 and quantizer scale 1/255, to stretch the [0.0 .. 1.0] range maximally over the available uint8 bits.
+
+In the end, first pre-processing and then quantizing would result in a no-op:
+
+- input pixel values in [0 .. 255]
+- pre-processing: float_pix = (int_pix - preproc_mean) * preproc_scale / preproc_stdev; results are in [0.0 .. 1.0]
+- quantization: quantized_int_val = float_pix / quantizer_scale + quantizer_zero_point; results back to [0 .. 255]
+
+The JeVois PreProcessorBlob detects special cases such as this one, and provides no-op or optimized implementations.
+
+Full pre-processing involves some additional steps, such as resizing the input image, possibly swapping RGB to BGR, and
+possibly unpacking from packed RGB to planar RGB, as detailed in the docs for PreProcessorBlob
+
+Post-processing and dequantization
+==================================
+
+When a quantized network is run, it typically outputs quantized representations.
+
+Post-processing hence will do two things:
+
+- dequantize from uint8, int8, etc back into float, using DFP, AA, etc as specified by the quantized network's output
+  layer specs, and using the inverse of the quantization operations.
+
+- interpret the results and produce outputs usable by humans (e.g., for YOLO, decode boxes from the network outputs,
+  that can be drawn onto the image that was processed).
+
+Sometimes, dequantization is not necessary; for example, semantic segmentation networks often just output a single array
+of uint8 values, where the values are directly the assigned object class number for every pixel in the input image.
+
+Network conversion procedures
+=============================
+
+The general procedure and details for each available framework are described in the following pages:
+
+- \ref UserDNNoverview
+- \ref UserDNNopencv
+- \ref UserDNNnpu
+- \ref UserDNNspu
+- \ref UserDNNtpu
+- \ref UserDNNvpu
+
+\note Instead of installing the full conversion toolkits for these frameworks, you may want to try the USC/iLab online
+model converter, which is a simple web interface that allows you to upload your origin network and then download the
+converted network directly onto your JeVois-Pro camera.
+
+Tips
+====
+
+- Usually, pre-processing scale is a small number, like 1/127.5 = 0.00784313
+
+- Usually, pre-processing mean is either [0 0 0] or around [128 128 128]
+
+- Usually, pre-processing stdev is either [1 1 1] or around [64 64 64]
+
+- Quantization parameters are computed during model conversion. For the input layer when using AA, quantization scale is
+  usually a small number like 1/127.5, while quantization zero-point is typically 0 or around 128.
+
+*/
+
+} }
+

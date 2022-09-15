@@ -184,12 +184,6 @@ namespace jevois
       /*! The format here is free. Just use std::endl to demarcate lines, these will be converted to the appropriate
           line endings by the serial ports. Default implementation writes "None" to os. */
       virtual void supportedCommands(std::ostream & os);
-
-      //! Get frame number from the Engine
-      /*! The Engine maintains a master frame counter that is incremented on each call to process(), whether or not the
-	  call succeeds. The counter is not incremented when a module has not been loaded (e.g., failed to load). The
-	  counter is reset to zero each time a new module is loaded. */
-      size_t frameNum() const;
   };
 
   namespace module

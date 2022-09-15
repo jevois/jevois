@@ -243,7 +243,12 @@ namespace
       else if (event->code == KEY_LEFTALT) state->alt = 1;
       else if (event->code == KEY_LEFTCTRL || event->code == KEY_RIGHTCTRL) state->ctrl = 1;
       else if (event->code == KEY_LEFTMETA || event->code == KEY_RIGHTMETA) state->meta = 1;
-      
+
+      // If ctrl is pressed, do not translate here. Those keys will be probed directly via io.KeysDown, which is set
+      // upstream by our caller:
+      if (state->ctrl) return 0;
+
+      // For any key that can translate to a meaningful wchar_t, add the translated value to the buffer:
       if (is_char_key(event->code))
       {
         if (state->altgr)
@@ -373,9 +378,12 @@ jevois::ImGuiBackendMALI::ImGuiBackendMALI() :
 // ##############################################################################################################
 jevois::ImGuiBackendMALI::~ImGuiBackendMALI()
 {
-  ImGui_ImplOpenGL3_Shutdown();
-  ImGui::DestroyContext();
-
+  if (itsInitialized)
+  {
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui::DestroyContext();
+  }
+  
   // Close console:
   if (itsConsoleFd >= 0) { ioctl(itsConsoleFd, KDSETMODE, KD_TEXT); close(itsConsoleFd); }
 
@@ -493,6 +501,8 @@ void jevois::ImGuiBackendMALI::init(unsigned short w, unsigned short h, bool ful
 
   // Do an initial scan for input event devices:
   //scanDevices();
+
+  itsInitialized = true; // will be used to close ImGui if needed
 }
 
 // ##############################################################################################################

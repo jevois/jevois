@@ -28,6 +28,7 @@
 #include "vsi_nn_types.h"
 #include "vsi_nn_graph.h"
 
+
 vsi_bool vsi_nn_RegisterCpuBackendPos
     (
     vsi_nn_graph_t * graph

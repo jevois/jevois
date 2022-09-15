@@ -70,9 +70,9 @@ namespace jevois
       virtual void uninit();
       
       std::string const itsName;
-      EGLDisplay itsDisplay = 0;
+      EGLDisplay itsDisplay = EGL_NO_DISPLAY;
       EGLConfig itsConfig = 0;
-      EGLContext itsContext = 0;
+      EGLContext itsContext = EGL_NO_CONTEXT;
       EGLSurface itsSurface = 0;
   };
 

@@ -17,18 +17,39 @@
 
 #pragma once
 
-#include <jevois/DNN/Utils.H>
+#include <jevois/DNN/PostProcessor.H>
+#include <jevois/Types/ObjReco.H>
 
 namespace jevois
 {
   namespace dnn
   {
-    namespace npu
+    //! Post-Processor for neural network pipeline
+    /*! This is the last step in a deep neural network processing Pipeline. This post-processor does nothing except
+        displaying the sizes of the received tensors from the network. Useful when importing custom networks to inspect
+        the output data format if one is unsure: using this stub will not crash post-processing and will allow one to
+        inspect network output shapes. Also useful to benchmark a model and check that its speed is acceptable before
+        spending time designing a new post-processor for it. \ingroup dnn */
+    class PostProcessorStub : public PostProcessor
     {
-      void yolo(cv::Mat const & out, std::vector<int> & classIds, std::vector<float> & confidences,
-                std::vector<cv::Rect> & boxes, size_t nclass, float const * biases, int const yolonum,
-                float confThreshold, cv::Size const & bsiz, int fudge);
+      public:
+        
+        //! Inherited constructor ok
+        using PostProcessor::PostProcessor;
 
-    } // namespace npu
+        //! Destructor
+        virtual ~PostProcessorStub();
+
+        //! Freeze/unfreeze parameters that users should not change while running
+        void freeze(bool doit) override;
+        
+        //! Process outputs and draw/send some results
+        void process(std::vector<cv::Mat> const & outs, PreProcessor * preproc) override;
+
+        //! Report what happened in last process() to console/output video/GUI
+        void report(jevois::StdModule * mod, jevois::RawImage * outimg = nullptr,
+                    jevois::OptGUIhelper * helper = nullptr, bool overlay = true, bool idle = false) override;
+    };
+    
   } // namespace dnn
 } // namespace jevois

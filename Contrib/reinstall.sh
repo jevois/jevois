@@ -30,6 +30,9 @@ if [ ! -d "${JEVOIS_BUILD_BASE}" -a ! -d "${JEVOISPRO_BUILD_BASE}" ]; then
     exit 1
 fi
 
+sudo mkdir -p /var/lib/jevoispro-microsd/lib
+sudo mkdir -p /var/lib/jevois-microsd/lib
+
 ###################################################################################################
 function finish
 {
@@ -106,28 +109,28 @@ if [ "X$REPLY" = "Xy" ]; then
     cd tensorflow
     ./tensorflow/lite/tools/make/download_dependencies.sh
 
-    # We need bazel:
-    if [ ! -x /usr/bin/bazel -a ! -x /usr/local/bin/bazel ]; then
-        echo "### JeVois: Installing bazel ..."
+    # We need bazel-3.7.2:
+    bzl="bazel-3.7.2"
+    if [ ! -x /usr/bin/${bzl} ]; then
+        echo "### JeVois: Installing ${bzl} ..."
         sudo apt -y install apt-transport-https curl gnupg
         curl -fsSL https://bazel.build/bazel-release.pub.gpg | gpg --dearmor > bazel.gpg
         sudo mv bazel.gpg /etc/apt/trusted.gpg.d/
         echo "deb [arch=amd64] https://storage.googleapis.com/bazel-apt stable jdk1.8" | \
             sudo tee /etc/apt/sources.list.d/bazel.list
         sudo apt update
-        sudo apt -y install bazel
-        sudo apt -y install bazel-3.1.0
+        sudo apt -y install bazel-3.7.2
     fi
         
     # Build for host:
     echo "### JeVois: compiling tensorflow for host ..."
-    bazel build -c opt //tensorflow/lite:libtensorflowlite.so
+    ${bzl} build -c opt //tensorflow/lite:libtensorflowlite.so
     sudo cp -v bazel-bin/tensorflow/lite/libtensorflowlite.so /usr/lib/
 
     if [ -d "${JEVOISPRO_BUILD_BASE}" ]; then
         # Build for JeVois-Pro platform:
         echo "### JeVois: cross-compiling tensorflow for JeVois-Pro platform ..."
-        bazel build --config=elinux_aarch64 -c opt //tensorflow/lite:libtensorflowlite.so
+        ${bzl} build --config=elinux_aarch64 -c opt //tensorflow/lite:libtensorflowlite.so
         sudo cp -v bazel-bin/tensorflow/lite/libtensorflowlite.so /var/lib/jevoispro-microsd/lib/ # for sd card
         sudo cp -v bazel-bin/tensorflow/lite/libtensorflowlite.so ${JEVOISPRO_BUILD_BASE}/usr/lib/ # for compiling
     fi
@@ -135,7 +138,7 @@ if [ "X$REPLY" = "Xy" ]; then
     if [ -d "${JEVOIS_BUILD_BASE}" ]; then
         # Build for JeVois-A33 platform:
         echo "### JeVois: cross-compiling tensorflow for JeVois-A33 platform ..."
-        bazel build --config=elinux_armhf -c opt //tensorflow/lite:libtensorflowlite.so
+        ${bzl} build --config=elinux_armhf -c opt //tensorflow/lite:libtensorflowlite.so
         sudo mkdir -p /var/lib/jevois-microsd/lib
         sudo cp -v bazel-bin/tensorflow/lite/libtensorflowlite.so /var/lib/jevois-microsd/lib/ # for sd card
         sudo cp -v bazel-bin/tensorflow/lite/libtensorflowlite.so ${JEVOIS_BUILD_BASE}/target/usr/lib/ # for compiling

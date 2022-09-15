@@ -31,7 +31,7 @@ namespace jevois
   class RawImage;
   
   /*! \defgroup debugging Debugging helper classes, functions and macros */
-  
+
   //! Current log level
   /*! The log level is set by changing the value of this global variable. The default value is LOG_INFO.
 
@@ -101,6 +101,13 @@ namespace jevois
       some other way (e.g., in a GUI or in a video frame using drawErrorImage()). \ingroup debugging */
   std::string warnAndIgnoreException(std::string const & prefix = "");
 
+  //! Convenience function for parameter callback exceptions
+  /*! Used internally by Parameter, likely not so useful to others, included in the jevois namespace to avoid having to
+      pull boost::python into Parameter, which would pull it into pretty much everything and increase compile time a
+      lot.
+      \note This function throws! So obviously it only makes sense to use it inside a catch block. \ingroupdebugging */
+  void warnAndRethrowParamCallbackException[[noreturn]](std::string const & descriptor, std::string const & strval);
+  
   //! Display an error message into a RawImage
   /*! The error message should consist of a string where multiple lines may be separated by \\n characters, such as the
       string returned by warnAndIgnoreException(). The message will be written in the image, which should be
@@ -134,14 +141,20 @@ namespace jevois
     LDEBUG("x=" << x << " and str=" << str << " and rng=" << rng);
     @endcode
     
-    \note This is the preferred way to issue messages. Do you use printf, do not use cout<<"blah", etc.
+    \note This is the preferred way to issue messages. Do not use printf, do not use cout<<"blah", etc.
     
+    \warning No line breaks ('\n' and similar) are allowed in LDEBUG(), LINFO(), and LERROR(), as these may be sent out
+    over serial ports to simple processors like Arduino, with just one prefix ("DBG ", "INF ", "ERR ") followed by the
+    message, for easy parsing. JeVois-Inventor will likely not be able to function if you send multiline messages. Line
+    breaks are allowed in exception error messages and in LFATAL() and LTHROW(), and the multiple lines will be sent as
+    several consecutive messages.
+
     By design, your log message will not be evaluated if the current log level is below (stronger than) the debug
     level. This means that you should not be afraid of wasting CPU computing messages that will not be output; for
     example:
     
     @code
-    LDEBUG("CPU-intensive function says: " << cpu_intensive_function());
+    LINFO("CPU-intensive function says: " << cpu_intensive_function());
     @endcode
     
     will not run the cpu-intensive function if the current log level is LOG_ERR (it will still run one "if" statement to
@@ -225,6 +238,17 @@ namespace jevois
     \note After printing the message, this also throws std::runtime_error \ingroup debugging */
 #define PLFATAL(msg) do { std::string str; { jevois::Log<LOG_CRIT>(__FILE__, __FUNCTION__, &str) \
         << msg << " [" << errno << "](" << strerror(errno) << ')'; }    \
+    throw std::runtime_error(str); } while (false)
+
+//! Convenience macro for users to throw std::runtime_error with convenient message formatting
+/*! \def LFATAL(msg)
+    \hideinitializer
+    
+    Usage syntax is the same as for LDEBUG(msg). Nothing is added by this function to the user-provided
+    error message. So this is mainly useful for situations where the exception will be caught and 
+    a consolidated error message will then be issued via LFATAL() (maybe adding some more context details).
+    \note This throws std::runtime_error \ingroup debugging */
+#define LTHROW(msg) do { std::string str; { jevois::Log<LOG_ALERT>(nullptr, nullptr, &str) << msg; } \
     throw std::runtime_error(str); } while (false)
 
 //! Test whether something is true and issue an LFATAL if not

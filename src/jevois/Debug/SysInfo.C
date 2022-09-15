@@ -135,6 +135,21 @@ size_t jevois::getNumInstalledNPUs()
 }
 
 // ####################################################################################################
+size_t jevois::getNumInstalledSPUs()
+{
+  size_t n = 0;
+
+  while (true)
+  {
+    try { jevois::getFileString(("/sys/class/hailo_chardev/hailo" + std::to_string(n) + "/device_id").c_str()); }
+    catch (...) { break; }
+    ++n;
+  }
+
+  return n;
+}
+
+// ####################################################################################################
 int jevois::getFanSpeed()
 {
 #ifdef JEVOIS_PLATFORM_PRO

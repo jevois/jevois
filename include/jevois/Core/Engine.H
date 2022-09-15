@@ -477,12 +477,6 @@ namespace jevois
           field of view of JeVois. */
       void sendSerial(std::string const & str, bool islog = false);
 
-      //! Get frame number
-      /*! The Engine maintains a master frame counter that is incremented on each call to a Module's process(), whether
-          or not the call succeeds. The counter is not incremented when a module has not been loaded (e.g., failed to
-          load). The counter is reset to zero each time a new module is loaded. */
-      size_t frameNum() const;
-
       //! Get a pointer to our current module (may be null)
       std::shared_ptr<Module> module() const;
 
@@ -496,6 +490,32 @@ namespace jevois
       //! Draw all camera controls into our GUI
       void drawCameraGUI();
 #endif
+
+      //! Register a component as linked to some python code, used by dynamic params created in python
+      /*! Use with extreme caution to guarantee thread safety and object lifetime since we just use raw pointers here */
+      void registerPythonComponent(Component * comp, void * pyinst);
+
+      //! Unregister a component as linked to some python code, used by dynamic params created in python
+      /*! Use with extreme caution to guarantee thread safety and object lifetime since we just use raw pointers here */
+      void unRegisterPythonComponent(Component * comp);
+
+      //! Get the component registered with a given python instance
+      /*! Use with extreme caution to guarantee thread safety and object lifetime since we just use raw pointers here */
+      Component * getPythonComponent(void * pyinst) const;
+      
+      // Report an error to console and JeVois-Pro GUI
+      /*! Try to minimize the use of this function, and normally use LERROR() or LFATAL() instead. Currently the only
+          use is in jevois::dnn::Pipeline, to report parameters set in the zoo file but not used by the pipeline, as
+          issuing an LFATAL() for that may be too strict, but issuing an LERROR() may go un-noticed since the pipeline
+          is still running just fine. */
+      void reportError(std::string const & err);
+
+      //! Clear all errors currently displayed in the JeVois-Pro GUI
+      /*! In the JevoisPro GUI, errors reported via reportError() remain displayed for a few seconds, but sometimes we
+          want to clear them right away, e.g., after DNN pipeline threw, if the user selects another one, we want the
+          previous error to disappear immediately since it is not applicable anymore. When the JeVois-Pro GUI is not
+          used, this has no effect. */
+      void clearErrors();
       
     protected:
       //! Run a script from file
@@ -584,8 +604,9 @@ namespace jevois
       int camctrlid(std::string const & shortname);
 
       // Report an error to console, video frame, or GUI
-      /*! Call this from within catch. */
-      void reportError(std::string const & err = "");
+      /*! Call this from within catch. Note, in GUI mode, this calls endFrame() so it should not be used except for
+          exceptions that will not be ignored. */
+      void reportErrorInternal(std::string const & err = "");
 
       bool itsShellMode; // When true, pass any CLI command to the Linux shell
       bool itsTurbo;
@@ -604,7 +625,6 @@ namespace jevois
       void stopMassStorageMode();
 #endif
 
-      std::atomic<size_t> itsFrame; // Master frame counter, can be used by modules
       std::atomic<size_t> itsNumSerialSent; // Number of serial messages sent this frame; see serlimit
       std::atomic<int> itsRequestedFormat; // Set by requestSetFormat(), could be -1 to reload, otherwise -2
       
@@ -616,8 +636,11 @@ namespace jevois
 
       std::shared_ptr<jevois::Watchdog> itsWatchdog;
 #endif
-
+      // Python code registry, used to assign dynamic parameters created in python code to the correct owning component.
+      // This looks thread-unsafe but should be ok as long as objects inherit first from Component and then from
+      // PythonWrapper.
+      std::map<void *, Component *> itsPythonRegistry;
+      mutable std::mutex itsPyRegMtx;
   };
-
 } // namespace jevois
   

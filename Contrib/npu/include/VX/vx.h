@@ -91,7 +91,7 @@
  * \ingroup group_basic_features
  */
 #ifndef VX_VERSION
-#define VX_VERSION          (VX_VERSION_1_2)
+#define VX_VERSION          (VX_VERSION_1_3)
 #endif
 
 #endif
