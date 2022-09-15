@@ -9,7 +9,7 @@ JeVois 1.18 brings the following new features:
 
 - Updated to OpenCV 4.6.0, OpenVino 2022.1
 
-- Support for TIM-VX library to execute moels on the JeVois-Pro ine=tegrated NPU directly via OpenCV (no conversion to
+- Support for TIM-VX library to execute models on the JeVois-Pro integrated NPU directly via OpenCV (no conversion to
   NPU blob format needed, load model directly from ONNX, etc; model still should be quantized to int8). See
   [TIM-VX](https://github.com/VeriSilicon/TIM-VX) and
   [OpenCV+TIM-VX](https://github.com/opencv/opencv/wiki/TIM-VX-Backend-For-Running-OpenCV-On-NPU).
