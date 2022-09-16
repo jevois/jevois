@@ -6,7 +6,7 @@ Easiest: USB to wired networking
 
 If you have a wired network that runs a DHCP server, you can just use a USB-to-Ethernet adapter like the one below.
 
-\jvimg{usb-ether.jpg, 20%}
+\jvimg{usb-ether.jpg, 5%}
 
 It should be automatically detected and configured. To check from the JeVois-Pro console, you can issue `shell ifconfig`
 and inspect the configuration. You can then move to the System tab and try to ping jevois.usc.edu
@@ -18,7 +18,7 @@ Many Wifi adapters are not by default included in the Linux kernel because they 
 
 We have pre-installed drivers for the popular Realtek RTL8812AU chip present in many adapters of various brands.
 
-\jvimg{usb-wifi.jpeg, 20%}
+\jvimg{usb-wifi.jpeg, 5%}
 
 To select a Wifi network, the easiest is to proceed as follows:
 - In JeVois-Pro System tab, choose to reboot to Linux Console.
@@ -39,11 +39,15 @@ M.2 PCI-express Wifi networking
 
 If you will not be using a Coral TPU, you can use the M.2 A+E slot in JeVois-Pro to connect a Wifi card.
 
-\jvimg{m2-wifi.jpg, 20%}
+\jvimg{m2-wifi.jpg, 5%}
 
 Proceed as follows:
 
 - choose one that uses PCIe. We have had good success with Intel-based cards.
+- make sure the chip is supported by Linux kernel 4.9.x; in particular, some of the latest Intel AX210 chipsets require
+  kernel 5.10+ and will not work on JeVois-Pro. See
+  [here](https://www.intel.com/content/www/us/en/support/articles/000005511/wireless.html) if you are planning to use an
+  Intel chipset, or search the web for linux compatibility for other chipsets.
 - make sure it is M.2 2230 (22mm x 30mm) A-key or E-key (most M.2 Wifi cards should be).
 - Open JeVois-Pro (4 screws)
 - Remove the TPU board if you have one

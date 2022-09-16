@@ -86,7 +86,7 @@ em {
 }
 
 code {
-    padding: 6px 6px;
+    padding: 1px 4px;
     font-size: 90%;
     color: #c7254e;
     background-color: #e9e2e4;
@@ -94,35 +94,35 @@ code {
 }
 
 strong.jvversion {
-    padding: 2px 4px;
+    padding: 1px 4px;
     color: OrangeRed;
     background-color: #f0f0f0;
     border-radius: 4px
 }
 
 strong.jvmodel {
-    padding: 4px 6px;
+    padding: 1px 4px;
     color: Orange;
     background-color: #f0f0f0;
     border-radius: 4px
 }
 
 strong.jvhostplatform {
-    padding: 2px 4px;
+    padding: 1px 4px;
     color: MediumBlue;
     background-color: #f0f0f0;
     border-radius: 4px
 }
 
 strong.jvmod {
-    padding: 2px 4px;
+    padding: 1px 4px;
     color: Blue;
     background-color: #f0f0f0;
     border-radius: 4px
 }
 
 strong.jvinv {
-    padding: 2px 4px;
+    padding: 1px 4px;
     color: Blue;
     background-color: #f0f0f0;
     border-radius: 4px

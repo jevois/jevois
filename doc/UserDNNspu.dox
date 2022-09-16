@@ -21,7 +21,8 @@ Procedure
 - Make sure you understand the quantization concepts in \ref UserDNNconv
 
 - You need to download and install the Hailo Software Suite docker to convert/compress your model on a desktop computer
-  running Linux Ubuntu 20.04. <em>Registration and password required.</em>
+  running Linux Ubuntu 20.04. <em>Registration and password required. Hailo reserves the right to accept or deny your
+  developer registration request.</em>
 
 - Everything you need for runtime inference (HailoRT runtime libraries, Hailo PCIe kernel driver) is pre-installed on
   your JeVois microSD.
@@ -324,9 +325,9 @@ in the HEF file.
 
 \jvimg{spu-yolov7.png, 70%}
 
-It works! Indeed about 12.2 FPS as promised by the compiler. This is a large model and also using 640x640 inputs. If you
-need higher frame rate, try smaller inputs or yolov7-tiny. Or try YOLOv5m-640 provided by the Hailo team, it runs at
-over 45 FPS on JeVois-Pro.
+It works! Indeed about 12.2 FPS for the network inference, as promised by the compiler. This is a large model and also
+using 640x640 inputs. If you need higher frame rate, try smaller inputs or yolov7-tiny. Or try YOLOv5m-640 provided by
+the Hailo team, it runs at over 45 FPS on JeVois-Pro.
 
 Tips
 ====
