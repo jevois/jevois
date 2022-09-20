@@ -136,20 +136,20 @@ From the links above, click on <em>Go to the source code of this file</em> to se
 Procedure to add a new network
 ==============================
 
-- Everything you need (OpenCV full, with all available backends, targets, etc, OpenVino, Coral EdgeTPU libraries, Hailo
-  libraries, NPU libraries, etc) is pre-installed on JeVois, so you do not need to install any additional software on
-  the camera to run your custom networks using these frameworks.
+- Everything you need at runtime (OpenCV full, with all available backends, targets, etc, OpenVino, Coral EdgeTPU
+  libraries, Hailo libraries, NPU libraries, etc) is pre-installed on JeVois, so you do not need to install any
+  additional software on the camera to run your custom networks using these frameworks.
 
 - Obtain a model: train your own, or download a pretrained model.
 
 - Obtain some parameters about the model (e.g., pre-processing mean, stdev, scale, expected input image size, RGB or
   BGR, packed (NWHC) or planar (NCHW) pixels, names of the input and output layers, etc).
 
-- On \jvpro, convert/quantize the model on your desktop Linux computer, so that it is optimized to run on one of the
-  available neural accelerators, like integrated NPU, Hailo8, Coral TPU, etc.
+- For running on \jvpro, convert/quantize the model on your desktop Linux computer, so that it is optimized to run on
+  one of the available neural accelerators, like integrated NPU, Hailo8, Coral TPU, etc.
   
-  + This typically will require that you install a vendor-provided SDK for each target accelerator (e.g., Amlogic NPU
-    SDK, OpenVino SDK, Hailo SDK, Coral EdgeTPU compiler), on a fast Linux desktop with plenty of RAM, disk space, and
+  + This will require that you install a vendor-provided SDK for each target accelerator (e.g., Amlogic NPU SDK,
+    OpenVino SDK, Hailo SDK, Coral EdgeTPU compiler), on a fast Linux desktop with plenty of RAM, disk space, and
     possibly a big nVidia GPU.
     
   + For quantization, you will also need a <em>representative sample dataset</em>. This usually is about 100 images from
@@ -157,13 +157,16 @@ Procedure to add a new network
     inference only) and record the range of values encountered on every layer. These ranges of values will then be used
     to quantize the layers with best accuracy.
 
+  + Using the vendor SDK for the acelerator of your choice, convert and quantize the model on your fast Linux desktop.
+  
 - Copy model to JeVois microSD card under JEVOIS[PRO]:/share/dnn/custom/
 
 - Create a JeVois model zoo entry for your model, where you specify the model parameters and the location where you
   copied your model files. Typically this is a YAML file under JEVOIS[PRO]:/share/dnn/custom/
 
-- Launch the JeVois \jvmod{DNN} module. It will scan the custom directory for any valid YAML file, and make your model
-  available through the \p pipe parameter of the DNN module's Pipeline component. Select that pipe to run your model.
+- On the camera, launch the JeVois \jvmod{DNN} module. It will scan the custom directory for any valid YAML file, and
+  make your model available through the \p pipe parameter of the DNN module's Pipeline component. Select that pipe to
+  run your model.
 
 - You can adjust many parameters while the model is running (e.g., confidence threshold, pre-processing mean and scale,
   swap RGB/BGR), while others are frozen at runtime (e.g., input tensor dimensions, post-processor type). Once you

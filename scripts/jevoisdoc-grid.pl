@@ -7,6 +7,10 @@ my $uroot = "http://jevois.org"; # root url
 my $iconsize = 80; # icon size
 
 my $mods = [
+    [ "DNN", "JeVois-Pro", "deep neural nets" ],
+    [ "PyHandDetector", "JeVois-Pro mediapipe", "hand detection" ],
+    [ "PyFaceMesh", "JeVois-Pro mediapipe", "face mesh detection" ],
+    [ "MultiDNN", "JeVois-Pro parallel", "DNN accelerators" ],
     [ "DetectionDNN", "Locate and identify", "faces or objects" ],
     [ "PyDetectionDNN", "Locate and identify", "faces or objects in Python" ],
     [ "PyClassificationDNN", "Recognize 1000 object", "types in Python" ],

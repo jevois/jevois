@@ -5,7 +5,7 @@ dest=/lab/jevois
 #dest=/home2/tmp/u/jvdoc # for testing before official release
 
 
-/bin/rm -rf ${dest}/doc ${dest}/moddoc
+/bin/rm -rf ${dest}/doc/*
 
 cd doc/html
 tar cvf - . | ( cd ${dest}/doc; tar xf - )
