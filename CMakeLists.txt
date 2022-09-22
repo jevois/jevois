@@ -354,6 +354,8 @@ add_subdirectory(include)
 if (JEVOIS_PRO)
   install(FILES "Config/videomappings-Pro.cfg"
     DESTINATION "${JEVOIS_MODULES_ROOT}/config" COMPONENT bin RENAME "videomappings.cfg")
+  install(FILES "Config/initscript-Pro.cfg"
+    DESTINATION "${JEVOIS_MODULES_ROOT}/config" COMPONENT bin RENAME "initscript.cfg")
 
   # Copy imgui header files to /jevois[pro]/include so jevoisbase and others can find them:
   file(GLOB IMGUIINCLFILES "Contrib/imgui/*.h")
@@ -370,6 +372,8 @@ if (JEVOIS_PRO)
 else()
   install(FILES "Config/videomappings-A33.cfg"
     DESTINATION "${JEVOIS_MODULES_ROOT}/config" COMPONENT bin RENAME "videomappings.cfg")
+  install(FILES "Config/initscript-A33.cfg"
+    DESTINATION "${JEVOIS_MODULES_ROOT}/config" COMPONENT bin RENAME "initscript.cfg")
 endif()
 
 # Copy threadpool header files to /jevois[pro]/include so jevoisbase and others can find them:
@@ -381,8 +385,6 @@ install(FILES ${CQFILES}
 
 # Install jevois config files and scripts, shared files:
 install(FILES "Config/params.cfg"
-  DESTINATION "${JEVOIS_MODULES_ROOT}/config" COMPONENT bin)
-install(FILES "Config/initscript.cfg"
   DESTINATION "${JEVOIS_MODULES_ROOT}/config" COMPONENT bin)
 install(DIRECTORY "share-${JEVOIS}/"
   DESTINATION "${JEVOIS_MODULES_ROOT}/share" COMPONENT bin)
