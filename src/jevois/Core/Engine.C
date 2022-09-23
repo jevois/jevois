@@ -623,7 +623,7 @@ void jevois::Engine::postInit()
 
   // Set initial format:
   try { setFormatInternal(midx); } catch (...) { jevois::warnAndIgnoreException(); }
-  
+
   // Run init script:
   runScriptFromFile(JEVOIS_ENGINE_INIT_SCRIPT, nullptr, false);
 }
@@ -1991,7 +1991,15 @@ bool jevois::Engine::parseCommand(std::string const & str, std::shared_ptr<UserI
     {
       std::istringstream ss(rem); std::string ctrl; int val; ss >> ctrl >> val;
       struct v4l2_control c = { }; c.id = camctrlid(ctrl); c.value = val;
-      itsCamera->setControl(c);
+
+      // For ispsensorpreset, need first to set it to non-zero before we set it to zero, otherwise ignored...
+      if (val == 0 && ctrl == "ispsensorpreset")
+      {
+        c.value = 1; itsCamera->setControl(c);
+        c.value = 0; itsCamera->setControl(c);
+      }
+      else itsCamera->setControl(c);
+
       return true;
     }
 
