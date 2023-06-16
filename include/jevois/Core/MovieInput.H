@@ -54,10 +54,28 @@ namespace jevois
       //! Get the next frame from the video file, possibly looping back to start if end is reached
       void get(RawImage & img) override;
 
+      //! Check whether a second input image scaled by the JeVoisPro Platform ISP is available
+      /*! Returns false unless we are on JeVois-Pro Platform and the camera format modifier jevois::CropType::CropScale
+          is currently in use. */
+      virtual bool hasScaledImage() const override;
+
+      //! Get the next captured ISP-scaled secondary buffer
+      /*! On JeVois-Pro Platform only, the camera ISP can output 2 frames: 1) raw from sensor, 2) scaled by ISP. This
+          function is to access the ISP scaled frame. Throws if not JeVois-Pro Platform or the camera crop type is not
+          jevois::CropType::CropScale. Throws if we are not streaming or blocks until an image is available (has
+          been captured). The image img should have been allocated by the caller and will be filled in by what we
+          receive from the device here. Default implementation throws. */
+      virtual void get2(RawImage & img) override;
+
       //! Indicate that user processing is done with an image previously obtained via get()
       /*! You should call this as soon after get() as possible, once you are finished with the RawImage data so that it
           can be recycled. This also invalidates the image and in particular its pixel buffer. */
-      void done(RawImage & img) override;;
+      void done(RawImage & img) override;
+
+      //! Indicate that user processing is done with an image previously obtained via get()
+      /*! You should call this as soon after get() as possible, once you are finished with the RawImage data so that it
+          can be recycled. This also invalidates the image and in particular its pixel buffer. */
+      void done2(RawImage & img) override;
 
       //! Get information about a control, throw if unsupported by hardware
       /*! In MovieInput, this just throws an std::runtime_error */
@@ -82,7 +100,9 @@ namespace jevois
 
     protected:
       cv::VideoCapture itsCap; //!< Our OpenCV video capture, works on movie and image files too
-      std::shared_ptr<VideoBuf> itsBuf; //!< Our single video buffer
+      cv::Mat itsRawFrame; //!< Raw OpenCV frame last captured, before any resizing or conversion
+      std::shared_ptr<VideoBuf> itsBuf; //!< Our single video buffer for the main frame
+      std::shared_ptr<VideoBuf> itsBuf2; //!< Our single video buffer for the second (processing) frame
       VideoMapping itsMapping; //!< Our current video mapping, we resize the input to the mapping's camera dims
   };
   

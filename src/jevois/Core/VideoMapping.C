@@ -306,7 +306,7 @@ std::vector<jevois::VideoMapping> jevois::videoMappingsFromStream(jevois::Camera
     }
 
     // Skip if the sensor cannot support this mapping:
-    if (m.sensorOk(s) == false)
+    if (jevois::sensorSupportsFormat(s, m) == false)
     { PERROR("Camera video format [" << m.cstr() << "] not supported by sensor -- SKIPPING."); continue; }
 
     // Skip gui modes if we do not have a gui:
@@ -330,7 +330,7 @@ std::vector<jevois::VideoMapping> jevois::videoMappingsFromStream(jevois::Camera
     {
       if (tok[10] == "*")
       {
-        if (defmapping.cfmt == 0) defmapping = m;
+        if (defmapping.cfmt == 0) { defmapping = m; LINFO("Default in videomappings.cfg is " << m.str()); }
         if (tok.size() > 11 && tok[11][0] != '#') PERROR("Extra garbage after 11th token ignored");
       }
       else if (tok[10][0] != '#') PERROR("Extra garbage after 10th token ignored");
@@ -422,10 +422,8 @@ std::vector<jevois::VideoMapping> jevois::videoMappingsFromStream(jevois::Camera
   else
   {
     // Default was set, find its index after sorting:
-    for (size_t i = 0; i < mappings.size(); ++i)
-      if (mappings[i].ofmt == defmapping.ofmt && mappings[i].ow == defmapping.ow &&
-          mappings[i].oh == defmapping.oh && mappings[i].ofps == defmapping.ofps)
-      { defidx = i; break; }
+    defidx = 0;
+    for (size_t i = 0; i < mappings.size(); ++i) if (mappings[i].isSameAs(defmapping)) { defidx = i; break; }
   }
   
   // Now that everything is sorted, compute our UVC format and frame indices, those are 1-based, and frame is reset each
@@ -451,12 +449,6 @@ bool jevois::VideoMapping::match(unsigned int oformat, unsigned int owidth, unsi
 {
   if (ofmt == oformat && ow == owidth && oh == oheight && (std::abs(ofps - oframespersec) < 0.1F)) return true;
   return false;
-}
-
-// ####################################################################################################
-bool jevois::VideoMapping::sensorOk(jevois::CameraSensor s)
-{
-  return jevois::sensorSupportsFormat(s, cfmt, cw, ch, cfps);
 }
 
 // ####################################################################################################

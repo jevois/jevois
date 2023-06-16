@@ -66,7 +66,7 @@ namespace jevois
           \ingroup dnn */
     class PreProcessorBlob : public PreProcessor,
                              public jevois::Parameter<preprocessor::letterbox, preprocessor::scale, preprocessor::mean,
-                                                      preprocessor::stdev, preprocessor::interp>
+                                                      preprocessor::stdev, preprocessor::interp, preprocessor::numin>
     {
       public:
         //! Inherited constructor ok

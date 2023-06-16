@@ -235,10 +235,18 @@ namespace jevois
       
       //! Draw a RawImage, copying pixel data to an OpenGL texture
       boost::python::tuple drawImage(char const * name, RawImage const & img,
-                     bool noalias = false, bool isoverlay = false);
+                                     bool noalias = false, bool isoverlay = false);
 
       //! Draw an OpenCV image, copying pixel data to an OpenGL texture
       boost::python::tuple drawImage1(char const * name, cv::Mat const & img, bool rgb,
+                                      bool noalias = false, bool isoverlay = false);
+
+      //! Draw an OpenCV image, copying pixel data to an OpenGL texture
+      boost::python::tuple drawImage2(char const * name, RawImage const & img, int x, int y, int w, int h,
+                                      bool noalias = false, bool isoverlay = false);
+
+      //! Draw an OpenCV image, copying pixel data to an OpenGL texture
+      boost::python::tuple drawImage3(char const * name, cv::Mat const & img, bool rgb, int x, int y, int w, int h,
                                       bool noalias = false, bool isoverlay = false);
 
       //! Draw the input video frame from the camera using zero-copy
@@ -321,6 +329,24 @@ namespace jevois
 
       //! Report current exception in a modal dialog, then re-throw it
       void reportAndRethrowException(std::string const & prefix = "");
+
+      //! ImGui helper: get mouse position
+      ImVec2 getMousePos();
+      
+      //! ImGui helper: check if mouse button clicked
+      bool isMouseClicked(int button_num);
+
+      //! ImGui helper: check if mouse button double-clicked
+      bool isMouseDoubleClicked(int button_num);
+
+      //! ImGui helper: check if mouse button dragged
+      bool isMouseDragging(int button_num);
+
+      //! ImGui helper: check if mouse button pressed
+      bool isMouseDown(int button_num);
+
+      //! ImGui helper: check if mouse button released
+      bool isMouseReleased(int button_num);
       
     private:
       GUIhelper * itsGUIhelper;
@@ -374,7 +400,7 @@ namespace jevois
   {
     class PreProcessor;
     
-    //! Pre-Processor interface expose to the python side
+    //! Pre-Processor interface exposed to the python side
     /*! This wrapper is passed down to the process() function of a python post-processor, it provides a python-friendly
         interface to b2i(), blobsizes(), etc \ingroup python */
     class PreProcessorForPython
@@ -385,25 +411,62 @@ namespace jevois
         PreProcessorForPython(PreProcessor * pp);
 
         //! Access the last processed image size
-        cv::Size imagesize() const;
+        /*! Returned as a tuple (width, height). */
+        boost::python::tuple imagesize() const;
         
         //! Access the last computed blobs (or empty if process() has not yet been called)
         boost::python::list blobs() const;
 
         //! Access the width and height of a given blob, accounting for NCHW or NHWC
-        cv::Size blobsize(size_t num) const;
+        /*! Returned as a tuple (width, height). */
+        boost::python::tuple blobsize(size_t num) const;
         
         //! Convert coordinates from blob back to original image
         /*! Given coords x,y should be in [0..w-1]x[0..h-1] where w,h are the blob's width and height. This is useful to
-            convert detected boxes back into original input coordinates. */
-        cv::Point2f b2i(float x, float y, size_t blobnum);
+            convert detected boxes back into original input coordinates. Returned as a tuple (x, y). */
+        boost::python::tuple b2i(float x, float y, size_t blobnum);
 
         //! Get unscaled crop rectangle in image coordinates
-        /*! This is useful to display an image overlay on top of the input image. */
-        cv::Rect getUnscaledCropRect(size_t blobnum);
-        
+        /*! This is useful to display an image overlay on top of the input image.
+            Returned as a tuple (x, y, w, h). */
+        boost::python::tuple getUnscaledCropRect(size_t blobnum);
+
+        //! Convert coordinates from image to blob
+        /*! Given coords x,y should be in [0..w-1]x[0..h-1] where w,h are the image's width and height. This is useful
+            to convert mouse coordinates (after they have been converted from screen to image coords) to locations
+            within an input blob. */
+        boost::python::tuple i2b(float  x, float  y, size_t blobnum);
+
       private:
         PreProcessor * itsPP;
+    };
+    
+    class PostProcessorDetectYOLO;
+    
+    //! YOLO post-processor exposed to python
+    /*! A bit hacky since PostProcessorDetectYOLO is a Component that holds parameters. This class will add a
+        PostProcessorDetectYOLO subcomponent to the current module, and then will forward yolo post-processing requests
+        to it. */
+    class PostProcessorDetectYOLOforPython
+    {
+      public:
+        //! Constructor constructs itsYOLO and adds it to current module
+        PostProcessorDetectYOLOforPython();
+
+        //! Destructor removes itsYOLO from current module
+        ~PostProcessorDetectYOLOforPython();
+
+        //! Freeze/unfreeze parameters that users should not change while running
+        void freeze(bool doit);
+
+        //! Generic raw YOLO processing
+        /*! The returned tuple has 3 elements: list of int for classIds, list of float for confidences, and list of
+            4-element tuples of floats for boxes (x, y, w, h). */
+        boost::python::tuple yolo(boost::python::list outs, int nclass, float boxThreshold,
+                                  float confThreshold, int bw, int bh, int fudge, int maxbox);
+
+      private:
+        std::shared_ptr<PostProcessorDetectYOLO> itsYOLO;
     };
     
   } // namespace dnn

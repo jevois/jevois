@@ -96,6 +96,13 @@ namespace jevois
                                "", ParamCateg);
 
       //! Parameter \relates jevois::Network
+      JEVOIS_DECLARE_PARAMETER(extraintensors, std::string, "Specification of extra fixed input tensors that will be "
+                               "added after the regular intensors. Format is: "
+                               "<type>:<shape>:val1 val2 ... valN, <type>:<shape>:val1 ... valN. For example, for "
+                               "URetinex-Net: 32F:1x1x1:3.0",
+                               "", ParamCateg);
+
+      //! Parameter \relates jevois::Network
       JEVOIS_DECLARE_PARAMETER(outtensors, std::string, "Specification of output tensors",
                                "", ParamCateg);
 
@@ -151,7 +158,7 @@ namespace jevois
     /*! Derived classes provide implementation via OpenCV (on CPU, OpenCL, or OpenVino/Myriad-X), Amlogic/Vivante NPU,
         Hailo-8, Python, or Google Coral TPU. \ingroup dnn */
     class Network : public Component,
-                    public Parameter<network::comment, network::url, network::outreshape>
+                    public Parameter<network::comment, network::url, network::outreshape, network::extraintensors>
     {
       public:
         //! Inherited constructor ok
@@ -181,7 +188,9 @@ namespace jevois
         std::vector<cv::Mat> process(std::vector<cv::Mat> const & blobs, std::vector<std::string> & info);
 
         //! Freeze/unfreeze parameters that users should not change while running
-        virtual void freeze(bool doit) = 0;
+        /*! Note: derived classes can freeze their own params by overriding this function, and should remember to still
+            call the base class jevois::dnn::Network::freeze(doit) */
+        virtual void freeze(bool doit);
         
       protected:
         //! Load from disk

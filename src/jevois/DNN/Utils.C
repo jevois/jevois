@@ -168,8 +168,86 @@ std::string jevois::dnn::shapestr(vsi_nn_tensor_attr_t const & attr)
   return ret;
 }
 
-// ##############################################################################################################
 #ifdef JEVOIS_PRO
+// ##############################################################################################################
+std::string jevois::dnn::shapestr(Ort::ConstTensorTypeAndShapeInfo const & ti)
+{
+  std::ostringstream os;
+  std::vector<int64_t> input_node_dims = ti.GetShape();
+  os << input_node_dims.size() << "D ";
+  for (int64_t d : input_node_dims) os << d << 'x';
+  os.seekp(-1, os.cur); // will overwrite last 'x'
+  
+  switch (ti.GetElementType())
+  {
+  case ONNX_TENSOR_ELEMENT_DATA_TYPE_UNDEFINED: os << " UNDEFINED"; break;
+  case ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT: os << " 32F"; break;
+  case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT8: os << " 8U"; break;
+  case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT8: os << " 8S"; break;
+  case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT16: os << " 16U"; break;
+  case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT16: os << " 16S"; break;
+  case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT32: os << " 32S"; break;
+  case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT64: os << " 64S"; break;
+  case ONNX_TENSOR_ELEMENT_DATA_TYPE_STRING: os << " STR"; break;
+  case ONNX_TENSOR_ELEMENT_DATA_TYPE_BOOL: os << " BOOL"; break;
+  case ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16: os << " 16F"; break;
+  case ONNX_TENSOR_ELEMENT_DATA_TYPE_DOUBLE: os << " 64F"; break;
+  case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT32: os << " 32U"; break;
+  case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT64: os << " 64U"; break;
+  case ONNX_TENSOR_ELEMENT_DATA_TYPE_COMPLEX64: os << " 64CPLX"; break;
+  case ONNX_TENSOR_ELEMENT_DATA_TYPE_COMPLEX128: os << " 128CPLX"; break;
+  case ONNX_TENSOR_ELEMENT_DATA_TYPE_BFLOAT16: os << " 16B"; break;
+  default: throw std::range_error("shapestr: Unsupported tensor type " + std::to_string(ti.GetElementType()));
+  }
+
+  return os.str();
+}
+
+// ##############################################################################################################
+vsi_nn_type_e jevois::dnn::onnx2vsi(ONNXTensorElementDataType t)
+{
+  switch (t)
+  {
+  case ONNX_TENSOR_ELEMENT_DATA_TYPE_UNDEFINED: return VSI_NN_TYPE_NONE;
+  case ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT: return VSI_NN_TYPE_FLOAT32;
+  case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT8: return VSI_NN_TYPE_UINT8;
+  case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT8: return VSI_NN_TYPE_INT8;
+  case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT16: return VSI_NN_TYPE_UINT16;
+  case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT16: return VSI_NN_TYPE_INT16;
+  case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT32: return VSI_NN_TYPE_INT32;
+  case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT64: return VSI_NN_TYPE_INT64;
+  case ONNX_TENSOR_ELEMENT_DATA_TYPE_BOOL: return VSI_NN_TYPE_BOOL8;
+  case ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16: return VSI_NN_TYPE_FLOAT16;
+  case ONNX_TENSOR_ELEMENT_DATA_TYPE_DOUBLE: return VSI_NN_TYPE_FLOAT64;
+  case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT32: return VSI_NN_TYPE_UINT32;
+  case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT64: return VSI_NN_TYPE_UINT64;
+  case ONNX_TENSOR_ELEMENT_DATA_TYPE_BFLOAT16: return VSI_NN_TYPE_BFLOAT16;
+    //case ONNX_TENSOR_ELEMENT_DATA_TYPE_STRING: // unsupported by VSI
+    //case ONNX_TENSOR_ELEMENT_DATA_TYPE_COMPLEX64:
+    //case ONNX_TENSOR_ELEMENT_DATA_TYPE_COMPLEX128:
+  default: throw std::range_error("onnx2vsi: Unsupported tensor type " + std::to_string(t));
+  }
+}
+
+// ##############################################################################################################
+vsi_nn_tensor_attr_t jevois::dnn::tensorattr(Ort::ConstTensorTypeAndShapeInfo const & ti)
+{
+  vsi_nn_tensor_attr_t attr; memset(&attr, 0, sizeof(attr));
+  attr.dtype.fmt = VSI_NN_DIM_FMT_AUTO;
+  attr.dtype.vx_type = jevois::dnn::onnx2vsi(ti.GetElementType());
+
+  std::vector<int64_t> const dims = ti.GetShape();
+  size_t const ds = dims.size();
+  attr.dim_num = ds;
+  for (size_t i = 0; i < ds; ++i) attr.size[ds - 1 - i] = dims[i];
+
+  // FIXME: quantization not yet supported
+  attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
+  
+  return attr;
+}
+
+// ##############################################################################################################
 std::string jevois::dnn::shapestr(hailo_vstream_info_t const & vi)
 {
   // FIXME: should optimize but beware that vi.shape may have different interpretations depending on NCHW vs NWCH etc
@@ -213,7 +291,7 @@ int jevois::dnn::tf2cv(TfLiteType t)
   case kTfLiteUInt8: return CV_8U;
   case kTfLiteInt16: return CV_16S;
   case kTfLiteInt8: return CV_8S;
-  case kTfLiteFloat16: return CV_16S;
+  case kTfLiteFloat16: return CV_16F;
   case kTfLiteFloat64: return CV_64F;
     //case kTfLiteComplex128:
     //case kTfLiteComplex64:
@@ -236,7 +314,7 @@ int jevois::dnn::vsi2cv(vsi_nn_type_e t)
   case VSI_NN_TYPE_UINT16: return CV_16U;
   case VSI_NN_TYPE_INT16: return CV_16S;
   case VSI_NN_TYPE_FLOAT16: return CV_16F;
-  case VSI_NN_TYPE_BFLOAT16: return CV_16F; // check
+    //case VSI_NN_TYPE_BFLOAT16: return CV_16F; // check
     //case VSI_NN_TYPE_UINT32: return CV_32U; // unsupported by opencv
   case VSI_NN_TYPE_INT32: return CV_32S;
   case VSI_NN_TYPE_FLOAT32: return CV_32F;
@@ -418,7 +496,7 @@ cv::Size jevois::dnn::attrsize(vsi_nn_tensor_attr_t const & attr)
     return cv::Size(attr.size[0], attr.size[1]);
 
   case VSI_NN_DIM_FMT_AUTO:
-    if (attr.dim_num < 2) throw std::range_error("attrsize: need at least 2D, got " + jevois::dnn::attrstr(attr));
+    if (attr.dim_num < 2) return cv::Size(attr.size[0], 1);
     if (attr.dim_num < 3) return cv::Size(attr.size[0], attr.size[1]);
     // ok, size[] starts with either CWH (when dim index goes 0..2) or WHC, assume C<H
     if (attr.size[0] > attr.size[2]) return cv::Size(attr.size[0], attr.size[1]); // WHCN
@@ -458,7 +536,7 @@ std::string jevois::dnn::attrstr(vsi_nn_tensor_attr_t const & attr)
   case VSI_NN_TYPE_UINT64: ret += "64U:"; break;
   case VSI_NN_TYPE_INT64: ret += "64S:"; break;
   case VSI_NN_TYPE_FLOAT64: ret += "64F:"; break;
-  default: ret += "TYPE_UNKNOWN";
+  default: ret += "TYPE_UNKNOWN:";
   }
 
   // Dims:

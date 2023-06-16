@@ -65,7 +65,7 @@
 namespace
 {
   // Assign a short name to every V4L2 control, for use by getcam and setcam commands
-  struct shortcontrol { int id; char const * const shortname; };
+  struct shortcontrol { unsigned int id; char const * const shortname; };
 
   // All V4L2 controls
   // From this: grep V4L2_CID v4l2-controls.h | awk '{ print "    { " $2 ", \"\" }," }'
@@ -473,8 +473,6 @@ void jevois::Engine::postInit()
   for (auto & s : itsSerials) s->freezeAllParams();
   cameradev::freeze();
   imudev::freeze();
-  camerasens::freeze();
-  jevois::CameraSensor const camsens = camerasens::get();
   cameranbuf::freeze();
   camturbo::freeze();
   gadgetdev::freeze();
@@ -483,6 +481,22 @@ void jevois::Engine::postInit()
   multicam::freeze();
   quietcmd::freeze();
   python::freeze();
+  
+  // On JeVois-Pro platform, we may get the camera sensor automatically from the device tree. Users should still load
+  // the correct overlay in /boot/env.txt to match the installed sensor:
+  jevois::CameraSensor camsens = camerasens::get();
+#ifdef JEVOIS_PLATFORM_PRO
+  if (camsens == jevois::CameraSensor::any)
+  {
+    std::string str = jevois::getFileString("/proc/device-tree/sensor/sensor-name"); // that name has trailing garbage
+    size_t idx = 0; while (idx < str.length() && std::isalnum(str[idx])) ++idx;
+    str = str.substr(0, idx);
+    camerasens::strset(str);
+    camsens = camerasens::get();
+    LINFO("Camera sensor selected from device tree: " << camsens);
+  }
+#endif
+  camerasens::freeze();
   
   // Check iw we want to use GUI mode:
   bool usegui = false;
@@ -1352,7 +1366,7 @@ void jevois::Engine::foreachCamCtrl(std::function<void(struct v4l2_queryctrl & q
 }
 
 // ####################################################################################################
-std::string jevois::Engine::camctrlname(int id, char const * longname) const
+std::string jevois::Engine::camctrlname(unsigned int id, char const * longname) const
 {
   for (size_t i = 0; i < sizeof camcontrols / sizeof camcontrols[0]; ++i)
     if (camcontrols[i].id == id) return camcontrols[i].shortname;
@@ -1362,7 +1376,7 @@ std::string jevois::Engine::camctrlname(int id, char const * longname) const
 }
 
 // ####################################################################################################
-int jevois::Engine::camctrlid(std::string const & shortname)
+unsigned int jevois::Engine::camctrlid(std::string const & shortname)
 {
   for (size_t i = 0; i < sizeof camcontrols / sizeof camcontrols[0]; ++i)
     if (shortname.compare(camcontrols[i].shortname) == 0) return camcontrols[i].id;
@@ -1393,7 +1407,7 @@ int jevois::Engine::camctrlid(std::string const & shortname)
       else if (failed) break;
     }
   }
-
+  
   LFATAL("Could not find control [" << shortname << "] in the camera");
 }
 

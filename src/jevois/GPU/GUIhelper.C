@@ -87,6 +87,8 @@ jevois::GUIhelper::GUIhelper(std::string const & instance, bool conslock) :
        "JeVois tpu.yml DNN Zoo for Coral TPU models", EditorSaveAction::Reload },
      { JEVOIS_ROOT_PATH "/share/dnn/vpu.yml",
        "JeVois vpu.yml DNN Zoo for Myriad-X VPU models", EditorSaveAction::Reload },
+     { JEVOIS_ROOT_PATH "/share/dnn/ort.yml",
+       "JeVois ort.yml DNN Zoo for ONNX-Runtime CPU models", EditorSaveAction::Reload },
     };
 
   // Create the config editor:
@@ -157,6 +159,9 @@ void jevois::GUIhelper::reset(bool modulechanged)
 
   // Set the style (on first call):
   style::set(style::get());
+
+  // Refresh whether we have a USB serial gadget loaded:
+  itsUSBserial = ! engine()->getParamStringUnique("engine:usbserialdev").empty();
 }
 
 // ##############################################################################################################
@@ -380,7 +385,6 @@ ImVec2 jevois::GUIhelper::i2d(ImVec2 p, char const * name)
   {
     if (itsLastDrawnImage == nullptr) throw std::range_error("You need to call drawImage() or drawInputFrame() first");
     img = itsLastDrawnImage;
-    if (itsUsingScaledImage) { p.x *= itsScaledImageFacX; p.y *= itsScaledImageFacY; }
   }
   else
   {
@@ -395,6 +399,9 @@ ImVec2 jevois::GUIhelper::i2d(ImVec2 p, char const * name)
     }
     img = & itr->second;
   }
+
+  // Adjust size if using scaled image:
+  if (itsUsingScaledImage) { p.x *= itsScaledImageFacX; p.y *= itsScaledImageFacY; }
 
   // Delegate:
   return img->i2d(p);
@@ -414,7 +421,6 @@ ImVec2 jevois::GUIhelper::i2ds(ImVec2 p, char const * name)
   {
     if (itsLastDrawnImage == nullptr) throw std::range_error("You need to call drawImage() or drawInputFrame() first");
     img = itsLastDrawnImage;
-    if (itsUsingScaledImage) { p.x *= itsScaledImageFacX; p.y *= itsScaledImageFacY; }
   }
   else
   {
@@ -429,6 +435,9 @@ ImVec2 jevois::GUIhelper::i2ds(ImVec2 p, char const * name)
     }
     img = & itr->second;
   }
+
+  // Adjust size if using scaled image:
+  if (itsUsingScaledImage) { p.x *= itsScaledImageFacX; p.y *= itsScaledImageFacY; }
 
   // Delegate:
   return img->i2ds(p);
@@ -1295,7 +1304,7 @@ void jevois::GUIhelper::drawParameters()
 void jevois::GUIhelper::drawConsole()
 {
   jevois::Engine * e = engine();
-    
+
   // Start with toggle buttons for serlog and serout:
   bool slusb = false, slhard = false, schanged = false;
   auto sl = e->getParamValUnique<jevois::engine::SerPort>("engine:serlog");
@@ -1307,8 +1316,24 @@ void jevois::GUIhelper::drawConsole()
   case jevois::engine::SerPort::USB: slusb = true; slhard = false; break;
   }
   ImGui::AlignTextToFramePadding();
-  ImGui::Text("Log messages:");
-  ImGui::SameLine(); if (toggleButton("USB##serlogu", &slusb)) schanged = true;
+  ImGui::Text("Log messages:"); ImGui::SameLine();
+  if (itsUSBserial == false) // grey out USB button if no driver
+  {
+    ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+    ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+    if (toggleButton("USB##serlogu", &slusb)) schanged = true;
+    ImGui::PopItemFlag();
+    ImGui::PopStyleVar();
+#ifdef JEVOIS_PLATFORM
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+    { ImGui::BeginTooltip(); ImGui::Text("Disabled - enable USB serial in the System tab"); ImGui::EndTooltip(); }
+#else
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+    { ImGui::BeginTooltip(); ImGui::Text("Disabled - not available on host"); ImGui::EndTooltip(); }
+#endif
+  }
+  else if (toggleButton("USB##serlogu", &slusb)) schanged = true;
+  
   ImGui::SameLine(); if (toggleButton("Hard##serlogh", &slhard)) schanged = true;
   ImGui::SameLine(); toggleButton("Cons##serlogc", &itsSerLogEnabled);
   ImGui::SameLine(0, 50);
@@ -1322,8 +1347,23 @@ void jevois::GUIhelper::drawConsole()
   case jevois::engine::SerPort::Hard: sousb = false; sohard = true; break;
   case jevois::engine::SerPort::USB: sousb = true; sohard = false; break;
   }
-  ImGui::Text("Module output:");
-  ImGui::SameLine(); if (toggleButton("USB##seroutu", &sousb)) schanged = true;
+  ImGui::Text("Module output:"); ImGui::SameLine();
+  if (itsUSBserial == false) // grey out USB button if no driver
+  {
+    ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+    ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+    if (toggleButton("USB##seroutu", &sousb)) schanged = true;
+    ImGui::PopItemFlag();
+    ImGui::PopStyleVar();
+#ifdef JEVOIS_PLATFORM
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+    { ImGui::BeginTooltip(); ImGui::Text("Disabled - enable USB serial in the System tab"); ImGui::EndTooltip(); }
+#else
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+    { ImGui::BeginTooltip(); ImGui::Text("Disabled - not available on host"); ImGui::EndTooltip(); }
+#endif
+  }
+  else if (toggleButton("USB##seroutu", &sousb)) schanged = true;
   ImGui::SameLine(); if (toggleButton("Hard##serouth", &sohard)) schanged = true;
   ImGui::SameLine(); toggleButton("Cons##seroutc", &itsSerOutEnabled);
 
@@ -1613,7 +1653,21 @@ void jevois::GUIhelper::drawSystem()
     jevois::system("sync");
   }
   ImGui::Separator();
-#endif  
+
+  // #################### gadget serial:
+  static bool gserial = false;
+  try { gserial = (0 != std::stoi(jevois::getFileString(JEVOISPRO_GSERIAL_FILE))); } catch (...) { }
+  if (ImGui::Checkbox("Enable serial outputs/logs over mini-USB (on next reboot)", &gserial))
+  {
+    std::ofstream ofs(JEVOISPRO_GSERIAL_FILE);
+    ofs << (gserial ? 1 : 0) << std::endl;
+    ofs.close();
+    jevois::system("sync");
+  }
+  ImGui::Separator();
+
+#endif
+
 }
 
 // ##############################################################################################################
@@ -2060,7 +2114,13 @@ void jevois::GUIhelper::reportError(std::string const & err)
   for (auto & e : itsErrors) if (e.err == err) { e.lasttime = now; return; }
 
   // Too many errors already?
-  if (itsErrors.size() > 10) { LERROR("Too many errors -- TRUNCATING"); return; }
+  if (itsErrors.size() > 10) return;
+  else if (itsErrors.size() == 10)
+  {
+    ErrorData d { "Too many errors -- TRUNCATING", now, now };
+    itsErrors.emplace(itsErrors.end(), std::move(d));
+    return;
+  }
   
   // It's a new error, push a new entry into our list:
   ErrorData d { err, now, now };

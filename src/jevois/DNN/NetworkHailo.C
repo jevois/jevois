@@ -73,6 +73,7 @@ void jevois::dnn::NetworkHailo::freeze(bool doit)
 {
   dataroot::freeze(doit);
   model::freeze(doit);
+  jevois::dnn::Network::freeze(doit); // base class parameters
 }
 
 // ####################################################################################################
@@ -186,10 +187,10 @@ std::vector<cv::Mat> jevois::dnn::NetworkHailo::doprocess(std::vector<cv::Mat> c
     {
       auto const & attr = itsOutAttrs[i];
       uint8_t * tensor_data = (uint8_t *)itsRawOutMats[i].data;
-      size_t const sz = itsRawOutMats[i].total();
+      size_t const sz = itsRawOutMats[i].total() * itsRawOutMats[i].elemSize();
       
       auto status = itsOutStreams[i].read(hailort::MemoryView(tensor_data, sz));
-      if (status != HAILO_SUCCESS) LFATAL("Failed collecting output " << i << " from device: " << status);
+      if (status != HAILO_SUCCESS) LFATAL("Failed to collect output " << i << " from device: " << status);
 
       if (dq)
       {
@@ -213,7 +214,7 @@ std::vector<cv::Mat> jevois::dnn::NetworkHailo::doprocess(std::vector<cv::Mat> c
       
       // Copy blob data to device:
       auto status = itsInStreams[b].write(hailort::MemoryView(blob.data, sz));
-      if (status != HAILO_SUCCESS) LFATAL("Failed writing input " << b << " data to device: " << status);
+      if (status != HAILO_SUCCESS) LFATAL("Failed to write input " << b << " data to device: " << status);
 
       return "- In " + std::to_string(b) + ": " + jevois::dnn::attrstr(itsInAttrs[b]);
     }, b);

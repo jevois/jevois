@@ -7,8 +7,17 @@ cd /root
 #
 #ulimit -c unlimited
 
+extra=""
+
+# Check whether we want to enable g_serial:
+gserial=`cat /.jevoispro_use_gserial 2>/dev/null`
+if [ "X${gserial}" = "X1" ] ; then
+    modprobe g_serial
+    extra="${extra} --usbserialdev=/dev/ttyGS0"
+fi
+
 # Launch jevois software:
-/usr/bin/jevoispro-daemon $@
+/usr/bin/jevoispro-daemon ${extra} $@
 rc=$?
 
 # Restore the console, which was disabled by jevois:

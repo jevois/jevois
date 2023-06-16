@@ -38,11 +38,16 @@ namespace jevois
     extern char const * frag_grey; // To display a greyscale image
     extern char const * frag_yuyv; // To display a YUYV image
     extern char const * frag_oes;  // To display a DMABUF camera image
+    extern char const * frag_rgba_twirl; // To display an RGBA image with a twirl effect
+    extern char const * frag_rgb_twirl;  // To display an RGB image with a twirl effect
+    extern char const * frag_grey_twirl; // To display a greyscale image with a twirl effect
+    extern char const * frag_yuyv_twirl; // To display a YUYV image with a twirl effect
+    extern char const * frag_oes_twirl;  // To display a DMABUF camera image with a twirl effect
   }
 }
 
 // ##############################################################################################################
-jevois::GPUimage::GPUimage()
+jevois::GPUimage::GPUimage(bool enable_twirl) : itsTwirl(enable_twirl)
 { }
 
 // ##############################################################################################################
@@ -56,14 +61,6 @@ jevois::GPUimage::~GPUimage()
 void jevois::GPUimage::setInternal(unsigned int width, unsigned int height, unsigned int fmt,
                                    unsigned char const * data)
 {
-
-
-
-  // on platform, try EGLcreateImageKHR with EGL_NATIVE_PIXMAP_KHR and fbdev_pixmap
-  // https://www.khronos.org/registry/EGL/extensions/KHR/EGL_KHR_image_pixmap.txt
-  // https://github.com/peak3d/egltest/blob/master/egl_ump.cpp
-
-  
   if (width == 0 || height == 0) LFATAL("Cannot handle zero image width or height");
 
   // If image format has changed, load the appropriate program:
@@ -73,19 +70,27 @@ void jevois::GPUimage::setInternal(unsigned int width, unsigned int height, unsi
     switch (fmt)
     {
     case V4L2_PIX_FMT_YUYV: // YUYV shader gets YUYV (2 pixels) from one RGBA texture value (1 texel)
-      frag_shader = jevois::shader::frag_yuyv; itsGLtextureWidth = width / 2; itsGLtextureFmt = GL_RGBA;
+      if (itsTwirl) frag_shader = jevois::shader::frag_yuyv_twirl;
+      else frag_shader = jevois::shader::frag_yuyv;
+      itsGLtextureWidth = width / 2; itsGLtextureFmt = GL_RGBA;
       break;
 
     case V4L2_PIX_FMT_RGB32: // RGBA shader is simple pass-through
-      frag_shader = jevois::shader::frag_rgba; itsGLtextureWidth = width; itsGLtextureFmt = GL_RGBA;
+      if (itsTwirl) frag_shader = jevois::shader::frag_rgba_twirl;
+      else frag_shader = jevois::shader::frag_rgba;
+      itsGLtextureWidth = width; itsGLtextureFmt = GL_RGBA;
       break;
 
     case V4L2_PIX_FMT_GREY: // GRAY shader just converts from greyscale to RGBA
-      frag_shader = jevois::shader::frag_grey; itsGLtextureWidth = width; itsGLtextureFmt = GL_LUMINANCE;
+      if (itsTwirl) frag_shader = jevois::shader::frag_grey_twirl;
+      else frag_shader = jevois::shader::frag_grey;
+      itsGLtextureWidth = width; itsGLtextureFmt = GL_LUMINANCE;
       break;
 
     case V4L2_PIX_FMT_RGB24: // RGB shader gets R,G,B from 3 successive texels in a 3x wide luminance texture
-      frag_shader = jevois::shader::frag_rgb; itsGLtextureWidth = width * 3; itsGLtextureFmt = GL_LUMINANCE;
+      if (itsTwirl) frag_shader = jevois::shader::frag_rgb_twirl;
+      else frag_shader = jevois::shader::frag_rgb;
+      itsGLtextureWidth = width * 3; itsGLtextureFmt = GL_LUMINANCE;
       break;
 
     case V4L2_PIX_FMT_BGR24:
@@ -94,6 +99,7 @@ void jevois::GPUimage::setInternal(unsigned int width, unsigned int height, unsi
     case V4L2_PIX_FMT_MJPEG:
     case V4L2_PIX_FMT_UYVY:
     case V4L2_PIX_FMT_SBGGR16:
+    case V4L2_PIX_FMT_SGRBG16:
     case V4L2_PIX_FMT_NV12:
     case V4L2_PIX_FMT_YUV444:
     case 0:
@@ -157,7 +163,7 @@ void jevois::GPUimage::set(jevois::InputFrame const & frame, EGLDisplay display)
 
   // EGLimageKHR which we use with DMAbuf requires width to be a multiple of 32; otherwise revert to normal texture:
   if (img.width % 32) { set(img); return; }
-  
+
   // DMAbuf only supports some formats, otherwise revert to normal texture. Keep in sync with GPUtextureDmaBuf:
   switch (img.fmt)
   {
@@ -221,7 +227,8 @@ void jevois::GPUimage::setWithDmaBuf(jevois::RawImage const & img, int dmafd, EG
     itsTextureWidth = img.width; itsTextureHeight = img.height;
 
     // Load the appropriate program:
-    itsProgram.reset(new GPUprogram(jevois::shader::vert, jevois::shader::frag_oes));
+    if (itsTwirl) itsProgram.reset(new GPUprogram(jevois::shader::vert, jevois::shader::frag_oes_twirl));
+    else itsProgram.reset(new GPUprogram(jevois::shader::vert, jevois::shader::frag_oes));
     
 	// Get a handle to s_texture variable in the fragment shader, to update the texture with each new camera frame:
     itsLocation = glGetUniformLocation(itsProgram->id(), "s_texture");
@@ -361,6 +368,8 @@ void jevois::GPUimage::draw(int & x, int & y, unsigned short & w, unsigned short
   glUniform2f(glGetUniformLocation(itsProgram->id(), "tdim"), GLfloat(itsTextureWidth), GLfloat(itsTextureHeight));
   glUniformMatrix4fv(glGetUniformLocation(itsProgram->id(), "pvm"), 1, GL_FALSE, glm::value_ptr(pvm));
 
+  if (itsTwirl) glUniform1f(glGetUniformLocation(itsProgram->id(), "twirlamount"), itsTwirlAmount);
+
   // Draw the two triangles from 6 indices to form a rectangle from the data in the vertex array.
   // The fourth parameter, indices value here is passed as null since the values are already
   // available in the GPU memory through the vertex array
@@ -397,6 +406,13 @@ ImVec2 jevois::GPUimage::d2is(ImVec2 const & p)
 {
   if (itsDrawWidth == 0) throw std::runtime_error("Need to call set() then draw() first");
   return ImVec2(p.x * itsTextureWidth / itsDrawWidth, p.y * itsTextureHeight / itsDrawHeight);
+}
+
+// ##############################################################################################################
+void jevois::GPUimage::setTwirl(float t)
+{
+  if (itsTwirl == false) LERROR("Need to construct GPU image with twirl enabled to use twirl -- IGNORED");
+  itsTwirlAmount = t;
 }
 
 #endif // JEVOIS_PRO

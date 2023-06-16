@@ -32,11 +32,11 @@ set(JEVOIS_SOVERSION "${JEVOIS_VERSION_MAJOR}.${JEVOIS_VERSION_MINOR}.${JEVOIS_V
 ########################################################################################################################
 # OpenCV version to use with JeVois:
 set(JEVOIS_OPENCV_MAJOR 4)
-set(JEVOIS_OPENCV_MINOR 6)
+set(JEVOIS_OPENCV_MINOR 7)
 set(JEVOIS_OPENCV_PATCH 0)
 set(JEVOIS_OPENCV_VERSION "${JEVOIS_OPENCV_MAJOR}.${JEVOIS_OPENCV_MINOR}.${JEVOIS_OPENCV_PATCH}")
 
-set(JEVOIS_OPENVINO_VERSION "2022.1")
+set(JEVOIS_OPENVINO_VERSION "2022.3")
 
 message(STATUS "JeVois OpenCV: ${JEVOIS_OPENCV_VERSION}")
 message(STATUS "JeVois OpenVino: ${JEVOIS_OPENVINO_VERSION}")
@@ -240,6 +240,18 @@ if (JEVOIS_PRO)
 endif ()
 
 ########################################################################################################################
+# ONNX runtime includes and libs
+if (JEVOIS_PRO)
+  target_link_libraries(${JEVOIS} onnxruntime)
+
+  if (JEVOIS_PLATFORM)
+    include_directories(${JEVOIS_BUILD_BASE}/usr/include/onnxruntime)
+  else ()
+    include_directories(/usr/include/onnxruntime)
+  endif ()
+endif ()
+
+########################################################################################################################
 # Coral edge TPU libraries and associated TensorFlow. We install libtensorflowlite.so later as part of our package:
 include_directories(Contrib/tensorflow)
 include_directories(Contrib/tensorflow/tensorflow/lite/tools/make/downloads/flatbuffers/include)
@@ -394,13 +406,9 @@ install(DIRECTORY "share-${JEVOIS}/"
 if (JEVOIS_PRO)
 
   if (JEVOIS_PLATFORM)
-    install(FILES
-      ${JEVOIS_BUILD_BASE}/usr/lib/libtensorflowlite.so
-      DESTINATION "lib" COMPONENT bin)
+    install(FILES ${JEVOIS_BUILD_BASE}/usr/lib/libtensorflowlite.so DESTINATION lib COMPONENT bin)
   else (JEVOIS_PLATFORM)
-    install(FILES
-      /usr/lib/libtensorflowlite.so
-      DESTINATION "/usr/lib" COMPONENT bin)
+    install(FILES /usr/lib/libtensorflowlite.so DESTINATION "/usr/lib" COMPONENT bin)
   endif (JEVOIS_PLATFORM)
 
 else (JEVOIS_PRO)
@@ -418,22 +426,36 @@ endif (JEVOIS_PRO)
 file(GLOB JEVOIS_DETECT_LIB_FILES "Contrib/npu/detect_library/source_code/include/*.h")
 install(FILES ${JEVOIS_DETECT_LIB_FILES} DESTINATION "${JEVOIS_MODULES_ROOT}/include" COMPONENT bin)
 
-install(DIRECTORY "Contrib/npu/include/ovxlib" DESTINATION "include" COMPONENT bin)
+install(DIRECTORY "Contrib/npu/include/ovxlib" DESTINATION include COMPONENT bin)
 
 if (JEVOIS_PRO)
   if (JEVOIS_PLATFORM)
   else ()
     # Install it for jevoispro-host:
-    install(DIRECTORY "Contrib/npu/include/VX" DESTINATION "include" COMPONENT bin)
-    install(DIRECTORY "Contrib/npu/include/CL" DESTINATION "include" COMPONENT bin)
+    install(DIRECTORY "Contrib/npu/include/VX" DESTINATION include COMPONENT bin)
+    install(DIRECTORY "Contrib/npu/include/CL" DESTINATION include COMPONENT bin)
     file(GLOB JEVOIS_VX_HOST_LIBS "Contrib/npu/x86_64_linux/lib/lib*")
     install(FILES ${JEVOIS_VX_HOST_LIBS} DESTINATION "/usr/lib" COMPONENT bin)
   endif ()
 else()
   # and also for jevois-host and jevois-platform:
-  install(DIRECTORY "Contrib/npu/include/VX" DESTINATION "include" COMPONENT bin)
-  install(DIRECTORY "Contrib/npu/include/CL" DESTINATION "include" COMPONENT bin)
+  install(DIRECTORY "Contrib/npu/include/VX" DESTINATION include COMPONENT bin)
+  install(DIRECTORY "Contrib/npu/include/CL" DESTINATION include COMPONENT bin)
 endif ()
+
+# Install onnxruntime for jevois-pro, it is downloaded by Contrib/reinstall.sh:
+if (JEVOIS_PRO)
+  if (JEVOIS_PLATFORM)
+    install(DIRECTORY "Contrib/onnxruntime/aarch64/include/onnxruntime" DESTINATION include COMPONENT bin)
+    file(GLOB JEVOIS_ORT_PLATFORM_LIBS "Contrib/onnxruntime/aarch64/lib/lib*")
+    install(FILES ${JEVOIS_ORT_PLATFORM_LIBS} DESTINATION lib COMPONENT bin)
+  else ()
+    install(DIRECTORY "Contrib/onnxruntime/x64/include/onnxruntime" DESTINATION include COMPONENT bin)
+    file(GLOB JEVOIS_ORT_HOST_LIBS "Contrib/onnxruntime/x64/lib/lib*")
+    install(FILES ${JEVOIS_ORT_HOST_LIBS} DESTINATION "/usr/lib" COMPONENT bin)
+  endif ()
+endif ()
+
 
 ########################################################################################################################
 # Debian packaging:
@@ -460,14 +482,18 @@ libv4l-dev, libtbb2, libtbb-dev, libfaac-dev, libmp3lame-dev, libopencore-amrnb-
 libopencore-amrwb-dev, libtheora-dev, libvorbis-dev, libxvidcore-dev, x264, v4l-utils, unzip, qt5-default, \
 libgtk-3-dev, libatlas-base-dev, libturbojpeg, libtbb2, libsdl2-dev, \
 python${JEVOIS_HOST_PYTHON_MAJOR}.${JEVOIS_HOST_PYTHON_MINOR}-dev, python${JEVOIS_HOST_PYTHON_MAJOR}-numpy, \
-python${JEVOIS_HOST_PYTHON_MAJOR}-pip, ${JEVOIS}-opencv (>=${JEVOIS_OPENCV_VERSION}), libglm-dev")
-
+python${JEVOIS_HOST_PYTHON_MAJOR}-pip, python${JEVOIS_HOST_PYTHON_MAJOR}-pil, \
+${JEVOIS}-opencv (>=${JEVOIS_OPENCV_VERSION}), libglm-dev")
+                                                                                  
 # Add cross-compiler dependencies on jevois-pro-host; on jevois-a33 it is provided by buildroot:
 if (JEVOIS_PRO)
 
   # Add a few more depends needed by jevois pro host and platform:
-  set(JVPRODEPS "${JEVOIS}-openvino, libedgetpu-dev, libedgetpu1-std, python3-pil, python3-tflite-runtime, \
-                 python3-pycoral,")
+  set(JVPRODEPS "${JEVOIS}-openvino, libedgetpu-dev, libedgetpu1-std, python3-tflite-runtime, \
+                 python3-pycoral, ca-certificates, zlib1g, zlib1g-dev, libssl-dev, curl, libcurl4-openssl-dev, \
+                 liblttng-ust0, libcurl4, libssl1.1, libkrb5-3, libtinfo-dev, libtinfo5, libtool, openssh-server, \
+                 aria2, bzip2, unzip, zip, rsync, libunwind8, libpng-dev, libexpat1-dev,")
+  #openjdk-11-jdk,
   set(CPACK_DEBIAN_PACKAGE_DEPENDS "${JVPRODEPS} ${CPACK_DEBIAN_PACKAGE_DEPENDS}")
 
   if (JEVOIS_PLATFORM)

@@ -145,6 +145,55 @@ if [ "X$REPLY" = "Xy" ]; then
     fi
 
     cd ..
+
+    ###################################################################################################
+    # ONNX Runtime for C++: need to download tarballs from github
+    # In our CMakeLists.txt we include the onnxruntime includes and libs into the jevois deb
+    ORT_VER="1.15.0"
+
+    # For host:
+    wget https://github.com/microsoft/onnxruntime/releases/download/v1.15.0/onnxruntime-linux-x64-${ORT_VER}.tgz
+    tar xvf onnxruntime-linux-x64-${ORT_VER}.tgz
+    /bin/rm onnxruntime-linux-x64-${ORT_VER}.tgz
+
+    # Make a local copy that will be included into our jevois deb:
+    mkdir -p onnxruntime/x64/include/onnxruntime onnxruntime/x64/lib
+    /bin/cp -a onnxruntime-linux-x64-${ORT_VER}/include/* onnxruntime/x64/include/onnxruntime/
+    /bin/cp -a onnxruntime-linux-x64-${ORT_VER}/lib/* onnxruntime/x64/lib/
+
+    # Also install it so we can compile immediately (before installing the jevois deb):
+    sudo mkdir -p /usr/include/onnxruntime
+    sudo /bin/cp -a onnxruntime-linux-x64-${ORT_VER}/include/* /usr/include/onnxruntime/
+    sudo /bin/cp -a onnxruntime-linux-x64-${ORT_VER}/lib/* /usr/lib/
+
+    /bin/rm -rf onnxruntime-linux-x64-${ORT_VER}
+    
+    # For jevois-pro platform:
+    wget https://github.com/microsoft/onnxruntime/releases/download/v1.15.0/onnxruntime-linux-aarch64-${ORT_VER}.tgz
+    tar xvf onnxruntime-linux-aarch64-${ORT_VER}.tgz
+    /bin/rm onnxruntime-linux-aarch64-${ORT_VER}.tgz
+    
+    # Make a local copy that will be included into our jevois deb:
+    mkdir -p onnxruntime/aarch64/include/onnxruntime onnxruntime/aarch64/lib
+    /bin/cp -a onnxruntime-linux-aarch64-${ORT_VER}/include/* onnxruntime/aarch64/include/onnxruntime/
+    /bin/cp -a onnxruntime-linux-aarch64-${ORT_VER}/lib/* onnxruntime/aarch64/lib/
+
+    # Also install it so we can compile immediately (before installing the jevois deb):
+    if [ -d "${JEVOISPRO_BUILD_BASE}" ]; then
+        # First install into the jevoispro sysroot, for cross-compiling code that uses the library:
+        sudo mkdir -p ${JEVOISPRO_BUILD_BASE}/usr/include/onnxruntime
+        sudo /bin/cp -a onnxruntime-linux-aarch64-${ORT_VER}/include/* ${JEVOISPRO_BUILD_BASE}/usr/include/onnxruntime/
+        sudo /bin/cp -a onnxruntime-linux-aarch64-${ORT_VER}/lib/* ${JEVOISPRO_BUILD_BASE}/usr/lib/
+
+        # Then install into jevoispro-microsd for execution on the platform:
+        sudo mkdir -p /var/lib/jevoispro-microsd/usr/include/onnxruntime
+        sudo /bin/cp -a onnxruntime-linux-aarch64-${ORT_VER}/include/* /var/lib/jevoispro-microsd/usr/include/onnxruntime/
+        sudo /bin/cp -a onnxruntime-linux-aarch64-${ORT_VER}/lib/* /var/lib/jevoispro-microsd/lib/
+    fi
+    
+    /bin/rm -rf onnxruntime-linux-aarch64-${ORT_VER}
+
+
     
     # pycoral build
     #cd pycoral

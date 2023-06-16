@@ -108,6 +108,9 @@
 //! Sysfs location to change the exported partition or file over USB using Engine command 'usbsd"
 #define JEVOIS_USBSD_SYS "/sys/devices/platform/sunxi_usb_udc/gadget/lun0/file"
 
+//! Flag file for whether to enable g_serial at boot on jevoispro
+#define JEVOISPRO_GSERIAL_FILE "/.jevoispro_use_gserial"
+
 //! Installed location of OpenCV compiled for JeVois, needed for Python to find cv2 module:
 #ifdef JEVOIS_PLATFORM_A33
 #define JEVOIS_OPENCV_PREFIX "@JEVOIS_PLATFORM_OPENCV_PREFIX@"

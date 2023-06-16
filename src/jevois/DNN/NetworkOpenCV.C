@@ -32,6 +32,7 @@ void jevois::dnn::NetworkOpenCV::freeze(bool doit)
   target::freeze(doit);
   intensors::freeze(doit);
   outtensors::freeze(doit);
+  jevois::dnn::Network::freeze(doit); // base class parameters
 }
 
 // ####################################################################################################

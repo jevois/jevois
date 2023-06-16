@@ -18,9 +18,11 @@
 #include <jevois/Core/PythonModule.H>
 #include <jevois/Core/PythonSupport.H>
 #include <jevois/Core/UserInterface.H>
+#include <jevois/Core/Engine.H>
 #include <jevois/Debug/PythonException.H>
 #include <jevois/DNN/Utils.H>
 #include <jevois/DNN/PreProcessorPython.H>
+#include <jevois/DNN/PostProcessorDetectYOLO.H>
 
 // ####################################################################################################
 // ####################################################################################################
@@ -325,6 +327,30 @@ boost::python::tuple jevois::GUIhelperPython::drawImage1(char const * name, cv::
 }
 
 // ####################################################################################################
+boost::python::tuple jevois::GUIhelperPython::drawImage2(char const * name, RawImage const & img,
+                                                        int x, int y, int w, int h, bool noalias, bool isoverlay)
+{
+  if (itsGUIhelper == nullptr) LFATAL("Internal error");
+  if (w < 0) LFATAL("w must be positive");
+  if (h < 0) LFATAL("h must be positive");
+  unsigned short ww = (unsigned short)(w); unsigned short hh = (unsigned short)(h);
+  itsGUIhelper->drawImage(name, img, x, y, ww, hh, noalias, isoverlay);
+  return boost::python::make_tuple(x, y, w, h);
+}
+
+// ####################################################################################################
+boost::python::tuple jevois::GUIhelperPython::drawImage3(char const * name, cv::Mat const & img, bool rgb,
+                                                         int x, int y, int w, int h, bool noalias, bool isoverlay)
+{
+  if (itsGUIhelper == nullptr) LFATAL("Internal error");
+  if (w < 0) LFATAL("w must be positive");
+  if (h < 0) LFATAL("h must be positive");
+  unsigned short ww = (unsigned short)(w); unsigned short hh = (unsigned short)(h);
+  itsGUIhelper->drawImage(name, img, rgb, x, y, ww, hh, noalias, isoverlay);
+  return boost::python::make_tuple(x, y, w, h);
+}
+
+// ####################################################################################################
 boost::python::tuple jevois::GUIhelperPython::drawInputFrame(char const * name, InputFramePython const & frame,
                                                              bool noalias, bool casync)
 {
@@ -530,6 +556,30 @@ void jevois::GUIhelperPython::reportAndRethrowException(std::string const & pref
   itsGUIhelper->reportAndRethrowException(prefix);
 }
 
+// ####################################################################################################
+ImVec2 jevois::GUIhelperPython::getMousePos()
+{ return ImGui::GetMousePos(); }
+
+// ####################################################################################################
+bool jevois::GUIhelperPython::isMouseClicked(int button_num)
+{ return ImGui::IsMouseClicked(button_num); }
+
+// ####################################################################################################
+bool jevois::GUIhelperPython::isMouseDoubleClicked(int button_num)
+{ return ImGui::IsMouseDoubleClicked(button_num); }
+
+// ####################################################################################################
+bool jevois::GUIhelperPython::isMouseDragging(int button_num)
+{ return ImGui::IsMouseDragging(button_num); }
+
+// ####################################################################################################
+bool jevois::GUIhelperPython::isMouseDown(int button_num)
+{ return ImGui::IsMouseDown(button_num); }
+
+// ####################################################################################################
+bool jevois::GUIhelperPython::isMouseReleased(int button_num)
+{ return ImGui::IsMouseReleased(button_num); }
+
 #endif // JEVOIS_PRO
 
 // ####################################################################################################
@@ -617,19 +667,87 @@ void jevois::PythonModule::supportedCommands(std::ostream & os)
 jevois::dnn::PreProcessorForPython::PreProcessorForPython(PreProcessor * pp) : itsPP(pp)
 { }
 
-cv::Size jevois::dnn::PreProcessorForPython::imagesize() const
-{ return itsPP->imagesize(); }
+boost::python::tuple jevois::dnn::PreProcessorForPython::imagesize() const
+{
+  cv::Size const s = itsPP->imagesize();
+  return boost::python::make_tuple(s.width, s.height);
+}
 
 boost::python::list jevois::dnn::PreProcessorForPython::blobs() const
-{ return jevois::python::pyVecToList(itsPP->blobs()); }
+{
+  return jevois::python::pyVecToList(itsPP->blobs());
+}
 
-cv::Size jevois::dnn::PreProcessorForPython::blobsize(size_t num) const
-{ return itsPP->blobsize(num); }
+boost::python::tuple jevois::dnn::PreProcessorForPython::blobsize(size_t num) const
+{
+  cv::Size s = itsPP->blobsize(num);
+  return boost::python::make_tuple(s.width, s.height);
+}
         
-cv::Point2f jevois::dnn::PreProcessorForPython::b2i(float x, float y, size_t blobnum)
-{ cv::Point2f p(x, y); itsPP->b2i(p.x, p.y, blobnum); return p; }
+boost::python::tuple jevois::dnn::PreProcessorForPython::b2i(float x, float y, size_t blobnum)
+{
+  float px = x, py = y;
+  itsPP->b2i(px, py, blobnum);
+  return boost::python::make_tuple(px, py);
+}
 
-cv::Rect jevois::dnn::PreProcessorForPython::getUnscaledCropRect(size_t blobnum)
-{ return itsPP->getUnscaledCropRect(blobnum); }
+boost::python::tuple jevois::dnn::PreProcessorForPython::getUnscaledCropRect(size_t blobnum)
+{
+  cv::Rect const r = itsPP->getUnscaledCropRect(blobnum);
+  return boost::python::make_tuple(r.x, r.y, r.width, r.height);
+}
+
+boost::python::tuple jevois::dnn::PreProcessorForPython::i2b(float x, float y, size_t blobnum)
+{
+  float px = x, py = y;
+  itsPP->i2b(px, py, blobnum);
+  return boost::python::make_tuple(px, py);
+}
 
 
+// ####################################################################################################
+// ####################################################################################################
+// ####################################################################################################
+jevois::dnn::PostProcessorDetectYOLOforPython::PostProcessorDetectYOLOforPython()
+{
+  // We need to add our sub under an existing "pypost" sub of our module. The hierarchy typically is:
+  // DNN->pipeline->postproc->pypost
+  std::shared_ptr<Module> m = jevois::python::engine()->module();
+  if (!m) LFATAL("Cannot instantiate without a current running module");
+  std::shared_ptr<Component> pi = m->getSubComponent("pipeline");
+  if (!pi) LFATAL("Cannot instantiate without a current DNN pipeline");
+  std::shared_ptr<Component> pp = pi->getSubComponent("postproc");
+  if (!pp) LFATAL("Cannot instantiate without a current python-type post-processor");
+  std::shared_ptr<Component> ppp = pp->getSubComponent("pypost");
+  if (!ppp) LFATAL("Cannot instantiate without a current pypost post-processor");
+  itsYOLO = ppp->addSubComponent<PostProcessorDetectYOLO>("yolo");
+}
+
+jevois::dnn::PostProcessorDetectYOLOforPython::~PostProcessorDetectYOLOforPython()
+{ }
+
+void jevois::dnn::PostProcessorDetectYOLOforPython::freeze(bool doit)
+{ itsYOLO->freeze(doit); }
+
+boost::python::tuple
+jevois::dnn::PostProcessorDetectYOLOforPython::yolo(boost::python::list outs, int nclass,
+                                                    float boxThreshold, float confThreshold,
+                                                    int bw, int bh, int fudge, int maxbox)
+{
+  std::vector<cv::Mat> const outvec = jevois::python::pyListToVec<cv::Mat>(outs);
+
+  std::vector<int> classIds;
+  std::vector<float> confidences;
+  std::vector<cv::Rect> boxes;
+  
+  itsYOLO->yolo(outvec, classIds, confidences, boxes, nclass, boxThreshold, confThreshold,
+                cv::Size(bw, bh), fudge, maxbox);
+
+  boost::python::list ids = jevois::python::pyVecToList(classIds);
+  boost::python::list conf = jevois::python::pyVecToList(confidences);
+  boost::python::list b;
+  for (cv::Rect const & r : boxes) b.append(boost::python::make_tuple(r.x, r.y, r.width, r.height));
+
+  return boost::python::make_tuple(ids, conf, b);
+}
+   

@@ -33,8 +33,10 @@ jevois::dnn::PreProcessorBlob::~PreProcessorBlob()
 { }
 
 // ####################################################################################################
-void jevois::dnn::PreProcessorBlob::freeze(bool JEVOIS_UNUSED_PARAM(doit))
-{ }
+void jevois::dnn::PreProcessorBlob::freeze(bool doit)
+{
+  numin::freeze(doit);
+}
 
 // ####################################################################################################
 std::vector<cv::Mat> jevois::dnn::PreProcessorBlob::process(cv::Mat const & img, bool swaprb,
@@ -306,7 +308,15 @@ std::vector<cv::Mat> jevois::dnn::PreProcessorBlob::process(cv::Mat const & img,
     case 3:
     case 4:
     {
-      switch (attr.dtype.fmt)
+      // If fmt type is auto (e.g., ONNX runtime), guess it at NCHW or NHWC based on dims:
+      vsi_nn_dim_fmt_e fmt = attr.dtype.fmt;
+      if (fmt == VSI_NN_DIM_FMT_AUTO)
+      {
+        if (attr.size[0] > attr.size[2]) fmt = VSI_NN_DIM_FMT_NCHW;
+        else fmt = VSI_NN_DIM_FMT_NHWC;
+      }
+      
+      switch (fmt)
       {
       case VSI_NN_DIM_FMT_NCHW:
       {
@@ -353,6 +363,14 @@ std::vector<cv::Mat> jevois::dnn::PreProcessorBlob::process(cv::Mat const & img,
     blobs.emplace_back(blob);
     crops.emplace_back(crop);
     ++bnum;
+
+
+    // --------------------------------------------------------------------------------
+    // NOTE: in principle, our code here is ready to generate several blobs.
+    // However, in practice all nets tested so far expect just one input, since they are machine vision models, except
+    // for URetinex-Net, which expects an image and a single float. Thus, here, we only generate the first blob
+    // (when numin param is at its default value of 1, otherwise up to numin blobs).
+    if (bnum >= numin::get()) break;
   }
   return blobs;
 }

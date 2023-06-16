@@ -76,24 +76,6 @@ void jevois::dnn::PostProcessorDetectYOLO::yolo(std::vector<cv::Mat> const & out
   if (nouts == 0) LTHROW("No output tensors received");
   if (itsAnchors.size() != nouts) LTHROW("Need " << nouts << " sets of anchors");
 
-  //  std::vector<std::pair<float const * /* biases */, size_t /* num floats */>> biases;
-  /*
-  if (biases.empty())
-  {
-    // Use default biases:
-    size_t const biases_per_scale = default_size / nouts;
-    for (size_t i = 0; i < nouts; ++i)
-      biases.emplace_back(std::make_pair(&default_biases[i * biases_per_scale], biases_per_scale));
-  }
-  else
-  {
-    // Use biases provided in model zoo file:
-    if (anchors.size() != nouts) LTHROW("Need " << nouts << " sets of anchors");
-
-    for (size_t i = 0; i < nouts; ++i)
-      biases.emplace_back(std::make_pair(&anchors[i][0], anchors[i].size()));
-  }
-*/
   // Various networks will yield their YOLO outputs in various orders. But our default anchors (and the doc for the
   // anchors parameter) assumes order from large to small, e.g., first 52x52, then 26x26, then 13x13. So here we need to
   // sort the outputs in decreasing size order to get the correct yolonum:

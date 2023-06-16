@@ -49,6 +49,7 @@ void jevois::dnn::NetworkTPU::freeze(bool doit)
   dequant::freeze(doit);
   intensors::freeze(doit);
   outtensors::freeze(doit);
+  jevois::dnn::Network::freeze(doit); // base class parameters
 }
 
 // ####################################################################################################

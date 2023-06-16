@@ -123,7 +123,10 @@ unsigned int jevois::strfcc(std::string const & str)
   else if (str == "RGB24") return V4L2_PIX_FMT_RGB24;
   else if (str == "RGB32") return V4L2_PIX_FMT_RGB32;
   else if (str == "UYVY") return V4L2_PIX_FMT_UYVY;
-  else if (str == "BAYER16") return V4L2_PIX_FMT_SBGGR16;
+#ifdef JEVOIS_PRO
+  else if (str == "BGGR16") return V4L2_PIX_FMT_SBGGR16;
+  else if (str == "GRBG16") return V4L2_PIX_FMT_SGRBG16;
+#endif
   else if (str == "NV12") return V4L2_PIX_FMT_NV12;
   else if (str == "YUV444") return V4L2_PIX_FMT_YUV444;
   else if (str == "META") return ISP_V4L2_PIX_FMT_META;
@@ -148,7 +151,10 @@ unsigned int jevois::v4l2BytesPerPix(unsigned int fcc)
   case V4L2_PIX_FMT_RGB24: return 3U;
   case V4L2_PIX_FMT_RGB32: return 4U;
   case V4L2_PIX_FMT_UYVY: return 2U;
+#ifdef JEVOIS_PRO
   case V4L2_PIX_FMT_SBGGR16: return 2U;
+  case V4L2_PIX_FMT_SGRBG16: return 2U;
+#endif
   case V4L2_PIX_FMT_NV12: return 2U; // actually, it has 4:2:0 sampling so 1.5 bytes/pix
   case V4L2_PIX_FMT_YUV444: return 3U;
   case ISP_V4L2_PIX_FMT_META: return 1U;
@@ -176,7 +182,10 @@ unsigned int jevois::blackColor(unsigned int fcc)
   case V4L2_PIX_FMT_RGB24: return 0;
   case V4L2_PIX_FMT_RGB32: return 0;
   case V4L2_PIX_FMT_UYVY: return 0x8000;
+#ifdef JEVOIS_PRO
   case V4L2_PIX_FMT_SBGGR16: return 0;
+  case V4L2_PIX_FMT_SGRBG16: return 0;
+#endif
   case V4L2_PIX_FMT_NV12: return 0;
   case V4L2_PIX_FMT_YUV444: return 0x008080;
   case JEVOISPRO_FMT_GUI: return 0;
@@ -198,7 +207,10 @@ unsigned int jevois::whiteColor(unsigned int fcc)
   case V4L2_PIX_FMT_RGB24: return 0xffffff;
   case V4L2_PIX_FMT_RGB32: return 0xffffffff;
   case V4L2_PIX_FMT_UYVY: return 0xff80;
+#ifdef JEVOIS_PRO
   case V4L2_PIX_FMT_SBGGR16: return 0xffff;
+  case V4L2_PIX_FMT_SGRBG16: return 0xffff;
+#endif
   case V4L2_PIX_FMT_NV12: return 0xffff; // probably wrong
   case V4L2_PIX_FMT_YUV444: return 0xff8080;
   case JEVOISPRO_FMT_GUI: return 0xffffffff;

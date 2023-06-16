@@ -1280,7 +1280,7 @@ void jevois::rawimage::convertCvBGRtoRawImage(cv::Mat const & src, RawImage & ds
   case V4L2_PIX_FMT_RGB565: cv::cvtColor(src, dstcv, cv::COLOR_BGR2BGR565); break;
   case V4L2_PIX_FMT_MJPEG: jevois::compressBGRtoJpeg(src, dst, quality); break;
   case V4L2_PIX_FMT_BGR24: memcpy(dst.pixelsw<void>(), src.data, dst.width * dst.height * dst.bytesperpix()); break;
-  case V4L2_PIX_FMT_RGB24: cv::cvtColor(src, dstcv, cv::COLOR_RGB2GRAY); break;
+  case V4L2_PIX_FMT_RGB24: cv::cvtColor(src, dstcv, cv::COLOR_BGR2RGB); break;
   default: LFATAL("Unsupported output pixel format " << jevois::fccstr(dst.fmt) << std::hex <<' '<< dst.fmt);
   }
 }

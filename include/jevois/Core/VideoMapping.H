@@ -28,7 +28,7 @@
 namespace jevois
 {
   //! Enum for VideoMapping wide-dynamic-range (WDR) type
-  /*! If nothing is specified in a VideoMapping, use None by default. \relates VideoMapping */
+  /*! If nothing is specified in a VideoMapping, use Linear by default. \relates VideoMapping */
   JEVOIS_DEFINE_ENUM_CLASS(WDRtype, (Linear) (DOL) )
 
   //! Enum for VideoMapping crop or rescale
@@ -115,9 +115,6 @@ namespace jevois
       //! Return true if this VideoMapping's output format is a match to the given output parameters
       bool match(unsigned int oformat, unsigned int owidth, unsigned int oheight, float oframespersec) const;
 
-      //! Return true if camera sensor can support this mapping
-      bool sensorOk(CameraSensor s);
-      
       //! Convenience function to print out FCC WxH @ fps, for the output (UVC) format
       std::string ostr() const;
       

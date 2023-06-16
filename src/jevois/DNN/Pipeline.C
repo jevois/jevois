@@ -25,6 +25,7 @@
 #include <jevois/Core/Engine.H>
 
 #include <jevois/DNN/NetworkOpenCV.H>
+#include <jevois/DNN/NetworkONNX.H>
 #include <jevois/DNN/NetworkNPU.H>
 #include <jevois/DNN/NetworkTPU.H>
 #include <jevois/DNN/NetworkPython.H>
@@ -109,11 +110,12 @@ jevois::dnn::Pipeline::Pipeline(std::string const & instance) :
   itsAccelerators["NPU"] = jevois::getNumInstalledNPUs();
   itsAccelerators["SPU"] = jevois::getNumInstalledSPUs();
   itsAccelerators["OpenCV"] = 1; // OpenCV always available
+  itsAccelerators["ORT"] = 1;    // ONNX runtime always available
   itsAccelerators["Python"] = 1; // Python always available
 #ifdef JEVOIS_PLATFORM_PRO
-  itsAccelerators["VPUX"] = 1; // VPU emulation on CPU always available through OpenVino
+  itsAccelerators["VPUX"] = 1;   // VPU emulation on CPU always available through OpenVino
 #endif
-  itsAccelerators["NPUX"] = 1; // NPU over Tim-VX always available since compiled into OpenCV
+  itsAccelerators["NPUX"] = 1;   // NPU over Tim-VX always available since compiled into OpenCV
     
   LINFO("Detected " <<
         itsAccelerators["NPU"] << " JeVois-Pro NPUs, " <<
@@ -550,6 +552,10 @@ void jevois::dnn::Pipeline::onParamChange(pipeline::nettype const & JEVOIS_UNUSE
     break;
 
 #ifdef JEVOIS_PRO
+
+  case jevois::dnn::pipeline::NetType::ORT:
+    itsNetwork = addSubComponent<jevois::dnn::NetworkONNX>("network");
+    break;
 
   case jevois::dnn::pipeline::NetType::NPU:
 #ifdef JEVOIS_PLATFORM

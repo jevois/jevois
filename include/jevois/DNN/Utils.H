@@ -25,6 +25,7 @@
 
 #ifdef JEVOIS_PRO
 #include <hailo/hailort.h>
+#include <onnxruntime_cxx_api.h>
 #endif
 
 namespace jevois
@@ -135,6 +136,15 @@ namespace jevois
 
     //! Convert from Hailo data type to vsi_nn
     vsi_nn_type_e hailo2vsi(hailo_format_type_t t);
+
+    //! Convert from ONNX-Runtime data type to vsi_nn
+    vsi_nn_type_e onnx2vsi(ONNXTensorElementDataType t);
+
+    //! Get a string of the form: "nD AxBxC... TYPE" from an n-dimensional ONNX tensor with data type TYPE
+    std::string shapestr(Ort::ConstTensorTypeAndShapeInfo const & ti);
+
+    //! Get tensor shape and type attributes for an ONNX-runtime tensor
+    vsi_nn_tensor_attr_t tensorattr(Ort::ConstTensorTypeAndShapeInfo const & ti);
 #endif
     
     /*! @} */ // **********************************************************************

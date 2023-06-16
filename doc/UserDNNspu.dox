@@ -1,4 +1,4 @@
-/*! \page UserDNNspu Converting and running neural networks for Hailo-8
+/*! \page UserDNNspu Converting and running neural networks for Hailo-8 SPU
 
 \jvpro supports the [26-TOPS Hailo-8](https://hailo.ai/products/hailo-8-m2-module/) Stream Processing Unit (SPU) as an
 optional add-on neural accelerator on an M.2 2230 A+E board using the PCIe interface. To date, this is the fastest
@@ -53,6 +53,9 @@ Setting up the Hailo Software Suite
 
 \note Everything below is to be run on a fast x86_64 desktop computer running Ubuntu 20.04 Linux, not on your JeVois-Pro
 camera. At the end, we will copy the converted model to microSD and then run inference on JeVois-Pro with that model.
+
+\note We use HailoRT-4.8.1 below but later versions should work as well. For best compatibility, please download the
+same version as is installed on your camera (type `!dpkg --list | grep hailo` in the console of the camera).
 
 - Check out the [official docs](https://hailo.ai/developer-zone/documentation/sw-suite-2022-07-1)
 
@@ -343,3 +346,4 @@ Tips
 - Also see \ref UserDNNtips
 
 */
+

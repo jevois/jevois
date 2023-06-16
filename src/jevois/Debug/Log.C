@@ -266,7 +266,7 @@ std::string jevois::warnAndIgnoreException(std::string const & prefix)
   // Write out the message:
   std::string ret;
   for (std::string & m : retvec) { LERROR(m); ret += m + "\n"; }
-
+  
   return ret;
 }
 

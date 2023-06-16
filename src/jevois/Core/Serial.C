@@ -16,6 +16,7 @@
 /*! \file */
 
 #include <jevois/Core/Serial.H>
+#include <jevois/Core/Engine.H>
 
 #include <fstream>
 
@@ -24,28 +25,67 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+// On first error, store the errno so we remember that we are in error:
+#define SERFATAL(msg) do {                                              \
+    if (itsErrno.load() == 0) itsErrno = errno;                         \
+    LFATAL('[' << instanceName() << "] " << msg << " (" << strerror(errno) << ')'); \
+  } while (0)
+
+#define SERTHROW(msg) do {                                              \
+    if (itsErrno.load() == 0) itsErrno = errno;                         \
+    std::ostringstream ostr;                                            \
+    ostr << '[' << instanceName() << "] " << msg << " (" << strerror(errno) << ')'; \
+    throw std::runtime_error(ostr.str());                               \
+  } while (0)
+
+// ######################################################################
+void jevois::Serial::tryReconnect()
+{
+  std::lock_guard<std::mutex> _(itsMtx);
+
+  if (itsOpenFut.valid() == false)
+  {
+    engine()->reportError('[' + instanceName() + "] connection lost -- Waiting for host to re-connect");
+    LINFO('[' << instanceName() << "] Waiting to reconnect to [" << jevois::serial::devname::get() << "] ...");
+    itsOpenFut = jevois::async_little([this]() { openPort(); });
+  }
+  else if (itsOpenFut.wait_for(std::chrono::milliseconds(5)) == std::future_status::ready)
+    try
+    {
+      itsOpenFut.get();
+      LINFO('[' << instanceName() << "] re-connected.");
+    } catch (...) { }
+}
+
 // ######################################################################
 jevois::Serial::Serial(std::string const & instance, jevois::UserInterface::Type type) :
-    jevois::UserInterface(instance), itsDev(-1), itsWriteOverflowCounter(0), itsType(type)
+    jevois::UserInterface(instance), itsDev(-1), itsWriteOverflowCounter(0), itsType(type), itsErrno(0)
 { }
 
 // ######################################################################
 void jevois::Serial::postInit()
 {
+  std::lock_guard<std::mutex> _(itsMtx);
+  openPort();
+}
+
+// ######################################################################
+void jevois::Serial::openPort()
+{
   // Open the port, non-blocking mode by default:
   if (itsDev != -1) ::close(itsDev);
   itsDev = ::open(jevois::serial::devname::get().c_str(), O_RDWR | O_NOCTTY | O_NONBLOCK);
-  if (itsDev == -1) LFATAL("Could not open serial port [" << jevois::serial::devname::get() << ']');
+  if (itsDev == -1) SERTHROW("Could not open serial port [" << jevois::serial::devname::get() << ']');
 
   // Save current state
-  if (tcgetattr(itsDev, &itsSavedState) == -1) LFATAL("Failed to save current state");
+  if (tcgetattr(itsDev, &itsSavedState) == -1) SERTHROW("Failed to save current state");
 
   // reset all the flags
-  ////if (fcntl(itsDev, F_SETFL, 0) == -1) LFATAL("Failed to reset flags");
+  ////if (fcntl(itsDev, F_SETFL, 0) == -1) SERTHROW("Failed to reset flags");
 
   // Get the current option set:
   termios options = { };
-  if (tcgetattr(itsDev, &options) == -1) LFATAL("Failed to get options");
+  if (tcgetattr(itsDev, &options) == -1) SERTHROW("Failed to get options");
 
   // get raw input from the port
   options.c_cflag |= ( CLOCAL     // ignore modem control lines
@@ -65,7 +105,7 @@ void jevois::Serial::postInit()
   options.c_oflag &= ~OPOST;
   options.c_lflag &= ~(ECHO  // dont echo i/p chars
                        | ECHONL // do not echo NL under any circumstance
-                       | ICANON // disable cannonical mode
+                       | ICANON // disable canonical mode
                        | ISIG   // do not signal for INTR, QUIT, SUSP etc
                        | IEXTEN // disable platform dependent i/p processing
                        );
@@ -99,7 +139,7 @@ void jevois::Serial::postInit()
   case 300: rate = B300; break;
   case 110: rate = B110; break;
   case 0: rate = B0; break;
-  default: LFATAL("Invalid baud rate " <<jevois::serial::baudrate::get());
+  default: SERTHROW("Invalid baud rate " <<jevois::serial::baudrate::get());
   }
 
   cfsetispeed(&options, rate);
@@ -107,7 +147,7 @@ void jevois::Serial::postInit()
 
   // Parse the serial format string:
   std::string const format = jevois::serial::format::get();
-  if (format.length() != 3) LFATAL("Incorrect format string: " << format);
+  if (format.length() != 3) SERTHROW("Incorrect format string: " << format);
 
   // Set the number of bits:
   options.c_cflag &= ~CSIZE; // mask off the 'size' bits
@@ -118,7 +158,7 @@ void jevois::Serial::postInit()
   case '6': options.c_cflag |= CS6; break;
   case '7': options.c_cflag |= CS7; break;
   case '8': options.c_cflag |= CS8; break;
-  default: LFATAL("Invalid charbits: " << format[0] << " (should be 5..8)");
+  default: SERTHROW("Invalid charbits: " << format[0] << " (should be 5..8)");
   }
 
   // Set parity option:
@@ -129,7 +169,7 @@ void jevois::Serial::postInit()
   case 'N': break;
   case 'E': options.c_cflag |= PARENB; break;
   case 'O': options.c_cflag |= (PARENB | PARODD); break;
-  default: LFATAL("Invalid parity: " << format[1] << " (should be N,E,O)");
+  default: SERTHROW("Invalid parity: " << format[1] << " (should be N,E,O)");
   }
 
   // Set the stop bits option:
@@ -138,7 +178,7 @@ void jevois::Serial::postInit()
   {
   case '1': break;
   case '2': options.c_cflag |= CSTOPB; break;
-  default: LFATAL("Invalid stopbits: " << format[2] << " (should be 1..2)");
+  default: SERTHROW("Invalid stopbits: " << format[2] << " (should be 1..2)");
   }
 
   // Set the flow control:
@@ -149,16 +189,20 @@ void jevois::Serial::postInit()
   if (jevois::serial::flowhard::get()) options.c_cflag |= CRTSCTS;
 
   // Set all the options now:
-  if (tcsetattr(itsDev, TCSANOW, &options) == -1) LFATAL("Failed to set port options");
-  LINFO("Serial driver ready on " << jevois::serial::devname::get());
+  if (tcsetattr(itsDev, TCSANOW, &options) == -1) SERTHROW("Failed to set port options");
+
+  // We are operational:
+  itsErrno.store(0);
+  LINFO("Serial driver [" << instanceName() << "] ready on " << jevois::serial::devname::get());
 }
 
 // ######################################################################
 void jevois::Serial::postUninit()
 {
+  std::lock_guard<std::mutex> _(itsMtx);
+
   if (itsDev != -1)
   {
-    sendBreak();
     if (tcsetattr(itsDev, TCSANOW, &itsSavedState) == -1) LERROR("Failed to restore serial port state -- IGNORED");
     ::close(itsDev);
     itsDev = -1;
@@ -171,18 +215,18 @@ void jevois::Serial::setBlocking(bool blocking, std::chrono::milliseconds const 
   std::lock_guard<std::mutex> _(itsMtx);
   
   int flags = fcntl(itsDev, F_GETFL, 0);
-  if (flags == -1) LFATAL("Cannot get flags");
+  if (flags == -1) SERFATAL("Cannot get flags");
   if (blocking) flags &= (~O_NONBLOCK); else flags |= O_NONBLOCK;
-  if (fcntl(itsDev, F_SETFL, flags) == -1) LFATAL("Cannot set flags");
+  if (fcntl(itsDev, F_SETFL, flags) == -1) SERFATAL("Cannot set flags");
 
   // If blocking, set a timeout on the descriptor:
   if (blocking)
   {
     termios options;
-    if (tcgetattr(itsDev, &options) == -1) LFATAL("Failed to get options");
+    if (tcgetattr(itsDev, &options) == -1) SERFATAL("Failed to get options");
     options.c_cc[VMIN] = 0;
     options.c_cc[VTIME] = timeout.count() / 100; // vtime is in tenths of second
-    if (tcsetattr(itsDev, TCSANOW, &options) == -1) LFATAL("Failed to set port options");
+    if (tcsetattr(itsDev, TCSANOW, &options) == -1) SERFATAL("Failed to set port options");
   }
 }
 
@@ -190,19 +234,19 @@ void jevois::Serial::setBlocking(bool blocking, std::chrono::milliseconds const 
 void jevois::Serial::toggleDTR(std::chrono::milliseconds const & dur)
 {
   std::lock_guard<std::mutex> _(itsMtx);
-
+ 
   struct termios tty, old;
 
-  if (tcgetattr(itsDev, &tty) == -1 || tcgetattr(itsDev, &old) == -1) LFATAL("Failed to get attributes");
+  if (tcgetattr(itsDev, &tty) == -1 || tcgetattr(itsDev, &old) == -1) SERFATAL("Failed to get attributes");
 
   cfsetospeed(&tty, B0);
   cfsetispeed(&tty, B0);
 
-  if (tcsetattr(itsDev, TCSANOW, &tty) == -1) LFATAL("Failed to set attributes");
+  if (tcsetattr(itsDev, TCSANOW, &tty) == -1) SERFATAL("Failed to set attributes");
 
   std::this_thread::sleep_for(dur);
 
-  if (tcsetattr(itsDev, TCSANOW, &old) == -1) LFATAL("Failed to restore attributes");
+  if (tcsetattr(itsDev, TCSANOW, &old) == -1) SERFATAL("Failed to restore attributes");
 }
 
 // ######################################################################
@@ -215,39 +259,10 @@ void jevois::Serial::sendBreak(void)
 }
 
 // ######################################################################
-int jevois::Serial::read(void * buffer, const int nbytes)
-{
-  std::lock_guard<std::mutex> _(itsMtx);
-
-  int n = ::read(itsDev, buffer, nbytes);
-
-  if (n == -1) throw std::runtime_error("Serial: Read error");
-  if (n == 0) throw std::runtime_error("Serial: Read timeout");
-
-  return n;
-}
-
-// ######################################################################
-int jevois::Serial::read2(void * buffer, const int nbytes)
-{
-  std::lock_guard<std::mutex> _(itsMtx);
-
-  int n = ::read(itsDev, buffer, nbytes);
-
-  if (n == -1)
-  {
-    if (errno == EAGAIN) return false; // no new char available
-    else throw std::runtime_error("Serial: Read error");
-  }
-
-  if (n == 0) return false; // no new char available
-
-  return n;
-}
-
-// ######################################################################
 bool jevois::Serial::readSome(std::string & str)
 {
+  if (itsErrno.load()) { tryReconnect(); if (itsErrno.load()) return false; }
+  
   std::lock_guard<std::mutex> _(itsMtx);
 
   unsigned char c;
@@ -259,10 +274,9 @@ bool jevois::Serial::readSome(std::string & str)
     if (n == -1)
     {
       if (errno == EAGAIN) return false; // no new char available
-      else throw std::runtime_error("Serial: Read error");
+      else SERFATAL("Read error");
     }
-
-    if (n == 0) return false; // no new char available
+    else if (n == 0) return false; // no new char available
     
     switch (jevois::serial::linestyle::get())
     {
@@ -299,52 +313,11 @@ bool jevois::Serial::readSome(std::string & str)
 }
 
 // ######################################################################
-std::string jevois::Serial::readString()
-{
-  std::lock_guard<std::mutex> _(itsMtx);
-  return readStringInternal();
-}
-
-// ######################################################################
-std::string jevois::Serial::readStringInternal()
-{
-  std::string str; unsigned char c;
-  
-  while (true)
-  {
-    int n = ::read(itsDev, reinterpret_cast<char *>(&c), 1);
-
-    if (n == -1)
-    {
-      if (errno == EAGAIN) std::this_thread::sleep_for(std::chrono::milliseconds(2));
-      else throw std::runtime_error("Serial: Read error");
-    }
-    else if (n == 0)
-      std::this_thread::sleep_for(std::chrono::milliseconds(2)); // no new char available
-    else
-    {
-      switch (jevois::serial::linestyle::get())
-      {
-      case jevois::serial::LineStyle::LF: if (c == '\n') return str; else str += c; break;
-        
-      case jevois::serial::LineStyle::CR: if (c == '\r') return str; else str += c; break;
-        
-      case jevois::serial::LineStyle::CRLF: if (c == '\n') return str; else if (c != '\r') str += c; break;
-        
-      case jevois::serial::LineStyle::Zero: if (c == 0x00) return str; else str += c; break;
-        
-      case jevois::serial::LineStyle::Sloppy: // Return when we receive first separator, ignore others
-        if (c == '\r' || c == '\n' || c == 0x00 || c == 0xd0) { if (str.empty() == false) return str; }
-        else str += c;
-        break;
-      }
-    }
-  }
-}
-
-// ######################################################################
 void jevois::Serial::writeString(std::string const & str)
 {
+  // If in error, silently drop all data until we successfully reconnect:
+  if (itsErrno.load()) { tryReconnect(); if (itsErrno.load()) return; }
+  
   std::string fullstr(str);
 
   switch (jevois::serial::linestyle::get())
@@ -356,14 +329,8 @@ void jevois::Serial::writeString(std::string const & str)
   case jevois::serial::LineStyle::Sloppy: fullstr += "\r\n"; break;
   }
 
-  this->write(fullstr.c_str(), fullstr.length());
-}
-
-// ######################################################################
-void jevois::Serial::write(void const * buffer, const int nbytes)
-{
   std::lock_guard<std::mutex> _(itsMtx);
-  writeInternal(buffer, nbytes);
+  writeInternal(fullstr.c_str(), fullstr.length());
 }
 
 // ######################################################################
@@ -377,26 +344,27 @@ void jevois::Serial::writeInternal(void const * buffer, const int nbytes, bool n
     while (ndone < nbytes)
     {
       int n = ::write(itsDev, b + ndone, nbytes - ndone);
-      if (n == -1 && errno != EAGAIN) throw std::runtime_error("Serial: Write error");
+      if (n == -1 && errno != EAGAIN) SERFATAL("Write error");
       
       // If we did not write the whole thing, the serial port is saturated, we need to wait a bit:
       if (n > 0) ndone += n;
-      if (ndone < nbytes) tcdrain(itsDev);
+      if (ndone < nbytes) tcdrain(itsDev); // on USB disconnect, this will hang forever...
     }
   }
   else if (drop::get())
   {
     // Just write and silently drop (after a few attempts) if we could not write everything:
     int ndone = 0; char const * b = reinterpret_cast<char const *>(buffer); int iter = 0;
-    while (ndone < nbytes && iter++ < 50)
+    while (ndone < nbytes && iter++ < 10)
     {
       int n = ::write(itsDev, b + ndone, nbytes - ndone);
-      if (n == -1 && errno != EAGAIN) throw std::runtime_error("Serial: Write error");
+      if (n == -1 && errno != EAGAIN) SERFATAL("Write error");
       
       // If we did not write the whole thing, the serial port is saturated, we need to wait a bit:
-      if (n > 0) ndone += n;
-      if (ndone < nbytes) { tcdrain(itsDev); std::this_thread::sleep_for(std::chrono::milliseconds(5)); }
+      if (n > 0) { ndone += n; iter = 0; }
+      if (ndone < nbytes) std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
+    if (ndone < nbytes) SERFATAL("Timeout (host disconnect or overflow) -- SOME DATA LOST");
   }
   else
   {
@@ -405,11 +373,11 @@ void jevois::Serial::writeInternal(void const * buffer, const int nbytes, bool n
     while (ndone < nbytes && iter++ < 50)
     {
       int n = ::write(itsDev, b + ndone, nbytes - ndone);
-      if (n == -1 && errno != EAGAIN) throw std::runtime_error("Serial: Write error");
+      if (n == -1 && errno != EAGAIN) SERFATAL("Write error");
       
       // If we did not write the whole thing, the serial port is saturated, we need to wait a bit:
       if (n > 0) ndone += n;
-      if (ndone < nbytes) { tcdrain(itsDev); std::this_thread::sleep_for(std::chrono::milliseconds(2)); }
+      if (ndone < nbytes) std::this_thread::sleep_for(std::chrono::milliseconds(2));
     }
     
     if (ndone < nbytes)
@@ -417,8 +385,6 @@ void jevois::Serial::writeInternal(void const * buffer, const int nbytes, bool n
       // If we had a serial overflow, we need to let the user know, but how, since the serial is overflowed already?
       // Let's first throttle down big time, and then we throw:
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
-      
-      tcdrain(itsDev);
       
       // Report the overflow once in a while:
       ++itsWriteOverflowCounter; if (itsWriteOverflowCounter > 100) itsWriteOverflowCounter = 0;
@@ -428,26 +394,6 @@ void jevois::Serial::writeInternal(void const * buffer, const int nbytes, bool n
       // Note how we are otherwise just ignoring the overflow and hence dropping data.
     }
     else itsWriteOverflowCounter = 0;
-  }
-}
-
-// ######################################################################
-void jevois::Serial::writeNoCheck(void const * buffer, const int nbytes)
-{
-  std::lock_guard<std::mutex> _(itsMtx);
-
-  int ndone = 0; char const * b = reinterpret_cast<char const *>(buffer); int iter = 0;
-  while (ndone < nbytes && iter++ < 50)
-  {
-    int n = ::write(itsDev, b + ndone, nbytes - ndone);
-    if (n == -1 && errno != EAGAIN) throw std::runtime_error("Serial: Write error");
-    if (n > 0) ndone += n;
-  }
-
-  if (ndone < nbytes)
-  {
-    // If after a number of iterations there are still unbuffered bytes, flush the output buffer
-    if (tcflush(itsDev, TCOFLUSH) != 0) LDEBUG("Serial flushOut error -- IGNORED");
   }
 }
 
@@ -496,13 +442,18 @@ void jevois::Serial::fileGet(std::string const & abspath)
 // ####################################################################################################
 void jevois::Serial::filePut(std::string const & abspath)
 {
-  std::lock_guard<std::mutex> _(itsMtx);
-
   std::ofstream fil(abspath, std::ios::out | std::ios::binary);
-  if (fil.is_open() == false)  throw std::runtime_error("Could not write file " + abspath);
+  if (fil.is_open() == false) throw std::runtime_error("Could not write file " + abspath);
 
   // Get file length as ASCII:
-  std::string const lenstr = readStringInternal();
+  std::string lenstr; int timeout = 1000;
+  while (readSome(lenstr) == false)
+  {
+    std::this_thread::sleep_for(std::chrono::milliseconds(2));
+    --timeout;
+    if (timeout == 0) throw std::runtime_error("Timeout waiting for file length for " + abspath);
+  }
+
   if (jevois::stringStartsWith(lenstr, "JEVOIS_FILEPUT ") == false)
     throw std::runtime_error("Incorrect header while receiving file " + abspath);
 
@@ -512,6 +463,7 @@ void jevois::Serial::filePut(std::string const & abspath)
   size_t num = std::stoul(vec[1]);
     
   // Read blocks from serial and write them to file:
+  std::lock_guard<std::mutex> _(itsMtx);
   size_t const bufsiz = std::min(num, size_t(1024 * 1024)); char buffer[1024 * 1024];
   while (num)
   {

@@ -62,7 +62,10 @@ void jevois::RawImage::clear()
 
   case V4L2_PIX_FMT_GREY:
   case V4L2_PIX_FMT_SRGGB8:
+#ifdef JEVOIS_PRO
   case V4L2_PIX_FMT_SBGGR16:
+  case V4L2_PIX_FMT_SGRBG16:
+#endif
   case V4L2_PIX_FMT_RGB565:
   case V4L2_PIX_FMT_BGR24:
   case V4L2_PIX_FMT_RGB24:

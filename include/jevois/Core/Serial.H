@@ -23,6 +23,7 @@
 #include <termios.h>
 #include <unistd.h>
 #include <mutex>
+#include <future>
 
 namespace jevois
 {
@@ -106,38 +107,10 @@ namespace jevois
       /*! This would usually only make sense to use in non-blocking mode. */
       bool readSome(std::string & str) override;
       
-      //! Read a string, using the line termination convention of serial::linestyle
-      /*! No line terminator is included in the read string that is returned. This would normally only make sense to use
-          when the port is in blocking mode, as it throws if trying to chars until the end of line marker but none is
-          available. */
-      std::string readString();
-
       //! Write a string, using the line termination convention of serial::linestyle
       /*! No line terminator should be included in the string, writeString() will add one. */
       void writeString(std::string const & str) override;
       
-      //! Attempt to read up to nbytes from serial port into the buffer
-      /*! @param buffer holds bytes after read
-          @param nbytes number of bytes to attempt to read
-          @return 0 on a timeout, -1 on error, number of bytes actually read on a success */
-      int read(void * buffer, const int nbytes);
-
-      //! Attempt to read up to nbytes from serial port into the buffer
-      /*! @param buffer holds bytes after read
-          @param nbytes number of bytes to attempt to read
-          @return 0 on a timeout, 0 on no new characters, -1 on error, number of bytes actually read on a success */
-      int read2(void * buffer, const int nbytes);
-      
-      //! Write bytes to the port
-      /*! @param buffer begin writing from the location buffer.
-          @param nbytes number of bytes to write */
-      void write(void const * buffer, const int nbytes);
-
-      //! Write bytes to the port - does not wait for buffer to be emptied
-      /*! @param buffer begin writing from the location buffer.
-          @param nbytes number of bytes to write */
-      void writeNoCheck(void const * buffer, const int nbytes);
-
       //! Send a file from the local microSD to the host computer
       /*! abspath should be the full absolute path of the file. The port will be locked during the entire
           transaction. */
@@ -159,13 +132,16 @@ namespace jevois
       void postUninit() override;
 
     private:
-      void writeInternal(void const * buffer, const int nbytes, bool nodrop = false); // Like write() but already locked
-      std::string readStringInternal(); // Like readString(0 but already locked
+      void tryReconnect();
+      void openPort(); // must be locked
+      void writeInternal(void const * buffer, const int nbytes, bool nodrop = false);
       int itsDev; // descriptor associated with the device file
       termios itsSavedState; // saved state to restore in the destructor
       std::string itsPartialString;
       std::mutex itsMtx;
       int itsWriteOverflowCounter; // counter so we do not send too many write overflow errors
       jevois::UserInterface::Type itsType;
+      std::atomic<int> itsErrno;
+      std::future<void> itsOpenFut;
   };
 } // namespace jevois

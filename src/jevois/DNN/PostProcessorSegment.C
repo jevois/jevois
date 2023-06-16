@@ -64,7 +64,8 @@ void jevois::dnn::PostProcessorSegment::process(cv::Mat const & results)
   uint32_t const alph = alpha::get() << 24;
   cv::MatSize const rs = results.size;
   T const * r = reinterpret_cast<T const *>(results.data);
-
+  T const thresh(cthresh::get() * 0.01F);
+  
   switch (segtype::get())
   {
     // ----------------------------------------------------------------------------------------------------
@@ -82,7 +83,7 @@ void jevois::dnn::PostProcessorSegment::process(cv::Mat const & results)
 
     for (int i = 0; i < siz; i += numclass)
     {
-      int maxc = -1; T maxval = 0;
+      int maxc = -1; T maxval = thresh;
       for (int c = 0; c < numclass; ++c)
       {
         T v = *r++;
@@ -110,7 +111,7 @@ void jevois::dnn::PostProcessorSegment::process(cv::Mat const & results)
 
     for (int i = 0; i < hw; ++i)
     {
-      int maxc = -1; T maxval = 0;
+      int maxc = -1; T maxval = thresh;
       for (int c = 0; c < numclass; ++c)
       {
         T v = results.at<T>(i + c * hw);
@@ -160,6 +161,7 @@ void jevois::dnn::PostProcessorSegment::process(std::vector<cv::Mat> const & out
   switch (results.type())
   {
   case CV_8UC1: process<uint8_t>(results); break;
+  case CV_16UC1: process<uint16_t>(results); break;
   case CV_32FC1: process<float>(results); break;
   case CV_32SC1: process<int32_t>(results); break;
 

@@ -77,7 +77,7 @@
 //#define JEVOIS_USBSERIAL_DEFAULT "/dev/ttyGS0"
 
 //! Default camera sensor
-#define JEVOIS_CAMERASENS_DEFAULT CameraSensor::imx290
+#define JEVOIS_CAMERASENS_DEFAULT CameraSensor::any
 
 //! Default IMU spi device
 #define JEVOIS_IMUSPI_DEFAULT "/dev/spidev32766.0"
@@ -598,10 +598,10 @@ namespace jevois
       void modCmdInfo(std::shared_ptr<UserInterface> s, std::string const & pfx = "");
 
       // Get short name from V4L2 ID, long name is a backup in case we don't find the control in our list
-      std::string camctrlname(int id, char const * longname) const;
+      std::string camctrlname(unsigned int id, char const * longname) const;
       
       // Get V4L2 ID from short name
-      int camctrlid(std::string const & shortname);
+      unsigned int camctrlid(std::string const & shortname);
 
       // Report an error to console, video frame, or GUI
       /*! Call this from within catch. Note, in GUI mode, this calls endFrame() so it should not be used except for

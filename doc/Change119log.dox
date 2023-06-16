@@ -1,0 +1,72 @@
+/*! \page Change119log Changes and new features in JeVois 1.19
+
+JeVois 1.19 brings the following new features:
+
+- New support for ONNX Runtime framework on CPU, both in C++ and in Python. This allows you to run ONNX networks on CPU,
+  with greater compatibility than the OpenCV framework provides. See new ORT pipeline type in the DNN module. Added
+  several sample networks.
+
+- Improved ability to write pre-processor, network, and post-processor in Python for the DNN module. Provided several
+  new examples in jevoisbase:
+  + \ref share-jevoispro/pydnn/net/PyNetOpenCV.py - load a network and run inference using OpenCV
+  + \ref share-jevoispro/pydnn/net/PyNetORT.py -  load a network and run inference using ONNX Runtime
+  + \ref share-jevoispro/pydnn/net/PyNetURetinex.py - ariant of PyNetORT.py with extra fixed input for this network
+  + \ref share-jevoispro/pydnn/post/PyPostClassify.py - simple object classification post-processor in Python
+  + \ref share-jevoispro/pydnn/post/PyPostDAMOyolo.py - object detection post-processor for DAMO-YOLO networks
+  + \ref share-jevoispro/pydnn/post/PyPostDepth.py - display depth map as semi-transparent overlay
+  + \ref share-jevoispro/pydnn/post/PyPostStub.py - does nothing, useful as a starting point for new network types
+  + \ref share-jevoispro/pydnn/post/PyPostURetinex.py - display partial overlay with user mouse interaction example
+  + \ref share-jevoispro/pydnn/post/PyPostYolo.py - wrapper around our very fast C++ YOLO post-processor
+
+  Remember that because python is not re-entrant or parallelizable, if more than one of pre-processing, network
+  inference, or post-processing are in python, that will force synchronous DNN processing, which may lower the framerate
+  of the GUI on slow networks.
+
+- Updated to OpenCV 4.7.0, OpenVino 2022.3, EdgeTPU 1.16, Hailo 4.13.0
+
+- Core JeVois: Fixed selection of default videomapping from file, updated contribs to include onnxruntime, cleaned up
+  some include and dependency paths in CMakeLists.txt.
+
+- Movie input: added support for dual-stream in JeVois-Pro (where the input at one resolution is sent to display, while
+  the same image at another resolution is sent to processing). To use pre-recorded movie inputs instead of live video,
+  use `jevoispro.sh --cameradev=/path/to/movie.mp4`. Also fixed movie rewinding and looping.
+
+- Programmers: created new github repo \a mydnn as an example standalone clone of the JeVois DNN module. You can modify
+  it, cross-compile it, and install it on your camera.
+
+- DNN: PreProcessorBlob is now only returning 1 blob by default, which can be changed by parameter \p numin (number of
+  inputs to send to the network). Then, new Network parameter \p extraintensors can be used to specify extra fixed
+  inputs. This is used in the URetinexNet example, as this network expects both in image input, and a single float
+  input that sets an exposure parameter.
+
+- DNN: Added i2b() in PreProcessor to allow converting coordinates from input image to blob, which is useful when
+  converting mouse coordinates first from display to image (using GuiHelper::d2i()), and then from image to blob (using
+  new PreProcessor::i2b()). Both d2i() and i2b() correctly handle letterboxing, scaling, streching, etc. See example of
+  use in PyPostURetinex.py
+
+- DNN: Improved sementic segmentation post-processor to allow for a threshold (only values above threshold will be
+  displayed as semi-transparent OpenGL overlay).
+
+- JeVois-Pro: Added more python wrappers for ImGUI, to allow users to check for mouse coordinates, button clicked, etc
+  in python. Example of use in PyPostURetinex.py
+
+- JeVois-Pro: support for sending serial outputs to USB using gadget serial. The gadget can be enabled in the JeVois-Pro
+  GUI under the System tab, after which module outputs and/or logs can be sent to the mini-USB port operating in device
+  mode. You can then connect JeVois-Pro to a host computer using a regular USB-A to mini-USB cable, and the JeVois-Pro
+  serial console will be accessible on host via /dev/ttyACM0.
+
+- Serial-over-USB: Now can handle USB cabel disconnects/reconnects, by trying to re-open the device after the connection
+  was lost.
+
+- JeVois-Pro: More deep learning models, including several new ONNX-Runtime models. Added fields for comment and URL to
+  the model zoo entries.
+
+- JeVois-Pro: Better fan control, including temperature monitoring on Hailo-8 accelerator board.
+
+- JeVois-Pro: We have working prototypes of 8MP/4K OS08a10 sensor boards, and 2.3MP global shutter AR0234CS. The color
+  calibration is not good on the AR0234, will need to tweak the ISP calibrations in the kernel. Please let us know if
+  you are interested in these sensors. Added camera sensor auto-detection based on which kernel overlay is active.
+
+- Miscellaneous bug fixes and performance improvements.
+
+*/

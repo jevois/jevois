@@ -101,6 +101,8 @@ void jevois::dnn::NetworkPython::freeze(bool doit)
   
   // Then our python params:
   itsImpl->freeze(doit);
+
+  jevois::dnn::Network::freeze(doit); // base class parameters
 }
 
 // ####################################################################################################

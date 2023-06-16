@@ -17,48 +17,62 @@
 
 #pragma once
 
-#include <jevois/DNN/PostProcessor.H>
+#ifdef JEVOIS_PRO
+
+#include <jevois/DNN/Network.H>
+#include <jevois/Types/Enum.H>
+#include <onnxruntime_cxx_api.h>
+#include <opencv2/core.hpp>
 
 namespace jevois
 {
   namespace dnn
   {
-    //! Post-Processor for neural network pipeline
-    /*! This is the last step in a deep neural network processing Pipeline. \ingroup dnn */
-    class PostProcessorSegment : public PostProcessor,
-                                 public Parameter<postprocessor::segtype, postprocessor::alpha,
-                                                  postprocessor::cthresh, postprocessor::bgid>
+    //! Wrapper around an OpenCV DNN neural network
+    /*! \ingroup dnn */
+    class NetworkONNX : public jevois::dnn::Network,
+                        public jevois::Parameter<network::dataroot, network::model>
     {
       public:
-        
         //! Inherited constructor ok
-        using PostProcessor::PostProcessor;
+        NetworkONNX(std::string const & instance);
 
         //! Destructor
-        virtual ~PostProcessorSegment();
+        virtual ~NetworkONNX();
 
         //! Freeze/unfreeze parameters that users should not change while running
         void freeze(bool doit) override;
-        
-        //! Process outputs and draw/send some results
-        void process(std::vector<cv::Mat> const & outs, PreProcessor * preproc) override;
 
-        //! Report what happened in last process() to console/output video/GUI
-        void report(jevois::StdModule * mod, jevois::RawImage * outimg = nullptr,
-                    jevois::OptGUIhelper * helper = nullptr, bool overlay = true, bool idle = false) override;
+        //! Get shapes of all input tensors
+        virtual std::vector<vsi_nn_tensor_attr_t> inputShapes() override;
+
+        //! Get shapes of all output tensors
+        virtual std::vector<vsi_nn_tensor_attr_t> outputShapes() override;
 
       protected:
-        void postInit() override; //!< Create colormap in postInit()
-        std::array<uint32_t, 256> itsColor; //!< Colors for our drawings, as RGBA with zero alpha value
+        //! Load from disk
+        void load() override;
+
+        //! Process input blobs and obtain output blobs
+        std::vector<cv::Mat> doprocess(std::vector<cv::Mat> const & blobs,
+                                       std::vector<std::string> & info) override;
 
       private:
-        template <typename T>
-        void process(cv::Mat const & results);
+        std::shared_ptr<Ort::Session> itsSession;
+        Ort::Env itsEnv;
+        Ort::SessionOptions itsSessionOptions;
+        std::vector<vsi_nn_tensor_attr_t> itsInAttrs;
+        std::vector<vsi_nn_tensor_attr_t> itsOutAttrs;
 
-        jevois::OptGUIhelper * itsHelper = nullptr;
-        int itsTLx = 0, itsTLy = 0, itsBRx = 0, itsBRy = 0;
-        cv::Mat itsOverlay;
+        std::vector<Ort::AllocatedStringPtr> itsInNamePtrs;
+        std::vector<char const *> itsInNames;
+        std::vector<Ort::AllocatedStringPtr> itsOutNamePtrs;
+        std::vector<char const *> itsOutNames;
+
+        std::vector<Ort::Value> itsOutputs;
     };
     
   } // namespace dnn
 } // namespace jevois
+
+#endif // JEVOIS_PRO

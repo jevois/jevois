@@ -86,19 +86,20 @@ set(JEVOIS_PLATFORM_FORTRAN_COMPILER "${CROSS_COMPILE}gfortran-${JEVOIS_COMPILER
 
 set(OPENCV_LIBS_FOR_JEVOIS "-lopencv_core -lopencv_imgproc -lopencv_features2d -lopencv_flann -lopencv_ml \
 -lopencv_objdetect -lopencv_imgcodecs -lopencv_tracking -lopencv_video -lopencv_videoio -lopencv_dnn_objdetect \
--lopencv_dnn -lopencv_highgui -lopenvino_auto_batch_plugin")
+-lopencv_dnn -lopencv_highgui")
 
 # openvino libs for platform, from:
-# /usr/share/jevoispro-sdk/jevoispro-sysroot/usr/share/jevoispro-openvino-2022.1/runtime/lib/aarch64/
-set(JEVOIS_PLATFORM_OPENVINO_LIBS "-lopenvino_arm_cpu_plugin -lopenvino_auto_plugin -lopenvino_gapi_preproc \
--lopenvino_intel_myriad_plugin -lopenvino_onnx_frontend -lopenvino -lopenvino_auto_batch_plugin -lopenvino_c \
--lopenvino_hetero_plugin -lopenvino_ir_frontend -lopenvino_paddle_frontend -lopenvino_tensorflow_fe")
+# /usr/share/jevoispro-sdk/jevoispro-sysroot/usr/share/jevoispro-openvino-2022.3/runtime/lib/aarch64/
+set(JEVOIS_PLATFORM_OPENVINO_LIBS "-lopenvino_auto_batch_plugin -l:libopenvino_c.so.2230 \
+-lopenvino_intel_myriad_plugin -l:libopenvino_onnx_frontend.so.2230 -l:libopenvino_paddle_frontend.so.2230 \
+-l:libopenvino_tensorflow_frontend.so.2230 -lopenvino_auto_plugin -lopenvino_arm_cpu_plugin \
+-lopenvino_gapi_preproc -l:libopenvino_ir_frontend.so.2230 -l:libopenvino.so.2230 -lopenvino_hetero_plugin")
 
-# openvino libs for host, from /usr/share/jevoispro-openvino-2022.1/runtime/lib/intel64/
+# openvino libs for host, from /usr/share/jevoispro-openvino-2022.3/runtime/lib/intel64/
 set(JEVOIS_HOST_OPENVINO_LIBS "-lopenvino -lopenvino_c -lopenvino_auto_plugin \
--lgna -lopenvino_onnx_frontend -lopenvino_intel_gna_plugin -lopenvino_intel_cpu_plugin -lopenvino_ir_frontend \
+-lopenvino_onnx_frontend -lopenvino_intel_gna_plugin -lopenvino_intel_cpu_plugin \
 -lopenvino_paddle_frontend -lopenvino_hetero_plugin -lopenvino_intel_gpu_plugin -lopenvino_intel_myriad_plugin \
--lopenvino_tensorflow_fe -lopenvino_gapi_preproc -lopenvino_auto_batch_plugin")
+-lopenvino_tensorflow_frontend -lopenvino_gapi_preproc -lopenvino_auto_batch_plugin")
 
 # Ok, set the libs and paths for opencv and openvino:
 set(JEVOIS_PLATFORM_OPENCV_PREFIX "${JEVOIS_BUILD_BASE}/usr/share/${JEVOIS}-opencv-${JEVOIS_OPENCV_VERSION}")

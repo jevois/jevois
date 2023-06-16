@@ -31,7 +31,7 @@ namespace jevois
       limitations, such as:
       - cannot read/write raw camera registers.
       - usually cannot select any frames/s but instead limited to a few fixed values like 15fps, 30fps.
-      - usually limited to 3fps max (no 60fps or 120fps modes like on JeVois platform hardware)
+      - usually limited to 30fps max (no 60fps or 120fps modes like on JeVois platform hardware)
       - usually limited number of controls (exposure, gain, etc) available.
 
       The camera runs a thread that handles capturing frames automatically. Users can access the next grabbed frame
@@ -175,7 +175,8 @@ namespace jevois
       std::vector<std::shared_ptr<jevois::CameraDevice>> itsDev;
       int itsDevIdx = -1, itsDev2Idx = -1;
       int itsFd = -1, itsFd2 = -1;
-
+      Flags itsFlags;
+      
       mutable std::timed_mutex itsMtx;
   };
 

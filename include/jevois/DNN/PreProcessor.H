@@ -85,6 +85,12 @@ namespace jevois
       JEVOIS_DECLARE_PARAMETER(interp, InterpMode, "Image interpolation to use when resizing the input image "
                                "from camera to network input dims",
                                InterpMode::Nearest, InterpMode_Values, ParamCateg);
+
+      //! Parameter \relates jevois::PreProcessorBlob
+      JEVOIS_DECLARE_PARAMETER(numin, size_t, "Number of input blobs to generate from the received video image. "
+                               "Any additional inputs required by the network would have to be specified using "
+                               "Network parameter extraintensors",
+                               1, ParamCateg);
     }
 
     //! Pre-Processor for neural network pipeline
@@ -146,6 +152,18 @@ namespace jevois
         //! Get unscaled crop rectangle in image coordinates
         /*! This is useful to display an image overlay on top of the input image. */
         void getUnscaledCropRect(size_t blobnum, int & tlx, int & tly, int & brx, int & bry);
+
+        //! Convert coordinates from image to blob
+        /*! Given coords x,y should be in [0..w-1]x[0..h-1] where w,h are the image's width and height. This is useful
+            to convert mouse coordinates (after they have been converted from screen to image coords) to locations
+            within an input blob. */
+        void i2b(float & x, float & y, size_t blobnum = 0);
+
+        //! Convert coordinates from image to blob
+        /*! Given coords x,y should be in [0..w-1]x[0..h-1] where w,h are the image's width and height. This is useful
+            to convert mouse coordinates (after they have been converted from screen to image coords) to locations
+            within an input blob. */
+        void i2b(float & x, float & y, cv::Size const & bsiz, bool letterboxed);
 
         //! Get a pointer to our python-friendly interface
         std::shared_ptr<PreProcessorForPython> getPreProcForPy() const;

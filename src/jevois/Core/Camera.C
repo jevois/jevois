@@ -25,6 +25,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <fstream>
 
 #define ISP_META_WIDTH 272
 #define ISP_META_HEIGHT 1
@@ -36,14 +37,13 @@ jevois::Camera::Camera(std::string const & devname, jevois::CameraSensor s, unsi
   JEVOIS_TRACE(1);
 
   JEVOIS_TIMED_LOCK(itsMtx);
-  /*
+  
 #ifdef JEVOIS_PLATFORM_A33
   // Get the sensor flags (if supported, currently only JeVois-A33 platform):
   itsFlags = readFlags();
   LDEBUG("Sensor " << s << (itsFlags & JEVOIS_SENSOR_MONO) ? " Monochrome" : " Color" <<
          (itsFlags & JEVOIS_SENSOR_ICM20948) ? " with ICM20948 IMU" : " ");
 #endif
-  */
 }
 
 #ifdef JEVOIS_PLATFORM_PRO
@@ -56,23 +56,42 @@ void jevois::Camera::setFormat(jevois::VideoMapping const & m)
 
   // Destroy our devices, if any, in reverse order of creation:
   while (itsDev.empty() == false) itsDev.pop_back();
-  
-  // The IMX290 sensor only works well at native 1920x1080 with the JeVoisPro A311D ISP. So we always capture at 1080p
-  // and use crop/rescale in the ISP for other resolutions:
-  unsigned int capw = m.cw, caph = m.ch;
-  if (itsSensor == jevois::CameraSensor::imx290)
-  {
-    capw = 1920; caph = 1080;
-    LINFO("imx290: using native video capture size " << capw << 'x' << caph << " + crop/resize as needed");
-  }
-  
-  // Check desired capture size, compute crop and scaling:
-  if (m.cw > capw || m.ch > caph)
-    LFATAL("Sensor cannot capture desired " << m.cw << 'x' << m.ch << ": max is " << capw << 'x' << caph);
+
+  // Load sensor preset sequence if needed, get the native sensor capture dims for requested format:
+  unsigned int capw = m.cw, caph = m.ch; int preset = -1;
+  jevois::sensorPrepareSetFormat(itsSensor, m, capw, caph, preset);
+  std::string pstr; if (preset != -1) pstr = " [preset " + std::to_string(preset) + ']';
+  LINFO(itsSensor << ": using native video capture size " << capw << 'x' << caph << pstr << " + crop/resize as needed");
 
   // Crop or scale or both:
   switch (m.crop)
   {
+  case jevois::CropType::Scale:
+  {
+    // Start 3 streams to get the scaled image in the third one. If desired capture size is the same as native sensor
+    // size, revert to single-stream crop mode instead of scale:
+    if (capw != m.cw || caph != m.ch)
+    {
+      LINFO("Capture: " << capw << 'x' << caph << ", rescale to " << m.cw << 'x' << m.ch);
+
+      // Open 3 devices: raw frame, meta data, scaled frame, and set their formats:
+      itsDev.push_back(std::make_shared<jevois::CameraDevice>(itsDevName, 2, true)); // raw frame
+      itsDev.back()->setFormat(m.cfmt, capw, caph, m.cfps, m.cw, m.ch, preset);
+      
+      itsDev.push_back(std::make_shared<jevois::CameraDevice>(itsDevName, 2, true)); // metadata
+      itsDev.back()->setFormat(ISP_V4L2_PIX_FMT_META, ISP_META_WIDTH, ISP_META_HEIGHT,
+                               0.0F, ISP_META_WIDTH, ISP_META_HEIGHT);
+      
+      itsDev.push_back(std::make_shared<jevois::CameraDevice>(itsDevName, itsNbufs, false)); // DS1 frame
+      itsDev.back()->setFormat(m.cfmt, m.cw, m.ch, 0.0F, m.cw, m.ch);
+      
+      itsFd = itsDev.back()->getFd(); itsDevIdx = itsDev.size() - 1;
+      itsFd2 = -1; itsDev2Idx = -1;
+      break;
+    }
+  }
+  // fall-through ...
+  
   case jevois::CropType::Crop:
   {
     if (capw == m.cw && caph == m.ch) LINFO("Capture: " << capw << 'x' << caph);
@@ -80,40 +99,20 @@ void jevois::Camera::setFormat(jevois::VideoMapping const & m)
 
     // Open one device: raw frame
     itsDev.push_back(std::make_shared<jevois::CameraDevice>(itsDevName, itsNbufs, false));
-    itsDev.back()->setFormat(m.cfmt, capw, caph, m.cfps, m.cw, m.ch);
+    itsDev.back()->setFormat(m.cfmt, capw, caph, m.cfps, m.cw, m.ch, preset);
 
     itsFd = itsDev.back()->getFd(); itsDevIdx = itsDev.size() - 1;
     itsFd2 = -1; itsDev2Idx = -1;
   }
   break;
   
-  case jevois::CropType::Scale:
-  {
-    LINFO("Capture: " << capw << 'x' << caph << ", rescale to " << m.cw << 'x' << m.ch);
-
-    // Open 3 devices: raw frame, meta data, scaled frame, and set their formats:
-    itsDev.push_back(std::make_shared<jevois::CameraDevice>(itsDevName, 2, true)); // raw frame
-    itsDev.back()->setFormat(m.cfmt, capw, caph, m.cfps, m.cw, m.ch);
-
-    itsDev.push_back(std::make_shared<jevois::CameraDevice>(itsDevName, 2, true)); // metadata
-    itsDev.back()->setFormat(ISP_V4L2_PIX_FMT_META, ISP_META_WIDTH, ISP_META_HEIGHT,
-                             0.0F, ISP_META_WIDTH, ISP_META_HEIGHT);
-
-    itsDev.push_back(std::make_shared<jevois::CameraDevice>(itsDevName, itsNbufs, false)); // DS1 frame
-    itsDev.back()->setFormat(m.cfmt, m.cw, m.ch, 0.0F, m.cw, m.ch);
-
-    itsFd = itsDev.back()->getFd(); itsDevIdx = itsDev.size() - 1;
-    itsFd2 = -1; itsDev2Idx = -1;
-  }
-  break;
-
   case jevois::CropType::CropScale:
   {
     LINFO("Capture: " << capw << 'x' << caph << ", plus ISP scaled to " << m.c2w << 'x' << m.c2h);
 
     // Open 3 devices: raw frame, meta data, scaled frame, and set their formats:
     itsDev.push_back(std::make_shared<jevois::CameraDevice>(itsDevName, 2, false)); // raw frame
-    itsDev.back()->setFormat(m.cfmt, capw, caph, m.cfps, m.cw, m.ch);
+    itsDev.back()->setFormat(m.cfmt, capw, caph, m.cfps, m.cw, m.ch, preset);
 
     itsDev.push_back(std::make_shared<jevois::CameraDevice>(itsDevName, 2, true)); // metadata
     itsDev.back()->setFormat(ISP_V4L2_PIX_FMT_META, ISP_META_WIDTH, ISP_META_HEIGHT,
@@ -277,10 +276,15 @@ void jevois::Camera::writeRegister(unsigned short reg, unsigned short val)
 {
   JEVOIS_TIMED_LOCK(itsMtx);
   if (itsFd == -1) LFATAL("Not initialized");
-  unsigned short data[2] = { reg, val };
 
+#ifdef JEVOIS_PRO
+  std::ofstream ofs("/sys/devices/platform/sensor/sreg");
+  ofs << jevois::sformat("w %x %x\n", reg, val);
+#else
+  unsigned short data[2] = { reg, val };
   LDEBUG("Writing 0x" << std::hex << val << " to 0x" << reg);
   XIOCTL(itsFd, _IOW('V', 192, int), data);
+#endif
 }
 
 // ##############################################################################################################
@@ -288,11 +292,20 @@ unsigned short jevois::Camera::readRegister(unsigned short reg)
 {
   JEVOIS_TIMED_LOCK(itsMtx);
   if (itsFd == -1) LFATAL("Not initialized");
+#ifdef JEVOIS_PRO
+  {
+    std::ofstream ofs("/sys/devices/platform/sensor/sreg");
+    ofs << jevois::sformat("r %x\n", reg);
+  }
+  std::ifstream ifs("/sys/devices/platform/sensor/sreg");
+  unsigned short val; ifs >> std::hex >> val;
+  return val;
+#else
   unsigned short data[2] = { reg, 0 };
-
   XIOCTL(itsFd, _IOWR('V', 193, int), data);
   LDEBUG("Register 0x" << std::hex << reg << " has value 0x" << data[1]);
   return data[1];
+#endif
 }
 
 // ##############################################################################################################

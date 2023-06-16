@@ -48,7 +48,7 @@ namespace jevois
                                              "If not absolute, it is relative to zooroot",
                                              "models.yml", ParamCateg);
       //! Enum \relates jevois::Pipeline
-      JEVOIS_DEFINE_ENUM_CLASS(Filter, (All) (OpenCV) (TPU) (NPU) (VPU) (VPUX) (NPUX) (SPU) );
+      JEVOIS_DEFINE_ENUM_CLASS(Filter, (All) (OpenCV) (TPU) (NPU) (VPU) (VPUX) (NPUX) (SPU) (ORT) );
 
       //! Parameter \relates jevois::Pipeline
       JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(filter, Filter, "Filter to possibly only show as options in "
@@ -73,7 +73,7 @@ namespace jevois
                                              PreProc::Blob, PreProc_Values, ParamCateg);
       //! Enum \relates jevois::Pipeline
 #ifdef JEVOIS_PRO
-      JEVOIS_DEFINE_ENUM_CLASS(NetType, (OpenCV) (NPU) (TPU) (SPU) (Python) (Custom) );
+      JEVOIS_DEFINE_ENUM_CLASS(NetType, (OpenCV) (ORT) (NPU) (TPU) (SPU) (Python) (Custom) );
 #else
       JEVOIS_DEFINE_ENUM_CLASS(NetType, (OpenCV) (Python) (Custom) );
 #endif

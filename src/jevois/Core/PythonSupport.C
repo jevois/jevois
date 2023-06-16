@@ -36,6 +36,7 @@
 #include <jevois/Core/IMU.H>
 #include <jevois/Component/ParameterStringConversion.H>
 #include <jevois/DNN/PreProcessorPython.H>
+#include <jevois/DNN/Utils.H>
 
 #define PY_ARRAY_UNIQUE_SYMBOL pbcvt_ARRAY_API
 #include <jevois/Core/PythonOpenCV.H>
@@ -484,6 +485,8 @@ BOOST_PYTHON_MODULE(libjevois)
     .def("frameStarted", &jevois::GUIhelperPython::frameStarted)
     .def("drawImage", &jevois::GUIhelperPython::drawImage)
     .def("drawImage", &jevois::GUIhelperPython::drawImage1)
+    .def("drawImage", &jevois::GUIhelperPython::drawImage2)
+    .def("drawImage", &jevois::GUIhelperPython::drawImage3)
     .def("drawInputFrame", &jevois::GUIhelperPython::drawInputFrame)
     .def("drawInputFrame2", &jevois::GUIhelperPython::drawInputFrame2)
     .def("i2d", &jevois::GUIhelperPython::i2d)
@@ -510,6 +513,12 @@ BOOST_PYTHON_MODULE(libjevois)
     .def("reportError", &jevois::GUIhelperPython::reportError)
     .def("reportAndIgnoreException", &jevois::GUIhelperPython::reportAndIgnoreException)
     .def("reportAndRethrowException", &jevois::GUIhelperPython::reportAndRethrowException)
+    .def("getMousePos", &jevois::GUIhelperPython::getMousePos)
+    .def("isMouseClicked", &jevois::GUIhelperPython::isMouseClicked)
+    .def("isMouseDoubleClicked", &jevois::GUIhelperPython::isMouseDoubleClicked)
+    .def("isMouseDragging", &jevois::GUIhelperPython::isMouseDragging)
+    .def("isMouseDown", &jevois::GUIhelperPython::isMouseDown)
+    .def("isMouseReleased", &jevois::GUIhelperPython::isMouseReleased)
     ;
 #endif
   
@@ -547,6 +556,18 @@ BOOST_PYTHON_MODULE(libjevois)
     .def("blobsize", &jevois::dnn::PreProcessorForPython::blobsize)
     .def("b2i", &jevois::dnn::PreProcessorForPython::b2i)
     .def("getUnscaledCropRect", &jevois::dnn::PreProcessorForPython::getUnscaledCropRect)
+    .def("i2b", &jevois::dnn::PreProcessorForPython::i2b)
     ;
+
+  // #################### Allow python code to use PostProcessorDetectYOLOforPython
+  boost::python::class_<jevois::dnn::PostProcessorDetectYOLOforPython>("PyPostYOLO")
+    .def("freeze", &jevois::dnn::PostProcessorDetectYOLOforPython::freeze)
+    .def("yolo", &jevois::dnn::PostProcessorDetectYOLOforPython::yolo)
+    ;
+
+  // #################### DNN/Utils.H:
+  JEVOIS_PYTHON_DNN_FUNC(stringToRGBA);
+  std::string (*shapestr1)(cv::Mat const & m) = jevois::dnn::shapestr;
+  boost::python::def("shapestr", shapestr1);
 
 }

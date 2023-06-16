@@ -117,17 +117,44 @@ jevois::CameraDevice::CameraDevice(std::string const & devname, unsigned int con
   if ((cap.capabilities & V4L2_CAP_STREAMING) == 0)
     FDLFATAL(devname << " does not support streaming");
   
-  // List the supported formats, only once:
+  // List the supported formats and frame sizes, only once:
   static bool showfmts = true;
   if (dummy == false && showfmts)
   {
-    struct v4l2_fmtdesc fmtdesc = { };
+    struct v4l2_fmtdesc fmtdesc { };
     if (itsMplane) fmtdesc.type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE; else fmtdesc.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     while (true)
     {
       try { XIOCTL_QUIET(itsFd, VIDIOC_ENUM_FMT, &fmtdesc); } catch (...) { break; }
-      FDLINFO("Supported format " << fmtdesc.index << " is [" << fmtdesc.description << "] fcc " << std::showbase <<
+      FDLINFO("Video format " << fmtdesc.index << " is [" << fmtdesc.description << "] fcc " << std::showbase <<
               std::hex << fmtdesc.pixelformat << " [" << jevois::fccstr(fmtdesc.pixelformat) << ']');
+
+      std::string res = " - Supports";
+      struct v4l2_frmsizeenum frsiz { };
+      frsiz.pixel_format = fmtdesc.pixelformat;
+      bool keepgoing = true;
+      while (keepgoing)
+      {
+        try { XIOCTL_QUIET(itsFd, VIDIOC_ENUM_FRAMESIZES, &frsiz); } catch (...) { break; }
+
+        switch (frsiz.type)
+        {
+        case V4L2_FRMSIZE_TYPE_DISCRETE:
+          res += ' ' + std::to_string(frsiz.discrete.width) + 'x' + std::to_string(frsiz.discrete.height);
+          break;
+        case V4L2_FRMSIZE_TYPE_STEPWISE:
+          res += " stepwize frame sizes";
+          keepgoing = false;
+          break;
+        case V4L2_FRMSIZE_TYPE_CONTINUOUS:
+          res += " continuous frame sizes";
+          keepgoing = false;
+          break;
+        default: break;
+        }
+        ++frsiz.index;
+      }
+      FDLINFO(res);
       ++fmtdesc.index;
     }
     showfmts = false;
@@ -219,7 +246,7 @@ void jevois::CameraDevice::run()
       
       // Check whether user code cannot keep up with the frame rate, and if so requeue all dequeued buffers except maybe
       // the one currently associated with itsOutputImage:
-      if (itsBuffers && itsBuffers->nqueued() < 4)
+      if (itsBuffers && itsBuffers->nqueued() < 2)
       {
         LERROR("Running out of camera buffers - your process() function is too slow - DROPPING FRAMES");
         size_t keep = 12345678;
@@ -303,7 +330,7 @@ void jevois::CameraDevice::streamOn()
   if (itsStreaming.load() || itsBuffers) { FDLERROR("Stream is already on -- IGNORED"); return; }
 
   itsStreaming.store(false); // just in case user forgot to call abortStream()
-  /*
+
   // If number of buffers is zero, adjust it depending on frame size:
   unsigned int nbuf = itsNbufs;
   if (nbuf == 0)
@@ -311,15 +338,17 @@ void jevois::CameraDevice::streamOn()
     unsigned int framesize = jevois::v4l2ImageSize(itsFormat.fmt.pix.pixelformat, itsFormat.fmt.pix.width,
                                                    itsFormat.fmt.pix.height);
 
+#ifdef JEVOIS_PRO
+    // Aim for about 256 mbyte when using small images, and no more than 5 buffers in any case:
+    nbuf = (256U * 1024U * 1024U) / framesize;
+#else
     // Aim for about 4 mbyte when using small images, and no more than 5 buffers in any case:
     nbuf = (4U * 1024U * 1024U) / framesize;
-    if (nbuf > 5) nbuf = 5;
+#endif
   }
 
   // Force number of buffers to a sane value:
-  if (nbuf < 3) nbuf = 3; else if (nbuf > 63) nbuf = 63;
-  */
-  unsigned int nbuf = 10;
+  if (nbuf < 5) nbuf = 5; else if (nbuf > 8) nbuf = 8;
   
   // Allocate the buffers for our current video format:
   v4l2_buf_type btype = itsMplane ? V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE : V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -465,19 +494,20 @@ void jevois::CameraDevice::done(jevois::RawImage & img)
 
 // ##############################################################################################################
 void jevois::CameraDevice::setFormat(unsigned int const fmt, unsigned int const capw, unsigned int const caph,
-                                     float const fps, unsigned int const cropw, unsigned int const croph)
+                                     float const fps, unsigned int const cropw, unsigned int const croph,
+                                     int preset)
 {
   JEVOIS_TRACE(2);
 
   // We may be streaming, eg, if we were running a mapping with no USB out and then the user starts a video grabber. So
   // make sure we stream off first:
   if (itsStreaming.load()) streamOff();
-  
+
   JEVOIS_TIMED_LOCK(itsMtx);
 
   // Assume format not set in case we exit on exception:
   itsFormatOk = false;
-  
+
   // Set desired format:
   if (itsMplane)
   {
@@ -494,8 +524,8 @@ void jevois::CameraDevice::setFormat(unsigned int const fmt, unsigned int const 
     itsFormat.fmt.pix_mp.colorspace = V4L2_COLORSPACE_DEFAULT;
     itsFormat.fmt.pix_mp.field = V4L2_FIELD_NONE;
     itsFps = fps;
-    LDEBUG("Requesting multiplane video format " << itsFormat.fmt.pix.width << 'x' << itsFormat.fmt.pix.height << ' ' <<
-           jevois::fccstr(itsFormat.fmt.pix.pixelformat));
+    FDLDEBUG("Requesting multiplane video format " << itsFormat.fmt.pix.width << 'x' << itsFormat.fmt.pix.height
+             << ' ' << jevois::fccstr(itsFormat.fmt.pix.pixelformat));
 
     // Amlogic kernel bugfix: still set the regular fields:
     itsFormat.fmt.pix.width = capw;
@@ -517,8 +547,8 @@ void jevois::CameraDevice::setFormat(unsigned int const fmt, unsigned int const 
     itsFormat.fmt.pix.colorspace = V4L2_COLORSPACE_DEFAULT;
     itsFormat.fmt.pix.field = V4L2_FIELD_NONE;
     itsFps = fps;
-    LDEBUG("Requesting video format " << itsFormat.fmt.pix.width << 'x' << itsFormat.fmt.pix.height << ' ' <<
-           jevois::fccstr(itsFormat.fmt.pix.pixelformat));
+    FDLDEBUG("Requesting video format " << itsFormat.fmt.pix.width << 'x' << itsFormat.fmt.pix.height << ' ' <<
+             jevois::fccstr(itsFormat.fmt.pix.pixelformat));
   }
   
   // Try to set the format. If it fails, try to see whether we can use BAYER or MONO instead, and we will convert:
@@ -596,10 +626,10 @@ void jevois::CameraDevice::setFormat(unsigned int const fmt, unsigned int const 
       cropcap.type = V4L2_BUF_TYPE_VIDEO_CAPTURE; // Note: kernel docs say do not use the MPLANE type here.
       XIOCTL_QUIET(itsFd, VIDIOC_CROPCAP, &cropcap);
       
-      LDEBUG("Cropcap bounds " << cropcap.bounds.width << 'x' << cropcap.bounds.height <<
-             " @ (" << cropcap.bounds.left << ", " << cropcap.bounds.top << ')');
-      LDEBUG("Cropcap defrect " << cropcap.defrect.width << 'x' << cropcap.defrect.height <<
-             " @ (" << cropcap.defrect.left << ", " << cropcap.defrect.top << ')');
+      FDLDEBUG("Cropcap bounds " << cropcap.bounds.width << 'x' << cropcap.bounds.height <<
+               " @ (" << cropcap.bounds.left << ", " << cropcap.bounds.top << ')');
+      FDLDEBUG("Cropcap defrect " << cropcap.defrect.width << 'x' << cropcap.defrect.height <<
+               " @ (" << cropcap.defrect.left << ", " << cropcap.defrect.top << ')');
       
       struct v4l2_crop crop = { };
       crop.type = itsFormat.type;
@@ -619,10 +649,10 @@ void jevois::CameraDevice::setFormat(unsigned int const fmt, unsigned int const 
       
       XIOCTL_QUIET(itsFd, VIDIOC_S_CROP, &crop);
       
-      LINFO("Set cropping rectangle to " << crop.c.width << 'x' << crop.c.height <<
-            " @ (" << crop.c.left << ", " << crop.c.top << ')');
+      FDLINFO("Set cropping rectangle to " << crop.c.width << 'x' << crop.c.height <<
+              " @ (" << crop.c.left << ", " << crop.c.top << ')');
     }
-    catch (...) { LERROR("Querying/setting crop rectangle not supported"); }
+    catch (...) { FDLERROR("Querying/setting crop rectangle not supported"); }
 
   // From now on, as far as we are concerned, these are the capture width and height:
   itsFormat.fmt.pix.width = cropw;
@@ -640,7 +670,8 @@ void jevois::CameraDevice::setFormat(unsigned int const fmt, unsigned int const 
     itsConvertedOutputImage.fps = itsFps;
     itsConvertedOutputImage.buf = std::make_shared<jevois::VideoBuf>(-1, itsConvertedOutputImage.bytesize(), 0, -1);
   }
-  
+
+#ifndef JEVOIS_PRO
   // Set frame rate:
   if (fps > 0.0F)
     try
@@ -651,10 +682,23 @@ void jevois::CameraDevice::setFormat(unsigned int const fmt, unsigned int const 
       parms.parm.capture.capturemode = V4L2_MODE_VIDEO;
       XIOCTL(itsFd, VIDIOC_S_PARM, &parms);
       
-      LDEBUG("Set framerate to " << fps << " fps");
+      FDLDEBUG("Set framerate to " << fps << " fps");
     }
-    catch (...) { LERROR("Setting frame rate to " << fps << " fps failed -- IGNORED"); }
+    catch (...) { FDLERROR("Setting frame rate to " << fps << " fps failed -- IGNORED"); }
+#endif
 
+  // Load any low-level camera sensor preset register sequence:
+  if (preset != -1)
+  {
+    FDLINFO("Loading sensor preset " << preset);
+
+    // Bugfix for when loading preset 0: the kernel driver will ignore the request unless we set non-zero preset first:
+    if (preset == 0) { struct v4l2_control ctrl { 0xf0f003, 1 };  XIOCTL(itsFd, VIDIOC_S_CTRL, &ctrl); }
+
+    struct v4l2_control ctrl { 0xf0f003, preset }; // 0xf0f003 = ispsensorpreset
+    XIOCTL(itsFd, VIDIOC_S_CTRL, &ctrl);
+  }
+  
   // All good, note that we succeeded:
   itsFormatOk = true;
 }

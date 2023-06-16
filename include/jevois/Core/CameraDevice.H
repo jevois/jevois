@@ -59,7 +59,7 @@ namespace jevois
 
       //! Set the video format and frame rate
       void setFormat(unsigned int const fmt, unsigned int const capw, unsigned int const caph, float const fps,
-                     unsigned int const cropw, unsigned int const croph);
+                     unsigned int const cropw, unsigned int const croph, int preset = -1);
 
     private:
       std::string const itsDevName; //!< Our device or movie file name

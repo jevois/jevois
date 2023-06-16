@@ -52,6 +52,7 @@ jevois::GPUtextureDmaBuf::GPUtextureDmaBuf(EGLDisplay display, GLsizei width, GL
     // These are not supported: FIXME could add a debayer shader or is one already in MALI?
   case V4L2_PIX_FMT_SRGGB8:
   case V4L2_PIX_FMT_SBGGR16:
+  case V4L2_PIX_FMT_SGRBG16:
   case V4L2_PIX_FMT_MJPEG:
   case 0:
   default: LFATAL("Unsupported pixel format " << jevois::fccstr(fmt));

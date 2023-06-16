@@ -129,6 +129,7 @@ void jevois::dnn::NetworkNPU::freeze(bool doit)
   intensors::freeze(doit);
   outtensors::freeze(doit);
   ovxver::freeze(doit);
+  jevois::dnn::Network::freeze(doit); // base class parameters
 }
 
 // ####################################################################################################

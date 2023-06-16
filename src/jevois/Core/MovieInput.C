@@ -48,34 +48,58 @@ void jevois::MovieInput::streamOff()
 { }
 
 // ##############################################################################################################
+bool jevois::MovieInput::hasScaledImage() const
+{
+  return (itsMapping.c2fmt != 0);
+}
+
+// ##############################################################################################################
 void jevois::MovieInput::get(RawImage & img)
 {
   static size_t frameidx = 0; // only used for conversion info messages
-  
+
+  // Users may call get() several times on a given frame. The switch to the next frame is when done() is called, which
+  // invalidates itsBuf:
+  if (itsBuf)
+  {
+    // Just pass the buffer to the rawimage:
+    img.width = itsMapping.cw;
+    img.height = itsMapping.ch;
+    img.fmt = itsMapping.cfmt;
+    img.fps = itsMapping.cfps;
+    img.buf = itsBuf;
+    img.bufindex = 0;
+
+    return;
+  }
+    
   // Grab the next frame:
-  cv::Mat frame;
-  if (itsCap.read(frame) == false)
+  if (itsCap.read(itsRawFrame) == false)
   {
     LINFO("End of input - Rewinding...");
     
     // Maybe end of file, reset the position:
     itsCap.set(cv::CAP_PROP_POS_AVI_RATIO, 0);
-
+    itsCap.set(cv::CAP_PROP_POS_FRAMES, 0);
+    
     // Try again:
-    if (itsCap.read(frame) == false) LFATAL("Could not read next video frame");
+    if (itsCap.read(itsRawFrame) == false) LFATAL("Could not read next video frame");
   }
-
+  
   // If dims do not match, resize:
-  if (frame.cols != int(itsMapping.cw) || frame.rows != int(itsMapping.ch))
+  cv::Mat frame;
+  if (itsRawFrame.cols != int(itsMapping.cw) || itsRawFrame.rows != int(itsMapping.ch))
   {
     if (frameidx++ % 100 == 0)
-      LINFO("Resizing frame from " << frame.cols <<'x'<< frame.rows << " to " << itsMapping.cw <<'x'<< itsMapping.ch);
-    cv::resize(frame, frame, cv::Size(itsMapping.cw, itsMapping.ch));
+      LINFO("Note: Resizing get() frame from " << itsRawFrame.cols <<'x'<< itsRawFrame.rows << " to " <<
+            itsMapping.cw <<'x'<< itsMapping.ch);
+    cv::resize(itsRawFrame, frame, cv::Size(itsMapping.cw, itsMapping.ch));
   }
+  else frame = itsRawFrame;
   
   // Reset our VideoBuf:
   itsBuf.reset(new jevois::VideoBuf(-1, itsMapping.csize(), 0, -1));
-
+  
   // Set the fields in our output RawImage:
   img.width = itsMapping.cw;
   img.height = itsMapping.ch;
@@ -89,10 +113,71 @@ void jevois::MovieInput::get(RawImage & img)
 }
 
 // ##############################################################################################################
+void jevois::MovieInput::get2(RawImage & img)
+{
+  static size_t frameidx = 0; // only used for conversion info messages
+
+  // Users may call get2() several times on a given frame. The switch to the next frame is when done2() is called, which
+  // invalidates itsBuf2:
+  if (itsBuf2)
+  {
+    // Just pass the buffer to the rawimage:
+    img.width = itsMapping.c2w;
+    img.height = itsMapping.c2h;
+    img.fmt = itsMapping.c2fmt;
+    img.fps = itsMapping.cfps;
+    img.buf = itsBuf2;
+    img.bufindex = 0;
+
+    return;
+  }
+
+  // If get2() is called before get() let's call get() now:
+  if (! itsBuf)
+  {
+    jevois::RawImage tmp;
+    get(tmp);
+  }
+
+  // Now both itsBuf and itsRawFrame are valid, let's just convert/resize itsRawFrame into our second frame format:
+  cv::Mat frame;
+  if (itsRawFrame.cols != int(itsMapping.c2w) || itsRawFrame.rows != int(itsMapping.c2h))
+  {
+    if (frameidx++ % 100 == 0)
+      LINFO("Note: Resizing get2() frame from " << itsRawFrame.cols <<'x'<< itsRawFrame.rows << " to " <<
+            itsMapping.c2w <<'x'<< itsMapping.c2h);
+    cv::resize(itsRawFrame, frame, cv::Size(itsMapping.c2w, itsMapping.c2h));
+  }
+  else frame = itsRawFrame;
+  
+  // Reset our VideoBuf:
+  itsBuf2.reset(new jevois::VideoBuf(-1, itsMapping.c2size(), 0, -1));
+  
+  // Set the fields in our output RawImage:
+  img.width = itsMapping.c2w;
+  img.height = itsMapping.c2h;
+  img.fmt = itsMapping.c2fmt;
+  img.fps = itsMapping.cfps;
+  img.buf = itsBuf2;
+  img.bufindex = 0;
+
+  // Now convert from BGR to desired color format:
+  jevois::rawimage::convertCvBGRtoRawImage(frame, img, 75);
+}
+
+// ##############################################################################################################
 void jevois::MovieInput::done(RawImage & JEVOIS_UNUSED_PARAM(img))
 {
   // Just nuke our buffer:
   itsBuf.reset();
+  itsRawFrame = cv::Mat();
+}
+
+// ##############################################################################################################
+void jevois::MovieInput::done2(RawImage & JEVOIS_UNUSED_PARAM(img))
+{
+  // Just nuke our buffer:
+  itsBuf2.reset();
 }
 
 // ##############################################################################################################

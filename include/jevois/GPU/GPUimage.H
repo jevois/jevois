@@ -39,7 +39,9 @@ namespace jevois
   {
     public:
       //! Constructor
-      GPUimage();
+      /*! If enable_twirl is true, the image can twirl, by an amount set using setTwirl(). Useful only for demos and
+          screen saving. */
+      GPUimage(bool enable_twirl = false);
 
       //! Destructor
       ~GPUimage();
@@ -95,6 +97,9 @@ namespace jevois
       //! Convert a 2D size from on-screen to within a rendered image
       /*! Throws if draw() has not been previously called. */
       ImVec2 d2is(ImVec2 const & p);
+
+      //! Set the twirl amount if the image was constructed with twirl enabled
+      void setTwirl(float t);
       
     protected:
       void setInternal(unsigned int width, unsigned int height, unsigned int fmt, unsigned char const * data);
@@ -116,6 +121,8 @@ namespace jevois
       unsigned int itsFormat = 0;
       int itsGLtextureWidth = 0;
       GLenum itsGLtextureFmt = 0;
+      bool itsTwirl;
+      GLfloat itsTwirlAmount = 0;
   };
   
 } // namespace jevois

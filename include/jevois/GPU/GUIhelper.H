@@ -451,6 +451,9 @@ namespace jevois
       // Flag to refresh video mappings when we save the file or add a new one by creating a new module:
       bool itsRefreshVideoMappings = false;
       int itsVideoMappingListType = 0;
+
+      // Flag to indicate whether we have a USB serial gadget
+      bool itsUSBserial = false;
   };
 
 } // namespace jevois

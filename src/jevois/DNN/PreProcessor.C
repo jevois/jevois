@@ -92,6 +92,38 @@ void jevois::dnn::PreProcessor::getUnscaledCropRect(size_t num, int & tlx, int &
 }
 
 // ####################################################################################################
+void jevois::dnn::PreProcessor::i2b(float & x, float & y, size_t blobnum)
+{
+  if (blobnum >= itsCrops.size())
+    LFATAL("Invalid blob number " << blobnum << ", only have " << itsCrops.size() << " crops");
+
+  cv::Rect const & r = itsCrops[blobnum];
+  i2b(x, y, blobsize(blobnum), (r.x != 0 || r.y != 0));
+}
+
+// ####################################################################################################
+void jevois::dnn::PreProcessor::i2b(float & x, float & y, cv::Size const & bsiz, bool letterboxed)
+{
+  if (itsImageSize.width == 0 || itsImageSize.height == 0) LFATAL("Cannot handle zero image width or height");
+  if (bsiz.width == 0 || bsiz.height == 0) LFATAL("Cannot handle zero blob width or height");
+
+  if (letterboxed)
+  {
+    // We did letterbox and crop, so we need to apply scale and offset:
+    float const fac = std::min(itsImageSize.width / float(bsiz.width), itsImageSize.height / float(bsiz.height));
+    float const cropw = fac * bsiz.width + 0.4999F;
+    float const croph = fac * bsiz.height + 0.4999F;
+    x = (x - (itsImageSize.width - cropw) * 0.5F) / fac;
+    y = (y - (itsImageSize.height - croph) * 0.5F) / fac;
+  }
+  else
+  {
+    x *= float(bsiz.width) / itsImageSize.width;
+    y *= float(bsiz.height) / itsImageSize.height;
+  }
+}
+
+// ####################################################################################################
 std::shared_ptr<jevois::dnn::PreProcessorForPython> jevois::dnn::PreProcessor::getPreProcForPy() const
 { return itsPP; }
 
