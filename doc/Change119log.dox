@@ -22,10 +22,12 @@ JeVois 1.19 brings the following new features:
   inference, or post-processing are in python, that will force synchronous DNN processing, which may lower the framerate
   of the GUI on slow networks.
 
-- Updated to OpenCV 4.7.0, OpenVino 2022.3, EdgeTPU 1.16, Hailo 4.13.0
+- Updated to OpenCV 4.7.0, OpenVino 2022.3, EdgeTPU 1.16, PyCoral 2.0.0, HailoRT 4.13.0
 
 - Core JeVois: Fixed selection of default videomapping from file, updated contribs to include onnxruntime, cleaned up
   some include and dependency paths in CMakeLists.txt.
+
+- Core JeVois: Added more Python bindings for getNumInstalledTPUs(), getFanSpeed(), etc
 
 - Movie input: added support for dual-stream in JeVois-Pro (where the input at one resolution is sent to display, while
   the same image at another resolution is sent to processing). To use pre-recorded movie inputs instead of live video,
@@ -44,7 +46,7 @@ JeVois 1.19 brings the following new features:
   new PreProcessor::i2b()). Both d2i() and i2b() correctly handle letterboxing, scaling, streching, etc. See example of
   use in PyPostURetinex.py
 
-- DNN: Improved sementic segmentation post-processor to allow for a threshold (only values above threshold will be
+- DNN: Improved semantic segmentation post-processor to allow for a threshold (only values above threshold will be
   displayed as semi-transparent OpenGL overlay).
 
 - JeVois-Pro: Added more python wrappers for ImGUI, to allow users to check for mouse coordinates, button clicked, etc
@@ -55,8 +57,8 @@ JeVois 1.19 brings the following new features:
   mode. You can then connect JeVois-Pro to a host computer using a regular USB-A to mini-USB cable, and the JeVois-Pro
   serial console will be accessible on host via /dev/ttyACM0.
 
-- Serial-over-USB: Now can handle USB cabel disconnects/reconnects, by trying to re-open the device after the connection
-  was lost.
+- Serial-over-USB: Now can handle USB cable disconnects/reconnects, by trying to re-open the device after the connection
+  was lost. Also better handling of USB send buffer overflows while the cable is disconnected.
 
 - JeVois-Pro: More deep learning models, including several new ONNX-Runtime models. Added fields for comment and URL to
   the model zoo entries.

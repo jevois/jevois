@@ -462,6 +462,11 @@ BOOST_PYTHON_MODULE(libjevois)
   JEVOIS_PYTHON_FUNC(getSysInfoCPU);
   JEVOIS_PYTHON_FUNC(getSysInfoMem);
   JEVOIS_PYTHON_FUNC(getSysInfoVersion);
+  JEVOIS_PYTHON_FUNC(getNumInstalledTPUs);
+  JEVOIS_PYTHON_FUNC(getNumInstalledVPUs);
+  JEVOIS_PYTHON_FUNC(getNumInstalledNPUs);
+  JEVOIS_PYTHON_FUNC(getNumInstalledSPUs);
+  JEVOIS_PYTHON_FUNC(getFanSpeed);
 
 #ifdef JEVOIS_PRO
   // #################### GUIhelper.H
