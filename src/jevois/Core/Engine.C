@@ -497,6 +497,7 @@ void jevois::Engine::postInit()
   }
 #endif
   camerasens::freeze();
+  LINFO("Using camera sensor: " << camsens);
   
   // Check iw we want to use GUI mode:
   bool usegui = false;
