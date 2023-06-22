@@ -923,6 +923,7 @@ void jevois::dnn::Pipeline::process(jevois::RawImage const & inimg, jevois::StdM
         }
       }
     }
+    else pipelines.clear();
 
     itsPreStats.push_back(itsProcSecs[0]);
     itsNetStats.push_back(itsProcSecs[1]);
