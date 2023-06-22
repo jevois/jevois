@@ -110,9 +110,15 @@ namespace jevois
                                true, ParamCateg);
 
       //! Parameter \relates jevois::Pipeline
-      JEVOIS_DECLARE_PARAMETER(statsfile, std::string, "Appends pre/net/post timing statistics in HTML table format "
+      JEVOIS_DECLARE_PARAMETER(statsfile, std::string, "Append pre/net/post timing statistics in HTML table format "
                                "to the specified file if not empty. If path is relative, it is to " JEVOIS_SHARE_PATH,
                                "", ParamCateg);
+
+      //! Parameter \relates jevois::Pipeline
+      JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(benchmark, bool, "Cycle through all networks specified by filter and, "
+                                             "for each, run it for a while and append pre/net/post timing statistics "
+                                             "in HTML table format to " JEVOIS_SHARE_PATH "/benchmark.html",
+                                             false, ParamCateg);
     }
     
     //! Neural processing pipeline
@@ -128,7 +134,7 @@ namespace jevois
                      public jevois::Parameter<pipeline::zooroot, pipeline::zoo, pipeline::filter, pipeline::pipe,
                                               pipeline::processing, pipeline::preproc, pipeline::nettype,
                                               pipeline::postproc, pipeline::overlay, pipeline::paramwarn,
-                                              pipeline::statsfile>
+                                              pipeline::statsfile, pipeline::benchmark>
     {
       public:
         //! Constructor
@@ -191,6 +197,7 @@ namespace jevois
         void onParamChange(pipeline::nettype const & param, pipeline::NetType const & val) override;
         void onParamChange(pipeline::preproc const & param, pipeline::PreProc const & val) override;
         void onParamChange(pipeline::postproc const & param, pipeline::PostProc const & val) override;
+        void onParamChange(pipeline::benchmark const & param, bool const & val) override;
 
         std::future<std::vector<cv::Mat>> itsNetFut;
         std::array<std::string, 3> itsProcTimes { "PreProc: -", "Network: -", "PstProc: -" };

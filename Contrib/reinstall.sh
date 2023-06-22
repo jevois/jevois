@@ -152,7 +152,7 @@ if [ "X$REPLY" = "Xy" ]; then
     ORT_VER="1.15.0"
 
     # For host:
-    wget https://github.com/microsoft/onnxruntime/releases/download/v1.15.0/onnxruntime-linux-x64-${ORT_VER}.tgz
+    wget https://github.com/microsoft/onnxruntime/releases/download/v${ORT_VER}/onnxruntime-linux-x64-${ORT_VER}.tgz
     tar xvf onnxruntime-linux-x64-${ORT_VER}.tgz
     /bin/rm onnxruntime-linux-x64-${ORT_VER}.tgz
 
@@ -169,7 +169,7 @@ if [ "X$REPLY" = "Xy" ]; then
     /bin/rm -rf onnxruntime-linux-x64-${ORT_VER}
     
     # For jevois-pro platform:
-    wget https://github.com/microsoft/onnxruntime/releases/download/v1.15.0/onnxruntime-linux-aarch64-${ORT_VER}.tgz
+    wget https://github.com/microsoft/onnxruntime/releases/download/v${ORT_VER}/onnxruntime-linux-aarch64-${ORT_VER}.tgz
     tar xvf onnxruntime-linux-aarch64-${ORT_VER}.tgz
     /bin/rm onnxruntime-linux-aarch64-${ORT_VER}.tgz
     

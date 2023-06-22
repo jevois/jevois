@@ -223,6 +223,9 @@ namespace jevois
       //! Reset this parameter to its default value
       virtual void reset() override;
       
+      //! Access to our parameter def
+      ParameterDef<T> const & def() const;
+
       //! Change the ParameterDef of this parameter
       /*! Use with caution, only people who know what they are doing should use this function. Its thread safety and
           possible side effects are dubious. */
@@ -406,12 +409,8 @@ namespace jevois
       //! Handle to owning component
       virtual Component const * owner() const override;
 
-      //! Access to our parameter def
-      ParameterDef<T> const & def() const;
-      
     private:
       Component * itsComp;
-      ParameterDef<T> itsDef; // we keep a copy of the def so the caller's can run out of scope
   };
 
   /*! @} */ // **********************************************************************

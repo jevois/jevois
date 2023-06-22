@@ -155,6 +155,11 @@ void jevois::ParameterCore<T>::changeParameterDef(jevois::ParameterDef<T> const 
 
 // ######################################################################
 template <typename T> inline
+jevois::ParameterDef<T> const & jevois::ParameterCore<T>::def() const
+{ return itsDef; }
+
+// ######################################################################
+template <typename T> inline
 void jevois::ParameterCore<T>::reset()
 { jevois::ParameterCore<T>::set(itsDef.defaultValue()); }
 
@@ -211,7 +216,7 @@ jevois::ParameterSummary const jevois::ParameterCore<T>::summary() const
 // ######################################################################
 template <typename T> inline
 jevois::DynamicParameter<T>::DynamicParameter(jevois::Component * comp, jevois::ParameterDef<T> const & pdef) :
-    jevois::ParameterCore<T>(pdef), itsComp(comp), itsDef(pdef)
+    jevois::ParameterCore<T>(pdef), itsComp(comp)
 {
   if (comp == nullptr) LFATAL("Called with null component");
   LDEBUG("Adding dynamic parameter [" << itsDef.name() << "] to component [" << itsComp->instanceName() << ']');
@@ -232,10 +237,3 @@ jevois::Component const * jevois::DynamicParameter<T>::owner() const
 {
   return itsComp;
 }
-// ######################################################################
-template <typename T> inline
-jevois::ParameterDef<T> const & jevois::DynamicParameter<T>::def() const
-{
-  return itsDef;
-}
-
