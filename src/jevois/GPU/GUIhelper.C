@@ -1049,7 +1049,7 @@ void jevois::GUIhelper::drawInfo()
       else if (show)
       {
         // If header not collapsed, show data:
-        if (jevois::stringStartsWith(s, "- ")) ImGui::BulletText("%s", s.c_str() + 2);
+        if (jevois::stringStartsWith(s, "- ")) { ImGui::Bullet(); ImGui::TextUnformatted(s.c_str() + 2); }
         else ImGui::TextUnformatted(s.c_str());
       }
     }

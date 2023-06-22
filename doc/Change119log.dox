@@ -65,6 +65,12 @@ JeVois 1.19 brings the following new features:
 
 - JeVois-Pro: Better fan control, including temperature monitoring on Hailo-8 accelerator board.
 
+- JeVois-Pro: Better module info display with wrapping of bullet text.
+
+- JeVois-Pro: New \p benchmark parameter in Pipeline to run an automated benchmark that cycles through all available
+  networks according to the current pipeline filter. Benchmark stats are saved in HTML table format to
+  /jevoispro/share/benchmarks.html
+
 - JeVois-Pro: We have working prototypes of 8MP/4K OS08a10 sensor boards, and 2.3MP global shutter AR0234CS. The color
   calibration is not good on the AR0234, will need to tweak the ISP calibrations in the kernel. Please let us know if
   you are interested in these sensors. Added camera sensor auto-detection based on which kernel overlay is active.
