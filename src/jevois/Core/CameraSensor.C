@@ -156,7 +156,6 @@ bool jevois::sensorSupportsFormat(jevois::CameraSensor s, jevois::VideoMapping c
 
     if (m.wdr != jevois::WDRtype::Linear) return false; // Wide dynamic range not supported by this sensor
     if (m.crop == jevois::CropType::CropScale) return false; // Dual-stream capture not supported by this sensor
-    if (m.c2fmt && (m.c2fmt != m.cfmt || m.c2w != m.cw || m.c2h != m.ch)) return false; // No non-trivial crop/scale
 
     // This sensor supports: YUYV, BAYER, RGB565
     //  SXGA (1280 x 1024): up to 15 fps
@@ -184,7 +183,6 @@ bool jevois::sensorSupportsFormat(jevois::CameraSensor s, jevois::VideoMapping c
 
     if (m.wdr != jevois::WDRtype::Linear) return false; // Wide dynamic range not supported by this sensor
     if (m.crop == jevois::CropType::CropScale) return false; // Dual-stream capture not supported by this sensor
-    if (m.c2fmt && (m.c2fmt != m.cfmt || m.c2w != m.cw || m.c2h != m.ch)) return false; // No non-trivial crop/scale
 
     // This sensor supports: YUYV, BAYER, RGB565
     //  UXGA (1600 x 1200): up to 15 fps
@@ -220,7 +218,6 @@ bool jevois::sensorSupportsFormat(jevois::CameraSensor s, jevois::VideoMapping c
 
     if (m.wdr != jevois::WDRtype::Linear) return false; // Wide dynamic range not supported by this sensor
     if (m.crop == jevois::CropType::CropScale) return false; // Dual-stream capture not supported by this sensor
-    if (m.c2fmt && (m.c2fmt != m.cfmt || m.c2w != m.cw || m.c2h != m.ch)) return false; // No non-trivial crop/scale
 
     // This sensor supports: YUYV, BAYER, RGB565
     //   VGA ( 640 x  480): up to 60 fps
@@ -246,7 +243,6 @@ bool jevois::sensorSupportsFormat(jevois::CameraSensor s, jevois::VideoMapping c
 
     if (m.wdr != jevois::WDRtype::Linear) return false; // Wide dynamic range not supported by this sensor
     if (m.crop == jevois::CropType::CropScale) return false; // Dual-stream capture not supported by this sensor
-    if (m.c2fmt && (m.c2fmt != m.cfmt || m.c2w != m.cw || m.c2h != m.ch)) return false; // No non-trivial crop/scale
 
     // This sensor supports: BAYER or MONO
     //  SXGA (1280 x  960): up to 54 fps

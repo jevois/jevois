@@ -36,8 +36,6 @@ jevois::Camera::Camera(std::string const & devname, jevois::CameraSensor s, unsi
 {
   JEVOIS_TRACE(1);
 
-  JEVOIS_TIMED_LOCK(itsMtx);
-  
 #ifdef JEVOIS_PLATFORM_A33
   // Get the sensor flags (if supported, currently only JeVois-A33 platform):
   itsFlags = readFlags();
@@ -325,11 +323,14 @@ void jevois::Camera::unlock()
 // ##############################################################################################################
 jevois::Camera::Flags jevois::Camera::readFlags()
 {
-  JEVOIS_TIMED_LOCK(itsMtx);
-  if (itsFd == -1) LFATAL("Not initialized");
+  int fd = open(itsDevName.c_str(), O_RDWR | O_NONBLOCK, 0);
+  if (fd == -1) { LERROR("Camera device open fail on " << itsDevName); return jevois::Camera::JEVOIS_SENSOR_COLOR; }
 
   int data;
-  try { XIOCTL(itsFd, _IOWR('V', 198, int), &data); } catch (...) { return jevois::Camera::JEVOIS_SENSOR_COLOR; }
+  try { XIOCTL(fd, _IOWR('V', 198, int), &data); }
+  catch (...) { close(fd); return jevois::Camera::JEVOIS_SENSOR_COLOR; }
+  close(fd);
+  
   return Flags(data);
 }
 
