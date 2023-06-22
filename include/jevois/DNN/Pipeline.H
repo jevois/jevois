@@ -185,10 +185,11 @@ namespace jevois
         std::shared_ptr<PreProcessor> itsPreProcessor;
         std::shared_ptr<Network> itsNetwork;
         std::shared_ptr<PostProcessor> itsPostProcessor;
-
+        void reloadZoo(std::string const & root, std::string const & filt, std::string const & zoofile);
+        
       private:
         jevois::TimerOne itsTpre, itsTnet, itsTpost;
-        
+
         bool itsZooChanged = false;
         void onParamChange(pipeline::zooroot const & param, std::string const & val) override;
         void onParamChange(pipeline::zoo const & param, std::string const & val) override;

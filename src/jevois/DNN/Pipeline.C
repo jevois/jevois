@@ -204,6 +204,7 @@ void jevois::dnn::Pipeline::onParamChange(pipeline::benchmark const & JEVOIS_UNU
   else
   {
     statsfile::freeze(false);
+    statsfile::reset();
   }
 }
 
@@ -852,6 +853,121 @@ void jevois::dnn::Pipeline::process(jevois::RawImage const & inimg, jevois::StdM
       }
       break;
       }
+      
+      // Update our rolling average of total processing time:
+      itsSecsSum += itsProcSecs[0] + itsProcSecs[1] + itsProcSecs[2];
+      if (++itsSecsSumNum == 20) { itsSecsAvg = itsSecsSum / itsSecsSumNum; itsSecsSum = 0.0; itsSecsSumNum = 0; }
+      
+      // If computing benchmarking stats, update them now:
+      if (statsfile::get().empty() == false && itsOuts.empty() == false)
+      {
+        static std::vector<std::string> pipelines;
+        static bool statswritten = false;
+        static size_t benchpipe = 0;
+        
+        if (benchmark::get())
+        {
+          if (pipelines.empty())
+          {
+            // User just turned on benchmark mode. List all pipes and start iterating over them:
+            // Valid values string format is List:[A|B|C] where A, B, C are replaced by the actual elements.
+            std::string pipes = pipe::def().validValuesString();
+            size_t const idx = pipes.find('[');
+            pipes = pipes.substr(idx + 1, pipes.length() - idx - 2); // risky code but we control the string's contents
+            pipelines = jevois::split(pipes, "\\|");
+            benchpipe = 0;
+            statswritten = false;
+            pipe::set(pipelines[benchpipe]);
+#ifdef JEVOIS_PRO
+            if (helper)
+            {
+              helper->reportError("Starting DNN benchmark...");
+              helper->reportError("Benchmarking: " +pipelines[benchpipe]);
+            }
+#endif
+          }
+          else
+          {
+            // Switch to the next pipeline after enough stats have been written:
+            if (statswritten)
+            {
+              ++benchpipe;
+              statswritten = false;
+              if (benchpipe >= pipelines.size())
+              {
+                pipelines.clear();
+                benchmark::set(false);
+#ifdef JEVOIS_PRO
+                if (helper) helper->reportError("DNN benchmark complete.");
+#endif
+              }
+              else
+              {
+                pipe::set(pipelines[benchpipe]);
+#ifdef JEVOIS_PRO
+                if (helper) helper->reportError("Benchmarking: " +pipelines[benchpipe]);
+#endif
+              }
+            }
+          }
+        }
+        else pipelines.clear();
+        
+        itsPreStats.push_back(itsProcSecs[0]);
+        itsNetStats.push_back(itsProcSecs[1]);
+        itsPstStats.push_back(itsProcSecs[2]);
+        
+        // Discard data for a few warmup frames after we start a new net:
+        if (itsStatsWarmup && itsPreStats.size() == 200)
+        { itsStatsWarmup = false; itsPreStats.clear(); itsNetStats.clear(); itsPstStats.clear(); }
+        
+        if (itsPreStats.size() == 500)
+        {
+          // Compute totals:
+          std::vector<double> tot;
+          for (size_t i = 0; i < itsPreStats.size(); ++i)
+            tot.emplace_back(itsPreStats[i] + itsNetStats[i] + itsPstStats[i]);
+          
+          // Append to stats file:
+          std::string const fn = jevois::absolutePath(JEVOIS_SHARE_PATH, statsfile::get());
+          std::ofstream ofs(fn, std::ios_base::app);
+          if (ofs.is_open())
+          {
+            ofs << "<tr><td class=jvpipe>" << pipe::get() << " </td>";
+            
+            std::vector<std::string> insizes;
+            for (cv::Mat const & m : itsBlobs)
+              insizes.emplace_back(jevois::replaceAll(jevois::dnn::shapestr(m), " ", "&nbsp;"));
+            ofs << "<td class=jvnetin>" << jevois::join(insizes, ", ") << "</td>";
+            
+            std::vector<std::string> outsizes;
+            for (cv::Mat const & m : itsOuts)
+              outsizes.emplace_back(jevois::replaceAll(jevois::dnn::shapestr(m), " ", "&nbsp;"));
+            ofs << "<td class=jvnetout>" << jevois::join(outsizes, ", ") << "</td>";
+            
+            ofs <<
+              "<td class=jvprestats>" << jevois::replaceAll(jevois::secs2str(itsPreStats), " ", "&nbsp;") << "</td>"
+              "<td class=jvnetstats>" << jevois::replaceAll(jevois::secs2str(itsNetStats), " ", "&nbsp;") << "</td>"
+              "<td class=jvpststats>" << jevois::replaceAll(jevois::secs2str(itsPstStats), " ", "&nbsp;") << "</td>"
+              "<td class=jvtotstats>" << jevois::replaceAll(jevois::secs2str(tot), " ", "&nbsp;") << "</td>";
+            
+            // Finally report average fps:
+            double avg = 0.0;
+            for (double t : tot) avg += t;
+            avg /= tot.size();
+            if (avg) avg = 1.0 / avg; // from s/frame to frames/s
+            ofs << "<td class=jvfps>" << std::fixed << std::showpoint << std::setprecision(1) <<
+              avg << "&nbsp;fps</td></tr>" << std::endl;
+            
+            // Ready for next round:
+            itsPreStats.clear();
+            itsNetStats.clear();
+            itsPstStats.clear();
+            LINFO("Network stats appended to " << fn);
+            statswritten = true;
+          }
+        }
+      }
     }
   }
   catch (...)
@@ -864,121 +980,6 @@ void jevois::dnn::Pipeline::process(jevois::RawImage const & inimg, jevois::StdM
 #else
     jevois::warnAndIgnoreException(instanceName());
 #endif
-  }
-
-  // Update our rolling average of total processing time:
-  itsSecsSum += itsProcSecs[0] + itsProcSecs[1] + itsProcSecs[2];
-  if (++itsSecsSumNum == 20) { itsSecsAvg = itsSecsSum / itsSecsSumNum; itsSecsSum = 0.0; itsSecsSumNum = 0; }
-
-  // If computing benchmarking stats, update them now:
-  if (statsfile::get().empty() == false && ready())
-  {
-    static std::vector<std::string> pipelines;
-    static bool statswritten = false;
-    static size_t benchpipe = 0;
-    
-    if (benchmark::get())
-    {
-      if (pipelines.empty())
-      {
-        // User just turned on benchmark mode. List all pipes and start iterating over them:
-        // Valid values string format is List:[A|B|C] where A, B, C are replaced by the actual elements.
-        std::string pipes = pipe::def().validValuesString();
-        size_t const idx = pipes.find('[');
-        pipes = pipes.substr(idx + 1, pipes.length() - idx - 2); // risky code but we control the string's contents
-        pipelines = jevois::split(pipes, "\\|");
-        benchpipe = 0;
-        statswritten = false;
-        pipe::set(pipelines[benchpipe]);
-#ifdef JEVOIS_PRO
-        if (helper)
-        {
-          helper->reportError("Starting DNN benchmark...");
-          helper->reportError("Benchmarking: " +pipelines[benchpipe]);
-        }
-#endif
-      }
-      else
-      {
-        // Switch to the next pipeline after enough stats have been written:
-        if (statswritten)
-        {
-          ++benchpipe;
-          statswritten = false;
-          if (benchpipe >= pipelines.size())
-          {
-            pipelines.clear();
-            benchmark::set(false);
-#ifdef JEVOIS_PRO
-            if (helper) helper->reportError("DNN benchmark complete.");
-#endif
-          }
-          else
-          {
-            pipe::set(pipelines[benchpipe]);
-#ifdef JEVOIS_PRO
-            if (helper) helper->reportError("Benchmarking: " +pipelines[benchpipe]);
-#endif
-          }
-        }
-      }
-    }
-    else pipelines.clear();
-
-    itsPreStats.push_back(itsProcSecs[0]);
-    itsNetStats.push_back(itsProcSecs[1]);
-    itsPstStats.push_back(itsProcSecs[2]);
-    
-    // Discard data for a few warmup frames after we start a new net:
-    if (itsStatsWarmup && itsPreStats.size() == 50)
-    { itsStatsWarmup = false; itsPreStats.clear(); itsNetStats.clear(); itsPstStats.clear(); }
-    
-    if (itsPreStats.size() == 200)
-    {
-      // Compute totals:
-      std::vector<double> tot;
-      for (size_t i = 0; i < itsPreStats.size(); ++i)
-        tot.emplace_back(itsPreStats[i] + itsNetStats[i] + itsPstStats[i]);
-      
-      // Append to stats file:
-      std::string const fn = jevois::absolutePath(JEVOIS_SHARE_PATH, statsfile::get());
-      std::ofstream ofs(fn, std::ios_base::app);
-      if (ofs.is_open())
-      {
-        ofs << "<tr><td class=jvpipe>" << pipe::get() << " </td>";
-        
-        std::vector<std::string> insizes;
-        for (cv::Mat const & m : itsBlobs)
-          insizes.emplace_back(jevois::replaceAll(jevois::dnn::shapestr(m), " ", "&nbsp;"));
-        ofs << "<td class=jvnetin>" << jevois::join(insizes, ", ") << "</td>";
-
-        std::vector<std::string> outsizes;
-        for (cv::Mat const & m : itsOuts)
-          outsizes.emplace_back(jevois::replaceAll(jevois::dnn::shapestr(m), " ", "&nbsp;"));
-        ofs << "<td class=jvnetout>" << jevois::join(outsizes, ", ") << "</td>";
-
-        ofs <<
-          "<td class=jvprestats>" << jevois::replaceAll(jevois::secs2str(itsPreStats), " ", "&nbsp;") << "</td>"
-          "<td class=jvnetstats>" << jevois::replaceAll(jevois::secs2str(itsNetStats), " ", "&nbsp;") << "</td>"
-          "<td class=jvpststats>" << jevois::replaceAll(jevois::secs2str(itsPstStats), " ", "&nbsp;") << "</td>"
-          "<td class=jvtotstats>" << jevois::replaceAll(jevois::secs2str(tot), " ", "&nbsp;") << "</td>";
-
-        // Finally report average fps:
-        double avg = 0.0;
-        for (double t : tot) avg += t;
-        avg /= tot.size();
-        if (avg) avg = 1.0 / avg; // from s/frame to frames/s
-        ofs << "<td class=jvfps>" << std::fixed << std::showpoint << std::setprecision(1) <<
-          avg << "&nbsp;fps</td></tr>" << std::endl;
-
-        // Ready for next round:
-        itsPreStats.clear();
-        itsNetStats.clear();
-        itsPstStats.clear();
-        LINFO("Network stats appended to " << fn);
-        statswritten = true;
-      }
-    }
   }
   
 #ifdef JEVOIS_PRO
