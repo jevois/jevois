@@ -58,6 +58,7 @@ factory for three sub-components:
   + NetworkNPU (C++)
   + NetworkHailo (C++)
   + NetworkTPU (C++)
+  + NetworkORT (C++) for ONN Runtime (also available in Python)
   + write your own in python following the interface in Network, NetworkPython and the example in \ref PyNetOpenCV.py
 
 - PostProcessor: receives the raw network outputs and presents them in a human-friendly way. For example, draw boxes
@@ -88,6 +89,7 @@ where ACCEL is one of (OpenCV, NPU, SPU, TPU, VPU, NPUX, VPUX, Python), and TYPE
 The following keys are used in the JeVois-Pro GUI (\p pipe parameter of Pipeline component):
 
 - **OpenCV:** network loaded by OpenCV DNN framework and running on CPU.
+- **ORT:** network loaded by ONNX Runtime framework and running on CPU.
 - **NPU:** network running native on the JeVois-Pro integrated 5-TOPS NPU (neural processing unit).
 - **TPU:** network running on the optional 4-TOPS Google Coral TPU accelerator (tensor processing unit).
 - **SPU:** network running on the optional 26-TOPS Hailo8 SPU accelerator (stream processing unit).

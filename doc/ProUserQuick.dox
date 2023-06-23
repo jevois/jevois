@@ -112,13 +112,13 @@ This is very useful for development. You would do as follows:
 
 - switch to console boot and reboot
 - login as root/jevois
-- run `sudo jevoispro.sh`
+- run `jevoispro.sh`
 - if you want to exit, activate the \p allowquit parameter of the Graphical User Interface (you need to turn on showing
-  system parameters first). Or you could also start with `sudo jevoispro.sh --gui --allowquit` which will allow you to
+  system parameters first). Or you could also start with `jevoispro.sh --gui --allowquit` which will allow you to
   exit JeVois software when you press the ESC key.
 - if you need to edit some files, download some files, etc and you like to do that in X-windows, then `startx` and
   logout from it when you are done.
-- then you can run `sudo jevoispro.sh` again, etc.
+- then you can run `jevoispro.sh` again, etc.
 
 WiFi or wired networking
 ========================
@@ -128,7 +128,7 @@ See \ref ProNetwork
 Enabling 4K display resolution
 ==============================
 
-Do this by editing the \p hdmi value in \b /boot/env.txt on the microSD card. For example, for 4K at 30Hz:
+Do this by editing the \p hdmi value in <b>/boot/env.txt</b> on the microSD card. For example, for 4K at 30Hz:
 
 \verbatim
 hdmi=2160p30hz
@@ -144,7 +144,7 @@ Overclocking the CPU
 Overclocking the CPU to 2.4 GHz (big cores, default is 2.208 GHz) and 2.208 GHz (little cores, default 1.8 GHz) is quite
 stable in our testing, especially if you make sure your cooling is strong (see \ref UserProFan to edit fan settings).
 
-First, you need to enable overcloking by editing \b /boot/env.txt on the microSD card:
+First, you need to enable overcloking by editing <b>/boot/env.txt</b> on the microSD card:
 
 \code{.py}
 # Maximum CPU Frequency of Little Core A53

@@ -4,7 +4,7 @@ Tips for YAML zoo files
 -----------------------
 
 - keys supported in the YAML files: each one is documented in the classes that use them, in the
-  `JEVOIS_DECLARE_PARAMETER(...)` directives at the beginning of each header file):
+  `JEVOIS_DECLARE_PARAMETER(...)` directives at the beginning of each header file:
   + jevois::dnn::PreProcessor
   + jevois::dnn::Network
   + jevois::dnn::PostProcessor
