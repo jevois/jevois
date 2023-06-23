@@ -20,6 +20,8 @@ New users, be sure to check out [JeVois Start](/start/start.html).
 - \subpage UserSerial
 - \subpage UserSerialStyle
 - \subpage ProConnectors
+- \subpage UserProFan
+- \subpage UserProUSBserial
 - \subpage UserCli
 - \subpage ArduinoTutorial
 - \subpage CaseMounting

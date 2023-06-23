@@ -105,7 +105,7 @@ namespace jevois
   /*! Used internally by Parameter, likely not so useful to others, included in the jevois namespace to avoid having to
       pull boost::python into Parameter, which would pull it into pretty much everything and increase compile time a
       lot.
-      \note This function throws! So obviously it only makes sense to use it inside a catch block. \ingroupdebugging */
+      \note This function throws! So obviously it only makes sense to use it inside a catch block. \ingroup debugging */
   void warnAndRethrowParamCallbackException[[noreturn]](std::string const & descriptor, std::string const & strval);
   
   //! Display an error message into a RawImage

@@ -44,6 +44,7 @@ Follow these instructions to connect to JeVois using serial-over-USB:
 - \subpage USBserialLinux
 - \subpage USBserialWindows
 - \subpage USBserialMac
+- \subpage UserProUSBserial
 
 \note When running JeVois software in \b host mode, you can simply interact with JeVois by typing commands directly in
 the terminal window from which you started jevois-daemon. See \ref JeVoisDaemon for more details.

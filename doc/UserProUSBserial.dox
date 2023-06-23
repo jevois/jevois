@@ -1,0 +1,30 @@
+/*! \page UserProUSBserial JeVois-Pro serial-over-USB communications
+
+Starting with \jvversion{1.19.0}, you can enable sending log and module output messages to the mini-USB port of
+\jvpro. Simply check that option in the System tab of the GUI as shown below:
+
+\jvimg{prousbserial.jpg, 25%}
+
+and reboot your camera.
+
+Then use a regular USB to mini-USB cable to connect the mini-USB port of JeVois Pro to a standard USB port on a host
+computer. When \jvpro boots up, your host computer will detect a USB serial device. You can then connect to it to
+communicate with \jvpro. For example, on a Linux host, a new device \b /dev/ttyACM0 will appear on the host machine when
+\jvpro is connected. You can then connect, e.g., using the \p screen program:
+
+\verbatim
+sudo screen /dev/ttyACM0 115200
+\endverbatim
+
+and then issue commands to \jvpro as described in \ref UserCli
+
+\jvversion{1.19.0} strengthened the serial driver in the JeVois software to be robust to cable
+disconnects/reconnects. There still are caveats, though, as it seems that there is no proper way of actually knowing
+whether a cable is connected or not from Linux user space. However, there is a small buffer associated with the serial
+port that will eventually overflow if \jvpro is sending messages and the cable is not connected. When that is the case,
+\jvpro will close the serial device and attempt to re-open it. This usually will succeed when the cable has been
+re-connected. Just beware that if your module is not writing a lot of messages, you will not know on the camera that the
+cable is disconnected until you have attempted to output enough messages to cause that buffer overflow.
+
+
+*/

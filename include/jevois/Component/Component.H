@@ -232,7 +232,7 @@ namespace jevois
           \param instance A string identifying a particular instance of a Component, no two sub-components of a
           component may have the same instance name. The instance name should be passed in through your derived
           Component's constructor, allowing users to disambiguate between multiple instances of your Component.  If the
-          instance name is empty, the actual instance will be named <ComponentClassname># with # replaced (if necessary)
+          instance name is empty, the actual instance will be named ComponentClassname# with # replaced (if necessary)
           by a unique number. If the instance name is not empty but contains a #, only that # is replaced (if necessary)
           by a number that makes the instance name unique. The final name is accessible via instanceName() once your
           component is constructed. There is no default value for instance in the base class to catch derived classes

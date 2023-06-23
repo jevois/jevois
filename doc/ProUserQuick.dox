@@ -125,4 +125,42 @@ WiFi or wired networking
 
 See \ref ProNetwork
 
+Enabling 4K display resolution
+==============================
+
+Do this by editing the \p hdmi value in \b /boot/env.txt on the microSD card. For example, for 4K at 30Hz:
+
+\verbatim
+hdmi=2160p30hz
+\endverbatim
+
+Note that the camera will overall run a bit slower at 4K than at the default 1080p. We posit that this is due to more
+contention on the memory bus, as we use DMA all the way from camera sensor to GPU to display, so the CPU workload should
+not significantly increase at 4K.
+
+Overclocking the CPU
+====================
+
+Overclocking the CPU to 2.4 GHz (big cores, default is 2.208 GHz) and 2.208 GHz (little cores, default 1.8 GHz) is quite
+stable in our testing, especially if you make sure your cooling is strong (see \ref UserProFan to edit fan settings).
+
+First, you need to enable overcloking by editing \b /boot/env.txt on the microSD card:
+
+\code{.py}
+# Maximum CPU Frequency of Little Core A53
+# 500/667/1000/1200/1398/1512/1608/1704/1800(default)/1908/2016/2100/2208
+max_freq_a53=2208
+
+# Maximum CPU Frequency of Big Core A73
+# 500/667/1000/1200/1398/1512/1608/1704/1800/1908/2016/2100/2208(default)/2304/2400
+max_freq_a73=2400
+\endcode
+
+This just sets the maximum possible frequency. But by default, the operating frequencies are still 2.2/1.8 GHz at boot
+time.
+
+Then reboot \jvpro and, in the GUI, select the Parameters tab, then enable "Show System Parameters", and under "Engine
+Options" you can set the desired cpu max speeds. You can set those values in the \p params.cfg config file (see Config
+tab in the GUI) if you want them to be the default at boot time.
+
 */

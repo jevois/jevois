@@ -1,0 +1,46 @@
+/*! \page UserProFan JeVois-Pro Adjusting Fan Speed
+
+The fan on \jvpro is controlled with a simple algorithm with two states and hysteresis:
+
+- As long as temperature is below \a temp_max, fan speed is low
+- When temperature exceeds \a temp_max, fan speed switches to high
+- Fan speed will remain high until temperature drops below \a temp_min, at which point fan speed is
+  switched back to low.
+
+In our testing, this is far less annoying than a ramp modulation that would increase fan speed with temperature, which
+gets very distracting.
+
+Adjusting the fan parameters
+============================
+
+The fan on \jvpro is controlled by a small program that poss CPU, Coral TPU (if installed), and Hailo-8 SPU (if
+installed) temperatures and adjusts fan speed using the above algorithm. To change the settings, go to the Config Tab in
+the GUI and at the bottom of the list of files, select "Browse / Create file..."
+
+
+\jvimg{fanservice1.jpg, 25%}
+
+Navigate to and open: <b>/lib/systemd/system/jevoispro-fan.service</b>
+
+You can then add options as described in the comment block at top to the \p ExecStart line.
+
+\jvimg{fanservice2.jpg, 25%}
+
+For example:
+
+\verbatim
+ExecStart=/sbin/jevoispro-fan -d 4.8
+\endverbatim
+
+could make your fan quieter when the camera is not under high CPU load and hence the CPU is cool. If you choose a value
+for \p -d that is too low, the fan may not spin at all, which is not recommended.
+
+After you have edited the file, save it, and, in the Console tab of the GUI, type:
+
+\verbatim
+!systemctl restart jevoispro-fan
+\endverbatim
+
+(or reboot your camera). The fan starts at full speed for a few seconds at startup, then the algorithm takes over.
+
+*/
