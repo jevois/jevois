@@ -79,7 +79,7 @@ std::string jevois::cvtypestr(unsigned int cvtype)
   if (chans > 1)
   {
     r += 'C';
-    r += (chans + '0');
+    if (chans < 10) r += (chans + '0'); else r += std::to_string(chans);
   }
 
   return r;

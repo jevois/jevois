@@ -308,7 +308,7 @@ std::vector<cv::Mat> jevois::dnn::PreProcessorBlob::process(cv::Mat const & img,
     case 3:
     case 4:
     {
-      // If fmt type is auto (e.g., ONNX runtime), guess it at NCHW or NHWC based on dims:
+      // If fmt type is auto (e.g., ONNX runtime), guess it as NCHW or NHWC based on dims:
       vsi_nn_dim_fmt_e fmt = attr.dtype.fmt;
       if (fmt == VSI_NN_DIM_FMT_AUTO)
       {
