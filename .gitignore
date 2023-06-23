@@ -3,3 +3,15 @@ doc/jevois.tag
 pkgconfig/jevois.pc
 doc/snip/*
 *~
+Contrib/.installed
+Contrib/onnxruntime
+Contrib/tensorflow
+Contrib/threadpool
+Contrib/imgui/.github
+Contrib/npu
+/hbuild/
+/pbuild/
+/phbuild/
+/ppbuild/
+/ppdbuild/
+/jvpkg/
