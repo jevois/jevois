@@ -23,6 +23,9 @@ for the following runtime frameworks:
   
   The JeVois DNN framework supports OpenCV with CPU, Myriad-X, and TIM-VX, through the NetworkOpenCV class.
 
+- ** ONNX Runtime:** Accepts models in ONNX format, and runs them directly on CPU with no further conversion needed. Can
+  be invoked from C++ and Python.
+
 - **Verisilicon / Amlogic A311D NPU integrated into the JeVois-Pro processor (5 TOPS):** The NPU SDK provided by
   Verisilicon/Amlogic allows one to convert and quantize a model for native operation on the NPU. At runtime, the NPU is
   directly connected to the main memory of JeVois-Pro and hence provides the fastest data transfer rates. JeVois
@@ -42,8 +45,8 @@ Quantization
 ============
 
 %Network quantization is the process of converting network weights from 32-bit float values that are usually used on
-server-grade GPUs to smaller representations, e.g., 8-bit wide. This both makes the model smaller, faster to load, and
-faster to execute using dedicated embedded hardware processors that are designed to operate using 8-bit weights.
+server-grade GPUs to smaller representations, e.g., 8-bit wide. This makes the model smaller, faster to load, and faster
+to execute using dedicated embedded hardware processors that are designed to operate using 8-bit weights.
 
 When quantizing, the goal is to use as much of the reduced available bits to represent the original float values. For
 example, if float values are known to always be, during training, in some range, say, [-12.4 .. 24.7], then one would

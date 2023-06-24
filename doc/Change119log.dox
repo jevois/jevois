@@ -49,6 +49,10 @@ JeVois 1.19 brings the following new features:
 - DNN: Improved semantic segmentation post-processor to allow for a threshold (only values above threshold will be
   displayed as semi-transparent OpenGL overlay).
 
+- JeVois-Pro: improved crispness of the ImGui rendering, which now looks super nice even at GUI scale 1 (under the
+  Parameters tab of the GUI, enable "Show Systems Parameters", and then in the section on Graphical User Interface, play
+  with the gui scale parameter).
+
 - JeVois-Pro: Added more python wrappers for ImGUI, to allow users to check for mouse coordinates, button clicked, etc
   in python. Example of use in PyPostURetinex.py
 

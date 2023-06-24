@@ -44,26 +44,8 @@ sudo usermod -aG dialout $USER # need to reboot to take effect
 sudo usermod -aG video $USER # need to reboot to take effect
 \endverbatim
 
-\note During the upgrade of Ubuntu 20.04, you may get logged out to the login screen, and unable to log back in by
-typing your password. We assume this is a glitch in Ubuntu while the login screen software gets updated. If this
-happens, patiently wait until you see no more disk activity for a while, as other updates are in progress. We recommend
-waiting for at least 15-30 minutes. Then send a hard power off to the machine and restart it.
-
-JeVois-Pro: Setting up the Google Coral package source
-------------------------------------------------------
-
-\jvpro will also use libraries from Google Coral for the TPU accelerator. Set these up as follows to be able to install
-them on your desktop (see https://coral.ai/software/#debian-packages for up-to-date information):
-
-\verbatim
-echo "deb https://packages.cloud.google.com/apt coral-edgetpu-stable main" | sudo tee /etc/apt/sources.list.d/coral-edgetpu.list
-echo "deb https://packages.cloud.google.com/apt coral-cloud-stable main" | sudo tee /etc/apt/sources.list.d/coral-cloud.list
-curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
-sudo apt update
-\endverbatim
-
-You do not need to install any Coral package yet. When you later run `apt install jevoispro-host` (see below), it will
-pull the Coral libraries as dependencies.
+\note Starting with \jvversion{1.19.0}, jevois.usc.edu now also hosts mirror copies of the Google Coral EdgeTPU and
+Hailo deb packages, so you do not need to pull those from their respective vendors.
 
 Installing Ubuntu packages for JeVois-A33 development
 =====================================================
