@@ -182,6 +182,7 @@ public:
 		static const LanguageDefinition& Lua();
 		static const LanguageDefinition& Python();
 		static const LanguageDefinition& JeVoisCfg();
+		static const LanguageDefinition& CMake();
 	};
 
 	TextEditor();

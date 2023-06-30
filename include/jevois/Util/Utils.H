@@ -107,6 +107,9 @@ namespace jevois
   //! Replace all instances of 'from' with 'to'
   /*! Returns the number of replacements made. */
   std::string replaceAll(std::string const & str, std::string const & from, std::string const & to);
+
+  //! Convert string to lowercase
+  std::string tolower(std::string const & str);
   
   //! Compute an absolute path from two paths
   /*! Parameter \p path contains a path that could be either absolute or relative; parameter \p root should contain a
@@ -160,7 +163,8 @@ namespace jevois
   void flushcache();
 
   //! Execute a command and grab stdout output to a string
-  /*! If errtoo is true, we also grab errors by appending a 2>&1 to the command. */
+  /*! If errtoo is true, we also grab errors by appending a 2>&1 to the command. Throws std::runtime_error if the
+      command cannot be run somehow, or if it exits with a non-zero exit code. */
   std::string system(std::string const & cmd, bool errtoo = true);
 
   //! Report a duration given in seconds with variable units (ns, us, ms, or s), with precision of 2 decimal points

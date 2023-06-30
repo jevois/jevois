@@ -45,7 +45,7 @@
 
 // ##############################################################################################################
 jevois::GUIhelper::GUIhelper(std::string const & instance, bool conslock) :
-    jevois::Component(instance), pixel_perfect_z(0.0f), itsIdle(true), itsConsLock(conslock), itsBackend()
+    jevois::Component(instance), itsConsLock(conslock), itsBackend()
 {
   // We defer OpenGL init to startFrame() so that all OpenGL code is in the same thread.
 
@@ -162,6 +162,10 @@ void jevois::GUIhelper::reset(bool modulechanged)
 
   // Refresh whether we have a USB serial gadget loaded:
   itsUSBserial = ! engine()->getParamStringUnique("engine:usbserialdev").empty();
+
+  // If the engine's current videomapping has a CMakeLists.txt, copy it to itsNewMapping to allow recompilation:
+  jevois::VideoMapping const & m = engine()->getCurrentVideoMapping();
+  if (std::filesystem::exists(m.cmakepath())) itsNewMapping = m;
 }
 
 // ##############################################################################################################
@@ -204,13 +208,18 @@ bool jevois::GUIhelper::startFrame(unsigned short & w, unsigned short & h)
   itsBackend.newFrame();
 
   // Check if we have been idle:
-  float const hs = hidesecs::get();
-  if (hs)
+  if (itsIdleBlocked)
+    itsIdle = false;
+  else
   {
-    std::chrono::duration<float> elapsed = now - itsLastEventTime;
-    itsIdle = (elapsed.count() >= hs);
+    float const hs = hidesecs::get();
+    if (hs)
+    {
+      std::chrono::duration<float> elapsed = now - itsLastEventTime;
+      itsIdle = (elapsed.count() >= hs);
+    }
+    else itsIdle = false;
   }
-  else itsIdle = false;
   
   itsEndFrameCalled = false;
 
@@ -675,6 +684,9 @@ void jevois::GUIhelper::endFrame()
 
   // Draw our JeVois GUI on top of everything:
   if (itsIdle == false) drawJeVoisGUI();
+
+  // If compiling, draw compilation window:
+  if (itsCompileState != CompilationState::Idle) compileModule();
   
   // Render everything and swap buffers:
   itsBackend.render();
@@ -910,9 +922,8 @@ void jevois::GUIhelper::drawInfo()
       try { itsIcon.load(m->absolutePath("icon.png")); }
       catch (...)
       {
-        jevois::warnAndIgnoreException();
-
         // Load a default C++ or Python icon:
+        LERROR("This module has no icon -- USING DEFAULT");
         try
         {
           if (engine()->getCurrentVideoMapping().ispython) itsIcon.load(JEVOIS_SHARE_PATH "/icons/py.png");
@@ -1456,7 +1467,7 @@ int jevois::GUIhelper::modal(std::string const & title, char const * text, int *
   
   if (ImGui::BeginPopupModal(title.c_str(), NULL, ImGuiWindowFlags_AlwaysAutoResize))
   {
-    ImGui::TextUnformatted(text);
+    ImGui::TextUnformatted(text); ImGui::TextUnformatted(" ");
     ImGui::Separator();
     if (default_val)
     {
@@ -1464,10 +1475,12 @@ int jevois::GUIhelper::modal(std::string const & title, char const * text, int *
       ImGui::Checkbox("Don't ask me next time", &dont_ask_me_next_time);
       ImGui::PopStyleVar();
     }
-    if (ImGui::Button(b1txt, ImVec2(120, 0))) ret = 1;
+    float const b1w = std::max(120.0F, ImGui::CalcTextSize(b1txt).x + 20.0F);
+    if (ImGui::Button(b1txt, ImVec2(b1w, 0))) ret = 1;
     ImGui::SetItemDefaultFocus();
     ImGui::SameLine();
-    if (ImGui::Button(b2txt, ImVec2(120, 0))) ret = 2; 
+    float const b2w = std::max(120.0F, ImGui::CalcTextSize(b2txt).x + 20.0F);
+    if (ImGui::Button(b2txt, ImVec2(b2w, 0))) ret = 2; 
     ImGui::EndPopup();
   }
   
@@ -1685,39 +1698,204 @@ namespace
     default: return 0;
     }
   }
+
+  unsigned int get_v4l2_idx(int fcc)
+  {
+    switch (fcc)
+    {
+    case V4L2_PIX_FMT_YUYV: return 0;
+    case V4L2_PIX_FMT_RGB24: return 1;
+    case V4L2_PIX_FMT_RGB32: return 2;
+    case V4L2_PIX_FMT_GREY: return 3;
+    case V4L2_PIX_FMT_SBGGR16: return 4;
+    default: return 0;
+    }
+  }
+
+  // Copy a file and replace special fields:
+  void cookedCopy(std::filesystem::path const & src, std::filesystem::path const & dst,
+                  std::string const & name, std::string const & vendor, std::string const & synopsis,
+                  std::string const & author, std::string const & email, std::string const & website,
+                  std::string const & license, std::string const & videomapping)
+  {
+    std::ifstream f(src);
+    if (f.is_open() == false) LFATAL("Cannot read " << src);
+    std::string str((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+
+    std::string proj = jevois::tolower(name);
+    
+    jevois::replaceStringAll(str, "__MODULE__", name);
+    jevois::replaceStringAll(str, "__PROJECT__", proj);
+    jevois::replaceStringAll(str, "__VENDOR__", vendor);
+    jevois::replaceStringAll(str, "__SYNOPSIS__", synopsis);
+    jevois::replaceStringAll(str, "__AUTHOR__", author);
+    jevois::replaceStringAll(str, "__EMAIL__", email);
+    jevois::replaceStringAll(str, "__WEBSITE__", website);
+    jevois::replaceStringAll(str, "__LICENSE__", license);
+    jevois::replaceStringAll(str, "__VIDEOMAPPING__", videomapping);
+          
+    std::ofstream ofs(dst);
+    if (ofs.is_open() == false) LFATAL("Cannot write " << dst << " -- check that you are running as root.");
+    ofs << str << std::endl;
+    LINFO("Translated copy " << src << " => " << dst);             
+  }
+
+  // Copy an existing CMakeLists.txt and replace some fields:
+  void cookedCmakeClone(std::filesystem::path const & src, std::filesystem::path const & dst,
+                        std::string const & oldname, std::string const & newname,
+                        std::string const & oldvendor, std::string const & newvendor, std::string const & synopsis,
+                        std::string const & author, std::string const & email, std::string const & website,
+                        std::string const & license, std::string const & videomapping)
+  {
+    std::ifstream f(src);
+    if (f.is_open() == false) LFATAL("Cannot read " << src);
+    std::string str((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+
+    std::string oldproj = jevois::tolower(oldname);
+    std::string newproj = jevois::tolower(newname);
+
+    jevois::replaceStringAll(str, oldname, newname);
+    jevois::replaceStringAll(str, oldproj, newproj);
+    jevois::replaceStringAll(str, oldvendor, newvendor);
+    jevois::replaceStringAll(str, "__SYNOPSIS__", synopsis);
+    jevois::replaceStringAll(str, "__AUTHOR__", author);
+    jevois::replaceStringAll(str, "__EMAIL__", email);
+    jevois::replaceStringAll(str, "__WEBSITE__", website);
+    jevois::replaceStringAll(str, "__LICENSE__", license);
+    jevois::replaceStringAll(str, "__VIDEOMAPPING__", videomapping);
+         
+    std::ofstream ofs(dst);
+    if (ofs.is_open() == false) LFATAL("Cannot write " << dst << " -- check that you are running as root.");
+    ofs << str << std::endl;
+    LINFO("Translated copy " << src << " => " << dst);             
+  }
+
+  // Try to replace class name and namespace name. This is very hacky...
+  void cookedCodeClone(std::filesystem::path const & src, std::filesystem::path const & dst,
+                       std::string const & oldname, std::string const & newname)
+  {
+    std::ifstream f(src);
+    if (f.is_open() == false) LFATAL("Cannot read " << src);
+    std::string str((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+
+    std::string oldnspc = jevois::tolower(oldname);
+    std::string newnspc = jevois::tolower(newname);
+
+    jevois::replaceStringAll(str, "class " + oldname, "class " + newname);
+    jevois::replaceStringAll(str, oldname + '(', newname + '('); // constructor and destructor
+    jevois::replaceStringAll(str, '(' + oldname, '(' + newname); // JEVOIS_REGISTER_MODULE
+    jevois::replaceStringAll(str, oldname + "::", newname + "::");
+
+    jevois::replaceStringAll(str, "namespace " + oldnspc, "namespace " + newnspc);
+    jevois::replaceStringAll(str, oldnspc + "::", newnspc + "::");
+
+    // Revert a few replacements if jevois was involved. E.g., when cloning the DNN module that uses the
+    // jevois::dnn namespace...
+    jevois::replaceStringAll(str, "jevois::" + newnspc, "jevois::" + oldnspc);
+    jevois::replaceStringAll(str, "jevois::" + newname, "jevois::" + oldname);
+    
+    std::ofstream ofs(dst);
+    if (ofs.is_open() == false) LFATAL("Cannot write " << dst << " -- check that you are running as root.");
+    ofs << str << std::endl;
+    LINFO("Translated copy " << src << " => " << dst);             
+  }
 }
 
 // ##############################################################################################################
 void jevois::GUIhelper::drawNewModuleForm()
 {
   float const fontw = ImGui::GetFontSize();
+  auto e = engine();
 
   ImGui::PushStyleColor(ImGuiCol_PopupBg, 0xf0e0ffe0);
 
-  if (ImGui::Button("Create new machine vision module...")) ImGui::OpenPopup("Create new machine vision module");
-
+  if (ImGui::Button("Create new machine vision module..."))
+  {
+    ImGui::OpenPopup("Create new machine vision module");
+    itsIdleBlocked = true; // prevent GUI from disappearing if we are slow to fill the form...
+  }
+  
   ImVec2 const center = ImGui::GetMainViewport()->GetCenter();
   ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-  ImGui::SetNextWindowContentSize(ImVec2(940, 730));
-  
+  ImGui::SetNextWindowContentSize(ImVec2(940, 750));
+
   if (ImGui::BeginPopupModal("Create new machine vision module", NULL, ImGuiWindowFlags_AlwaysAutoResize))
   {
     try
     {
-      static std::string name, vendor, synopsis, author, email, website, license;
+      static std::string name, vendor, synopsis, author, email, website, license, srcvendor, srcname;
+      static int language = 0;
+      static int templ = 0;
+      static int ofmt = 0; static int ow = 320, oh = 240; static float ofps = 30.0F;
+      static int cmode = 0;
+      static int wdrmode = 0;
+      static int cfmt = 0; static int cw = 1920, ch = 1080; static float cfps = 30.0F;
+      static int c2fmt = 1; static int c2w = 512, c2h = 288;
+      static jevois::VideoMapping m { };
       
-      ImGui::Text("Fill out the details below:");
+      ImGui::AlignTextToFramePadding();
+      ImGui::Text("Fill out the details below, or clone from");
+      ImGui::SameLine();
+
+      static std::map<std::string, size_t> mods;
+      static std::string currstr = "...";
+
+      size_t idx = 0;
+      e->foreachVideoMapping([&idx](jevois::VideoMapping const & m) { mods[m.menustr()] = idx++; });
+
+      // Draw the module clone selector and allow selection:
+      if (ImGui::BeginCombo("##clonemodule", currstr.c_str()))
+      {
+        for (auto const & mod : mods)
+        {
+          bool is_selected = false;
+          if (ImGui::Selectable(mod.first.c_str(), is_selected))
+          {
+            m = e->getVideoMapping(mod.second);
+            currstr = mod.first;
+
+            // Prefill some data:
+            language = m.ispython ? 0 : 1;
+            templ = 3; // clone
+            ofmt = m.ofmt; ow = m.ow; oh = m.oh; ofps = m.ofps;
+            switch (m.crop)
+            {
+            case jevois::CropType::CropScale: cmode = 0; break;
+            case jevois::CropType::Crop: cmode = 1; break;
+            case jevois::CropType::Scale: cmode = 2; break;
+            }
+            switch (m.wdr)
+            {
+            case jevois::WDRtype::Linear: wdrmode = 0; break;
+            case jevois::WDRtype::DOL: wdrmode = 1; break;
+            }
+            cfmt = get_v4l2_idx(m.cfmt); cw = m.cw; ch = m.ch; cfps = m.cfps;
+            c2fmt = get_v4l2_idx(m.c2fmt); c2w = m.c2w; c2h = m.c2h;
+            srcvendor = m.vendor; srcname = m.modulename;
+          }
+        }
+        ImGui::EndCombo();
+      }
+
+      // Draw the form items:
       ImGui::Separator();
       
       ImGui::Columns(3, "new module");
       
       newModEntry("##NewModname", name, "Module Name", "MyModule",
-                  "Required. Must start with an uppercase letter. "
+                  "Required, even when cloning. Must start with an uppercase letter. "
                   "Will be a folder name under /jevoispro/modules/VendorName");
       
       newModEntry("##NewModvendor", vendor, "Vendor Name", "MyVendor",
-                  "Required. Must start with an uppercase letter. "
+                  "Required, even when cloning. Must start with an uppercase letter. "
                   "Will be a folder name under /jevoispro/modules/");
+      
+      // If cloning, disable all edits except for vendor and module names:
+      if (templ == 3)
+      {
+        ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+        ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+      }
       
       newModEntry("##NewModsynopsis", synopsis, "Synopsis", "Detect Object of type X",
                   "Optional. Brief description of what the module does.");
@@ -1729,26 +1907,24 @@ void jevois::GUIhelper::drawNewModuleForm()
       newModEntry("##NewModwebsite", website, "Author Website", "http://yourcompany.com", "Optional");
       
       newModEntry("##NewModlicense", license, "License", "GPL v3", "Optional");
-      
+
       // Language:
-      static int language = 0;
       ImGui::AlignTextToFramePadding();
       ImGui::TextUnformatted("Module Language");
       ImGui::NextColumn();
       helpMarker("Module Language", "Machine language to use for your module.");
       ImGui::NextColumn();
-      ImGui::Combo("##NewModlanguage", &language, "Python\0\0"); // FIXME
-      //ImGui::Combo("##NewModlanguage", &language, "Python\0C++\0\0");
+      ImGui::Combo("##NewModlanguage", &language, "Python\0C++\0\0");
       ImGui::NextColumn();
       
       // Template:
-      static int templ = 0;
       ImGui::AlignTextToFramePadding();
       ImGui::TextUnformatted("Module Template");
       ImGui::NextColumn();
       helpMarker("Module Template", "Type of placeholder code that will be provided to get your module started.");
       ImGui::NextColumn();
-      ImGui::Combo("##NewModtemplate", &templ, "Pro/GUI\0Legacy\0Headless\0\0");
+      if (templ < 3) ImGui::Combo("##NewModtemplate", &templ, "Pro/GUI\0Legacy\0Headless\0\0");
+      else ImGui::Combo("##NewModtemplate", &templ, "Pro/GUI\0Legacy\0Headless\0Clone\0\0");
       ImGui::NextColumn();
       
       // Output video mapping:
@@ -1760,7 +1936,6 @@ void jevois::GUIhelper::drawNewModuleForm()
         ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
       }
       
-      static int ofmt = 0;
       ImGui::AlignTextToFramePadding();
       ImGui::TextUnformatted("Module Output");
       ImGui::NextColumn();
@@ -1768,7 +1943,6 @@ void jevois::GUIhelper::drawNewModuleForm()
       ImGui::NextColumn();
       ImGui::SetNextItemWidth(fontw * 5.0F);
       ImGui::Combo("##NewModofmt", &ofmt, "YUYV\0RGB\0RGBA\0GREY\0BAYER\0\0");
-      static int ow = 320, oh = 240; static float ofps = 30.0F;
       ImGui::SameLine();
       ImGui::SetNextItemWidth(fontw * 4.0F);
       ImGui::InputInt("##NewModow", &ow, 0, 0, ImGuiInputTextFlags_CharsDecimal | oflags);
@@ -1793,7 +1967,6 @@ void jevois::GUIhelper::drawNewModuleForm()
       }
       
       // Camera mode:
-      static int cmode = 0;
       ImGui::AlignTextToFramePadding();
       ImGui::TextUnformatted("Camera Mode");
       ImGui::NextColumn();
@@ -1805,7 +1978,6 @@ void jevois::GUIhelper::drawNewModuleForm()
       ImGui::NextColumn();
       
       // Camera WDR mode:
-      static int wdrmode = 0;
       ImGui::AlignTextToFramePadding();
       ImGui::TextUnformatted("Camera WDR");
       ImGui::NextColumn();
@@ -1817,7 +1989,6 @@ void jevois::GUIhelper::drawNewModuleForm()
       ImGui::NextColumn();
       
       // Camera video mapping:
-      static int cfmt = 0;
       ImGui::AlignTextToFramePadding();
       ImGui::TextUnformatted("Camera Format");
       ImGui::NextColumn();
@@ -1825,7 +1996,6 @@ void jevois::GUIhelper::drawNewModuleForm()
       ImGui::NextColumn();
       ImGui::SetNextItemWidth(fontw * 5.0F);
       ImGui::Combo("##NewModcfmt", &cfmt, "YUYV\0RGB\0RGBA\0GREY\0BAYER\0\0");
-      static int cw = 1920, ch = 1080; static float cfps = 30.0F;
       ImGui::SameLine();
       ImGui::SetNextItemWidth(fontw * 4.0F);
       ImGui::InputInt("##NewModcw", &cw, 0, 0, ImGuiInputTextFlags_CharsDecimal);
@@ -1852,7 +2022,6 @@ void jevois::GUIhelper::drawNewModuleForm()
         ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
       }
       
-      static int c2fmt = 1;
       ImGui::AlignTextToFramePadding();
       ImGui::TextUnformatted("Camera Format 2");
       ImGui::NextColumn();
@@ -1860,7 +2029,6 @@ void jevois::GUIhelper::drawNewModuleForm()
       ImGui::NextColumn();
       ImGui::SetNextItemWidth(fontw * 5.0F);
       ImGui::Combo("##NewModc2fmt", &c2fmt, "YUYV\0RGB\0RGBA\0GREY\0BAYER\0\0");
-      static int c2w = 512, c2h = 288;
       ImGui::SameLine();
       ImGui::SetNextItemWidth(fontw * 4.0F);
       ImGui::InputInt("##NewModc2w", &c2w, 0, 0, ImGuiInputTextFlags_CharsDecimal | c2flags);
@@ -1876,6 +2044,12 @@ void jevois::GUIhelper::drawNewModuleForm()
         ImGui::PopItemFlag();
         ImGui::PopStyleVar();
       }
+
+      if (templ == 3)
+      {
+        ImGui::PopItemFlag();
+        ImGui::PopStyleVar();
+      }
       
       // Adjust columns:
       ImGui::SetColumnWidth(0, fontw * 10.0F);
@@ -1883,7 +2057,6 @@ void jevois::GUIhelper::drawNewModuleForm()
       //ImGui::SetColumnWidth(2, 800.0F);
       
       ImGui::Columns(1);
-      
       
       ImGui::Separator();
       ImGui::Separator();
@@ -1894,11 +2067,14 @@ void jevois::GUIhelper::drawNewModuleForm()
         ImGui::CloseCurrentPopup();
         ImGui::EndPopup();
         ImGui::PopStyleColor();
+        itsIdleBlocked = false;
+        currstr = "...";
         return;
       }
 
-      ImGui::SameLine(0, 530);
+      ImGui::SameLine(0, 540);
 
+      // ====================================================================================================
       if (ImGui::Button("Create", button_size))
       {
         // Validate inputs:
@@ -1907,114 +2083,173 @@ void jevois::GUIhelper::drawNewModuleForm()
         if (vendor.empty()) LFATAL("New Module cannot have empty vendor name.");
         LINFO("New Module data valid...");
         
-        // Let's do it:
-        mkdir(jevois::sformat("%s/%s", JEVOIS_MODULE_PATH, vendor.c_str()).c_str(), 0777);
-        std::string const dir = jevois::sformat("%s/%s/%s", JEVOIS_MODULE_PATH, vendor.c_str(), name.c_str());
-        if (mkdir(dir.c_str(), 0777) == -1)
-          LFATAL("Error creating directory [" << dir << "] for new module. Maybe that module name already exists "
-                 "or not running as root?");
-        LINFO("Created new Module directory: " << dir);
+        // First create a directory for vendor, if not already present:
+        std::string const newvdir = JEVOIS_MODULE_PATH "/" + vendor;
+        if (mkdir(newvdir.c_str(), 0777) && errno != EEXIST)
+          PLFATAL("Error creating dir " << newvdir << " -- check that you are running as root");
+        std::string const newmdir = newvdir + '/' + name;
+        std::string vmstr; // machine string version of our videomapping
         
-        // Create a new video mapping to add to videomappimgs.cfg:
-        jevois::VideoMapping m { };
-        switch (templ)
+        // ----------------------------------------------------------------------------------------------------
+        // If cloning, clone and cook:
+        if (templ == 3)
         {
-        case 0: m.ofmt = JEVOISPRO_FMT_GUI; break;
-        case 1: m.ofmt = get_v4l2_fmt(ofmt); m.ow = ow; m.oh = oh; m.ofps = ofps; break;
-        case 2: m.ofmt = 0; break;
-        default: break;
-        }
-        
-        m.cfmt = get_v4l2_fmt(cfmt);
-        m.cw = cw; m.ch = ch; m.cfps = cfps;
-        
-        m.vendor = vendor;
-        m.modulename = name;
-        
-        switch (wdrmode)
-        {
-        case 0: m.wdr = jevois::WDRtype::Linear; break;
-        case 1: m.wdr = jevois::WDRtype::DOL; break;
-        default: break;
-        }
-        
-        switch (cmode)
-        {
-        case 0: m.crop = jevois::CropType::CropScale;
-          m.c2fmt = get_v4l2_fmt(c2fmt);
-          m.c2w = c2w; m.c2h = c2h;
-          break;
+          // Remember original module's source path:
+          std::filesystem::path srcpath = m.srcpath();
+          std::filesystem::path cmakepath = m.cmakepath();
+
+          // Replace vendor and module names in our mapping, keep all other data from source module:
+          m.vendor = vendor;
+          m.modulename = name;
+ 
+          // Copy all files, so we get any icons, aux source files, calibration data, etc:
+          std::string const copycmd = jevois::sformat("/bin/cp -ar %s/%s/%s %s", JEVOIS_MODULE_PATH, srcvendor.c_str(),
+                                                      srcname.c_str(), newmdir.c_str());
+          jevois::system(copycmd);
+          LINFO("Cloned module using: " << copycmd);
           
-        case 1: m.crop = jevois::CropType::Crop; break;
-        case 2: m.crop = jevois::CropType::Scale; break;
-        default: break;
+          // Delete source and .so files, we will replace those with cooking:
+          unlink((m.path() + '/' + srcname + ".C").c_str());
+          unlink((m.path() + '/' + srcname + ".py").c_str());
+          unlink((m.path() + '/' + srcname + ".so").c_str());
+          std::filesystem::remove_all(m.path() + "/__pycache__");
+          
+          // Cook and copy the module source:
+          std::ostringstream oss; oss << m; vmstr = oss.str();
+          cookedCodeClone(srcpath, m.srcpath(), srcname, name);
+
+          // If C++, also copy and cook CMakeLists.txt, if present, otherwise make one from template:
+          if (language == 1)
+          {
+            if (std::filesystem::exists(cmakepath))
+              cookedCmakeClone(cmakepath, m.cmakepath(), srcname, name, srcvendor, vendor, synopsis, author,
+                               email, website, license, vmstr);
+            else
+              cookedCopy(JEVOIS_SHARE_PATH "/templates/CMakeLists.txt", m.cmakepath(),
+                         name, vendor, synopsis, author, email, website, license, vmstr);
+          }
         }
-        
-        m.ispython = (language == 0);
-        
-        // Copy the desired code template and cook it:
-        std::string code;
-        switch (language)
+        // ----------------------------------------------------------------------------------------------------
+        // If not cloning, copy and cook from template:
+        else
         {
-        case 0:
-        {
-          std::ifstream f(JEVOIS_SHARE_PATH "/templates/PyModule.py");
-          if (f.is_open() == false) LFATAL("Cannot read " JEVOIS_SHARE_PATH "/templates/PyModule.py");
-          std::string const str((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
-          code = str;
+          // Create a new directory and copy the template into it:
+          if (mkdir(newmdir.c_str(), 0777) == -1)
+            LFATAL("Error creating directory [" << newmdir << "] for new module. Maybe that module name "
+                   "already exists, or not running as root?");
+          LINFO("Created new Module directory: " << newmdir);
+        
+          // Create a new video mapping to add to videomappimgs.cfg:
+          m = { };
+          switch (templ)
+          {
+          case 0: m.ofmt = JEVOISPRO_FMT_GUI; break;
+          case 1: m.ofmt = get_v4l2_fmt(ofmt); m.ow = ow; m.oh = oh; m.ofps = ofps; break;
+          case 2: m.ofmt = 0; break;
+          default: break;
+          }
+          
+          m.cfmt = get_v4l2_fmt(cfmt);
+          m.cw = cw; m.ch = ch; m.cfps = cfps;
+          
+          m.vendor = vendor;
+          m.modulename = name;
+          
+          switch (wdrmode)
+          {
+          case 0: m.wdr = jevois::WDRtype::Linear; break;
+          case 1: m.wdr = jevois::WDRtype::DOL; break;
+          default: break;
+          }
+          
+          switch (cmode)
+          {
+          case 0: m.crop = jevois::CropType::CropScale;
+            m.c2fmt = get_v4l2_fmt(c2fmt);
+            m.c2w = c2w; m.c2h = c2h;
+            break;
+          case 1: m.crop = jevois::CropType::Crop; break;
+          case 2: m.crop = jevois::CropType::Scale; break;
+          default: break;
+          }
+          
+          m.ispython = (language == 0);
+          std::ostringstream oss; oss << m; vmstr = oss.str();
+
+          // Copy the desired code template and cook it:
+          std::string code; std::string tname;
+          switch (language)
+          {
+          case 0:
+            tname = "PyModule.py";
+            break;
+
+          case 1:
+          {
+            tname = "Module.C";
+
+            // Also copy and cook the CMakeLists.txt
+            std::filesystem::path srccmak = JEVOIS_SHARE_PATH "/templates/CMakeLists.txt";
+            std::filesystem::path dstcmak = m.cmakepath();
+            cookedCopy(srccmak, dstcmak, name, vendor, synopsis, author, email, website, license, vmstr);
+          }
+          break;
+
+          default: LFATAL("Invalid language " << language);
+          }
+
+          std::filesystem::path srcmod = JEVOIS_SHARE_PATH "/templates/" + tname;
+          std::filesystem::path dstmod = m.srcpath();
+          cookedCopy(srcmod, dstmod, name, vendor, synopsis, author, email, website, license, vmstr);
         }
-        break;
-        
-        case 1:
-        {
-          LFATAL("C++ template fixme");
-        }
-        break;
-        
-        default: break;
-        }
-        
-        jevois::replaceStringAll(code, "__MODULE__", name);
-        jevois::replaceStringAll(code, "__VENDOR__", vendor);
-        jevois::replaceStringAll(code, "__SYNOPSIS__", synopsis);
-        jevois::replaceStringAll(code, "__AUTHOR__", author);
-        jevois::replaceStringAll(code, "__EMAIL__", email);
-        jevois::replaceStringAll(code, "__WEBSITE__", website);
-        jevois::replaceStringAll(code, "__LICENSE__", license);
-        std::ostringstream oss; oss << m;
-        jevois::replaceStringAll(code, "__VIDEOMAPPING__", oss.str());
-        
-        // Write the code:
-        std::ofstream ofs(m.sopath());
-        if (ofs.is_open() == false) LFATAL("Cannot write " << m.sopath() << " -- check that you are running as root.");
-        ofs << code << std::endl;
-        LINFO("Wrote code template to: " << m.sopath());
         
         // Add the video mapping:
-        jevois::system(JEVOIS "-add-videomapping " + oss.str());
-        LINFO("Added videomapping: " << oss.str());
-        
-        engine()->reloadVideoMappings();
-        size_t idx = 0; size_t foundidx = 12345678;
-        engine()->foreachVideoMapping([&](VideoMapping const & mm) { if (m.isSameAs(mm)) foundidx = idx; ++idx; });
-        if (foundidx != 12345678) engine()->requestSetFormat(foundidx);
-        itsRefreshVideoMappings = true; // Force a refresh of our list of video mappings
-        /////itsRefreshCfgList = true; // Force a refresh of videomappings.cfg in the config editor
-        itsVideoMappingListType = templ; // Switch to the mapping list that contains our new module
-        
+        jevois::system(JEVOIS "-add-videomapping " + vmstr);
+        LINFO("Added videomapping: " << vmstr);
+
+        // Remember this new mapping in case we need it to compile and load the module later:
+        itsNewMapping = m;
+
+        // For python modules, load right now. For C++ modules, we will not find the mapping because the .so is missing,
+        // we need to compile the module first:
+        if (language == 0) runNewModule();
+        else itsCompileState = CompilationState::Start;
+
         // Clear a few things before the next module:
-        name.clear(); vendor.clear(); synopsis.clear();
+        name.clear(); vendor.clear(); synopsis.clear(); currstr = "...";
         
         ImGui::CloseCurrentPopup();
+        itsIdleBlocked = false;
       }
     }
     catch (...) { reportAndIgnoreException(); }
-    
+
     // Make sure we always end the popup, even if we had an exception:
     ImGui::EndPopup();
   }
       
   ImGui::PopStyleColor();
+}
+
+// ##############################################################################################################
+void jevois::GUIhelper::runNewModule()
+{
+  engine()->reloadVideoMappings();
+  size_t idx = 0; size_t foundidx = 12345678;
+  engine()->foreachVideoMapping([&](VideoMapping const & mm)
+                                { if (itsNewMapping.isSameAs(mm)) foundidx = idx; ++idx; });
+
+  if (foundidx != 12345678) engine()->requestSetFormat(foundidx);
+  else LFATAL("Internal error, could not find the module we just created -- CHECK LOGS");
+    
+  itsRefreshVideoMappings = true; // Force a refresh of our list of video mappings
+  /////itsRefreshCfgList = true; // Force a refresh of videomappings.cfg in the config editor
+    
+  // Switch to the mapping list that contains our new module:
+  if (itsNewMapping.ofmt == JEVOISPRO_FMT_GUI) itsVideoMappingListType = 0;
+  else if (itsNewMapping.ofmt != 0 && itsNewMapping.ofmt != JEVOISPRO_FMT_GUI) itsVideoMappingListType = 1;
+  else if (itsNewMapping.ofmt == 0) itsVideoMappingListType = 2;
+  else LERROR("Internal error: cannot determine video mapping list type -- IGNORED"); 
 }
 
 // ##############################################################################################################
@@ -2264,6 +2499,190 @@ void jevois::GUIhelper::headlessDisplay()
   if (itsHeadless.loaded()) itsHeadless.draw(ImVec2(0, 0), ImVec2(winw, winh), ImGui::GetBackgroundDrawList());
 
   endFrame();
+}
+
+// ##############################################################################################################
+void jevois::GUIhelper::startCompilation()
+{
+  if (std::filesystem::exists(itsNewMapping.srcpath()) && std::filesystem::exists(itsNewMapping.cmakepath()))
+    itsCompileState = CompilationState::Start;
+  else
+    reportError("Cannot find " + itsNewMapping.srcpath() + " or " + itsNewMapping.cmakepath() + " -- IGNORED");
+}
+
+// ##############################################################################################################
+void jevois::GUIhelper::compileModule()
+{
+  ImGui::PushStyleColor(ImGuiCol_WindowBg, 0xf0e0ffe0);
+  // Set window size applied only on first use ever, otherwise from imgui.ini:
+  ImGui::SetNextWindowSize(ImVec2(800, 680), ImGuiCond_FirstUseEver);
+
+  // Open the window, allow closing when we are in error:
+  int constexpr flags = ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_AlwaysHorizontalScrollbar;
+  bool keep_window_open = true;
+  if (itsCompileState == CompilationState::Error) ImGui::Begin("C++ Module Compilation", &keep_window_open, flags);
+  else ImGui::Begin("C++ Module Compilation", nullptr, flags);
+
+  ImGui::TextUnformatted(("Compiling " + itsNewMapping.srcpath()).c_str());
+  ImGui::TextUnformatted(("Using " +  itsNewMapping.cmakepath()).c_str());
+  ImGui::Separator();
+  std::string const modpath = itsNewMapping.path();
+  std::string const buildpath = modpath + "/build";
+  
+  try
+  {
+    switch (itsCompileState)
+    {
+      // ----------------------------------------------------------------------------------------------------
+    case CompilationState::Start:
+      LINFO("Start compiling " << itsNewMapping.srcpath());
+      itsIdleBlocked = true;
+      for (std::string & s : itsCompileMessages) s.clear();
+      itsCompileState = CompilationState::Cmake;
+      break;
+      
+      // ----------------------------------------------------------------------------------------------------
+    case CompilationState::Cmake:
+      if (compileCommand("cmake -S " + modpath + " -B " + buildpath, itsCompileMessages[0]))
+        itsCompileState = CompilationState::Make;
+      break;
+
+      // ----------------------------------------------------------------------------------------------------
+    case CompilationState::Make:
+      if (compileCommand("cmake --build " + buildpath, itsCompileMessages[1]))
+        itsCompileState = CompilationState::Install;
+      break;
+    
+      // ----------------------------------------------------------------------------------------------------
+    case CompilationState::Install:
+      if (compileCommand("cmake --install " + buildpath, itsCompileMessages[2]))
+        itsCompileState = CompilationState::CPack;
+      break;
+
+    // ----------------------------------------------------------------------------------------------------
+    case CompilationState::CPack:
+      if (compileCommand("cd " + buildpath + " && cpack && mkdir -p /jevoispro/debs && /bin/mv *.deb /jevoispro/debs/",
+                         itsCompileMessages[3]))
+        itsCompileState = CompilationState::Success;
+      break;
+    
+      // ----------------------------------------------------------------------------------------------------
+    case CompilationState::Success:
+    {
+      ImGui::TextUnformatted("Compilation success!");
+      ImGui::TextUnformatted("See below for details...");
+      ImGui::Separator();
+      static int run_default = 0;
+      int ret = modal("Success! Run the module now?", "Compilation success. Load and run the new module now?",
+                      &run_default, "Yes", "No");
+      switch (ret)
+      {
+      case 1:
+        runNewModule();
+        itsIdleBlocked = false;
+        itsCompileState = CompilationState::Idle;
+        break;
+        
+      case 2:
+        // make sure we have the mapping for the new module...
+        itsIdleBlocked = false;
+        itsCompileState = CompilationState::Idle;
+        engine()->reloadVideoMappings();
+        itsRefreshVideoMappings = true;
+        break;
+
+      default: break;  // Need to wait
+      }
+    }
+    break;
+      
+    case CompilationState::Error:
+    {
+      itsIdleBlocked = false;
+      ImGui::TextUnformatted("Compilation failed!");
+      ImGui::TextUnformatted("You may need to edit the two files above.");
+      ImGui::TextUnformatted("See below for details...");
+      ImGui::Separator();
+      static bool show_modal = false;
+      
+      ImGui::AlignTextToFramePadding();
+      if (ImGui::Button("Edit CMakeLists.txt"))
+      { itsCodeEditor->loadFile(itsNewMapping.cmakepath()); show_modal = true; }
+
+      ImGui::SameLine(); ImGui::Text("    "); ImGui::SameLine();
+      if (ImGui::Button(("Edit " + itsNewMapping.modulename + ".C").c_str()))
+      { itsCodeEditor->loadFile(itsNewMapping.srcpath()); show_modal = true; }
+
+      ImGui::SameLine(); ImGui::Text("    "); ImGui::SameLine();
+      if (ImGui::Button("Compile again")) itsCompileState = CompilationState::Start;
+
+      ImGui::Separator();
+
+      if (show_modal)
+      {
+        static int doit_default = 0;
+        int ret = modal("Ready to edit", "File will now be loaded in the Code tab of the main window and "
+                        "ready to edit. Please switch to the Code tab in the main window.\n\n"
+                        "When you save it, we will try to compile it again.",
+                        &doit_default, "Close Compilation Window", "Keep Open");
+        switch (ret)
+        {
+        case 1: show_modal = false; itsCompileState = CompilationState::Idle; break;
+        case 2: show_modal = false; break; // user want to keep this window open
+        default: break;  // Need to wait
+        }
+      }
+    }
+    break;
+      
+      // ----------------------------------------------------------------------------------------------------
+    default:
+      LERROR("Internal error: invalid compilation state " << int(itsCompileState) << " -- RESET TO IDLE");
+      itsCompileState = CompilationState::Idle;
+      itsIdleBlocked = false;
+    }
+  } catch (...) { reportAndIgnoreException(); }
+
+  // Display the messages:
+  for (std::string & s : itsCompileMessages)
+    if (s.empty() == false)
+    {
+      ImGui::TextUnformatted(s.c_str());
+      ImGui::Separator();
+    }
+  
+  ImGui::End();
+  ImGui::PopStyleColor();
+
+  // Switch to idle if we were in error and user closed the window:
+  if (keep_window_open == false) { itsIdleBlocked = false; itsCompileState = CompilationState::Idle; }
+}
+
+
+// ##############################################################################################################
+bool jevois::GUIhelper::compileCommand(std::string const & cmd, std::string & msg)
+{
+  if (itsCompileFut.valid() == false)
+  {
+    itsCompileFut = jevois::async([&](std::string cmd) { return jevois::system(cmd, true); }, cmd);
+    msg = "Running: " + cmd + "\nPlease wait ...\n";
+    LINFO("Running: " + cmd);
+  }
+  else if (itsCompileFut.wait_for(std::chrono::milliseconds(1)) == std::future_status::ready)
+    try
+    {
+      msg += itsCompileFut.get() + "\nSuccess!";
+      LINFO("Success running: " << cmd);
+      return true;
+    }
+    catch (...)
+    {
+      LERROR("Failed running: " << cmd);
+      itsCompileState = CompilationState::Error;
+      msg += jevois::warnAndIgnoreException();
+    }
+
+  return false;
 }
 
 #endif // JEVOIS_PRO

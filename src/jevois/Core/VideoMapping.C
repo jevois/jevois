@@ -27,6 +27,12 @@
 #define PERROR(x) LERROR("In file " << JEVOIS_ENGINE_CONFIG_FILE << ':' << linenum << ": " << x)
 
 // ####################################################################################################
+std::string jevois::VideoMapping::path() const
+{
+  return JEVOIS_MODULE_PATH "/" + vendor + '/' + modulename;
+}
+
+// ####################################################################################################
 std::string jevois::VideoMapping::sopath() const
 {
   if (ispython) return JEVOIS_MODULE_PATH "/" + vendor + '/' + modulename + '/' + modulename + ".py";
@@ -38,6 +44,12 @@ std::string jevois::VideoMapping::srcpath() const
 {
   if (ispython) return JEVOIS_MODULE_PATH "/" + vendor + '/' + modulename + '/' + modulename + ".py";
   else return JEVOIS_MODULE_PATH "/" + vendor + '/' + modulename + '/' + modulename + ".C";
+}
+
+// ####################################################################################################
+std::string jevois::VideoMapping::cmakepath() const
+{
+  return JEVOIS_MODULE_PATH "/" + vendor + '/' + modulename + "/CMakeLists.txt";
 }
 
 // ####################################################################################################
@@ -353,11 +365,12 @@ std::vector<jevois::VideoMapping> jevois::videoMappingsFromStream(jevois::Camera
                   if (a.oh == b.oh) {
                     if (a.ofps > b.ofps) return true;
                     if (std::abs(a.ofps - b.ofps) < 0.01F) {
-                      // The two output modes are identical. Warn unless the output format is NONE or JVUI. We will
-                      // adjust the framerates later to distinguish the offenders:
+#ifndef JEVOIS_PRO
+                      // JeVois-A33 only: The two output modes are identical. Warn unless the output format is NONE or
+                      // JVUI. We will adjust the framerates later to distinguish the offenders:
                       if (a.ofmt != 0 && a.ofmt != JEVOISPRO_FMT_GUI)
                         PERROR("WARNING: Two modes have identical output format: " << a.ostr());
-
+#endif
                       // All right, all USB stuff being equal, just sort according to the camera format:
                       if (a.cfmt < b.cfmt) return true;
                       if (a.cfmt == b.cfmt) {
@@ -396,20 +409,22 @@ std::vector<jevois::VideoMapping> jevois::videoMappingsFromStream(jevois::Camera
     mappings.push_back(m);
   }
 
-  // If we had duplicate output formats, discard full exact duplicates (including same module), and otherwise adjust
-  // framerates slightly: In the sorting above, we ordered by decreasing ofps (all else being equal). Here we are going
-  // to decrease ofps on the second mapping when we hit a match. We need to beware that this should propagate down to
-  // subsequent matching mappings while preserving the ordering:
+  // If we had duplicate output formats, discard full exact duplicates (including same module), and otherwise
+  // (JeVois-A33 only) adjust framerates slightly: In the sorting above, we ordered by decreasing ofps (all else being
+  // equal). Here we are going to decrease ofps on the second mapping when we hit a match. We need to beware that this
+  // should propagate down to subsequent matching mappings while preserving the ordering:
   auto a = mappings.begin(), b = a + 1;
   while (b != mappings.end())
   {
     // Discard exact duplicates, adjust frame rates for matching specs but different modules:
     if (a->isSameAs(*b)) { b = mappings.erase(b); continue; }
+#ifndef JEVOIS_PRO
     else if (b->ofmt != 0 && b->ofmt != JEVOISPRO_FMT_GUI && a->ofmt == b->ofmt && a->ow == b->ow && a->oh == b->oh)
     {
       if (std::abs(a->ofps - b->ofps) < 0.01F) b->ofps -= 1.0F; // equal fps, decrease b.ofps by 1fps
       else if (b->ofps > a->ofps) b->ofps = a->ofps - 1.0F; // got out of order because of a previous decrease
     }
+#endif
     a = b; ++b;
   }
   

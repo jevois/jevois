@@ -89,9 +89,15 @@ if (JEVOIS_PLATFORM)
       set(JEVOIS_MODULES_ROOT "../${JEVOIS}")
     endif()
 
+    # JEVOIS_ARCH is used to include/install the correct contributed libs (e.g., libtensorflowlite.so,
+    # libonnxruntime.so, etc):
+    set(JEVOIS_ARCH "arm64")
+  else (JEVOIS_PRO)
+    set(JEVOIS_ARCH "armhf")
   endif(JEVOIS_PRO)
   
 else (JEVOIS_PLATFORM)
+  set(JEVOIS_ARCH "amd64")
 
   set(CMAKE_C_COMPILER ${JEVOIS_HOST_C_COMPILER})
   set(CMAKE_CXX_COMPILER ${JEVOIS_HOST_CXX_COMPILER})
@@ -158,7 +164,7 @@ macro(jevois_project_set_flags)
 
   # Set variable JEVOIS_INSTALL_ROOT which may be used by the CMakeLists.txt of modules:
   # On platform, we install to jvpkg directory, staging, or live microsd; on host we always install to
-  # /jevois:
+  # /jevois[pro]:
   if (JEVOIS_PLATFORM)
     if (JEVOIS_MODULES_TO_MICROSD OR JEVOIS_MODULES_TO_LIVE) # if both specified, microsd/live precedes staging
       set(JEVOIS_INSTALL_ROOT "${JEVOIS_MICROSD_MOUNTPOINT}")
@@ -179,30 +185,27 @@ macro(jevois_project_set_flags)
 
   message(STATUS "Host path to ${JEVOIS} lib and data install root: ${JEVOIS_INSTALL_ROOT}")
 
-  # Add imgui and function2 (for ThreadPool) include paths as installed by JeVois if building for jevois-pro:
+  # Find includes and libs installed by JeVois (imgui, function2, tensorflow, etc):
   if (JEVOISPRO_PLATFORM_DEB)
     set(JEVOIS_INST_PATH "${JEVOIS_INSTALL_PREFIX}/${JEVOIS_MODULES_ROOT}")
   else ()
     set(JEVOIS_INST_PATH "${JEVOIS_MODULES_ROOT}")
   endif ()
 
-  if (JEVOIS_PRO)
-    include_directories("${JEVOIS_INST_PATH}/include")
-    include_directories("${JEVOIS_INST_PATH}/include/imgui")
-  endif ()
-  include_directories("${JEVOIS_INST_PATH}/include/function2")
+  include_directories("${JEVOIS_INST_PATH}/include")
+  subdirlist(SUBINCLUDES "${JEVOIS_INST_PATH}/include")
+  list(TRANSFORM SUBINCLUDES PREPEND "${JEVOIS_INST_PATH}/include/")
+  include_directories(${SUBINCLUDES})
 
-  # If building a pdeb against pre-compiled jevois/jevoisbase, but they have not been compiled from source as pdeb, make
-  # sure we can find the includes and libs:
-  if (JEVOISPRO_PLATFORM_DEB AND NOT EXISTS "${JEVOIS_PLATFORM_INSTALL_PREFIX_PDEB}")
-    include_directories("${JEVOIS_PLATFORM_INSTALL_PREFIX}/include")
-    include_directories("${JEVOIS_PLATFORM_MODULES_ROOT}/include")
-    include_directories("${JEVOIS_PLATFORM_MODULES_ROOT}/include/imgui")
-    include_directories("${JEVOIS_PLATFORM_MODULES_ROOT}/include/function2")
-    link_directories("${JEVOIS_PLATFORM_INSTALL_PREFIX}/lib")
-    link_directories("${JEVOIS_PLATFORM_MODULES_ROOT}/lib")
-  endif()
+  # Also tensorflow donwloaded tools:
+  file(GLOB SUBINCLUDES "${JEVOIS_INST_PATH}/include/tensorflow/lite/tools/make/downloads/*/include")
+  include_directories(${SUBINCLUDES})
 
+  # Find libs installed by JeVois:
+  link_directories("${JEVOIS_INST_PATH}/lib")
+  #subdirlist(SUBLIBS "${JEVOIS_INST_PATH}/lib")
+  #list(TRANSFORM SUBLIBS PREPEND "${JEVOIS_INST_PATH}/lib/")
+  #link_directories("${SUBLIBS}")
 endmacro()
 
 ####################################################################################################
@@ -299,14 +302,9 @@ macro(jevois_setup_library basedir libname libversion)
   
   link_libraries(${libname})
 
-  # On platform, install libraries to /jevois/lib, but on host just install to /usr/lib:
-  if (JEVOIS_PLATFORM)
-    install(TARGETS ${libname} LIBRARY
-      DESTINATION "${JEVOIS_MODULES_ROOT}/lib/${JEVOIS_VENDOR}"
-      COMPONENT libs)
-  else (JEVOIS_PLATFORM)
-    install(TARGETS ${libname} LIBRARY DESTINATION lib COMPONENT libs)
-  endif (JEVOIS_PLATFORM)
+  install(TARGETS ${libname} LIBRARY
+    DESTINATION "${JEVOIS_MODULES_ROOT}/lib"
+    COMPONENT libs)
     
 endmacro()
 
@@ -325,14 +323,9 @@ macro(jevois_setup_library2 srcfile libname libversion)
   
   link_libraries(${libname})
 
-  # On platform, install libraries to /jevois/lib, but on host just install to /usr/lib:
-  if (JEVOIS_PLATFORM)
-    install(TARGETS ${libname} LIBRARY
-      DESTINATION "${JEVOIS_MODULES_ROOT}/lib/${JEVOIS_VENDOR}"
-      COMPONENT libs)
-  else (JEVOIS_PLATFORM)
-    install(TARGETS ${libname} LIBRARY DESTINATION lib COMPONENT libs)
-  endif (JEVOIS_PLATFORM)
+  install(TARGETS ${libname} LIBRARY
+    DESTINATION "${JEVOIS_MODULES_ROOT}/lib"
+    COMPONENT libs)
     
 endmacro()
 

@@ -305,7 +305,7 @@ namespace jevois
       void clearErrors();
       
       //! Z distance from camera to image plane to achieve pixel-perfect rendering
-      float const pixel_perfect_z;
+      float const pixel_perfect_z = 0.0F;
       
       //! Our projection matrix
       glm::mat4 proj;
@@ -368,6 +368,12 @@ namespace jevois
           second to first frame. */
       ImVec2 d2is(float x, float y, char const * name = nullptr);
 
+
+      //! Compile a newly created module
+      /*! This is mainly for internal use. Called by the code editor when saving C++ code to let us know to start the
+          compilation process again. itsNewMapping should contain the new module's data. */
+      void startCompilation();
+      
     protected:
       std::map<std::string /* name */, GPUimage> itsImages, itsImages2;
       GPUimage * itsLastDrawnImage = nullptr;
@@ -376,7 +382,8 @@ namespace jevois
       float itsScaledImageFacX = 1.0F, itsScaledImageFacY = 1.0F;
       
       std::chrono::time_point<std::chrono::steady_clock> itsLastEventTime;
-      bool itsIdle; //!< Idle state, updated by startFrame(), used by endFrame() to decide whether to draw GUI
+      bool itsIdle = true; //!< Idle state, updated by startFrame(), used by endFrame() to decide whether to draw GUI
+      bool itsIdleBlocked = false; //!< While creating/compiling new modules, prevent idle
       bool itsEndFrameCalled = true; // try to avoid violent assert() crash from ImGui if user forgets to endFrame()
 
       mutable std::mutex itsErrorMtx;
@@ -425,6 +432,7 @@ namespace jevois
       void drawModuleSelect();
       void drawErrorPopup();
       void drawNewModuleForm();
+      void compileModule();
       
       void newModEntry(char const * wname, std::string & str, char const * desc, char const * hint, char const * hlp);
 
@@ -454,6 +462,15 @@ namespace jevois
 
       // Flag to indicate whether we have a USB serial gadget
       bool itsUSBserial = false;
+
+      // Compilation progress
+      enum CompilationState { Idle, Start, Cmake, Make, Install, CPack, Success, Error };
+      CompilationState itsCompileState = CompilationState::Idle;
+      VideoMapping itsNewMapping = { };
+      std::future<std::string> itsCompileFut;
+      bool compileCommand(std::string const & cmd, std::string & msg); // true on success, false in progress, throws
+      std::array<std::string, 4> itsCompileMessages; // messages for the compilation steps
+      void runNewModule(); // install and load up the module defined in itsNewMapping
   };
 
 } // namespace jevois

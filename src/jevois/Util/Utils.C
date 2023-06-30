@@ -374,6 +374,14 @@ std::string jevois::replaceAll(std::string const & str, std::string const & from
 }
 
 // ####################################################################################################
+std::string jevois::tolower(std::string const & str)
+{
+  std::string ret = str;
+  std::transform(ret.begin(), ret.end(), ret.begin(), [](unsigned char c) { return std::tolower(c); });
+  return ret;
+}
+
+// ####################################################################################################
 std::filesystem::path jevois::absolutePath(std::filesystem::path const & root, std::filesystem::path const & path)
 {
   // If path is empty, return root (be it empty of not):
@@ -453,11 +461,16 @@ void jevois::flushcache()
 std::string jevois::system(std::string const & cmd, bool errtoo)
 {
   std::array<char, 128> buffer; std::string result;
-  std::shared_ptr<FILE> pip;
-  if (errtoo) pip.reset(popen((cmd + " 2>&1").c_str(), "r"), pclose);
-  else pip.reset(popen(cmd.c_str(), "r"), pclose);
-  if (!pip) LFATAL("popen() failed for command [" << cmd << ']');
-  while (!feof(pip.get())) if (fgets(buffer.data(), 128, pip.get()) != NULL) result += buffer.data();
+
+  FILE * pip;
+  if (errtoo) pip = popen((cmd + " 2>&1").c_str(), "r"); else pip = popen(cmd.c_str(), "r");
+  if (pip == nullptr) LFATAL("popen() failed for command [" << cmd << ']');
+  while (!feof(pip)) if (fgets(buffer.data(), 128, pip) != NULL) result += buffer.data();
+
+  int status = pclose(pip);
+  if (status == -1 && errno == ECHILD) LFATAL("Could not start command: " << cmd);
+  else if (status) LFATAL("Command [" << cmd << "] exited with status " << status << ":\n\n" << result);
+  
   return result;
 }
 

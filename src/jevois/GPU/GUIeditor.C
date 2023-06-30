@@ -49,6 +49,10 @@ jevois::GUIeditor::~GUIeditor()
 // ##############################################################################################################
 void jevois::GUIeditor::refresh()
 {
+  // If we have an open file that is not one of our fixed items, we want to keep that one open:
+  bool keep_current = false; EditorItem current_item;
+  if (itsCurrentItem >= int(itsNumFixedItems)) { current_item = itsItems[itsCurrentItem]; keep_current = true; }
+  
   // Remove all dynamic files, keep the fixed ones:
   itsItems.resize(itsNumFixedItems);
   
@@ -70,6 +74,9 @@ void jevois::GUIeditor::refresh()
     }
   }
 
+  // Keep the current item?
+  if (keep_current) itsItems.emplace_back(std::move(current_item));
+  
   // Add an entry for file browser, and one for file creation:
   itsItems.emplace_back(EditorItem { "**", "Browse / Create file...", EditorSaveAction::Reload });
   
@@ -199,6 +206,30 @@ void jevois::GUIeditor::draw()
       itsWantAction = false;
     }
     break;
+
+    case jevois::EditorSaveAction::Compile:
+    {
+      // Ask whether to compile the module now or later:
+      static int compile_default = 0;
+      int ret = itsHelper->modal("Compile Module?", "Compile Machine Vision Module for changes to take effect?",
+                                 &compile_default, "Compile", "Later");
+      switch (ret)
+      {
+      case 1:  // Compile selected
+        itsHelper->startCompilation();
+        itsWantAction = false;
+        itsOkToLoad = itsWantLoad;
+        break;
+        
+      case 2: // Later selected: we don't want action anymore
+        itsWantAction = false;
+        itsOkToLoad = itsWantLoad;
+        break;
+        
+      default: break; // need to wait
+      }
+    }
+    break;
     }
   }
   
@@ -217,14 +248,24 @@ void jevois::GUIeditor::draw()
         std::filesystem::path const fn = itsBrowser->GetSelected();
 
         if (std::filesystem::exists(fn))
-          loadFile(fn, "Could not load " + fn.string()); // load with error and read-only on fail
+          loadFileInternal(fn, "Could not load " + fn.string()); // load with error and read-only on fail
         else
-          loadFile(fn, ""); // load with no error and read-write on fail (create new file)
+          loadFileInternal(fn, ""); // load with no error and read-write on fail (create new file)
         
         itsBrowser->ClearSelected();
 
-        // Add an entry for our new file:
-        itsItems.emplace_back(EditorItem { fn, "File " + fn.string(), EditorSaveAction::Reload });
+        // Add an entry for our new file. If it's compilable, then action on save should be to compile, otherwise it
+        // should be to reload the module:
+        EditorSaveAction action = EditorSaveAction::Reload;
+        if (fn.filename() == "CMakeLists.txt")
+          action = EditorSaveAction::Compile;
+        else
+        {
+          std::string const ext = fn.extension().string();
+          if (ext == ".C" || ext == ".H" || ext == ".cpp" || ext == ".hpp" || ext == ".c" || ext == ".h")
+            action = EditorSaveAction::Compile;
+        }
+        itsItems.emplace_back(EditorItem { fn, "File " + fn.string(), action });
         itsOkToLoad = false;
 
         // Select the item we just added:
@@ -254,16 +295,20 @@ void jevois::GUIeditor::draw()
       {
         // If filename is "*", replace by the module's source code name:
         jevois::VideoMapping const & vm = itsHelper->engine()->getCurrentVideoMapping();
-        loadFile(vm.srcpath(), "Could not open Module's source code");
+        loadFileInternal(vm.srcpath(), "Could not open Module's source code");
+
+        // And if there is a CMakeLists.txt, change default reload action to compile:
+        if (std::filesystem::exists(vm.cmakepath()))
+        { itsItems[itsCurrentItem].action = EditorSaveAction::Compile; itsCurrentAction = EditorSaveAction::Compile; }
       }
       else if (items[itsCurrentItem][0] != '/')
       {
         // If path is relative, make it within the module's path (if any):
         auto m = itsHelper->engine()->module();
-        if (m) loadFile(m->absolutePath(itsItems[itsCurrentItem].filename), "");
-        else loadFile(itsItems[itsCurrentItem].filename, "");
+        if (m) loadFileInternal(m->absolutePath(itsItems[itsCurrentItem].filename), "");
+        else loadFileInternal(itsItems[itsCurrentItem].filename, "");
       }
-      else loadFile(itsItems[itsCurrentItem].filename, "");
+      else loadFileInternal(itsItems[itsCurrentItem].filename, "");
     }
   }
 
@@ -336,7 +381,32 @@ void jevois::GUIeditor::draw()
 }
 
 // ##############################################################################################################
-void jevois::GUIeditor::loadFile(std::filesystem::path const & fn, std::string const & failtxt)
+void jevois::GUIeditor::loadFile(std::filesystem::path const & fn)
+{
+  // Loading will happen in the main loop. Here we just create a new item:
+  int i = 0;
+  for (EditorItem const & item : itsItems)
+    if (item.filename == fn) { itsNewItem = i; itsWantLoad = true; return; } else ++i;
+
+  // Not already in our list of items, create a new one.  Add an entry for our new file. If it's compilable, then action
+  // on save should be to compile, otherwise it should be to reload the module:
+  EditorSaveAction action = EditorSaveAction::Reload;
+  if (fn.filename() == "CMakeLists.txt")
+    action = EditorSaveAction::Compile;
+  else
+  {
+    std::string const ext = fn.extension().string();
+    if (ext == ".C" || ext == ".H" || ext == ".cpp" || ext == ".hpp" || ext == ".c" || ext == ".h")
+      action = EditorSaveAction::Compile;
+  }
+  itsItems.emplace_back(EditorItem { fn, "File " + fn.string(), action });
+
+  itsNewItem = itsItems.size() - 1;
+  itsWantLoad = true;
+}
+
+// ##############################################################################################################
+void jevois::GUIeditor::loadFileInternal(std::filesystem::path const & fn, std::string const & failtxt)
 {
   LINFO("Loading " << fn << " ...");
   
@@ -347,17 +417,25 @@ void jevois::GUIeditor::loadFile(std::filesystem::path const & fn, std::string c
     std::string str((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
     SetText(str);
 
-    // Set the language according to file extension:
-    std::filesystem::path const ext = fn.extension();
-
-    if (ext == ".py")
-    { SetLanguageDefinition(TextEditor::LanguageDefinition::Python()); SetReadOnly(false); }
-    else if (ext == ".C" || ext == ".H" || ext == ".cpp" || ext == ".hpp")
-    { SetLanguageDefinition(TextEditor::LanguageDefinition::CPlusPlus()); SetReadOnly(true); }
-    else if ( ext == ".c" || ext == ".h")
-    { SetLanguageDefinition(TextEditor::LanguageDefinition::C()); SetReadOnly(true); }
+    // Set the language according to file extension. C++/C source files are editable if there is a CMakeLists.txt in the
+    // same directory (e.g., newly created or cloned module, excludes jevoisbase modules):
+    if (fn.filename() == "CMakeLists.txt")
+    { SetLanguageDefinition(TextEditor::LanguageDefinition::CMake()); SetReadOnly(false); }
     else
-    { SetLanguageDefinition(TextEditor::LanguageDefinition::JeVoisCfg()); SetReadOnly(false); } // .cfg, .yaml, etc
+    {
+      std::filesystem::path const ext = fn.extension();
+      std::filesystem::path cmak = fn; cmak.remove_filename(); cmak /= "CMakeLists.txt";
+      bool has_cmake = std::filesystem::exists(cmak);
+      
+      if (ext == ".py")
+      { SetLanguageDefinition(TextEditor::LanguageDefinition::Python()); SetReadOnly(false); }
+      else if (ext == ".C" || ext == ".H" || ext == ".cpp" || ext == ".hpp")
+      { SetLanguageDefinition(TextEditor::LanguageDefinition::CPlusPlus()); SetReadOnly(! has_cmake); }
+      else if ( ext == ".c" || ext == ".h")
+      { SetLanguageDefinition(TextEditor::LanguageDefinition::C()); SetReadOnly(! has_cmake); }
+      else
+      { SetLanguageDefinition(TextEditor::LanguageDefinition::JeVoisCfg()); SetReadOnly(false); } // .cfg, .yaml, etc
+    }
   }
   else
   {

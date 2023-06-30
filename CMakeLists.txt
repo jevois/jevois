@@ -24,7 +24,7 @@ set(JEVOIS_VENDOR "JeVois")
 ########################################################################################################################
 # Project version:
 set(JEVOIS_VERSION_MAJOR  1)
-set(JEVOIS_VERSION_MINOR  19)
+set(JEVOIS_VERSION_MINOR  20)
 set(JEVOIS_VERSION_PATCH  0)
 set(JEVOIS_SOVERSION "${JEVOIS_VERSION_MAJOR}.${JEVOIS_VERSION_MINOR}.${JEVOIS_VERSION_PATCH}" )
 
@@ -75,16 +75,6 @@ message(STATUS "JEVOIS_USE_SYNC_LOG: ${JEVOIS_USE_SYNC_LOG}")
 option(JEVOIS_LOG_TO_FILE "Enable sending all log messages to file jevois.log instead of console. Only works \
 with async logging." OFF)
 message(STATUS "JEVOIS_LOG_TO_FILE: ${JEVOIS_LOG_TO_FILE}")
-
-########################################################################################################################
-# Detect whether host processor is ARM, so we can set some compiler flags (use NEON instead of SSE, etc):
-if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm")
-  set(HOST_IS_ARM ON)
-else ()
-  set(HOST_IS_ARM OFF)
-endif ()
-  
-message(STATUS "HOST_IS_ARM: ${HOST_IS_ARM}")
 
 ########################################################################################################################
 # Check for JEVOIS_ROOT environment variable:
@@ -147,7 +137,8 @@ include_directories(include)
 # Create our C++ config file:
 configure_file(include/jevois/Config/Config.H.in Config-${JEVOIS}.H @ONLY)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/Config-${JEVOIS}.H DESTINATION include/jevois/Config COMPONENT bin)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/Config-${JEVOIS}.H
+  DESTINATION ${JEVOIS_MODULES_ROOT}/include/jevois/Config COMPONENT bin)
 
 # Create our Python config file:
 configure_file(src/pyjevois.py.in pyjevois.py @ONLY)
@@ -171,21 +162,37 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/jevois_config.cmake DESTINATION "${JEV
 # Setup our library:
 file(GLOB_RECURSE JEVOIS_LIB_SRC_FILES src/jevois/*.C src/jevois/*.c)
 add_library(${JEVOIS} SHARED ${JEVOIS_LIB_SRC_FILES})
-set_target_properties(${JEVOIS} PROPERTIES VERSION "${JEVOIS_SOVERSION}" SOVERSION ${JEVOIS_SOVERSION})
+# Cannot set soversion and symlink anymore since we now install in /jevois[pro] that is vfat:
+#set_target_properties(${JEVOIS} PROPERTIES VERSION "${JEVOIS_SOVERSION}" SOVERSION ${JEVOIS_SOVERSION})
 link_libraries(${JEVOIS})
-install(TARGETS ${JEVOIS} LIBRARY DESTINATION lib COMPONENT libs)
+install(TARGETS ${JEVOIS} LIBRARY DESTINATION "${JEVOIS_MODULES_ROOT}/lib/" COMPONENT libs)
 target_link_libraries(${JEVOIS} ${JEVOIS_OPENCV_LIBS} -lpthread -ltbb -ldl -lutil -lboost_system
   -lboost_thread -lboost_regex -lturbojpeg -lm ${JEVOIS_PYTHON_LIBS} ${JEVOIS_OPENGL_LIBS})
 
 ########################################################################################################################
-# Thread pool support:
-include_directories(Contrib/threadpool/libs/function2/include)
-include_directories(Contrib/threadpool/libs/concurrentqueue)
+# Pull in our contributed packages and make sure they get installed:
+include_directories(Contrib/include/all Contrib/include/${JEVOIS_ARCH})
+subdirlist(SUBINCLUDES "${CMAKE_CURRENT_SOURCE_DIR}/Contrib/include/all")
+list(TRANSFORM SUBINCLUDES PREPEND Contrib/include/all/)
+include_directories(${SUBINCLUDES})
+subdirlist(SUBINCLUDES "${CMAKE_CURRENT_SOURCE_DIR}/Contrib/include/${JEVOIS_ARCH}")
+list(TRANSFORM SUBINCLUDES PREPEND Contrib/include/${JEVOIS_ARCH}/)
+include_directories(${SUBINCLUDES})
+
+file(GLOB TOINSTALL "Contrib/include/all/*" "Contrib/include/${JEVOIS_ARCH}/*")
+install(DIRECTORY ${TOINSTALL} DESTINATION "${JEVOIS_MODULES_ROOT}/include" COMPONENT bin)
+
+target_link_libraries(${JEVOIS} "-L${CMAKE_CURRENT_SOURCE_DIR}/Contrib/lib/${JEVOIS_ARCH}")
+file(GLOB TOINSTALL "Contrib/lib/${JEVOIS_ARCH}/*")
+install(FILES ${TOINSTALL} DESTINATION "${JEVOIS_MODULES_ROOT}/lib/" COMPONENT bin)
 
 ########################################################################################################################
 # Setup imgui on JeVois-Pro:
 if (JEVOIS_PRO)
   include_directories(Contrib/imgui Contrib/imgui/backends Contrib)
+  install(DIRECTORY Contrib/imgui Contrib/ImGuiColorTextEdit
+    DESTINATION "${JEVOIS_MODULES_ROOT}/include" COMPONENT bin)
+
   target_sources(${JEVOIS} PRIVATE Contrib/imgui/imgui.cpp
     Contrib/imgui/imgui_draw.cpp
     Contrib/imgui/imgui_widgets.cpp
@@ -202,6 +209,10 @@ if (JEVOIS_PRO)
 
   # Flags for imgui:
   add_definitions(-DIMGUI_IMPL_OPENGL_ES3 -DIMGUI_IMPL_OPENGL_ES2 -D_REENTRANT)
+
+  # Install imgui fonts:
+  file(GLOB TOINSTALL "Contrib/imgui/misc/fonts/*.ttf")
+  install(FILES ${TOINSTALL} DESTINATION "${JEVOIS_MODULES_ROOT}/share/fonts" COMPONENT bin)
 endif ()
 
 ########################################################################################################################
@@ -216,6 +227,12 @@ include_directories(Contrib/npu/include/ovxlib/ops)
 include_directories(Contrib/npu/include)
 include_directories(Contrib/npu/detect_library/source_code/include)
 
+install(DIRECTORY Contrib/npu/include/ovxlib Contrib/npu/include/VX Contrib/npu/include/CL
+  DESTINATION "${JEVOIS_MODULES_ROOT}/include" COMPONENT bin)
+
+install(DIRECTORY Contrib/npu/detect_library/source_code/include/
+  DESTINATION "${JEVOIS_MODULES_ROOT}/include/detect_library" COMPONENT bin)
+
 if (JEVOIS_PRO)
   if (JEVOIS_PLATFORM)
     add_definitions(-DLINUX -D_REENTRANT -DgcdENABLE_3D=1 -DgcdENABLE_2D=0 -DgcdENABLE_VG=0 -DgcdUSE_VX=1 -DUSE_VDK=1
@@ -228,6 +245,9 @@ if (JEVOIS_PRO)
     # Link libraries. These are all pre-installed in jevois/Contrib and upated when OpenCV is built:
     target_link_libraries(${JEVOIS} -L${CMAKE_CURRENT_SOURCE_DIR}/Contrib/npu/x86_64_linux/lib
       OpenVX OpenVXU OpenVXC CLC VSC GAL Emulator ArchModelSw NNArchPerf vdtproxy)
+
+    file(GLOB TOINSTALL "Contrib/npu/x86_64_linux/lib/*")
+    install(FILES ${TOINSTALL} DESTINATION "${JEVOIS_MODULES_ROOT}/lib" COMPONENT bin)
   endif()
   
 endif()
@@ -243,17 +263,11 @@ endif ()
 # ONNX runtime includes and libs
 if (JEVOIS_PRO)
   target_link_libraries(${JEVOIS} onnxruntime)
-
-  if (JEVOIS_PLATFORM)
-    include_directories(${JEVOIS_BUILD_BASE}/usr/include/onnxruntime)
-  else ()
-    include_directories(/usr/include/onnxruntime)
-  endif ()
 endif ()
 
 ########################################################################################################################
 # Coral edge TPU libraries and associated TensorFlow. We install libtensorflowlite.so later as part of our package:
-include_directories(Contrib/tensorflow)
+
 include_directories(Contrib/tensorflow/tensorflow/lite/tools/make/downloads/flatbuffers/include)
 target_link_libraries(${JEVOIS} tensorflowlite)
 
@@ -362,25 +376,12 @@ install(FILES ${DOC_FILES} DESTINATION ${DOC_PATH} COMPONENT bin)
 # Add includes to our install / distribution package:
 add_subdirectory(include)
 
-# Add installation rules for files that go into /jevois[pro]:
+# Add installation rules for videomapings and initscript:
 if (JEVOIS_PRO)
   install(FILES "Config/videomappings-Pro.cfg"
     DESTINATION "${JEVOIS_MODULES_ROOT}/config" COMPONENT bin RENAME "videomappings.cfg")
   install(FILES "Config/initscript-Pro.cfg"
     DESTINATION "${JEVOIS_MODULES_ROOT}/config" COMPONENT bin RENAME "initscript.cfg")
-
-  # Copy imgui header files to /jevois[pro]/include so jevoisbase and others can find them:
-  file(GLOB IMGUIINCLFILES "Contrib/imgui/*.h")
-  install(FILES ${IMGUIINCLFILES} DESTINATION "${JEVOIS_MODULES_ROOT}/include/imgui" COMPONENT bin)
-
-  # Copy ImGuiColorTextEdit header files to /jevois[pro]/include so jevoisbase and others can find them:
-  file(GLOB IMGUITXTINCLFILES "Contrib/ImGuiColorTextEdit/*.h")
-  install(FILES ${IMGUITXTINCLFILES} DESTINATION "${JEVOIS_MODULES_ROOT}/include/ImGuiColorTextEdit" COMPONENT bin)
-
-  # Install imgui fonts:
-  file(GLOB IMGUIFONTS "Contrib/imgui/misc/fonts/*.ttf")
-  install(FILES ${IMGUIFONTS} DESTINATION "${JEVOIS_MODULES_ROOT}/share/fonts" COMPONENT bin)
-
 else()
   install(FILES "Config/videomappings-A33.cfg"
     DESTINATION "${JEVOIS_MODULES_ROOT}/config" COMPONENT bin RENAME "videomappings.cfg")
@@ -388,74 +389,11 @@ else()
     DESTINATION "${JEVOIS_MODULES_ROOT}/config" COMPONENT bin RENAME "initscript.cfg")
 endif()
 
-# Copy threadpool header files to /jevois[pro]/include so jevoisbase and others can find them:
-install(FILES Contrib/threadpool/libs/function2/include/function2/function2.hpp
-  DESTINATION "${JEVOIS_MODULES_ROOT}/include/function2" COMPONENT bin)
-FILE(GLOB CQFILES "Contrib/threadpool/libs/concurrentqueue/*.h")
-install(FILES ${CQFILES}
-  DESTINATION "${JEVOIS_MODULES_ROOT}/include" COMPONENT bin)
-
 # Install jevois config files and scripts, shared files:
 install(FILES "Config/params.cfg"
   DESTINATION "${JEVOIS_MODULES_ROOT}/config" COMPONENT bin)
 install(DIRECTORY "share-${JEVOIS}/"
   DESTINATION "${JEVOIS_MODULES_ROOT}/share" COMPONENT bin)
-
-# Install libtensorflowlite.so library from Contrib. See Contrib/reinstall.sh for staging locations for each of host,
-# platform, A33, Pro:
-if (JEVOIS_PRO)
-
-  if (JEVOIS_PLATFORM)
-    install(FILES ${JEVOIS_BUILD_BASE}/usr/lib/libtensorflowlite.so DESTINATION lib COMPONENT bin)
-  else (JEVOIS_PLATFORM)
-    install(FILES /usr/lib/libtensorflowlite.so DESTINATION "/usr/lib" COMPONENT bin)
-  endif (JEVOIS_PLATFORM)
-
-else (JEVOIS_PRO)
-
-  if (JEVOIS_PLATFORM)
-    # libtensorflowlite is already in /var/lib/jevois-microsd from Contrib/reinstall.sh
-  else (JEVOIS_PLATFORM)
-    install(FILES /usr/lib/libtensorflowlite.so DESTINATION "/usr/lib" COMPONENT bin)
-  endif (JEVOIS_PLATFORM)
-
-endif (JEVOIS_PRO)
-
-# Install the ovxlib and VX includes from Contrib, used by all configurations:
-# Note: do not install /usr/include/VX on platform as it is already provided by aml-npu deb package:
-file(GLOB JEVOIS_DETECT_LIB_FILES "Contrib/npu/detect_library/source_code/include/*.h")
-install(FILES ${JEVOIS_DETECT_LIB_FILES} DESTINATION "${JEVOIS_MODULES_ROOT}/include" COMPONENT bin)
-
-install(DIRECTORY "Contrib/npu/include/ovxlib" DESTINATION include COMPONENT bin)
-
-if (JEVOIS_PRO)
-  if (JEVOIS_PLATFORM)
-  else ()
-    # Install it for jevoispro-host:
-    install(DIRECTORY "Contrib/npu/include/VX" DESTINATION include COMPONENT bin)
-    install(DIRECTORY "Contrib/npu/include/CL" DESTINATION include COMPONENT bin)
-    file(GLOB JEVOIS_VX_HOST_LIBS "Contrib/npu/x86_64_linux/lib/lib*")
-    install(FILES ${JEVOIS_VX_HOST_LIBS} DESTINATION "/usr/lib" COMPONENT bin)
-  endif ()
-else()
-  # and also for jevois-host and jevois-platform:
-  install(DIRECTORY "Contrib/npu/include/VX" DESTINATION include COMPONENT bin)
-  install(DIRECTORY "Contrib/npu/include/CL" DESTINATION include COMPONENT bin)
-endif ()
-
-# Install onnxruntime for jevois-pro, it is downloaded by Contrib/reinstall.sh:
-if (JEVOIS_PRO)
-  if (JEVOIS_PLATFORM)
-    install(DIRECTORY "Contrib/onnxruntime/aarch64/include/onnxruntime" DESTINATION include COMPONENT bin)
-    file(GLOB JEVOIS_ORT_PLATFORM_LIBS "Contrib/onnxruntime/aarch64/lib/lib*")
-    install(FILES ${JEVOIS_ORT_PLATFORM_LIBS} DESTINATION lib COMPONENT bin)
-  else ()
-    install(DIRECTORY "Contrib/onnxruntime/x64/include/onnxruntime" DESTINATION include COMPONENT bin)
-    file(GLOB JEVOIS_ORT_HOST_LIBS "Contrib/onnxruntime/x64/lib/lib*")
-    install(FILES ${JEVOIS_ORT_HOST_LIBS} DESTINATION "/usr/lib" COMPONENT bin)
-  endif ()
-endif ()
-
 
 ########################################################################################################################
 # Debian packaging:

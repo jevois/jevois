@@ -1,6 +1,14 @@
 #!/bin/bash
 # usage: reinstall.sh [-y]
 # will nuke and re-install all contributed packages
+#
+# Convention for libs and includes:
+# - includes go into include/amd64 (for host), include/armhf (jevois-a33), include/arm64 (jevois-pro),
+#   or include/all (for all). Only add directories to to include/*
+# - libs go into lib/amd64 (for host), lib/armhf (jevois-a33), lib/arm64 (jevois-pro). Only add files and
+#   symlinks to lib/*
+#
+# The JeVois cmake will then install them into the appropriate /jevois[pro]/include and /jevois[pro]/lib
 
 set -e # Exit on any error
 
@@ -10,28 +18,6 @@ cd "$( dirname "${BASH_SOURCE[0]}" )"
 # Bump this release number each time you make significant changes here, this will cause rebuild-host.sh to re-run
 # this reinstall script:
 release=`cat RELEASE`
-
-if [[ -z "${JEVOISPRO_SDK_ROOT}" ]]; then
-    JEVOISPRO_SDK_ROOT=/usr/share/jevoispro-sdk
-    echo "JEVOISPRO_SDK_ROOT is not set, using ${JEVOISPRO_SDK_ROOT}"
-fi
-
-if [[ -z "${JEVOIS_SDK_ROOT}" ]]; then
-    JEVOIS_SDK_ROOT=/usr/share/jevois-sdk
-    echo "JEVOIS_SDK_ROOT is not set, using ${JEVOIS_SDK_ROOT}"
-fi
-
-JEVOIS_BUILD_BASE="${JEVOIS_SDK_ROOT}/out/sun8iw5p1/linux/common/buildroot"
-JEVOISPRO_BUILD_BASE="${JEVOISPRO_SDK_ROOT}/jevoispro-sysroot"
-
-if [ ! -d "${JEVOIS_BUILD_BASE}" -a ! -d "${JEVOISPRO_BUILD_BASE}" ]; then
-    echo "Cannot find either ${JEVOIS_BUILD_BASE} or ${JEVOISPRO_BUILD_BASE}"
-    echo "You need to insall jevois-sdk-dev or jevoispro-sdk-dev first -- ABORT"
-    exit 1
-fi
-
-sudo mkdir -p /var/lib/jevoispro-microsd/lib
-sudo mkdir -p /var/lib/jevois-microsd/lib
 
 ###################################################################################################
 function finish
@@ -80,8 +66,11 @@ fi
 if [ "X$REPLY" = "Xy" ]; then
     ###################################################################################################
     # Cleanup:
-    /bin/rm -rf tensorflow pycoral threadpool
+    /bin/rm -rf tensorflow pycoral threadpool tflite include lib
 
+    mkdir -p include/amd64 include/armhf include/arm64 include/all
+    mkdir -p lib/amd64 lib/armhf lib/arm64
+    
     ###################################################################################################
     # Get the packages:
 
@@ -105,6 +94,13 @@ if [ "X$REPLY" = "Xy" ]; then
     done
 
     ###################################################################################################
+    # threadpool: just the includes
+    /bin/cp -arv threadpool/include/threadpool include/all/
+    /bin/cp -arv threadpool/libs/function2/include/function2 include/all/
+    mkdir include/all/concurrentqueue
+    /bin/cp -av threadpool/libs/concurrentqueue/*.h include/all/concurrentqueue/
+
+    ###################################################################################################
     # Tensorflow dependencies and build:
     cd tensorflow
     ./tensorflow/lite/tools/make/download_dependencies.sh
@@ -125,75 +121,48 @@ if [ "X$REPLY" = "Xy" ]; then
     # Build for host:
     echo "### JeVois: compiling tensorflow for host ..."
     ${bzl} build -c opt //tensorflow/lite:libtensorflowlite.so
-    sudo cp -v bazel-bin/tensorflow/lite/libtensorflowlite.so /usr/lib/
+    sudo cp -v bazel-bin/tensorflow/lite/libtensorflowlite.so ../lib/amd64/
 
-    if [ -d "${JEVOISPRO_BUILD_BASE}" ]; then
-        # Build for JeVois-Pro platform:
-        echo "### JeVois: cross-compiling tensorflow for JeVois-Pro platform ..."
-        ${bzl} build --config=elinux_aarch64 -c opt //tensorflow/lite:libtensorflowlite.so
-        sudo cp -v bazel-bin/tensorflow/lite/libtensorflowlite.so /var/lib/jevoispro-microsd/lib/ # for sd card
-        sudo cp -v bazel-bin/tensorflow/lite/libtensorflowlite.so ${JEVOISPRO_BUILD_BASE}/usr/lib/ # for compiling
-    fi
+    # Copy some includes:
+    /usr/bin/find tensorflow/lite -name '*.h' -print0 | \
+        tar cvf - --null --files-from - | \
+        ( cd ../include/all/ && tar xf - )
     
-    if [ -d "${JEVOIS_BUILD_BASE}" ]; then
-        # Build for JeVois-A33 platform:
-        echo "### JeVois: cross-compiling tensorflow for JeVois-A33 platform ..."
-        ${bzl} build --config=elinux_armhf -c opt //tensorflow/lite:libtensorflowlite.so
-        sudo mkdir -p /var/lib/jevois-microsd/lib
-        sudo cp -v bazel-bin/tensorflow/lite/libtensorflowlite.so /var/lib/jevois-microsd/lib/ # for sd card
-        sudo cp -v bazel-bin/tensorflow/lite/libtensorflowlite.so ${JEVOIS_BUILD_BASE}/target/usr/lib/ # for compiling
-    fi
+    # Build for JeVois-Pro platform:
+    echo "### JeVois: cross-compiling tensorflow for JeVois-Pro platform ..."
+    ${bzl} build --config=elinux_aarch64 -c opt //tensorflow/lite:libtensorflowlite.so
+    sudo cp -v bazel-bin/tensorflow/lite/libtensorflowlite.so ../lib/arm64/
+    
+    # Build for JeVois-A33 platform:
+    echo "### JeVois: cross-compiling tensorflow for JeVois-A33 platform ..."
+    ${bzl} build --config=elinux_armhf -c opt //tensorflow/lite:libtensorflowlite.so
+    sudo mkdir -p /var/lib/jevois-microsd/lib
+    sudo cp -v bazel-bin/tensorflow/lite/libtensorflowlite.so ../lib/armhf/
 
     cd ..
 
     ###################################################################################################
     # ONNX Runtime for C++: need to download tarballs from github
     # In our CMakeLists.txt we include the onnxruntime includes and libs into the jevois deb
-    ORT_VER="1.15.0"
+    ORT_VER="1.15.1"
 
     # For host:
     wget https://github.com/microsoft/onnxruntime/releases/download/v${ORT_VER}/onnxruntime-linux-x64-${ORT_VER}.tgz
     tar xvf onnxruntime-linux-x64-${ORT_VER}.tgz
     /bin/rm onnxruntime-linux-x64-${ORT_VER}.tgz
-
-    # Make a local copy that will be included into our jevois deb:
-    mkdir -p onnxruntime/x64/include/onnxruntime onnxruntime/x64/lib
-    /bin/cp -a onnxruntime-linux-x64-${ORT_VER}/include/* onnxruntime/x64/include/onnxruntime/
-    /bin/cp -a onnxruntime-linux-x64-${ORT_VER}/lib/* onnxruntime/x64/lib/
-
-    # Also install it so we can compile immediately (before installing the jevois deb):
-    sudo mkdir -p /usr/include/onnxruntime
-    sudo /bin/cp -a onnxruntime-linux-x64-${ORT_VER}/include/* /usr/include/onnxruntime/
-    sudo /bin/cp -a onnxruntime-linux-x64-${ORT_VER}/lib/* /usr/lib/
-
+    mkdir -p include/amd64/onnxruntime
+    /bin/cp -a onnxruntime-linux-x64-${ORT_VER}/include/* include/amd64/onnxruntime/
+    /bin/cp onnxruntime-linux-x64-${ORT_VER}/lib/libonnxruntime.so lib/amd64/ # no symlinks allowed
     /bin/rm -rf onnxruntime-linux-x64-${ORT_VER}
     
     # For jevois-pro platform:
     wget https://github.com/microsoft/onnxruntime/releases/download/v${ORT_VER}/onnxruntime-linux-aarch64-${ORT_VER}.tgz
     tar xvf onnxruntime-linux-aarch64-${ORT_VER}.tgz
     /bin/rm onnxruntime-linux-aarch64-${ORT_VER}.tgz
-    
-    # Make a local copy that will be included into our jevois deb:
-    mkdir -p onnxruntime/aarch64/include/onnxruntime onnxruntime/aarch64/lib
-    /bin/cp -a onnxruntime-linux-aarch64-${ORT_VER}/include/* onnxruntime/aarch64/include/onnxruntime/
-    /bin/cp -a onnxruntime-linux-aarch64-${ORT_VER}/lib/* onnxruntime/aarch64/lib/
-
-    # Also install it so we can compile immediately (before installing the jevois deb):
-    if [ -d "${JEVOISPRO_BUILD_BASE}" ]; then
-        # First install into the jevoispro sysroot, for cross-compiling code that uses the library:
-        sudo mkdir -p ${JEVOISPRO_BUILD_BASE}/usr/include/onnxruntime
-        sudo /bin/cp -a onnxruntime-linux-aarch64-${ORT_VER}/include/* ${JEVOISPRO_BUILD_BASE}/usr/include/onnxruntime/
-        sudo /bin/cp -a onnxruntime-linux-aarch64-${ORT_VER}/lib/* ${JEVOISPRO_BUILD_BASE}/usr/lib/
-
-        # Then install into jevoispro-microsd for execution on the platform:
-        sudo mkdir -p /var/lib/jevoispro-microsd/usr/include/onnxruntime
-        sudo /bin/cp -a onnxruntime-linux-aarch64-${ORT_VER}/include/* /var/lib/jevoispro-microsd/usr/include/onnxruntime/
-        sudo /bin/cp -a onnxruntime-linux-aarch64-${ORT_VER}/lib/* /var/lib/jevoispro-microsd/lib/
-    fi
-    
+    mkdir -p include/arm64/onnxruntime
+    /bin/cp -a onnxruntime-linux-aarch64-${ORT_VER}/include/* include/arm64/onnxruntime/
+    /bin/cp onnxruntime-linux-aarch64-${ORT_VER}/lib/libonnxruntime.so lib/arm64/ # no symlinks allowed
     /bin/rm -rf onnxruntime-linux-aarch64-${ORT_VER}
-
-
     
     # pycoral build
     #cd pycoral
@@ -204,4 +173,5 @@ if [ "X$REPLY" = "Xy" ]; then
     ###################################################################################################
     # Keep track of the last installed release:
     echo $release > .installed
+    echo "JeVois contribs installation success."
 fi

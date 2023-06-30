@@ -848,11 +848,13 @@ void jevois::Engine::setFormatInternal(jevois::VideoMapping const & m, bool relo
     }
     else
     {
-      // C++ compiled module. We can re-use the same loader and avoid closing the .so if we will use the same module:
-      if (itsLoader.get() == nullptr || itsLoader->sopath() != sopath)
+      // C++ compiled module. We can re-use the same loader and avoid closing the .so if we will use the same module,
+      // but only for immutable jevois modules, not for user modules that may just have been recompiled. Built-in jevois
+      // modules do not have their own CMakeLists.txt:
+      if (itsLoader.get() == nullptr || itsLoader->sopath() != sopath || std::filesystem::exists(m.cmakepath()))
       {
-        // Nuke our previous loader and free its resources if needed, then start a new loader:
         LINFO("Instantiating dynamic loader for " << sopath);
+        itsLoader.reset();
         itsLoader.reset(new jevois::DynamicLoader(sopath, true));
       }
       

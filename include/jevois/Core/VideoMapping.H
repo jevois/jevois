@@ -83,11 +83,17 @@ namespace jevois
       unsigned int c2w;   //!< When crop is CropScale, width of the scaled images, otherwise 0
       unsigned int c2h;   //!< When crop is CropScale, height of the scaled images, otherwise 0
       
+      //! Return the full absolute path the module's directory
+      std::string path() const;
+
       //! Return the full absolute path and file name of the module's .so or .py file
       std::string sopath() const;
 
       //! Return the full absolute path and file name of the module's .C or .py file
       std::string srcpath() const;
+
+      //! Return the full absolute path and file name of the module's CMakeLists.txt file
+      std::string cmakepath() const;
 
       //! Return the size in bytes of an output image
       unsigned int osize() const;

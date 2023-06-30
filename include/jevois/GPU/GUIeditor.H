@@ -31,7 +31,7 @@ namespace jevois
   class GUIhelper;
   
   //! Helper enum for actions to execute after saving a config file \relates GUIeditor
-  enum class EditorSaveAction { None, Reload, Reboot, RefreshMappings };
+  enum class EditorSaveAction { None, Reload, Reboot, RefreshMappings, Compile };
 
   //! Helper class to represent a GUIeditor file in a pull-down menu \relates GUIeditor
   struct EditorItem {
@@ -56,10 +56,10 @@ namespace jevois
       //! Draw the editor into ImGui
       void draw();
       
-      //! Load a file
+      //! Load a file and set it as the current file
       /*! If the load fails, we can either display failtxt in the editor and make it read-only, or, if failtxt is empty,
           assume that we want to create a new file (e.g., module's params.cfg) and hence set the editor read-write. */
-      void loadFile(std::filesystem::path const & fn, std::string const & failtxt);
+      void loadFile(std::filesystem::path const & fn);
 
       //! Save a file
       void saveFile();
@@ -68,6 +68,7 @@ namespace jevois
       void refresh();
 
     private:
+      void loadFileInternal(std::filesystem::path const & fn, std::string const & failtxt);
       GUIhelper * const itsHelper;
       std::string const itsId;
       

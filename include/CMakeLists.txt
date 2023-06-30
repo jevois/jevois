@@ -1,7 +1,7 @@
 # Add install directive for our includes:
-install(DIRECTORY .
+install(DIRECTORY jevois
   COMPONENT include
-  DESTINATION include
+  DESTINATION "${JEVOIS_MODULES_ROOT}/include"
   FILES_MATCHING PATTERN "*.[Hh]"
   PATTERN "*.hpp"
   PATTERN ".svn" EXCLUDE
