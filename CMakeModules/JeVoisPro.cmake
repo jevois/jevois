@@ -90,17 +90,17 @@ set(OPENCV_LIBS_FOR_JEVOIS "-lopencv_core -lopencv_imgproc -lopencv_features2d -
 
 # openvino libs for platform. NOTE: the package is missing some symlinks, so get the exact lib files:
 # from /usr/share/jevoispro-sdk/jevoispro-sysroot/usr/share/jevoispro-openvino-2022.3/runtime/lib/aarch64/
-set(JEVOIS_PLATFORM_OPENVINO_LIBS "-lopenvino_auto_batch_plugin -l:libopenvino_c.so.2230 \
--lopenvino_intel_myriad_plugin -l:libopenvino_onnx_frontend.so.2230 -l:libopenvino_paddle_frontend.so.2230 \
--l:libopenvino_tensorflow_frontend.so.2230 -lopenvino_auto_plugin -lopenvino_arm_cpu_plugin \
--lopenvino_gapi_preproc -l:libopenvino_ir_frontend.so.2230 -l:libopenvino.so.2230 -lopenvino_hetero_plugin")
+set(JEVOIS_PLATFORM_OPENVINO_LIBS "-lopenvino_auto_batch_plugin -l:libopenvino_c.so.2231 \
+-lopenvino_intel_myriad_plugin -l:libopenvino_onnx_frontend.so.2231 -l:libopenvino_paddle_frontend.so.2231 \
+-l:libopenvino_tensorflow_frontend.so.2231 -lopenvino_auto_plugin -lopenvino_arm_cpu_plugin \
+-lopenvino_gapi_preproc -l:libopenvino_ir_frontend.so.2231 -l:libopenvino.so.2231 -lopenvino_hetero_plugin")
 
 # openvino libs for host, from /usr/share/jevoispro-openvino-2022.3/runtime/lib/intel64/
-set(JEVOIS_HOST_OPENVINO_LIBS "-l:libopenvino.so.2230 -l:libopenvino_c.so.2230 -lopenvino_auto_plugin \
--l:libopenvino_onnx_frontend.so.2230 -lopenvino_intel_gna_plugin -lopenvino_intel_cpu_plugin \
--l:libopenvino_paddle_frontend.so.2230 -lopenvino_hetero_plugin -lopenvino_intel_gpu_plugin \
--lopenvino_intel_myriad_plugin -l:libopenvino_tensorflow_frontend.so.2230 -lopenvino_gapi_preproc \
--lopenvino_auto_batch_plugin -l:libopenvino_ir_frontend.so.2230")
+set(JEVOIS_HOST_OPENVINO_LIBS "-l:libopenvino.so.2231 -l:libopenvino_c.so.2231 -lopenvino_auto_plugin \
+-l:libopenvino_onnx_frontend.so.2231 -lopenvino_intel_gna_plugin -lopenvino_intel_cpu_plugin \
+-l:libopenvino_paddle_frontend.so.2231 -lopenvino_hetero_plugin -lopenvino_intel_gpu_plugin \
+-lopenvino_intel_myriad_plugin -l:libopenvino_tensorflow_frontend.so.2231 -lopenvino_gapi_preproc \
+-lopenvino_auto_batch_plugin -l:libopenvino_ir_frontend.so.2231")
 
 # Ok, set the libs and paths for opencv and openvino:
 set(JEVOIS_PLATFORM_OPENCV_PREFIX "${JEVOIS_BUILD_BASE}/usr/share/${JEVOIS}-opencv-${JEVOIS_OPENCV_VERSION}")
@@ -110,7 +110,6 @@ set(JEVOIS_PLATFORM_OPENCV_LIBS
   "-L${JEVOIS_BUILD_BASE}/usr/lib/aarch64-linux-gnu \
    -L${JEVOIS_PLATFORM_OPENCV_PREFIX}/lib \
    -L${JEVOIS_PLATFORM_OPENVINO_PREFIX}/runtime/lib/aarch64 \
-   -L${JEVOIS_PLATFORM_OPENVINO_PREFIX}/runtime/3rdparty/tbb/lib \
    ${OPENCV_LIBS_FOR_JEVOIS} \
    ${JEVOIS_PLATFORM_OPENVINO_LIBS}")
 
@@ -120,9 +119,15 @@ set(JEVOIS_HOST_OPENCV_INCLUDE "-I${JEVOIS_HOST_OPENCV_PREFIX}/include/opencv4")
 set(JEVOIS_HOST_OPENCV_LIBS
   "-L${JEVOIS_HOST_OPENCV_PREFIX}/lib \
    -L${JEVOIS_HOST_OPENVINO_PREFIX}/runtime/lib/intel64 \
-   -L${JEVOIS_HOST_OPENVINO_PREFIX}/runtime/3rdparty/tbb/lib \
    ${OPENCV_LIBS_FOR_JEVOIS} \
    ${JEVOIS_HOST_OPENVINO_LIBS}")
+
+# When compiling natively from the JeVois-Pro GUI:
+set(JEVOIS_PLATFORM_NATIVE_OPENCV_LIBS
+  "-L${JEVOIS_HOST_OPENCV_PREFIX}/lib \
+   -L${JEVOIS_HOST_OPENVINO_PREFIX}/runtime/lib/aarch64 \
+   ${OPENCV_LIBS_FOR_JEVOIS} \
+   ${JEVOIS_PLATFORM_OPENVINO_LIBS}")
 
 # Use TBB and kernel includes for platform from the buildroot installation.  On the host, we may have local packages,
 # eg, latest opencv compiled from source:

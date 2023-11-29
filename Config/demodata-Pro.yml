@@ -1,0 +1,98 @@
+%YAML 1.0
+---
+
+# JeVois-Pro only: definition of modules, messages, and parameters for demo mode
+# Each entry should have the 3 reserved fields: demomapping, demotitle, and demomsg
+# Then it can also add any other parameter settings to be applied.
+
+DemoArUco:
+    demomapping: "JVUI 0 0 30.0 CropScale=GREY@1280x720:YUYV 1920 1080 30.0 JeVois DemoArUco"
+    demotitle: "Detect ArUco markers"
+    demomsg: "Show me some ArUco markers!"
+    dopose: true
+    showcube: true
+
+DemoQRcode:
+    demomapping: "JVUI 0 0 30.0 CropScale=GREY@1024x576:YUYV 1920 1080 30.0 JeVois DemoQRcode"
+    demotitle: "Detect QR-codes"
+    demomsg: "Show me some QR-codes!"
+
+DNNa:
+    demomapping: "JVUI 0 0 30.0 CropScale=RGB24@1024x576:YUYV 1920 1080 30.0 JeVois DNN"
+    demotitle: "Detect 80 kinds of objects"
+    demomsg: "YOLO-v7 deep neural network running on JeVois-Pro Neural Processing Unit (NPU)"
+
+DNNb:
+    demomapping: "JVUI 0 0 30.0 CropScale=RGB24@1024x576:YUYV 1920 1080 30.0 JeVois DNN"
+    demotitle: "Recognize 1000 kinds of onjects"
+    demomsg: "Inception-V3 deep neural network running on JeVois-Pro Neural Processing Unit (NPU)"
+    zoo: "models.yml"
+    pipe: "NPU:Classify:Inception-V3"
+    
+DemoBackgroundSubtract:
+    demomapping: "JVUI 0 0 30.0 CropScale=RGB24@1024x576:YUYV 1920 1080 30.0 JeVois DemoBackgroundSubtract"
+    demotitle: "Background subtraction / detect moving objects"
+    demomsg: "Moving things are highlighted in white."
+
+EdgeDetection:
+    demomapping: "JVUI 0 0 30.0 CropScale=GREY@1920x1080:YUYV 1920 1080 30.0 JeVois EdgeDetection"
+    demotitle: "Edge detection"
+    demomsg: "Edges detected by the Canny filter are shown in white."
+
+ColorFiltering:
+    demomapping: "JVUI 0 0 30.0 CropScale=RGB24@1024x576:YUYV 1920 1080 30.0 JeVois ColorFiltering"
+    demotitle: "Color filtering"
+    demomsg: "The central window shows a mathematical morphology gradient filter applied to the live video stream."
+    
+MarkersCombo:
+    demomapping: "JVUI 0 0 30.0 CropScale=GREY@1024x576:YUYV 1920 1080 30.0 JeVois MarkersCombo"
+    demotitle: "QR-code + ArUco + ARtoolkit markers"
+    demomsg: "Show me some markers!"
+
+DemoIMU:
+    demomapping: "JVUI 0 0 30.0 YUYV 1920 1080 30.0 JeVois DemoIMU"
+    demotitle: "On-board 9-axis accelerometer"
+    demomsg: "Move me to see the motion data!"
+
+DemoNEON:
+    demomapping: "YUYV 960 240 30.0 YUYV 320 240 30.0 JeVois DemoNeon"
+    demotitle: "Accelerated image processing with NEON"
+    demomsg: "Much faster image smoothing using NEON processor instructions"
+
+ObjectTracker:
+    demomapping: "YUYV +0 +14 30.0 YUYV 640 480 30.0 JeVois ObjectTracker"
+    demotitle: "Color-based object tracking"
+    demomsg: "Show me some light blue objects!"
+
+ArUcoBlob:
+    demomapping: "YUYV 320 266 30.0 YUYV 320 240 30.0 JeVois ArUcoBlob"
+    demotitle: "ArUco + color blob detection"
+    demomsg: "Show me ArUco markers and olorful objects"
+    dopose: true
+    showcube: true
+
+# Python demos are currently commented out as they crash inside python sometimes...
+#PyHandDetector:
+#    demomapping: "JVUI 0 0 30.0 CropScale=RGB24@512x288:YUYV 1920 1080 30.0 JeVois PyHandDetector"
+#    demotitle: "Detect hands"
+#    demomsg: "Show me some hands!"
+    
+#PyFaceMesh:
+#    demomapping: "JVUI 0 0 30.0 CropScale=RGB24@512x288:YUYV 1920 1080 30.0 JeVois PyFaceMesh"
+#    demotitle: "Detect facial landmarks"
+#    demomsg: "Show me a face!"
+    
+#PyPoseDetector:
+#    demomapping: "JVUI 0 0 30.0 CropScale=RGB24@512x288:YUYV 1920 1080 30.0 JeVois PyPoseDetector"
+#    demotitle: "Detect body pose skeleton"
+#    demomsg: "Show me your dance moves!"
+
+MultiDNN:
+    demomapping: "JVUI 0 0 30.0 CropScale=RGB24@512x288:YUYV 1920 1080 30.0 JeVois MultiDNN"
+    demotitle: "Run several deep nets, separate displays"
+    demomsg: "Several deep networks can run on each supported accelerator, time-multiplexed."
+
+MultiDNN2:
+    demomapping: "JVUI 0 0 30.0 CropScale=RGB24@512x288:YUYV 1920 1080 30.0 JeVois MultiDNN2"
+    demotitle: "Run several deep nets, merged display"
+    demomsg: "Several deep networks can run on each supported accelerator, time-multiplexed."

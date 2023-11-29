@@ -6,6 +6,7 @@ layout(location = 0) out vec4 out_color;
 uniform sampler2D s_texture;
 
 uniform float twirlamount;
+uniform float alpha;
 uniform vec2 tdim;
 
 const vec3 offset = vec3(-0.0625, -0.5, -0.5);
@@ -29,5 +30,5 @@ void main()
   vec3 yuv = vec3(y, yuyv.y, yuyv.w);
   vec3 rgb = converter * (yuv + offset);
   
-  out_color = vec4(rgb, 1);
+  out_color = vec4(rgb, alpha);
 }

@@ -50,7 +50,7 @@ void jevois::PythonWrapper::pythonload(std::string const & path)
     std::string const pyclass = path.substr(last_slash + 1, path.length() - last_slash - 4); // strip trailing .py
     std::string const execstr =
       "import sys\n"
-      "sys.path.append(\"/usr/lib\")\n" // To find libjevois[pro] module in /usr/lib
+      "sys.path.append(\"" JEVOIS_ROOT_PATH "/lib\")\n" // To find libjevois[pro]
       "sys.path.append(\"" JEVOIS_CONFIG_PATH "\")\n" // To find pyjevois.py config
       "sys.path.append(\"" JEVOIS_OPENCV_PYTHON_PATH "\")\n" // To find cv2 module
       "sys.path.append(\"" + pydir + "\")\n" +

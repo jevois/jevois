@@ -6,6 +6,7 @@ layout(location = 0) out vec4 out_color;
 uniform sampler2D s_texture;
 
 uniform float twirlamount;
+uniform float alpha;
 uniform vec2 tdim;
 
 void main()
@@ -23,5 +24,5 @@ void main()
   float g = texture(s_texture, vec2((tx + 1.0) / (tdim.x * 3.0), uv.y)).r;
   float b = texture(s_texture, vec2((tx + 2.0) / (tdim.x * 3.0), uv.y)).r;
 
-  out_color = vec4(r, g, b, 1.0);
+  out_color = vec4(r, g, b, alpha);
 }

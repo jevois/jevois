@@ -1,7 +1,9 @@
 #!/usr/bin/perl
-
-# USAGE jevois-modinfo <module.C|.py>
-# writes out modinfo.yaml
+#
+# USAGE jevois-modinfo <module.C|module.py|module>
+#
+# writes out modinfo.html which contains a little web page that describes the module, with docs, screenshots, parameter
+# information, videos, links to source code, etc
 
 use Text::Wrap;
 use Cwd 'abs_path';
@@ -11,31 +13,29 @@ use File::Spec::Unix;
 use HTML::Entities;
 #use strict;
 
-my $tmpdirname = "/tmp/jevois-modinfotemp$$".time();
-
 # we need JEVOIS_SRC_ROOT to work...
 # just quietly exit if it is not there, this happens during sudo make install
 my $jevoissrcroot = $ENV{'JEVOIS_SRC_ROOT'};
 $jevoissrcroot =~ s/\s+$//; $jevoissrcroot =~ s/\/+$//; 
 
 if ($jevoissrcroot eq "") { exit 0; }
-
-if (! -d "$jevoissrcroot/jevois") { print STDERR "Could not find jevois/ source repository inside ".
-                                        "JEVOIS_SRC_ROOT=$jevoissrcroot - Skipping module doc creation.\n"; exit 0; }
-if (! -d "$jevoissrcroot/jevoisbase") { print STDERR "Could not find jevoisbase/ source repository inside ".
-                                        "JEVOIS_SRC_ROOT=$jevoissrcroot - Skipping module doc creation.\n"; exit 0; }
+elsif ($jevoissrcroot ne "none")
+{
+    if (! -d "$jevoissrcroot/jevois")
+    { print STDERR "Could not find jevois/ source repo in JEVOIS_SRC_ROOT=$jevoissrcroot -- ABORT\n"; exit 1; }
+    if (! -d "$jevoissrcroot/jevoisbase")
+    { print STDERR "Could not find jevoisbase/ source repo in JEVOIS_SRC_ROOT=$jevoissrcroot -- ABORT\n"; exit 1; }
+}
 
 # Parse out the module header filename from the command line
 my $num_args = $#ARGV + 1;
-if ($num_args != 1) {
-  print STDERR "Usage: jevois-modinfo.pl <file.C|file.py|filestem>\n";
-  exit(-1);
-}
+if ($num_args != 1) { print STDERR "Usage: jevois-modinfo.pl <file.C|file.py|filestem>\n"; exit 2; }
+
 my $inputFilename = $ARGV[0];
-
 my $ispython = 0; # will turn true if the module is python
+my $tmpdirname = "/tmp/jevois-modinfotemp$$".time();
 
-# If we were not given an extension (as is the case when using 'make moduledoc'), try to figure it out:
+# If we were not given an extension (as is the case when using 'make modinfo'), try to figure it out:
 my @ifn = split(/\./, $inputFilename); my $inputExt = pop(@ifn);
 my @extensions = qw/ H hh hpp C cc cpp py /; my $exts = '^(' . join('|', @extensions) . ')$'; 
 if ($inputExt !~ m/$exts/)
@@ -53,11 +53,7 @@ if ($inputExt !~ m/$exts/)
 
 # Make sure we have doxygen installed
 my $doxypath = `which doxygen`;
-if($doxypath eq "")
-{
-  print STDERR "Could not create modinfo.yaml: doxygen is not installed on this machine\n";
-  exit(-1);
-}
+if($doxypath eq "") { print STDERR "Could not create modinfo.html: doxygen is not installed -- ABORT\n"; exit 3; }
 
 # Look for an icon.* file
 my @iconFileArray = split("/", $inputFilename);
@@ -69,9 +65,9 @@ if (length(@iconFiles) > 0) { $iconFile = (split("/", $iconFiles[0]))[-1]; }
 # Create a temporary working directory:
 `mkdir -p $tmpdirname`;
 
-# Search the module header file for any ifdefs, and just blindly define them in the PREDEFINED doxygen tag
-my $ifdefs = `grep ifdef $inputFilename`;
-my @ifdeflist = (split("\n", $ifdefs));
+# Search the module file for any ifdefs, and just blindly define them in the PREDEFINED doxygen tag
+my $ifdefs = `grep '^#ifdef ' $inputFilename`;
+my @ifdeflist = split("\n", $ifdefs);
 my $ifdefnames = "";
 foreach my $ifdef (@ifdeflist) { $ifdefnames= "$ifdefnames ". substr($ifdef, length("#ifdef ")); }
 
@@ -101,23 +97,30 @@ if (!$ispython)
     print DOXYFILE "EXTENSION_MAPPING      = H=C++ C=C++\n";
     print DOXYFILE "BUILTIN_STL_SUPPORT    = YES\n"; # for cross-ref to jevois doc
 }
-#print DOXYFILE "TAGFILES               = $jevoissrcroot/jevoisbase/doc/jevoisbase.tag=/basedoc\n";
-#print DOXYFILE "TAGFILES               = $jevoissrcroot/jevois/doc/jevois.tag=/doc $ENV{'JEVOIS_SRC_ROOT'}/jevoisbase/doc/jevoisbase.tag=/basedoc\n";
 
-if ( -f "$jevoissrcroot/jevois/doc/jevois.tag" ) {
-    print DOXYFILE "TAGFILES               = $jevoissrcroot/jevois/doc/jevois.tag=/doc\n";
-}
+# Add jevois tag file so we can get hyperlinks to JeVois keywords:
+if ( -f "$jevoissrcroot/jevois/doc/jevois.tag" )
+{ print DOXYFILE "TAGFILES = $jevoissrcroot/jevois/doc/jevois.tag=/doc\n"; }
 
-print DOXYFILE 'ALIASES += youtube{1}="@htmlonly<div align=\'center\'><iframe width=\'560\' height=\'315\' src=\'http://www.youtube.com/embed/\1?rel=0&loop=1\' frameborder=\'0\' allowfullscreen align=\'middle\'></iframe></div>@endhtmlonly"' . "\n";
-print DOXYFILE 'ALIASES += jvversion{1}="@htmlonly<strong class=\'jvversion\'>JeVois v\1</strong>@endhtmlonly"' . "\n";
-print DOXYFILE 'ALIASES += jvhost="@htmlonly<strong class=\'jvhostplatform\'>Host Only</strong>@endhtmlonly"' . "\n";
-print DOXYFILE 'ALIASES += jvplatform="@htmlonly<strong class=\'jvhostplatform\'>Platform Only</strong>@endhtmlonly"' . "\n";
-print DOXYFILE 'ALIASES += jvmod{1}="@htmlonly<a href=\'/moddoc/\1/modinfo.html\'><strong class=\'jvmod\'>\1</strong></a>@endhtmlonly"' . "\n";
+# Add aliases. Keep in sync with the doxygen.cfg of jevois/doc/:
+print DOXYFILE <<'EOF';
+ALIASES += youtube{1}="@htmlonly<div align='center'><iframe width='560' height='315' src='http://www.youtube.com/embed/\1?rel=0&loop=1' frameborder='0' allowfullscreen align='middle'></iframe></div>@endhtmlonly"
+ALIASES += jvversion{1}="@htmlonly<strong class='jvversion'>JeVois v\1</strong>@endhtmlonly"
+ALIASES += jvhost="@htmlonly<strong class='jvhostplatform'>Host Only</strong>@endhtmlonly"
+ALIASES += jvplatform="@htmlonly<strong class='jvhostplatform'>Platform Only</strong>@endhtmlonly"
+ALIASES += jvmod{1}="@htmlonly<a href='/moddoc/\1/modinfo.html'><strong class='jvmod'>\1</strong></a>@endhtmlonly"
+ALIASES += jvimg{2}="@htmlonly<style>div.image img[src='\1']{width:\2}</style><a href='/doc/\1'>@endhtmlonly @image html \1 ^^ @htmlonly</a>@endhtmlonly"
+ALIASES += jvok="@htmlonly<img src=checkmark.png alt=OK></img>@endhtmlonly"
+ALIASES += jvno="@htmlonly<img src=crossmark.png alt=NO></img>@endhtmlonly"
+ALIASES += jvth{1}="@htmlonly<strong class='jvversion'>\1</strong>@endhtmlonly"
+ALIASES += jva33="@htmlonly<strong class='jvmodel'>JeVois-A33</strong>@endhtmlonly"
+ALIASES += jvpro="@htmlonly<strong class='jvmodel'>JeVois-Pro</strong>@endhtmlonly"
+EOF
 
 # We here create some custom doxygen tags to allow code writers to input more manifest data in their doc:
 my @dtags = qw/ email mainurl supporturl otherurl address copyright license distribution 
  restrictions videomapping subcomponents depends displayname modulecommand youtubevideo /;
-#future use?: / recommends suggests conflicts replaces breaks provides /;
+# future use?: / recommends suggests conflicts replaces breaks provides /;
 foreach my $kw (@dtags) { print DOXYFILE "ALIASES += \"$kw=\\xrefitem $kw \\\"$kw\\\" \\\"$kw\\\"\"\n"; }
 close DOXYFILE;
 
@@ -128,7 +131,7 @@ close DOXYFILE;
 `doxygen $tmpdirname/doxy.dxy`;
 
 # Import our newly generated DoxyDocs.pl
-require $tmpdirname . "/perlmod/DoxyDocs.pm";
+require "$tmpdirname/perlmod/DoxyDocs.pm";
 
 my %docs = %$doxydocs;
 my @classes = @{ $docs{classes} };
@@ -291,7 +294,7 @@ if ($description eq "") { $description = "This author is too lazy to write a des
 my @modparams;
 my @subcomps;
 
-if (!$ispython)
+if (!$ispython && $jevoissrcroot ne "none")
 {
     getParams($inputFilename, $className);
     
@@ -352,7 +355,7 @@ my $osver = $ostmp[1];
 ##############################################################################################################
 # Dump out information in YAML format
 ##############################################################################################################
-if (0)
+if (0) # THIS IS OBSOLETE
 {
     open OF, ">modinfo.yaml" || die "oops";
     print OF "general: \n";
@@ -450,17 +453,6 @@ if ($fullhtml)
 
     print OF "<link rel='stylesheet prefetch' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.4.0/css/font-awesome.min.css'>\n"; # for the youtube button
         
-#    print OF "<link rel=\"stylesheet\" href=\"/start/assets/plugins/bootstrap/css/bootstrap.min.css\">\n";
-#    print OF "<link rel=\"stylesheet\" href=\"/start/assets/plugins/font-awesome/css/font-awesome.css\">\n";
-#    print OF "<link rel=\"stylesheet\" href=\"/start/assets/plugins/prism/prism.css\">\n";
-#    print OF "<link rel=\"stylesheet\" href=\"/start/assets/plugins/lightbox/dist/ekko-lightbox.min.css\">\n";
-#    print OF "<link rel=\"stylesheet\" href=\"/start/assets/plugins/elegant_font/css/style.css\">\n";
-#    print OF "<link id=\"theme-style\" rel=\"stylesheet\" href=\"/start/assets/css/styles.css\">\n";
-#    print OF "<!--[if lt IE 9]>
-#      <script src=\"https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js\"></script>
-#      <script src=\"https://oss.maxcdn.com/respond/1.4.2/respond.min.js\"></script>
-#    <![endif]-->\n";
-
     print OF "<link rel=\"stylesheet\" type=\"text/css\" href=\"/modstyle.css\">\n";
     print OF "</head> <body>\n";
 }
@@ -570,7 +562,6 @@ if ( -f $scriptcfg )
     my $contents = `/bin/cat $scriptcfg`;
     print OF "<tr><td><table class=modinfocfg><tr><td class=modinfocfg><b>script.cfg file</b><hr><pre>$contents</pre></td></tr></table></td></tr>\n";
 }
-
 
 # table for all the tag data:
 print OF "<tr><td><table class=modinfomisc>\n";

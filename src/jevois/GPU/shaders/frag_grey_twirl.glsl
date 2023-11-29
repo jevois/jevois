@@ -5,6 +5,7 @@ in vec2 v_tex_coord;
 layout(location = 0) out vec4 out_color;
 uniform sampler2D s_texture;
 uniform float twirlamount;
+uniform float alpha;
 
 uniform vec2 tdim;
 
@@ -19,5 +20,5 @@ void main()
 
   // Then get the grey value:
   float lum = texture(s_texture, uv).r;
-  out_color = vec4(lum, lum, lum, 1.0);
+  out_color = vec4(lum, lum, lum, alpha);
 }

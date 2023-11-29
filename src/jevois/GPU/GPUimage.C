@@ -47,7 +47,7 @@ namespace jevois
 }
 
 // ##############################################################################################################
-jevois::GPUimage::GPUimage(bool enable_twirl) : itsTwirl(enable_twirl)
+jevois::GPUimage::GPUimage()
 { }
 
 // ##############################################################################################################
@@ -160,9 +160,10 @@ void jevois::GPUimage::set(cv::Mat const & img, bool rgb)
 void jevois::GPUimage::set(jevois::InputFrame const & frame, EGLDisplay display)
 {
   jevois::RawImage const img = frame.get();
+  int const dmafd = img.buf->dmaFd();
 
   // EGLimageKHR which we use with DMAbuf requires width to be a multiple of 32; otherwise revert to normal texture:
-  if (img.width % 32) { set(img); return; }
+  if ((img.width % 32) || dmafd < 0) { set(img); return; }
 
   // DMAbuf only supports some formats, otherwise revert to normal texture. Keep in sync with GPUtextureDmaBuf:
   switch (img.fmt)
@@ -173,11 +174,9 @@ void jevois::GPUimage::set(jevois::InputFrame const & frame, EGLDisplay display)
   case V4L2_PIX_FMT_BGR24:
   case V4L2_PIX_FMT_RGB24:
   case V4L2_PIX_FMT_UYVY:
-  {
-    int const dmafd = frame.getDmaFd();
     setWithDmaBuf(img, dmafd, display);
     break;
-  }
+
   default:
     set(img);
   }
@@ -187,9 +186,10 @@ void jevois::GPUimage::set(jevois::InputFrame const & frame, EGLDisplay display)
 void jevois::GPUimage::set2(jevois::InputFrame const & frame, EGLDisplay display)
 {
   jevois::RawImage const img = frame.get2();
+  int const dmafd = img.buf->dmaFd();
 
   // EGLimageKHR which we use with DMAbuf requires width to be a multiple of 32; otherwise revert to normal texture:
-  if (img.width % 32) { set(img); return; }
+  if ((img.width % 32) || dmafd < 0) { set(img); return; }
   
   // DMAbuf only supports some formats, otherwise revert to normal texture. Keep in sync with GPUtextureDmaBuf:
   switch (img.fmt)
@@ -200,11 +200,9 @@ void jevois::GPUimage::set2(jevois::InputFrame const & frame, EGLDisplay display
   case V4L2_PIX_FMT_BGR24:
   case V4L2_PIX_FMT_RGB24:
   case V4L2_PIX_FMT_UYVY:
-  {
-    int const dmafd = frame.getDmaFd2();
     setWithDmaBuf(img, dmafd, display);
     break;
-  }
+
   default:
     set(img);
   }
@@ -368,8 +366,12 @@ void jevois::GPUimage::draw(int & x, int & y, unsigned short & w, unsigned short
   glUniform2f(glGetUniformLocation(itsProgram->id(), "tdim"), GLfloat(itsTextureWidth), GLfloat(itsTextureHeight));
   glUniformMatrix4fv(glGetUniformLocation(itsProgram->id(), "pvm"), 1, GL_FALSE, glm::value_ptr(pvm));
 
-  if (itsTwirl) glUniform1f(glGetUniformLocation(itsProgram->id(), "twirlamount"), itsTwirlAmount);
-
+  if (itsTwirl)
+  {
+    glUniform1f(glGetUniformLocation(itsProgram->id(), "twirlamount"), itsTwirl);
+    glUniform1f(glGetUniformLocation(itsProgram->id(), "alpha"), itsAlpha);
+  }
+  
   // Draw the two triangles from 6 indices to form a rectangle from the data in the vertex array.
   // The fourth parameter, indices value here is passed as null since the values are already
   // available in the GPU memory through the vertex array
@@ -409,10 +411,14 @@ ImVec2 jevois::GPUimage::d2is(ImVec2 const & p)
 }
 
 // ##############################################################################################################
-void jevois::GPUimage::setTwirl(float t)
+void jevois::GPUimage::twirl(float t, float alpha)
 {
-  if (itsTwirl == false) LERROR("Need to construct GPU image with twirl enabled to use twirl -- IGNORED");
-  itsTwirlAmount = t;
+  // If we are not already twirling, or we want to stop twirling, force a reload of the shader program:
+  if (itsTwirl == 0.0F || t == 0.0F) itsFormat = 0;
+
+  // Remember the new twirl amount:
+  itsTwirl = t;
+  itsAlpha = alpha;
 }
 
 #endif // JEVOIS_PRO

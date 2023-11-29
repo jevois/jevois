@@ -6,6 +6,7 @@ in vec2 v_tex_coord;
 layout(location = 0) out vec4 out_color;
 uniform samplerExternalOES s_texture;
 uniform float twirlamount;
+uniform float alpha;
 
 void main()
 {
@@ -18,4 +19,5 @@ void main()
 
   // Then get the pixel value:
   out_color = texture(s_texture, uv);
+  out_color.w *= alpha;
 }

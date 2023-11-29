@@ -18,9 +18,11 @@
 
 message(STATUS "JeVois version ${JEVOIS_SOVERSION}")
 
-# Platform choice:
+# Platform choice. Silence this message when compiling natively on JeVois-Pro to not confuse people:
 option(JEVOIS_PLATFORM "Cross-compile for hardware platform" OFF)
-message(STATUS "JEVOIS_PLATFORM: ${JEVOIS_PLATFORM}")
+if (NOT EXISTS /sys/class/npu/info)
+  message(STATUS "JEVOIS_PLATFORM: ${JEVOIS_PLATFORM}")
+endif()
 
 # Vendor name for modules, etc:
 if (NOT DEFINED JEVOIS_VENDOR)
@@ -37,66 +39,96 @@ set(JEVOIS_USER "$ENV{USER}" CACHE STRING "JeVois user name (before any sudo)")
 set(JEVOIS_USBSERIAL_DEV "/dev/ttyACM0" CACHE STRING "JeVois serial-over-USB device")
 string(TOUPPER "${JEVOIS}" JEVOIS_PART)
 set(JEVOIS_MICROSD_MOUNTPOINT "/media/${JEVOIS_USER}/${JEVOIS_PART}" CACHE STRING "Mountpoint for JeVois microSD card")
-message(STATUS "JeVois microSD card mount point: ${JEVOIS_MICROSD_MOUNTPOINT}")
-message(STATUS "JeVois serial-over-USB device: ${JEVOIS_USBSERIAL_DEV}")
+
+if (NOT JEVOIS_PRO)
+  message(STATUS "JeVois microSD card mount point: ${JEVOIS_MICROSD_MOUNTPOINT}")
+  message(STATUS "JeVois serial-over-USB device: ${JEVOIS_USBSERIAL_DEV}")
+endif()
 
 # Settings for native host compilation or hardware platform compilation:
 if (JEVOIS_PLATFORM)
 
   # On platform, install to jvpkg, staging area, or live microSD?
   option(JEVOIS_MODULES_TO_STAGING "Install modules to ${JEVOIS_PLATFORM_INSTALL_PREFIX} as opposed to jvpkg" OFF)
-  message(STATUS "JEVOIS_MODULES_TO_STAGING: ${JEVOIS_MODULES_TO_STAGING}")
   option(JEVOIS_MODULES_TO_MICROSD "Install modules to ${JEVOIS_MICROSD_MOUNTPOINT} as opposed to jvpkg" OFF)
-  message(STATUS "JEVOIS_MODULES_TO_MICROSD: ${JEVOIS_MODULES_TO_MICROSD}")
-  option(JEVOIS_MODULES_TO_LIVE "Install modules to live JeVois camera at ${JEVOIS_MICROSD_MOUNTPOINT} as opposed to jvpkg" OFF)
-  message(STATUS "JEVOIS_MODULES_TO_LIVE: ${JEVOIS_MODULES_TO_LIVE}")
+  option(JEVOIS_MODULES_TO_LIVE
+    "Install modules to live JeVois camera at ${JEVOIS_MICROSD_MOUNTPOINT} as opposed to jvpkg" OFF)
 
-  set(CMAKE_C_COMPILER ${JEVOIS_PLATFORM_C_COMPILER})
-  set(CMAKE_CXX_COMPILER ${JEVOIS_PLATFORM_CXX_COMPILER})
-  set(CMAKE_FC_COMPILER ${JEVOIS_PLATFORM_FORTRAN_COMPILER})
-  set(JEVOIS_INSTALL_PREFIX ${JEVOIS_PLATFORM_INSTALL_PREFIX})
-  set(JEVOIS_OPENCV_LIBS ${JEVOIS_PLATFORM_OPENCV_LIBS})
-  set(JEVOIS_PYTHON_LIBS ${JEVOIS_PLATFORM_PYTHON_LIBS})
-  set(JEVOIS_OPENGL_LIBS ${JEVOIS_PLATFORM_OPENGL_LIBS})
-  set(JEVOIS_MODULES_ROOT ${JEVOIS_PLATFORM_MODULES_ROOT})
-  set(JEVOIS_ARCH_FLAGS ${JEVOIS_PLATFORM_ARCH_FLAGS})
-  set(JEVOIS_CFLAGS ${JEVOIS_PLATFORM_CFLAGS})
-  set(JEVOIS_PYTHON_MAJOR ${JEVOIS_PLATFORM_PYTHON_MAJOR})
-  set(JEVOIS_PYTHON_MINOR ${JEVOIS_PLATFORM_PYTHON_MINOR})
-  set(JEVOIS_PYTHON_M "${JEVOIS_PLATFORM_PYTHON_M}")
-  if (JEVOIS_PRO)
-
-    option(JEVOISPRO_PLATFORM_DEB "Build .deb file to be installed on platform (aarch64) rather than host (amd64)." OFF)
-    message(STATUS "JEVOISPRO_PLATFORM_DEB: ${JEVOISPRO_PLATFORM_DEB}")
-
-    # Setup the target system type and root filesystem so we can find libs:
-    message(STATUS "Cross-compiling for aarch64 with sysroot at ${JEVOIS_BUILD_BASE}")
-    set(CMAKE_SYSTEM_NAME Linux)
-    set(CMAKE_SYSTEM_PROCESSOR aarch64)
-    set(GNU_MACHINE "aarch64-linux-gnu")
-    set(CMAKE_SYSROOT ${JEVOIS_BUILD_BASE})
-    set(CMAKE_FIND_ROOT_PATH ${JEVOIS_BUILD_BASE})
-    set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
-    set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
-    set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
-    set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
-
-    # Install modules to /jevoispro in the deb file when using platform deb. Using a relative path here will ensure that
-    # files get compiled and installed to /var/lib/jevoispro-build-pdeb/jevoispro but cpack will change that to
-    # /jevoispro when packing the deb file:
-    if (JEVOISPRO_PLATFORM_DEB)
-      set(JEVOIS_INSTALL_PREFIX ${JEVOIS_PLATFORM_INSTALL_PREFIX_PDEB})
-      set(JEVOIS_MODULES_ROOT "../${JEVOIS}")
-    endif()
-
-    # JEVOIS_ARCH is used to include/install the correct contributed libs (e.g., libtensorflowlite.so,
-    # libonnxruntime.so, etc):
+  if (NOT JEVOIS_PRO)
+    message(STATUS "JEVOIS_MODULES_TO_STAGING: ${JEVOIS_MODULES_TO_STAGING}")
+    message(STATUS "JEVOIS_MODULES_TO_MICROSD: ${JEVOIS_MODULES_TO_MICROSD}")
+    message(STATUS "JEVOIS_MODULES_TO_LIVE: ${JEVOIS_MODULES_TO_LIVE}")
+  endif()
+  
+# Flags for native compilation on platform from the JeVois-Pro GUI (as opposed to cross-compilation):
+  if (JEVOIS_NATIVE)
+    
+    set(CMAKE_C_COMPILER ${JEVOIS_HOST_C_COMPILER})
+    set(CMAKE_CXX_COMPILER ${JEVOIS_HOST_CXX_COMPILER})
+    set(CMAKE_FC_COMPILER ${JEVOIS_HOST_FORTRAN_COMPILER})
+    set(JEVOIS_INSTALL_PREFIX ${JEVOIS_HOST_INSTALL_PREFIX})
+    set(JEVOIS_OPENCV_LIBS ${JEVOIS_PLATFORM_NATIVE_OPENCV_LIBS})
+    set(JEVOIS_PYTHON_LIBS ${JEVOIS_PLATFORM_PYTHON_LIBS})
+    set(JEVOIS_OPENGL_LIBS ${JEVOIS_PLATFORM_OPENGL_LIBS})
+    set(JEVOIS_MODULES_ROOT ${JEVOIS_HOST_MODULES_ROOT})
+    set(JEVOIS_ARCH_FLAGS ${JEVOIS_PLATFORM_ARCH_FLAGS})
+    set(JEVOIS_CFLAGS ${JEVOIS_PLATFORM_NATIVE_CFLAGS})
+    set(JEVOIS_PYTHON_MAJOR ${JEVOIS_PLATFORM_PYTHON_MAJOR})
+    set(JEVOIS_PYTHON_MINOR ${JEVOIS_PLATFORM_PYTHON_MINOR})
+    set(JEVOIS_PYTHON_M "${JEVOIS_PLATFORM_PYTHON_M}")
     set(JEVOIS_ARCH "arm64")
-  else (JEVOIS_PRO)
-    set(JEVOIS_ARCH "armhf")
-  endif(JEVOIS_PRO)
+
+  else (JEVOIS_NATIVE)
+    
+    set(CMAKE_C_COMPILER ${JEVOIS_PLATFORM_C_COMPILER})
+    set(CMAKE_CXX_COMPILER ${JEVOIS_PLATFORM_CXX_COMPILER})
+    set(CMAKE_FC_COMPILER ${JEVOIS_PLATFORM_FORTRAN_COMPILER})
+    set(JEVOIS_INSTALL_PREFIX ${JEVOIS_PLATFORM_INSTALL_PREFIX})
+    set(JEVOIS_OPENCV_LIBS ${JEVOIS_PLATFORM_OPENCV_LIBS})
+    set(JEVOIS_PYTHON_LIBS ${JEVOIS_PLATFORM_PYTHON_LIBS})
+    set(JEVOIS_OPENGL_LIBS ${JEVOIS_PLATFORM_OPENGL_LIBS})
+    set(JEVOIS_MODULES_ROOT ${JEVOIS_PLATFORM_MODULES_ROOT})
+    set(JEVOIS_ARCH_FLAGS ${JEVOIS_PLATFORM_ARCH_FLAGS})
+    set(JEVOIS_CFLAGS ${JEVOIS_PLATFORM_CFLAGS})
+    set(JEVOIS_PYTHON_MAJOR ${JEVOIS_PLATFORM_PYTHON_MAJOR})
+    set(JEVOIS_PYTHON_MINOR ${JEVOIS_PLATFORM_PYTHON_MINOR})
+    set(JEVOIS_PYTHON_M "${JEVOIS_PLATFORM_PYTHON_M}")
+    if (JEVOIS_PRO)
+      
+      option(JEVOISPRO_PLATFORM_DEB "Build .deb file for platform (aarch64) rather than host (amd64)." OFF)
+      message(STATUS "JEVOISPRO_PLATFORM_DEB: ${JEVOISPRO_PLATFORM_DEB}")
+
+      # Setup the target system type and root filesystem so we can find libs:
+      message(STATUS "Cross-compiling for aarch64 with sysroot at ${JEVOIS_BUILD_BASE}")
+      set(CMAKE_SYSTEM_NAME Linux)
+      set(CMAKE_SYSTEM_PROCESSOR aarch64)
+      set(GNU_MACHINE "aarch64-linux-gnu")
+      set(CMAKE_SYSROOT ${JEVOIS_BUILD_BASE})
+      set(CMAKE_FIND_ROOT_PATH ${JEVOIS_BUILD_BASE})
+      set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+      set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
+      set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+      set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+
+      # Install modules to /jevoispro in the deb file when using platform deb. Using a relative path here will ensure
+      # that files get compiled and installed to /var/lib/jevoispro-build-pdeb/jevoispro but cpack will change that to
+      # /jevoispro when packing the deb file:
+      if (JEVOISPRO_PLATFORM_DEB)
+        set(JEVOIS_INSTALL_PREFIX ${JEVOIS_PLATFORM_INSTALL_PREFIX_PDEB})
+        set(JEVOIS_MODULES_ROOT "../${JEVOIS}")
+      endif()
+      
+      # JEVOIS_ARCH is used to include/install the correct contributed libs (e.g., libtensorflowlite.so,
+      # libonnxruntime.so, etc):
+      set(JEVOIS_ARCH "arm64")
+    else (JEVOIS_PRO)
+      set(JEVOIS_ARCH "armhf")
+    endif(JEVOIS_PRO)
+    
+  endif (JEVOIS_NATIVE)
   
 else (JEVOIS_PLATFORM)
+  
   set(JEVOIS_ARCH "amd64")
 
   set(CMAKE_C_COMPILER ${JEVOIS_HOST_C_COMPILER})
@@ -183,7 +215,7 @@ macro(jevois_project_set_flags)
     set(JEVOIS_INSTALL_ROOT "${JEVOIS_MODULES_ROOT}")
   endif (JEVOIS_PLATFORM)
 
-  message(STATUS "Host path to ${JEVOIS} lib and data install root: ${JEVOIS_INSTALL_ROOT}")
+  message(STATUS "JeVois install root: ${JEVOIS_INSTALL_ROOT}")
 
   # Find includes and libs installed by JeVois (imgui, function2, tensorflow, etc):
   if (JEVOISPRO_PLATFORM_DEB)
@@ -238,14 +270,15 @@ macro(jevois_setup_modules basedir deps)
 	    add_dependencies(${JV_MODULE} ${deps})
       endif (${deps})
       
-      # add a dependency and command to build modinfo.yaml:
-      add_custom_command(OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/${basedir}/${JV_MODULE}/modinfo.yaml" "${CMAKE_CURRENT_SOURCE_DIR}/${basedir}/${JV_MODULE}/modinfo.html"
+      # add a dependency and command to build modinfo.html:
+      add_custom_command(OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/${basedir}/${JV_MODULE}/modinfo.html"
 	    COMMAND jevois-modinfo ${JV_MODULE}.C
 	    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${basedir}/${JV_MODULE}/${JV_MODULE}.C
 	    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${basedir}/${JV_MODULE})
       
       add_custom_target(modinfo_${JV_MODULE}
-	    DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/${basedir}/${JV_MODULE}/modinfo.yaml" ${CMAKE_CURRENT_SOURCE_DIR}/${basedir}/${JV_MODULE}/${JV_MODULE}.C)
+	    DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/${basedir}/${JV_MODULE}/modinfo.html"
+        "${CMAKE_CURRENT_SOURCE_DIR}/${basedir}/${JV_MODULE}/${JV_MODULE}.C")
       add_dependencies(${JV_MODULE} modinfo_${JV_MODULE})
       
     endif (MODFILES)
@@ -254,28 +287,23 @@ macro(jevois_setup_modules basedir deps)
       # Get this python module ready
       message(STATUS "Adding setup directives for Python module ${JV_MODULE} base ${basedir}")
       
-      # add a dependency and command to build modinfo.yaml:
-      add_custom_command(OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/${basedir}/${JV_MODULE}/modinfo.yaml" "${CMAKE_CURRENT_SOURCE_DIR}/${basedir}/${JV_MODULE}/modinfo.html"
+      # Add a dependency and command to build modinfo.html:
+      add_custom_command(OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/${basedir}/${JV_MODULE}/modinfo.html"
 	    COMMAND jevois-modinfo ${JV_MODULE}.py
 	    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${basedir}/${JV_MODULE}/${JV_MODULE}.py
 	    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${basedir}/${JV_MODULE})
       
       add_custom_target(modinfo_${JV_MODULE} ALL
-	    DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/${basedir}/${JV_MODULE}/modinfo.yaml" ${CMAKE_CURRENT_SOURCE_DIR}/${basedir}/${JV_MODULE}/${JV_MODULE}.py)
-      
+	    DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/${basedir}/${JV_MODULE}/modinfo.html"
+        "${CMAKE_CURRENT_SOURCE_DIR}/${basedir}/${JV_MODULE}/${JV_MODULE}.py")
+
     endif (PYFILES)
     
     set(DESTDIR "${JEVOIS_MODULES_ROOT}/modules/${JEVOIS_VENDOR}")
     
     # Install everything that is in that directory except for the source file:
     install(DIRECTORY ${basedir}/${JV_MODULE} DESTINATION "${DESTDIR}"
-      #PATTERN "*.[hHcC]" EXCLUDE
-      #PATTERN "*.hpp" EXCLUDE
-      #PATTERN "*.cpp" EXCLUDE
-      PATTERN "modinfo.yaml" EXCLUDE
       PATTERN "*~" EXCLUDE
-      PATTERN "*ubyte" EXCLUDE # tiny-dnn training data
-      PATTERN "*.bin" EXCLUDE # tiny-dnn training data
       PATTERN "__pycache__" EXCLUDE) # compiled python
     
     # Install the compiled module .so itself:
@@ -296,9 +324,10 @@ macro(jevois_setup_library basedir libname libversion)
   target_link_libraries(${libname} ${JEVOIS})
 
   # Add version information, this will create symlinks as needed:
-  if (NOT JEVOIS_PLATFORM)
-    set_target_properties(${libname} PROPERTIES VERSION "${libversion}" SOVERSION ${libversion})
-  endif (NOT JEVOIS_PLATFORM)
+  # NOTE: now disabled since we install to /jevois[pro] which is vfat and does not support symlinks
+  #if (NOT JEVOIS_PLATFORM)
+  #  set_target_properties(${libname} PROPERTIES VERSION "${libversion}" SOVERSION ${libversion})
+  #endif (NOT JEVOIS_PLATFORM)
   
   link_libraries(${libname})
 
@@ -317,9 +346,10 @@ macro(jevois_setup_library2 srcfile libname libversion)
   target_link_libraries(${libname} ${JEVOIS})
 
   # Add version information, this will create symlinks as needed:
-  if (NOT JEVOIS_PLATFORM)
-    set_target_properties(${libname} PROPERTIES VERSION "${libversion}" SOVERSION ${libversion})
-  endif (NOT JEVOIS_PLATFORM)
+  # NOTE: now disabled since we install to /jevois[pro] which is vfat and does not support symlinks
+  #if (NOT JEVOIS_PLATFORM)
+  #  set_target_properties(${libname} PROPERTIES VERSION "${libversion}" SOVERSION ${libversion})
+  #endif (NOT JEVOIS_PLATFORM)
   
   link_libraries(${libname})
 
@@ -392,4 +422,41 @@ macro(jevois_check_sdk_version ver)
     message("inside your directory from github to roll it to the same version as ${JEVOIS} sdk.")
     message(FATAL_ERROR "Compilation aborted due to jevois sdk version mismatch.")
   endif()
+endmacro()
+
+####################################################################################################
+# Compiling and then running C++ modules on a live camera poses some shared library caching issues. 1) overwriting the
+# module's .so file while it is running could cause corruption; 2) if we dlopen() and load a module, then dlclose() it,
+# then update the .so file on disk, then dlopen() and load it again, the old version is still running (note that this is
+# not the case with simple C code, but since our modules are C++ with also static data, etc that may be the
+# reason). Using a new version number for the updated .so file solves the problem. The number has to be totally new
+# (never loaded before during that run of jevoispro-daemon, trying to just alternate between .so and .so.1 still does
+# not work). Thus, we here use the following approach:
+#
+# - on make install, we produce MyMod.so as usual. MyMod.so is always the latest compiled version.
+# - we also check for any MyMod.so.x
+# - we then copy MyMod.so to MyMod.so.(x+1)
+# - jevois::VideoMapping::sopath() now returns MyMod.so.x with the highest x found in the module's directory
+# - so, when compiling MyMod, MyMod.so.x will be currently running and MyMod.so.(x+1) will be loaded when we
+#   restart the module.
+# - in jevois::Engine::setFormatInternal(), as we load MyMod.so.x, we also instruct jevois::VideoMapping::sopath()
+#   to delete all MyMod.so.y for any y<x
+#
+# In this macro, we just list all MyMod.so.x files and return the largest x found + 1
+macro(jevois_compute_next_so_version module version_returned)
+  set(v 0)
+  FILE(GLOB module_libs
+    LIST_DIRECTORIES false
+    RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}"
+    "${CMAKE_CURRENT_SOURCE_DIR}/${module}.so.*") 
+
+  foreach (modlib ${module_libs})
+    get_filename_component(soext "${modlib}" LAST_EXT)
+    string(SUBSTRING "${soext}" 1 -1 soext) # strip leading . from soext
+    if (soext GREATER v)
+      set(v "${soext}")
+    endif ()
+  endforeach ()
+
+  MATH(EXPR ${version_returned} "${v}+1")
 endmacro()

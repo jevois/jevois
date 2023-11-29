@@ -10,4 +10,6 @@ sudo /bin/rm -rf phbuild \
     && cd phbuild\
     && cmake "$@" -DJEVOIS_HARDWARE=PRO .. \
     && make -j \
-    && sudo make install
+    && sudo make install \
+    && sudo ldconfig
+        

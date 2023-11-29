@@ -35,9 +35,9 @@ namespace jevois
 
   //! Helper class to represent a GUIeditor file in a pull-down menu \relates GUIeditor
   struct EditorItem {
-      std::filesystem::path filename;
-      std::string displayname;
-      EditorSaveAction action;
+      std::filesystem::path filename; //!< Full absolute path to the item
+      std::string displayname;        //!< Description of item in pull-down menu
+      EditorSaveAction action;        //!< What to do after file is edited and saved
   };
   
   //! Editor panel for JeVois-Pro GUI
@@ -57,17 +57,19 @@ namespace jevois
       void draw();
       
       //! Load a file and set it as the current file
-      /*! If the load fails, we can either display failtxt in the editor and make it read-only, or, if failtxt is empty,
-          assume that we want to create a new file (e.g., module's params.cfg) and hence set the editor read-write. */
       void loadFile(std::filesystem::path const & fn);
-
-      //! Save a file
-      void saveFile();
 
       //! Refresh list of files
       void refresh();
 
+    protected:
+      //! Save a file
+      void saveFile();
+
     private:
+      //! Load a file and set it as the current file
+      /*! If the load fails, we can either display failtxt in the editor and make it read-only, or, if failtxt is empty,
+          assume that we want to create a new file (e.g., module's params.cfg) and hence set the editor read-write. */
       void loadFileInternal(std::filesystem::path const & fn, std::string const & failtxt);
       GUIhelper * const itsHelper;
       std::string const itsId;
@@ -79,7 +81,6 @@ namespace jevois
       std::set<std::string> const itsExtensions;
 
       int itsCurrentItem = 0;
-      EditorSaveAction itsCurrentAction = EditorSaveAction::None;
       bool itsWantLoad = true;
       bool itsWantAction = false;
       bool itsOkToLoad = false;

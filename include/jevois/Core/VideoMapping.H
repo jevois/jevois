@@ -87,13 +87,16 @@ namespace jevois
       std::string path() const;
 
       //! Return the full absolute path and file name of the module's .so or .py file
-      std::string sopath() const;
+      std::string sopath(bool delete_old_versions = false) const;
 
       //! Return the full absolute path and file name of the module's .C or .py file
       std::string srcpath() const;
 
       //! Return the full absolute path and file name of the module's CMakeLists.txt file
       std::string cmakepath() const;
+
+      //! Return the full absolute path and file name of the module's modinfo.html file
+      std::string modinfopath() const;
 
       //! Return the size in bytes of an output image
       unsigned int osize() const;
@@ -138,6 +141,9 @@ namespace jevois
 
       //! Convenience function to print out the whole mapping in a human-friendly way to be used in a menu
       std::string menustr() const;
+
+      //! Convenience function to print out the whole mapping in a human-friendly way to be used in a menu
+      std::string menustr2() const;
 
       //! Equality operator for specs but not vendor or module name
       /*! Note that two mappings will be declared to match if their fps values are within 0.01fps, to avoid mismatches

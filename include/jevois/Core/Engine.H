@@ -301,6 +301,12 @@ namespace jevois
     JEVOIS_DECLARE_PARAMETER(watchdog, double, "Timeout in seconds after which we kill this process if the main loop "
                              "is stuck somehow, or 0.0 for no watchdog",
                              10.0, ParamCateg);
+
+    //! Parameter \relates jevois::Engine
+    JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(demomode, float, "Show a demonstration of some available JeVois-Pro "
+                                           "machine vision modules, cycling to the next modules after a number "
+                                           "of seconds specified by this parameter (or 0.0 for no demo mode).",
+                                           0.0F, ParamCateg);
 #endif
   }
 
@@ -385,7 +391,8 @@ namespace jevois
                                   engine::serlog, engine::videoerrors, engine::serout, engine::cpumode, engine::cpumax,
                                   engine::multicam, engine::quietcmd, engine::python, engine::serlimit
 #ifdef JEVOIS_PRO
-                                  , engine::gui, engine::conslock, engine::cpumaxl, engine::cpumodel, engine::watchdog
+                                  , engine::gui, engine::conslock, engine::cpumaxl, engine::cpumodel, engine::watchdog,
+                                  engine::demomode
 #endif
                                   >
   {
@@ -516,6 +523,14 @@ namespace jevois
           previous error to disappear immediately since it is not applicable anymore. When the JeVois-Pro GUI is not
           used, this has no effect. */
       void clearErrors();
+
+#ifdef JEVOIS_PRO
+      //! When in demo mode, switch to next demo
+      void nextDemo();
+
+      //! When in demo mode, abort demo mode
+      void abortDemo();
+#endif
       
     protected:
       //! Run a script from file
@@ -548,6 +563,9 @@ namespace jevois
 
       //! Parameter callback
       void onParamChange(engine::cpumodel const & param, engine::CPUmode const & newval) override;
+
+      //! Parameter callback
+      void onParamChange(engine::demomode const & param, float const & newval) override;
 #endif
       
       size_t itsDefaultMappingIdx; //!< Index of default mapping
@@ -635,7 +653,20 @@ namespace jevois
       void camCtrlGUI(struct v4l2_queryctrl & qc, std::set<int> & doneids);
 
       std::shared_ptr<jevois::Watchdog> itsWatchdog;
+
+      bool itsDemoReset = true; // Restart the demo
+      void runDemoStep(); // run one step of the demo mode
+      struct DemoData
+      {
+          int mapping_idx;
+          std::string title;
+          std::string msg;
+          std::vector<std::pair<std::string /* param name */, std::string /* param val */>> params;
+      };
+      std::vector<DemoData> itsDemoData;
+      bool itsNextDemoRequested = false;
 #endif
+      
       // Python code registry, used to assign dynamic parameters created in python code to the correct owning component.
       // This looks thread-unsafe but should be ok as long as objects inherit first from Component and then from
       // PythonWrapper.

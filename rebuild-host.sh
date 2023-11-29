@@ -10,4 +10,5 @@ sudo /bin/rm -rf hbuild \
     && cd hbuild\
     && cmake "$@" .. \
     && make -j \
-    && sudo make install
+    && sudo make install \
+    && sudo ldconfig

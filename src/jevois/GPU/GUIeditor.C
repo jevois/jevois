@@ -35,7 +35,7 @@ jevois::GUIeditor::GUIeditor(GUIhelper * helper, std::string const & imguiid,
     itsScanPath(scanpath), itsPrefix(prefix), itsExtensions(extensions),
     itsBrowser(new ImGui::FileBrowser(ImGuiFileBrowserFlags_EnterNewFilename | ImGuiFileBrowserFlags_CreateNewDir))
 {
-  TextEditor::SetSaveCallback([this]() { saveFile(); itsWantAction = true; } ); // to enable Ctrl-S saving
+  TextEditor::SetSaveCallback([this]() { saveFile(); } ); // to enable Ctrl-S saving
 
   itsBrowser->SetTitle("Select a file to open or create...");
   itsBrowser->SetPwd(JEVOIS_SHARE_PATH);
@@ -55,6 +55,14 @@ void jevois::GUIeditor::refresh()
   
   // Remove all dynamic files, keep the fixed ones:
   itsItems.resize(itsNumFixedItems);
+
+  // Do we have a CMakeLists for the current module?
+  if (itsItems[0].filename == "*")
+  {
+    jevois::VideoMapping const & vm = itsHelper->engine()->getCurrentVideoMapping();
+    if (std::filesystem::exists(vm.cmakepath()))
+      itsItems.emplace_back(EditorItem {"#", "Module's CMakeLists.txt", EditorSaveAction::Compile } );
+  }
   
   // Rescan recursively:
   for (auto const & dent : std::filesystem::recursive_directory_iterator(itsScanPath))
@@ -66,29 +74,25 @@ void jevois::GUIeditor::refresh()
       // Check that the extension is one we want:
       if (itsExtensions.find(path.extension()) == itsExtensions.end()) continue;
 
-      std::string const filepath = path.string();
-
       // Create an entry:
-      itsItems.emplace_back(EditorItem { jevois::absolutePath(itsScanPath, filepath), itsPrefix + filepath,
-                                         EditorSaveAction::Reload });
+      itsItems.emplace_back(EditorItem { path, itsPrefix + path.string(), EditorSaveAction::Reload });
     }
   }
 
   // Keep the current item?
   if (keep_current) itsItems.emplace_back(std::move(current_item));
   
-  // Add an entry for file browser, and one for file creation:
+  // Add an entry for file browser / creation:
   itsItems.emplace_back(EditorItem { "**", "Browse / Create file...", EditorSaveAction::Reload });
   
-  // Update index of current file. We try to find it both in itsScanPath and in the current module's path:
-  auto m = itsHelper->engine()->module();
-  int i = 0; bool not_found = true;
+  // Update index of current file:
+  bool not_found = true;
 
-  for (auto const & item : itsItems)
-    if (jevois::absolutePath(itsScanPath, item.filename) == itsFilename ||
-        (m && m->absolutePath(item.filename) == itsFilename))
+  for (int i = 0; auto const & item : itsItems)
+    if (item.filename == itsFilename)
     {
       itsCurrentItem = i;
+      itsNewItem = i;
       not_found = false;
       break;
     }
@@ -114,7 +118,7 @@ void jevois::GUIeditor::draw()
 
   // Check if the user is trying to select a different file:
   if (ImGui::Combo(("##"+itsId+"editorcombo").c_str(), &itsNewItem, items, itsItems.size())) itsWantLoad = true;
-
+  
   // Want to load a new file? check if we need to save the current one first:
   if (itsWantLoad && itsWantAction == false)
   {
@@ -125,8 +129,8 @@ void jevois::GUIeditor::draw()
                                  &discard_edits_default, "Discard", "Save");
       switch (ret)
       {
-      case 1: itsWantAction = false; itsOkToLoad = true; break; // Discard selected
-      case 2: saveFile(); itsWantAction = true; break; // save selected
+      case 1: itsWantLoad = false; itsOkToLoad = true; break; // Discard selected
+      case 2: saveFile(); /* itsWantAction = false; */ break; // save selected
       default: break;  // Need to wait
       }
     }
@@ -140,12 +144,14 @@ void jevois::GUIeditor::draw()
   // Need to execute an action after a save?
   if (itsWantAction)
   {
-    switch (itsCurrentAction)
+    switch (itsItems[itsCurrentItem].action)
     {
+      // --------------------------------------------------
     case jevois::EditorSaveAction::None:
       itsWantAction = false;
       break;
-
+      
+      // --------------------------------------------------
     case jevois::EditorSaveAction::Reload:
     {
       // Skip if override requested by refresh(), typically because we loaded a new module but a config file from the
@@ -179,7 +185,8 @@ void jevois::GUIeditor::draw()
       }
     }
     break;
-
+    
+    // --------------------------------------------------
     case jevois::EditorSaveAction::Reboot:
     {
       int ret = itsHelper->modal("Restart?", "Restart JeVois-Pro for changes to take effect?",
@@ -200,6 +207,7 @@ void jevois::GUIeditor::draw()
     }
     break;
 
+    // --------------------------------------------------
     case jevois::EditorSaveAction::RefreshMappings:
     {
       itsHelper->engine()->reloadVideoMappings();
@@ -207,6 +215,7 @@ void jevois::GUIeditor::draw()
     }
     break;
 
+    // --------------------------------------------------
     case jevois::EditorSaveAction::Compile:
     {
       // Ask whether to compile the module now or later:
@@ -240,78 +249,48 @@ void jevois::GUIeditor::draw()
     if (itsItems[itsNewItem].filename == "**")
     {
       ImGui::PushStyleColor(ImGuiCol_PopupBg, 0xf0ffe0e0);
-
-      if (itsBrowser->IsOpened() == false) itsBrowser->Open();
-      itsBrowser->Display();
-      if (itsBrowser->HasSelected())
-      {
-        std::filesystem::path const fn = itsBrowser->GetSelected();
-
-        if (std::filesystem::exists(fn))
-          loadFileInternal(fn, "Could not load " + fn.string()); // load with error and read-only on fail
-        else
-          loadFileInternal(fn, ""); // load with no error and read-write on fail (create new file)
-        
-        itsBrowser->ClearSelected();
-
-        // Add an entry for our new file. If it's compilable, then action on save should be to compile, otherwise it
-        // should be to reload the module:
-        EditorSaveAction action = EditorSaveAction::Reload;
-        if (fn.filename() == "CMakeLists.txt")
-          action = EditorSaveAction::Compile;
-        else
-        {
-          std::string const ext = fn.extension().string();
-          if (ext == ".C" || ext == ".H" || ext == ".cpp" || ext == ".hpp" || ext == ".c" || ext == ".h")
-            action = EditorSaveAction::Compile;
-        }
-        itsItems.emplace_back(EditorItem { fn, "File " + fn.string(), action });
-        itsOkToLoad = false;
-
-        // Select the item we just added:
-        itsCurrentItem = itsItems.size() - 1;
-        itsCurrentAction = itsItems[itsCurrentItem].action;
-        itsNewItem = itsCurrentItem; // Also select this item in the combo selector
-      }
-
-      // Clicking "Cancel" in the browser just closes the popup:
+      
       if (itsBrowser->IsOpened() == false)
       {
-        itsOkToLoad = false; // Record that we don't want to load anymore:
-        itsNewItem = itsCurrentItem; // Snap back the combo selector to the current item
+        itsBrowser->Open();
+        itsBrowser->Display();
       }
+      else
+      {
+        itsBrowser->Display();
 
+        if (itsBrowser->HasSelected())
+        {
+          std::filesystem::path const fn = itsBrowser->GetSelected();
+          
+          if (std::filesystem::exists(fn))
+            loadFileInternal(fn, "Could not load " + fn.string()); // load with error and read-only on fail
+          else
+            loadFileInternal(fn, ""); // load with no error and read-write on fail (create new file)
+          
+          itsBrowser->Close();
+          itsBrowser->Display();
+        }
+        
+        // Clicking "Cancel" in the browser just closes the popup:
+        if (itsBrowser->IsOpened() == false)
+        {
+          itsOkToLoad = false; // Record that we don't want to load anymore:
+          itsNewItem = itsCurrentItem; // Snap back the combo selector to the current item
+          itsBrowser->Close();
+          itsBrowser->Display();
+        }
+      }
       ImGui::PopStyleColor();
     }
     else
     {
       // Load the file for itsNewItem:
-      itsOkToLoad = false;
       itsCurrentItem = itsNewItem;
-      itsCurrentAction = itsItems[itsCurrentItem].action;
-      
-      // Load the file; if fail, assume we want to create a new file (e.g., new module param.cfg), unless module source:
-      if (itsItems[itsCurrentItem].filename == "*")
-      {
-        // If filename is "*", replace by the module's source code name:
-        jevois::VideoMapping const & vm = itsHelper->engine()->getCurrentVideoMapping();
-        loadFileInternal(vm.srcpath(), "Could not open Module's source code");
-
-        // And if there is a CMakeLists.txt, change default reload action to compile:
-        if (std::filesystem::exists(vm.cmakepath()))
-        { itsItems[itsCurrentItem].action = EditorSaveAction::Compile; itsCurrentAction = EditorSaveAction::Compile; }
-      }
-      else if (items[itsCurrentItem][0] != '/')
-      {
-        // If path is relative, make it within the module's path (if any):
-        auto m = itsHelper->engine()->module();
-        if (m) loadFileInternal(m->absolutePath(itsItems[itsCurrentItem].filename), "");
-        else loadFileInternal(itsItems[itsCurrentItem].filename, "");
-      }
-      else loadFileInternal(itsItems[itsCurrentItem].filename, "");
+      loadFileInternal(itsItems[itsCurrentItem].filename, "");
     }
   }
-
+  
   // Add a pop-up menu for editor actions:
   bool const ro = IsReadOnly();
   ImGui::SameLine();
@@ -321,8 +300,7 @@ void jevois::GUIeditor::draw()
     constexpr int ok = ImGuiSelectableFlags_None;
     constexpr int disa = ImGuiSelectableFlags_Disabled;
 
-    if (ImGui::Selectable("Save   [Ctrl-S]", false, !ro && IsEdited() ? ok : disa))
-    { saveFile(); itsWantAction = true; }
+    if (ImGui::Selectable("Save   [Ctrl-S]", false, !ro && IsEdited() ? ok : disa)) saveFile();
 
     ImGui::Separator();
 
@@ -364,7 +342,7 @@ void jevois::GUIeditor::draw()
   {
     ImGui::SameLine();
     ImGui::TextUnformatted("   "); ImGui::SameLine();
-    if (ImGui::Button("Save")) { saveFile(); itsWantAction = true; }
+    if (ImGui::Button("Save")) saveFile();
   }
   
   ImGui::Separator();
@@ -384,8 +362,7 @@ void jevois::GUIeditor::draw()
 void jevois::GUIeditor::loadFile(std::filesystem::path const & fn)
 {
   // Loading will happen in the main loop. Here we just create a new item:
-  int i = 0;
-  for (EditorItem const & item : itsItems)
+  for (int i = 0; EditorItem const & item : itsItems)
     if (item.filename == fn) { itsNewItem = i; itsWantLoad = true; return; } else ++i;
 
   // Not already in our list of items, create a new one.  Add an entry for our new file. If it's compilable, then action
@@ -393,6 +370,8 @@ void jevois::GUIeditor::loadFile(std::filesystem::path const & fn)
   EditorSaveAction action = EditorSaveAction::Reload;
   if (fn.filename() == "CMakeLists.txt")
     action = EditorSaveAction::Compile;
+  else if (fn.filename() == "jevoispro-fan.service")
+    action = EditorSaveAction::Reboot;
   else
   {
     std::string const ext = fn.extension().string();
@@ -400,16 +379,45 @@ void jevois::GUIeditor::loadFile(std::filesystem::path const & fn)
       action = EditorSaveAction::Compile;
   }
   itsItems.emplace_back(EditorItem { fn, "File " + fn.string(), action });
-
+  
   itsNewItem = itsItems.size() - 1;
   itsWantLoad = true;
 }
 
 // ##############################################################################################################
-void jevois::GUIeditor::loadFileInternal(std::filesystem::path const & fn, std::string const & failtxt)
+void jevois::GUIeditor::loadFileInternal(std::filesystem::path const & fpath, std::string const & failt)
 {
-  LINFO("Loading " << fn << " ...");
+  std::filesystem::path fn = fpath; std::string failtxt = failt; bool special_path = false;
   
+  if (fpath == "*")
+  {
+    // If filename is "*", replace by the module's source code name:
+    jevois::VideoMapping const & vm = itsHelper->engine()->getCurrentVideoMapping();
+    fn = vm.srcpath();
+    failtxt = "Could not open Module's source code";
+    special_path = true;
+  }
+  else if (fpath == "#")
+  {
+    // If filename is "#", replace by the module's CMakeLists.txt:
+    jevois::VideoMapping const & vm = itsHelper->engine()->getCurrentVideoMapping();
+    fn = vm.cmakepath();
+    failtxt = "Could not open Module's CMakeLists.txt";
+    special_path = true;
+  }
+  else if (fpath.is_relative())
+  {
+    // If path is relative, make it within the module's path (if any):
+    auto m = itsHelper->engine()->module();
+    if (m) fn = m->absolutePath(fpath);
+    special_path = true;
+  }
+
+  if (fn != fpath) LINFO("Loading " << fn << " ... [" << fpath << ']'); else LINFO("Loading " << fn << " ...");
+
+  bool got_it = false;
+  EditorSaveAction action = EditorSaveAction::Reload;
+    
   std::ifstream t(fn);
   if (t.good())
   {
@@ -417,10 +425,19 @@ void jevois::GUIeditor::loadFileInternal(std::filesystem::path const & fn, std::
     std::string str((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
     SetText(str);
 
-    // Set the language according to file extension. C++/C source files are editable if there is a CMakeLists.txt in the
-    // same directory (e.g., newly created or cloned module, excludes jevoisbase modules):
+    // Is this a known file in our pull-down list? Otherwise we need to create a new item:
+    for (int i = 0; EditorItem const & item : itsItems)
+      if (item.filename == fpath) { itsCurrentItem = i; got_it = true; break; } else ++i;
+
+    // Set the language, read-only, and possibly action according to file extension. C++/C source files are editable if
+    // there is a CMakeLists.txt in the same directory (e.g., newly created or cloned module, excludes jevoisbase
+    // modules), and then a compilation action will be triggered on save:
     if (fn.filename() == "CMakeLists.txt")
-    { SetLanguageDefinition(TextEditor::LanguageDefinition::CMake()); SetReadOnly(false); }
+    {
+      SetLanguageDefinition(TextEditor::LanguageDefinition::CMake());
+      SetReadOnly(false);
+      action = EditorSaveAction::Compile;
+    }
     else
     {
       std::filesystem::path const ext = fn.extension();
@@ -428,13 +445,28 @@ void jevois::GUIeditor::loadFileInternal(std::filesystem::path const & fn, std::
       bool has_cmake = std::filesystem::exists(cmak);
       
       if (ext == ".py")
-      { SetLanguageDefinition(TextEditor::LanguageDefinition::Python()); SetReadOnly(false); }
+      {
+        SetLanguageDefinition(TextEditor::LanguageDefinition::Python());
+        SetReadOnly(false);
+      }
       else if (ext == ".C" || ext == ".H" || ext == ".cpp" || ext == ".hpp")
-      { SetLanguageDefinition(TextEditor::LanguageDefinition::CPlusPlus()); SetReadOnly(! has_cmake); }
+      {
+        SetLanguageDefinition(TextEditor::LanguageDefinition::CPlusPlus());
+        SetReadOnly(! has_cmake);
+        action = EditorSaveAction::Compile;
+      }
       else if ( ext == ".c" || ext == ".h")
-      { SetLanguageDefinition(TextEditor::LanguageDefinition::C()); SetReadOnly(! has_cmake); }
+      {
+        SetLanguageDefinition(TextEditor::LanguageDefinition::C());
+        SetReadOnly(! has_cmake);
+        action = EditorSaveAction::Compile;
+      }
       else
-      { SetLanguageDefinition(TextEditor::LanguageDefinition::JeVoisCfg()); SetReadOnly(false); } // .cfg, .yaml, etc
+      {
+        // .cfg, .yaml, etc
+        SetLanguageDefinition(TextEditor::LanguageDefinition::JeVoisCfg());
+        SetReadOnly(false);
+      }
     }
   }
   else
@@ -445,8 +477,19 @@ void jevois::GUIeditor::loadFileInternal(std::filesystem::path const & fn, std::
     else { LINFO("File " << fn << " not found."); SetReadOnly(true); }
   }
 
+  // If this is a new file, add an item to our pull-down list:
+  if (got_it == false && special_path == false)
+  {
+    itsItems.emplace_back(EditorItem { fn, "File " + fn.string(), action });
+    itsCurrentItem = itsItems.size() - 1;
+  }
+  else if (fpath == "*") itsItems[itsCurrentItem].action = action; // Force compile action if needed on module's src
+  
   // Remember the filename, for saveFile():
   itsFilename = fn;
+  itsNewItem = itsCurrentItem;
+  itsWantLoad = false;
+  itsOkToLoad = false;
 }
 
 // ##############################################################################################################
@@ -461,6 +504,13 @@ void jevois::GUIeditor::saveFile()
 
   // Mark as un-edited:
   SetEdited(false);
+
+  // Delete modinfo.html if any, GUIhelper will re-compute it when the info tab is selected:
+  std::filesystem::path mi = itsFilename.parent_path() / "modinfo.html";
+  if (std::filesystem::exists(mi)) std::filesystem::remove(mi);
+
+  // After a save, execute any required action like reload module, reboot, recompile, etc:
+  itsWantAction = true;
 }
 
 #endif // JEVOIS_PRO

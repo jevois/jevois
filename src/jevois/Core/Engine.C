@@ -431,7 +431,174 @@ void jevois::Engine::onParamChange(jevois::engine::cpumaxl const & JEVOIS_UNUSED
 
   ofs << newval * 1000U << std::endl;
 }
-#endif
+
+// ####################################################################################################
+void jevois::Engine::onParamChange(jevois::engine::demomode const & JEVOIS_UNUSED_PARAM(param),
+                                   float const & newval)
+{
+  // Restart the demo each time this param is changed to 0:
+  if (newval == 0.0F) itsDemoReset = true;
+}
+
+// ####################################################################################################
+void jevois::Engine::runDemoStep()
+{
+  if (! itsGUIhelper) return; // silently ignore if not running the GUI
+
+  int constexpr fade = 30; // number of frames for fade in/out
+  int constexpr msg = 90; // number of frames to show message
+  int constexpr tmax = 15; // max amount of twirl
+  
+  // Basic flow is loop over bunch of modules, and for each:
+  // - fade out (i.e., apply increasing twirl, decreasing overlay alpha) over fade_out frames
+  // - display demo message for show_msg frames
+  // - stream off, setmapping, apply params, stream on
+  // - fade in (untwirl, restore overlay alpha) over fade_in frames
+  // - let the module run for itsDemoMode seconds
+  
+  static size_t modidx = 0;
+  static int fade_out = 0, show_msg = 0, fade_in = 0;
+  static std::chrono::time_point<std::chrono::steady_clock> mod_load_time;
+  std::chrono::time_point<std::chrono::steady_clock> const now = std::chrono::steady_clock::now();
+
+  if (itsDemoReset)
+  {
+    // Load the demo data from YAML:
+    itsDemoData.clear();
+    cv::FileStorage fs(JEVOISPRO_DEMO_DATA_FILE, cv::FileStorage::READ);
+    if (fs.isOpened() == false)
+    { LERROR("Could not open " << JEVOISPRO_DEMO_DATA_FILE << " -- DEMO MODE ABORTED"); demomode::set(0.0F); return; }
+    
+    cv::FileNode fn = fs.root();
+    for (cv::FileNodeIterator gfit = fn.begin(); gfit != fn.end(); ++gfit)
+    {
+      cv::FileNode item = *gfit;
+      if (! item.isMap()) continue;
+      DemoData dd { };
+
+      for(cv::FileNodeIterator fit = item.begin(); fit != item.end(); ++fit)
+      {
+        cv::FileNode param = *fit;
+        
+        std::string k = param.name();
+        if (k == "demomapping")
+        {
+          std::string const vmstr = (std::string)param;
+          jevois::VideoMapping vm; std::istringstream iss(vmstr); iss >> vm;
+          int idx = 0; dd.mapping_idx = -1;
+          foreachVideoMapping([&dd, &vm, &idx](jevois::VideoMapping const & m)
+                              { if (vm.isSameAs(m)) dd.mapping_idx = idx; else ++idx; });
+          if (dd.mapping_idx == -1) { LERROR("Video mapping not found for [" << vmstr << "] -- SKIPPED"); break; }
+        }
+        else if (k == "demotitle")
+          dd.title = (std::string)param;
+        else if (k == "demomsg")
+          dd.msg = (std::string)param;
+        else
+        {
+          std::string v;
+          switch (param.type())
+          {
+          case cv::FileNode::INT: v = std::to_string((int)param); break;
+          case cv::FileNode::REAL: v = std::to_string((float)param); break;
+          case cv::FileNode::STRING: v = (std::string)param; break;
+          default: LERROR("Invalid demo parameter for [" << item.name() << "]: " << k << " type " << param.type());
+          }
+          
+          if (dd.mapping_idx != -1) dd.params.emplace_back(std::make_pair(k, v));
+        }
+      }
+
+      itsDemoData.emplace_back(std::move(dd));
+    }
+
+    if (itsDemoData.empty())
+    { LERROR("No demos in " << JEVOISPRO_DEMO_DATA_FILE << " -- DEMO MODE ABORTED"); demomode::set(0.0F); return; }
+    else LINFO("Loaded demo information with " << itsDemoData.size() << " demo modules.");
+      
+    // Start demo from the beginning:
+    fade_out = 0; show_msg = msg * 3; fade_in = 0; mod_load_time = now; modidx = 0;
+    itsGUIhelper->demoBanner("Welcome to JeVois-Pro!", "This demo will cycle through a few machine vision algorithms.");
+    itsDemoReset = false;
+    return; // skip one frame to allow the GUI to be all ready to go
+  }
+
+  // Did user request to switch to next demo?
+  if (itsNextDemoRequested)
+  {
+    ++modidx; if (modidx >= itsDemoData.size()) modidx = 0;
+    fade_out = 0; show_msg = msg; fade_in = 0; mod_load_time = now;
+    itsNextDemoRequested = false;
+  }
+
+  // Show message then load module:
+  if (show_msg == msg || itsGUIhelper->idle() == false)
+    itsGUIhelper->demoBanner(itsDemoData[modidx].title, itsDemoData[modidx].msg);
+
+  if (show_msg)
+  {
+    itsGUIhelper->twirl::set(tmax);
+    
+    if (show_msg == msg)
+    {
+      LINFO("Loading demo: " << itsDemoData[modidx].title);
+      requestSetFormat(itsDemoData[modidx].mapping_idx);
+      mod_load_time = now;
+    }
+
+    --show_msg;
+
+    if (show_msg == 0) fade_in = fade;
+    return;
+  }
+
+  // Before we fade in and after the module is loaded, set the parameters:
+  if (fade_in == fade)
+    for (auto const & pp : itsDemoData[modidx].params)
+      try { setParamString(pp.first, pp.second); }
+      catch (...) { LERROR("Failed to set param [" << pp.first << "] to [" << pp.second << "] -- IGNORED"); }
+  
+  // Run any fade_in (untwirl):
+  if (fade_in)
+  {
+    itsGUIhelper->twirl::set(float(tmax * fade_in - tmax) / float(fade));
+    if (--fade_in == 0 && itsGUIhelper->idle()) itsGUIhelper->demoBanner(); // turn off banner at end of fade-in
+    return;
+  }
+  
+  // Run any fade out (twirl):
+  if (fade_out)
+  {
+    itsGUIhelper->twirl::set(tmax - float(tmax * fade_out - tmax) / float(fade));
+    if (--fade_out == 0) show_msg = msg;
+    return;
+  }
+
+  // Let the module run for a while, then initiate fade out:
+  std::chrono::duration<float> const elapsed = now - mod_load_time;
+  if (elapsed.count() > demomode::get())
+  {
+    fade_out = fade;
+    ++modidx; if (modidx >= itsDemoData.size()) modidx = 0;
+    return;
+  }
+}
+// ####################################################################################################
+void jevois::Engine::nextDemo()
+{ itsNextDemoRequested = true; }
+
+// ####################################################################################################
+void jevois::Engine::abortDemo()
+{
+  demomode::set(0.0F);
+
+  if (! itsGUIhelper) return;
+  
+  itsGUIhelper->twirl::set(0.0F);
+  itsGUIhelper->demoBanner();
+}
+
+#endif // JEVOIS_PRO
 
 // ####################################################################################################
 void jevois::Engine::preInit()
@@ -837,7 +1004,7 @@ void jevois::Engine::setFormatInternal(jevois::VideoMapping const & m, bool relo
   try
   {
     // For python modules, we do not need a loader, we just instantiate our special python wrapper module instead:
-    std::string const sopath = m.sopath();
+    std::string const sopath = m.sopath(true); // true here to delete any old .so.x versions compiled on platform
     if (m.ispython)
     {
       if (python::get() == false) LFATAL("Python disabled, delete BOOT:nopython and restart to enable python");
@@ -849,9 +1016,9 @@ void jevois::Engine::setFormatInternal(jevois::VideoMapping const & m, bool relo
     else
     {
       // C++ compiled module. We can re-use the same loader and avoid closing the .so if we will use the same module,
-      // but only for immutable jevois modules, not for user modules that may just have been recompiled. Built-in jevois
-      // modules do not have their own CMakeLists.txt:
-      if (itsLoader.get() == nullptr || itsLoader->sopath() != sopath || std::filesystem::exists(m.cmakepath()))
+      // but only for immutable jevois modules, not for user modules that may just have been recompiled (in which case a
+      // new version number will have been generated):
+      if (itsLoader.get() == nullptr || itsLoader->sopath() != sopath)
       {
         LINFO("Instantiating dynamic loader for " << sopath);
         itsLoader.reset();
@@ -1013,7 +1180,13 @@ int jevois::Engine::mainLoop()
         catch (...) { }
       }
     }
+
+#ifdef JEVOIS_PRO
+    // If in demo mode, run a demo step:
+    if (demomode::get()) runDemoStep();
+#endif
     
+    // Run the current module:
     if (itsStreaming.load())
     {
       // Lock up while we use the module:

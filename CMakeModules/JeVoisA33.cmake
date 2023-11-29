@@ -109,6 +109,7 @@ set(OPENCV_LIBS_FOR_JEVOIS "-lopencv_core -lopencv_imgproc -lopencv_features2d -
 
 set(JEVOIS_PLATFORM_OPENCV_PREFIX "/usr")
 set(JEVOIS_PLATFORM_OPENCV_LIBS "${OPENCV_LIBS_FOR_JEVOIS}") # note: do not use the prefix here since cross-compiling
+set(JEVOIS_PLATFORM_NATIVE_OPENCV_LIBS "${OPENCV_LIBS_FOR_JEVOIS}")
 
 set(JEVOIS_HOST_OPENCV_PREFIX "/usr/share/jevois-opencv-${JEVOIS_OPENCV_VERSION}")
 set(JEVOIS_HOST_OPENCV_LIBS "-L${JEVOIS_HOST_OPENCV_PREFIX}/lib ${OPENCV_LIBS_FOR_JEVOIS} -lopencv_highgui")

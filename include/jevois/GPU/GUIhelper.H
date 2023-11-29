@@ -62,7 +62,7 @@ namespace jevois
                              "by hardware and the value of this parameter will be overwritten on init. The "
                              "parameter can still be used to query display size.",
 #ifdef JEVOIS_PLATFORM
-                             // Use 0x0 default on platform which will trigger a query for framebuffer size in
+                             // Use 0 x 0 default on platform which will trigger a query for framebuffer size in
                              // VideoDisplayBackEndMali:
                              cv::Size(0, 0),
 #else
@@ -94,6 +94,7 @@ namespace jevois
     JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(rounding, int, "Window and widget corner rounding for the JeVois GUI. "
                                            "Note than changing GUI scale will update this parameter as well.",
                                            4, jevois::Range<int>(0, 24), ParamCateg);
+    
     //! Parameter \relates jevois::GUIhelper
     JEVOIS_DECLARE_PARAMETER(overlaycolor, ImColor, "Default color to use for overlay text",
                              ImColor(255, 255, 255, 255), ParamCateg);
@@ -109,6 +110,11 @@ namespace jevois
     //! Parameter \relates jevois::GUIhelper
     JEVOIS_DECLARE_PARAMETER(allowquit, bool, "Quit application on ESC key (platform) or window close (host)",
                              false, ParamCateg);
+
+    //! Parameter \relates jevois::GUIhelper
+    JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(twirl, float, "Apply twirl effect to displayed video and images, useful "
+                                           "mainly for demo mode",
+                                           0.0F, jevois::Range<float>(-15.0F, 15.0F), ParamCateg);
   } // namespace gui
 
   /*! \defgroup gui JeVois-Pro Graphical Interface
@@ -122,7 +128,7 @@ namespace jevois
   class GUIhelper : public Component,
                     public Parameter<gui::fullscreen, gui::winsize, gui::hidesecs, gui::scale,
                                      gui::style, gui::rounding, gui::overlaycolor, gui::linethick,
-                                     gui::fillalpha, gui::allowquit>
+                                     gui::fillalpha, gui::allowquit, gui::twirl>
   {
     public:
       //! Constructor
@@ -137,6 +143,9 @@ namespace jevois
           events received in more than hidesecs seconds). */
       bool startFrame(unsigned short & w, unsigned short & h);
 
+      //! Check for idle in case startFrame() was called elsewhere
+      bool idle() const;
+      
       //! Helper to indicate that startFrame() was called, and thus endFrame() should be called
       /*! Mostly useful during exception handling inside Engine. */
       bool frameStarted() const;
@@ -368,11 +377,17 @@ namespace jevois
           second to first frame. */
       ImVec2 d2is(float x, float y, char const * name = nullptr);
 
-
       //! Compile a newly created module
       /*! This is mainly for internal use. Called by the code editor when saving C++ code to let us know to start the
           compilation process again. itsNewMapping should contain the new module's data. */
       void startCompilation();
+
+      //! Like ImGui::Textunformatted but in a highlight color (typically, red)
+      void highlightText(std::string const & str);
+
+      //! Display some text in a big banner, used by demo mode
+      /*! Any non-empty banner remains on screen until demoBanner() called again with empty title (default args). */
+      void demoBanner(std::string const & title = "", std::string const & msg = "");
       
     protected:
       std::map<std::string /* name */, GPUimage> itsImages, itsImages2;
@@ -446,6 +461,7 @@ namespace jevois
       void onParamChange(gui::scale const & param, float const & newval) override;
       void onParamChange(gui::rounding const & param, int const & newval) override;
       void onParamChange(gui::style const & param, gui::GuiStyle const & newval) override;
+      void onParamChange(gui::twirl const & param, float const & newval) override;
 
       // Config files:
       std::shared_ptr<GUIeditor> itsCfgEditor;
@@ -471,6 +487,10 @@ namespace jevois
       bool compileCommand(std::string const & cmd, std::string & msg); // true on success, false in progress, throws
       std::array<std::string, 4> itsCompileMessages; // messages for the compilation steps
       void runNewModule(); // install and load up the module defined in itsNewMapping
+
+      // Banner stuff:
+      std::string itsBannerTitle, itsBannerMsg;
+      float itsGlobalAlpha = 1.0F;
   };
 
 } // namespace jevois

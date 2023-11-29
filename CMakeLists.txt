@@ -28,15 +28,15 @@ set(JEVOIS_VERSION_MINOR  20)
 set(JEVOIS_VERSION_PATCH  0)
 set(JEVOIS_SOVERSION "${JEVOIS_VERSION_MAJOR}.${JEVOIS_VERSION_MINOR}.${JEVOIS_VERSION_PATCH}" )
 
-
 ########################################################################################################################
 # OpenCV version to use with JeVois:
 set(JEVOIS_OPENCV_MAJOR 4)
-set(JEVOIS_OPENCV_MINOR 7)
+set(JEVOIS_OPENCV_MINOR 8)
 set(JEVOIS_OPENCV_PATCH 0)
 set(JEVOIS_OPENCV_VERSION "${JEVOIS_OPENCV_MAJOR}.${JEVOIS_OPENCV_MINOR}.${JEVOIS_OPENCV_PATCH}")
 
 set(JEVOIS_OPENVINO_VERSION "2022.3")
+set(JEVOIS_ONNX_VERSION "1.15.1")
 
 message(STATUS "JeVois OpenCV: ${JEVOIS_OPENCV_VERSION}")
 message(STATUS "JeVois OpenVino: ${JEVOIS_OPENVINO_VERSION}")
@@ -94,14 +94,6 @@ set(JEVOIS_PLATFORM_INSTALL_PREFIX "/var/lib/${JEVOIS}-build/usr")
 set(JEVOIS_PLATFORM_INSTALL_PREFIX_PDEB "/var/lib/${JEVOIS}-build-pdeb/usr")
 
 ########################################################################################################################
-# Architecture flags to optimize compilation (platform flags defines in JeVoisA33.cmake, JeVoisPro.cmake, etc):
-if (HOST_IS_ARM)
-  set(JEVOIS_HOST_ARCH_FLAGS "${JEVOIS_PLATFORM_ARCH_FLAGS}")
-else (HOST_IS_ARM)
-  set(JEVOIS_HOST_ARCH_FLAGS "-msse4 -Ofast")
-endif (HOST_IS_ARM)
-
-########################################################################################################################
 # Root path to install modules:
 # For host, set JEVOIS_ROOT path as is for modules; for platform, put it into /var/lib/jevois-microsd:
 file(TO_NATIVE_PATH "${JEVOIS_ROOT}" JEVOIS_HOST_MODULES_ROOT)
@@ -110,10 +102,16 @@ file(TO_NATIVE_PATH "/var/lib/${JEVOIS}-build-pdeb" JEVOIS_PLATFORM_MODULES_ROOT
 
 ########################################################################################################################
 # Set compiler flags:
-set(JEVOIS_HOST_CFLAGS "${JEVOIS_HOST_ARCH_FLAGS} -W -Wall -Wextra -g -O4 -I${JEVOIS_SRC_ROOT}/jevois/include \
-${JEVOIS_HOST_INCLUDE} -fPIC -Wno-deprecated-declarations")
-set(JEVOIS_PLATFORM_CFLAGS "${JEVOIS_PLATFORM_ARCH_FLAGS} -W -Wall -Wextra -g -O4 -I${JEVOIS_SRC_ROOT}/jevois/include \
-${JEVOIS_PLATFORM_INCLUDE} -fPIC -Wno-psabi")
+set(JEVOIS_WARN_FLAGS "-W -Wall -Wextra -Wundef -Wwrite-strings -Wlogical-op -Wredundant-decls")
+# too strict, trips opencv, tensorflow, etc:
+# -Wcast-align -Wfloat-equal -Wshadow -Wmissing-declarations -Woverloaded-virtual
+
+set(JEVOIS_HOST_CFLAGS "${JEVOIS_HOST_ARCH_FLAGS} ${JEVOIS_WARN_FLAGS} -g -O4 \
+-I${JEVOIS_SRC_ROOT}/jevois/include ${JEVOIS_HOST_INCLUDE} -fPIC") # -Wno-deprecated-declarations")
+set(JEVOIS_PLATFORM_CFLAGS "${JEVOIS_PLATFORM_ARCH_FLAGS} ${JEVOIS_WARN_FLAGS} -g -O4 \
+-I${JEVOIS_SRC_ROOT}/jevois/include ${JEVOIS_PLATFORM_INCLUDE} -fPIC -Wno-psabi")
+set(JEVOIS_PLATFORM_NATIVE_CFLAGS "${JEVOIS_PLATFORM_ARCH_FLAGS} ${JEVOIS_WARN_FLAGS} -g -O4 \
+-I${JEVOIS_SRC_ROOT}/jevois/include ${JEVOIS_HOST_INCLUDE} -fPIC -Wno-psabi")
 
 ########################################################################################################################
 # Include our helper functions, this will allow selection of host or platform and set variables accordingly:
@@ -184,14 +182,18 @@ install(DIRECTORY ${TOINSTALL} DESTINATION "${JEVOIS_MODULES_ROOT}/include" COMP
 
 target_link_libraries(${JEVOIS} "-L${CMAKE_CURRENT_SOURCE_DIR}/Contrib/lib/${JEVOIS_ARCH}")
 file(GLOB TOINSTALL "Contrib/lib/${JEVOIS_ARCH}/*")
-install(FILES ${TOINSTALL} DESTINATION "${JEVOIS_MODULES_ROOT}/lib/" COMPONENT bin)
+##install(FILES ${TOINSTALL} DESTINATION "${JEVOIS_MODULES_ROOT}/lib/" COMPONENT bin) # ldconfig does not like VFAT
+install(FILES ${TOINSTALL} DESTINATION lib COMPONENT bin)
 
 ########################################################################################################################
 # Setup imgui on JeVois-Pro:
 if (JEVOIS_PRO)
   include_directories(Contrib/imgui Contrib/imgui/backends Contrib)
   install(DIRECTORY Contrib/imgui Contrib/ImGuiColorTextEdit
-    DESTINATION "${JEVOIS_MODULES_ROOT}/include" COMPONENT bin)
+    DESTINATION "${JEVOIS_MODULES_ROOT}/include"
+    COMPONENT bin
+    PATTERN ".git" EXCLUDE
+    PATTERN ".github" EXCLUDE)
 
   target_sources(${JEVOIS} PRIVATE Contrib/imgui/imgui.cpp
     Contrib/imgui/imgui_draw.cpp
@@ -262,7 +264,7 @@ endif ()
 ########################################################################################################################
 # ONNX runtime includes and libs
 if (JEVOIS_PRO)
-  target_link_libraries(${JEVOIS} onnxruntime)
+  target_link_libraries(${JEVOIS} "-l:libonnxruntime.so.${JEVOIS_ONNX_VERSION}")
 endif ()
 
 ########################################################################################################################
@@ -320,17 +322,20 @@ if (JEVOIS_PRO)
   install(TARGETS ${JEVOIS}-restore-console RUNTIME DESTINATION bin COMPONENT bin)
 endif ()
 
+install(PROGRAMS "scripts/jevois-modinfo" DESTINATION bin COMPONENT bin)
+
 if (JEVOIS_PLATFORM)
   # On platform only, install jevois[pro].sh from bin/ in the source tree into /usr/bin:
   install(PROGRAMS "bin/${JEVOIS}.sh" DESTINATION bin COMPONENT bin)
 else (JEVOIS_PLATFORM)
   # On host only, install helper scripts:
-  install(PROGRAMS "scripts/jevois-jvpkg" DESTINATION bin COMPONENT bin)
   install(PROGRAMS "scripts/jevois-create-module" DESTINATION bin COMPONENT bin)
   install(PROGRAMS "scripts/jevois-create-python-module" DESTINATION bin COMPONENT bin)
-  install(PROGRAMS "scripts/jevois-modinfo" DESTINATION bin COMPONENT bin)
-  install(PROGRAMS "scripts/jevois-usbsd" DESTINATION bin COMPONENT bin)
-  install(PROGRAMS "scripts/jevois-cmd" DESTINATION bin COMPONENT bin)
+  if (NOT JEVOIS_PRO)
+    install(PROGRAMS "scripts/jevois-jvpkg" DESTINATION bin COMPONENT bin)
+    install(PROGRAMS "scripts/jevois-usbsd" DESTINATION bin COMPONENT bin)
+    install(PROGRAMS "scripts/jevois-cmd" DESTINATION bin COMPONENT bin)
+  endif ()
 endif (JEVOIS_PLATFORM)
 
 # Install all of our CMakeModules as well
@@ -382,6 +387,8 @@ if (JEVOIS_PRO)
     DESTINATION "${JEVOIS_MODULES_ROOT}/config" COMPONENT bin RENAME "videomappings.cfg")
   install(FILES "Config/initscript-Pro.cfg"
     DESTINATION "${JEVOIS_MODULES_ROOT}/config" COMPONENT bin RENAME "initscript.cfg")
+  install(FILES "Config/demodata-Pro.yml"
+    DESTINATION "${JEVOIS_MODULES_ROOT}/config" COMPONENT bin RENAME "demodata.yml")
 else()
   install(FILES "Config/videomappings-A33.cfg"
     DESTINATION "${JEVOIS_MODULES_ROOT}/config" COMPONENT bin RENAME "videomappings.cfg")
@@ -446,9 +453,16 @@ if (JEVOIS_PRO)
   endif ()
 endif ()
 
-# Use debian postinst / prerm to update ldconfig:
-if (JEVOIS_PRO)
-  set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/debian/postinst;${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/debian/prerm;")
+# Add a file to find our libs. Do it as a file instead of as a debian postinst so that it will be created and installed
+# when compiling from source for the first time. Use debian postinst / prerm to update ldconfig. Only create this file
+# on host and pdeb packages to avoid debian conflicts:
+if (NOT JEVOIS_PLATFORM OR JEVOISPRO_PLATFORM_DEB)
+  file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/${JEVOIS}.conf" "/${JEVOIS}/lib")
+
+  install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${JEVOIS}.conf" DESTINATION /etc/ld.so.conf.d/ COMPONENT bin)
+  
+  set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA
+    "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/debian/postinst;${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/debian/prerm;")
 endif()
 
 # Use helper from JeVois.cmake for all other settings:

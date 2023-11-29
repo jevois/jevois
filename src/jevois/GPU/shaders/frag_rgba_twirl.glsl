@@ -5,6 +5,7 @@ in vec2 v_tex_coord;
 layout(location = 0) out vec4 out_color;
 uniform sampler2D s_texture;
 uniform float twirlamount;
+uniform float alpha;
 
 void main()
 {
@@ -17,4 +18,5 @@ void main()
 
   // Then get the R, G, B, A colors:
   out_color = texture(s_texture, uv);
+  out_color.w *= alpha;
 }

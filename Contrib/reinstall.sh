@@ -152,7 +152,7 @@ if [ "X$REPLY" = "Xy" ]; then
     /bin/rm onnxruntime-linux-x64-${ORT_VER}.tgz
     mkdir -p include/amd64/onnxruntime
     /bin/cp -a onnxruntime-linux-x64-${ORT_VER}/include/* include/amd64/onnxruntime/
-    /bin/cp onnxruntime-linux-x64-${ORT_VER}/lib/libonnxruntime.so lib/amd64/ # no symlinks allowed
+    /bin/cp onnxruntime-linux-x64-${ORT_VER}/lib/libonnxruntime.so lib/amd64/libonnxruntime.so.${ORT_VER}
     /bin/rm -rf onnxruntime-linux-x64-${ORT_VER}
     
     # For jevois-pro platform:
@@ -161,7 +161,7 @@ if [ "X$REPLY" = "Xy" ]; then
     /bin/rm onnxruntime-linux-aarch64-${ORT_VER}.tgz
     mkdir -p include/arm64/onnxruntime
     /bin/cp -a onnxruntime-linux-aarch64-${ORT_VER}/include/* include/arm64/onnxruntime/
-    /bin/cp onnxruntime-linux-aarch64-${ORT_VER}/lib/libonnxruntime.so lib/arm64/ # no symlinks allowed
+    /bin/cp onnxruntime-linux-aarch64-${ORT_VER}/lib/libonnxruntime.so lib/arm64/libonnxruntime.so.${ORT_VER}
     /bin/rm -rf onnxruntime-linux-aarch64-${ORT_VER}
     
     # pycoral build

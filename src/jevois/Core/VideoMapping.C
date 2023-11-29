@@ -33,10 +33,33 @@ std::string jevois::VideoMapping::path() const
 }
 
 // ####################################################################################################
-std::string jevois::VideoMapping::sopath() const
+std::string jevois::VideoMapping::sopath(bool delete_old_versions) const
 {
   if (ispython) return JEVOIS_MODULE_PATH "/" + vendor + '/' + modulename + '/' + modulename + ".py";
-  else return JEVOIS_MODULE_PATH "/" + vendor + '/' + modulename + '/' + modulename + ".so";
+
+  // For C++ live installs on the camera, we may have several versions, use the latest:
+  std::filesystem::path const dir = JEVOIS_MODULE_PATH "/" + vendor + '/' + modulename;
+  std::filesystem::path const stem = modulename + ".so";
+  
+  int ver = 0;
+  for (auto const & entry : std::filesystem::directory_iterator(dir))
+    if (entry.path().stem() == stem)
+      try { ver = std::max(ver, std::stoi(entry.path().extension().string().substr(1))); } // ext without leading dot
+      catch (...) { }
+
+  if (ver)
+  {
+    std::filesystem::path const latest = (dir / stem).string() + '.' + std::to_string(ver);
+
+    if (delete_old_versions)
+      for (auto const & entry : std::filesystem::directory_iterator(dir))
+        if (entry.path().stem() == stem && entry.path() != latest)
+          std::filesystem::remove(entry.path());
+
+    return latest.string();
+  }
+
+  return (dir / stem).string();
 }
 
 // ####################################################################################################
@@ -50,6 +73,12 @@ std::string jevois::VideoMapping::srcpath() const
 std::string jevois::VideoMapping::cmakepath() const
 {
   return JEVOIS_MODULE_PATH "/" + vendor + '/' + modulename + "/CMakeLists.txt";
+}
+
+// ####################################################################################################
+std::string jevois::VideoMapping::modinfopath() const
+{
+  return JEVOIS_MODULE_PATH "/" + vendor + '/' + modulename + "/modinfo.html";
 }
 
 // ####################################################################################################
@@ -144,6 +173,25 @@ std::string jevois::VideoMapping::menustr() const
   ss << " CAM: " << cstr();
   if (crop == jevois::CropType::CropScale) ss << " + " << c2str();
   if (ofmt != 0 && ofmt != JEVOISPRO_FMT_GUI) ss << ", OUT: " << ostr() << ' ';
+  return ss.str();
+}
+
+// ####################################################################################################
+std::string jevois::VideoMapping::menustr2() const
+{
+  std::ostringstream ss;
+
+  ss << modulename << (ispython ? " (Py)" : " (C++)");
+  ss << " CAM: " << cstr();
+  if (crop == jevois::CropType::CropScale) ss << " + " << c2str();
+
+  switch (ofmt)
+  {
+  case JEVOISPRO_FMT_GUI: ss << ", OUT: GUI"; break;
+  case 0: ss << ", OUT: None (headless)"; break;
+  default: ss << ", OUT: " << ostr() << ' ';
+  }
+  
   return ss.str();
 }
 

@@ -31,17 +31,13 @@
 #include <jevois/GPU/GUIeditor.H>
 #include <jevois/Debug/SysInfo.H>
 #include <jevois/Util/Utils.H>
+#include <jevois/Debug/PythonException.H>
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <glm/gtc/matrix_transform.hpp> // glm::translate, glm::rotate, glm::scale, glm::perspective
 #include <glm/gtx/euler_angles.hpp>
 #include <fstream>
 #include <set>
-
-#include <dirent.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <jevois/Debug/PythonException.H>
 
 // ##############################################################################################################
 jevois::GUIhelper::GUIhelper(std::string const & instance, bool conslock) :
@@ -99,11 +95,12 @@ jevois::GUIhelper::GUIhelper(std::string const & instance, bool conslock) :
   std::vector<EditorItem> fixedcode
     {
      { "*", "Module's source code", EditorSaveAction::Reload },
+     // Gets added at runtime: { "#", "Module's CMakeLists.txt", EditorSaveAction::Compile },
     };
 
   // Create the code editor:
   itsCodeEditor.reset(new jevois::GUIeditor(this, "code", std::move(fixedcode), JEVOIS_PYDNN_PATH, "PyDNN ",
-                                            { ".py", ".C", ".H", ".cpp", ".hpp", ".c", ".h" }));
+                                            { ".py", ".C", ".H", ".cpp", ".hpp", ".c", ".h", ".txt" }));
 }
 
 // ##############################################################################################################
@@ -225,6 +222,10 @@ bool jevois::GUIhelper::startFrame(unsigned short & w, unsigned short & h)
 
   return itsIdle;
 }
+
+// ##############################################################################################################
+bool jevois::GUIhelper::idle() const
+{ return itsIdle; }
 
 // ##############################################################################################################
 void jevois::GUIhelper::onParamChange(jevois::gui::scale const & param, float const & newval)
@@ -382,6 +383,18 @@ void jevois::GUIhelper::drawInputFrame2(char const * name, jevois::InputFrame co
   itsLastDrawnImage = & im;
   itsUsingScaledImage = false;
   itsLastDrawnTextLine = -1;
+}
+
+// ##############################################################################################################
+void jevois::GUIhelper::onParamChange(gui::twirl const & JEVOIS_UNUSED_PARAM(param), float const & newval)
+{
+  // Compute alpha so that more twirl is also more faded (lower alpha). Here, we want to mask out the whole display,
+  // including all GUI drawings except the banner. Hence we will just draw a full-screen semi-transparent rectangle in
+  // endFrame(), using our computed alpha value:
+  itsGlobalAlpha = std::abs(1.0F - newval / 15.0F);  
+  
+  // Note: we only twirl the display images (itsImages), not the processing images (itsImages2):
+  for (auto & ip : itsImages) ip.second.twirl(newval);
 }
 
 // ##############################################################################################################
@@ -688,6 +701,53 @@ void jevois::GUIhelper::endFrame()
   // If compiling, draw compilation window:
   if (itsCompileState != CompilationState::Idle) compileModule();
   
+  // Do we want to fade out the whole display?
+  if (itsGlobalAlpha != 1.0F)
+  {
+    if (itsGlobalAlpha < 0.0F || itsGlobalAlpha > 1.0F)
+    {
+      LERROR("Invalid global alpha " << itsGlobalAlpha << " -- RESET TO 1.0");
+      itsGlobalAlpha = 1.0F;
+    }
+    else
+    {
+      auto dlb = ImGui::GetBackgroundDrawList();
+      cv::Size const ws = winsize::get();
+      dlb->AddRectFilled(ImVec2(0, 0), ImVec2(ws.width, ws.height), ImColor(0.0F, 0.0F, 0.0F, 1.0F - itsGlobalAlpha));
+    }
+  }
+  
+  // Do we have a demo banner to show?
+  if (itsBannerTitle.empty() == false)
+  {
+    ImGui::SetNextWindowPos(ImVec2(800, 500));
+    ImGui::SetNextWindowSize(ImVec2(1000, 400));
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, 0xf0e0ffe0); // ABGR
+    ImGui::Begin("JeVois-Pro Demo Mode", nullptr, ImGuiWindowFlags_NoResize |
+                 ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse |
+                 ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
+    ImGui::SetWindowFontScale(1.5F);
+    ImGui::TextUnformatted(" ");
+    ImGui::TextUnformatted(itsBannerTitle.c_str());
+    ImGui::TextUnformatted(" ");
+    ImGui::SetWindowFontScale(1.0F);
+
+    int wrap = ImGui::GetWindowSize().x - ImGui::GetFontSize() * 2.0f;
+    ImGui::PushTextWrapPos(wrap);
+    ImGui::TextUnformatted(itsBannerMsg.c_str());
+    ImGui::PopTextWrapPos();
+
+    ImGui::SetCursorPosY(ImGui::GetWindowSize().y - ImGui::CalcTextSize("X").y * 2.3F);
+    ImGui::Separator();
+    
+    if (ImGui::Button("Skip to Next Demo")) engine()->nextDemo();
+    ImGui::SetItemDefaultFocus();
+    ImGui::SameLine(600);
+    if (ImGui::Button("Abort Demo Mode")) engine()->abortDemo();
+    ImGui::End();
+    ImGui::PopStyleColor();
+  }
+  
   // Render everything and swap buffers:
   itsBackend.render();
 
@@ -949,7 +1009,22 @@ void jevois::GUIhelper::drawInfo()
       std::filesystem::path fname = m->absolutePath("modinfo.html");
       std::ifstream ifs(fname);
       if (ifs.is_open() == false)
-        itsModAuth = ("Cannot read file: " + fname.string()).c_str();
+      {
+        // No modinfo file, maybe we can create one if we have the source:
+        LINFO("Recomputing module's modinfo.html ...");
+        jevois::VideoMapping const & vm = engine()->getCurrentVideoMapping();
+        try
+        {
+          std::string const cmdout =
+            jevois::system("cd " + m->absolutePath().string() + " && "
+                           "JEVOIS_SRC_ROOT=none jevois-modinfo " + vm.modulename, true);
+          
+          if (! std::filesystem::exists(fname))
+            throw std::runtime_error("Failed to create " + vm.modinfopath() + ": " + cmdout);
+        }
+        catch (...) { itsModName = vm.modulename; itsModAuth = "Cannot read file: " + fname.string(); }
+        // If we did not throw, itsModName is still empty, but now modinfo.html exists. Will load it next time.
+      }
       else
       {
         int state = 0;
@@ -1147,7 +1222,7 @@ void jevois::GUIhelper::drawParameters()
         ImGui::TextUnformatted(nam.c_str());
         if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", ps.descriptor.c_str());
         maxlen = std::max(maxlen, ImGui::CalcTextSize(nam.c_str()).x);
-
+        
         // Add a tooltip:
         ImGui::NextColumn();
         ImGui::AlignTextToFramePadding();
@@ -1301,13 +1376,19 @@ void jevois::GUIhelper::drawParameters()
         // Ready for next row:
         ImGui::NextColumn(); ++widgetnum;
       }
-      ImGui::SetColumnWidth(0, maxlen + 30.0f);
-      ImGui::SetColumnWidth(1, ImGui::CalcTextSize("(?)").x + 30.0f);
-      ImGui::SetColumnWidth(2, 1000);
 
       // Back to single column before the next param categ:
       ImGui::Columns(1);
     }
+  }
+
+  if (maxlen)
+  {
+    ImGui::Columns(3, "parameters");
+    ImGui::SetColumnWidth(0, maxlen + ImGui::CalcTextSize("XX").x);
+    ImGui::SetColumnWidth(1, ImGui::CalcTextSize(" (?) ").x);
+    ImGui::SetColumnWidth(2, 2000);
+    ImGui::Columns(1);
   }
 }
 
@@ -1472,7 +1553,9 @@ int jevois::GUIhelper::modal(std::string const & title, char const * text, int *
     if (default_val)
     {
       ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
+      ImGui::PushStyleColor(ImGuiCol_FrameBg, 0xf0ffe0e0); // ABGR - in light theme, can't see the box
       ImGui::Checkbox("Don't ask me next time", &dont_ask_me_next_time);
+      ImGui::PopStyleColor();
       ImGui::PopStyleVar();
     }
     float const b1w = std::max(120.0F, ImGui::CalcTextSize(b1txt).x + 20.0F);
@@ -1678,6 +1761,31 @@ void jevois::GUIhelper::drawSystem()
     jevois::system("sync");
   }
   ImGui::Separator();
+      
+  // #################### Edit fan settings:
+  static bool show_fan_modal = false;
+  if (ImGui::Button("Edit fan settings"))
+  {
+    itsCfgEditor->loadFile("/lib/systemd/system/jevoispro-fan.service");
+    show_fan_modal = true;
+  }
+
+  if (show_fan_modal)
+  {
+    static int doit_default = 0;
+    int ret = modal("Ready to edit", "File will now be loaded in the Config tab of the main window and "
+                    "ready to edit.\nPlease switch to the Config tab in the main window.\n\n"
+                    "When you save it, we will reboot the camera.",
+                    &doit_default, "Ok", "Thanks");
+    switch (ret)
+    {
+    case 1: show_fan_modal = false; break;
+    case 2: show_fan_modal = false; break;
+    default: break;  // Need to wait
+    }
+  }
+
+  ImGui::Separator();
 
 #endif
 
@@ -1841,7 +1949,7 @@ void jevois::GUIhelper::drawNewModuleForm()
       static std::string currstr = "...";
 
       size_t idx = 0;
-      e->foreachVideoMapping([&idx](jevois::VideoMapping const & m) { mods[m.menustr()] = idx++; });
+      e->foreachVideoMapping([&idx](jevois::VideoMapping const & m) { mods[m.menustr2()] = idx++; });
 
       // Draw the module clone selector and allow selection:
       if (ImGui::BeginCombo("##clonemodule", currstr.c_str()))
@@ -1855,6 +1963,11 @@ void jevois::GUIhelper::drawNewModuleForm()
             currstr = mod.first;
 
             // Prefill some data:
+            vendor = "Testing";
+            name = "My" + m.modulename; int i = 2;
+            while (std::filesystem::exists(JEVOIS_MODULE_PATH "/" + vendor + '/' + name))
+            { name = "My" + m.modulename + std::to_string(i++); }
+            
             language = m.ispython ? 0 : 1;
             templ = 3; // clone
             ofmt = m.ofmt; ow = m.ow; oh = m.oh; ofps = m.ofps;
@@ -2084,10 +2197,10 @@ void jevois::GUIhelper::drawNewModuleForm()
         LINFO("New Module data valid...");
         
         // First create a directory for vendor, if not already present:
-        std::string const newvdir = JEVOIS_MODULE_PATH "/" + vendor;
-        if (mkdir(newvdir.c_str(), 0777) && errno != EEXIST)
+        std::filesystem::path const newvdir = JEVOIS_MODULE_PATH "/" + vendor;
+        if (std::filesystem::exists(newvdir) == false && std::filesystem::create_directory(newvdir) == false)
           PLFATAL("Error creating dir " << newvdir << " -- check that you are running as root");
-        std::string const newmdir = newvdir + '/' + name;
+        std::filesystem::path const newmdir = newvdir / name;
         std::string vmstr; // machine string version of our videomapping
         
         // ----------------------------------------------------------------------------------------------------
@@ -2113,7 +2226,8 @@ void jevois::GUIhelper::drawNewModuleForm()
           unlink((m.path() + '/' + srcname + ".py").c_str());
           unlink((m.path() + '/' + srcname + ".so").c_str());
           std::filesystem::remove_all(m.path() + "/__pycache__");
-          
+          std::filesystem::remove_all(m.path() + "/build");
+
           // Cook and copy the module source:
           std::ostringstream oss; oss << m; vmstr = oss.str();
           cookedCodeClone(srcpath, m.srcpath(), srcname, name);
@@ -2134,9 +2248,10 @@ void jevois::GUIhelper::drawNewModuleForm()
         else
         {
           // Create a new directory and copy the template into it:
-          if (mkdir(newmdir.c_str(), 0777) == -1)
-            LFATAL("Error creating directory [" << newmdir << "] for new module. Maybe that module name "
-                   "already exists, or not running as root?");
+          if (std::filesystem::exists(newmdir))
+            LFATAL("Directory [" << newmdir << "] already exists -- Choose another name");
+          if (std::filesystem::create_directory(newmdir) == false)
+            PLFATAL("Error creating directory [" << newmdir << "] for new module. Maybe not running as root?");
           LINFO("Created new Module directory: " << newmdir);
         
           // Create a new video mapping to add to videomappimgs.cfg:
@@ -2502,6 +2617,22 @@ void jevois::GUIhelper::headlessDisplay()
 }
 
 // ##############################################################################################################
+void jevois::GUIhelper::highlightText(std::string const & str)
+{
+  ImGui::PushStyleColor(ImGuiCol_Text, 0xff0000ff);
+  ImGui::TextUnformatted(str.c_str());
+  ImGui::PopStyleColor();  
+}
+
+// ##############################################################################################################
+void jevois::GUIhelper::demoBanner(std::string const & title, std::string const & msg)
+{
+  // Here we just update our internals, we will do the drawing in the main loop:
+  itsBannerTitle = title;
+  itsBannerMsg = msg;
+}
+
+// ##############################################################################################################
 void jevois::GUIhelper::startCompilation()
 {
   if (std::filesystem::exists(itsNewMapping.srcpath()) && std::filesystem::exists(itsNewMapping.cmakepath()))
@@ -2518,7 +2649,7 @@ void jevois::GUIhelper::compileModule()
   ImGui::SetNextWindowSize(ImVec2(800, 680), ImGuiCond_FirstUseEver);
 
   // Open the window, allow closing when we are in error:
-  int constexpr flags = ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_AlwaysHorizontalScrollbar;
+  int constexpr flags = ImGuiWindowFlags_HorizontalScrollbar;
   bool keep_window_open = true;
   if (itsCompileState == CompilationState::Error) ImGui::Begin("C++ Module Compilation", &keep_window_open, flags);
   else ImGui::Begin("C++ Module Compilation", nullptr, flags);
@@ -2538,18 +2669,24 @@ void jevois::GUIhelper::compileModule()
       LINFO("Start compiling " << itsNewMapping.srcpath());
       itsIdleBlocked = true;
       for (std::string & s : itsCompileMessages) s.clear();
+      std::filesystem::remove_all(buildpath);
       itsCompileState = CompilationState::Cmake;
       break;
       
       // ----------------------------------------------------------------------------------------------------
     case CompilationState::Cmake:
-      if (compileCommand("cmake -S " + modpath + " -B " + buildpath, itsCompileMessages[0]))
+      if (compileCommand("cmake -S " + modpath + " -B " + buildpath +
+                         " -DJEVOIS_HARDWARE=PRO"
+#ifdef JEVOIS_PLATFORM
+                         " -DJEVOIS_PLATFORM=ON -DJEVOIS_NATIVE=ON"
+#endif
+                         , itsCompileMessages[0]))
         itsCompileState = CompilationState::Make;
       break;
 
       // ----------------------------------------------------------------------------------------------------
     case CompilationState::Make:
-      if (compileCommand("cmake --build " + buildpath, itsCompileMessages[1]))
+      if (compileCommand("JEVOIS_SRC_ROOT=none cmake --build " + buildpath, itsCompileMessages[1]))
         itsCompileState = CompilationState::Install;
       break;
     
@@ -2573,7 +2710,8 @@ void jevois::GUIhelper::compileModule()
       ImGui::TextUnformatted("See below for details...");
       ImGui::Separator();
       static int run_default = 0;
-      int ret = modal("Success! Run the module now?", "Compilation success. Load and run the new module now?",
+      int ret = modal("Success! Run the module now?", "Compilation success!\n\nA deb package of your module is in "
+                      "/jevoispro/debs/\nif you want to share it.\n\nLoad and run the new module now?",
                       &run_default, "Yes", "No");
       switch (ret)
       {
@@ -2599,7 +2737,7 @@ void jevois::GUIhelper::compileModule()
     case CompilationState::Error:
     {
       itsIdleBlocked = false;
-      ImGui::TextUnformatted("Compilation failed!");
+      highlightText("Compilation failed!");
       ImGui::TextUnformatted("You may need to edit the two files above.");
       ImGui::TextUnformatted("See below for details...");
       ImGui::Separator();

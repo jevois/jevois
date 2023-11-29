@@ -96,6 +96,9 @@
 //! Location of the engine init script file
 #define JEVOIS_ENGINE_INIT_SCRIPT JEVOIS_CONFIG_PATH "/initscript.cfg"
 
+//! Location of the jevois-pro demo data definition file
+#define JEVOISPRO_DEMO_DATA_FILE JEVOIS_CONFIG_PATH "/demodata.yml"
+
 //! Relative name of optinal default parameters to load for each Module
 #define JEVOIS_MODULE_PARAMS_FILENAME "params.cfg"
 

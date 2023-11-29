@@ -28,7 +28,7 @@ namespace jevois
 {
   namespace dnn
   {
-    //! Wrapper around an OpenCV DNN neural network
+    //! Wrapper around an ONNX-Runtime neural network
     /*! \ingroup dnn */
     class NetworkONNX : public jevois::dnn::Network,
                         public jevois::Parameter<network::dataroot, network::model>

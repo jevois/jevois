@@ -563,7 +563,7 @@ bool jevois::ImGuiBackendMALI::pollEvents(bool & shouldclose)
         if (len == -1)
         {
           // Drop this device (unplugged?) if true error:
-          if (errno != EAGAIN && errno != EWOULDBLOCK) removeDevice(i);
+          if (errno != EAGAIN) removeDevice(i);
           continue;
         }
         else if (len > 0)

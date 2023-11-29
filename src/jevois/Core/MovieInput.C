@@ -90,7 +90,7 @@ void jevois::MovieInput::get(RawImage & img)
   cv::Mat frame;
   if (itsRawFrame.cols != int(itsMapping.cw) || itsRawFrame.rows != int(itsMapping.ch))
   {
-    if (frameidx++ % 100 == 0)
+    if ((frameidx++ % 100) == 0)
       LINFO("Note: Resizing get() frame from " << itsRawFrame.cols <<'x'<< itsRawFrame.rows << " to " <<
             itsMapping.cw <<'x'<< itsMapping.ch);
     cv::resize(itsRawFrame, frame, cv::Size(itsMapping.cw, itsMapping.ch));
@@ -115,7 +115,7 @@ void jevois::MovieInput::get(RawImage & img)
 // ##############################################################################################################
 void jevois::MovieInput::get2(RawImage & img)
 {
-  static size_t frameidx = 0; // only used for conversion info messages
+  static size_t frameidx2 = 0; // only used for conversion info messages
 
   // Users may call get2() several times on a given frame. The switch to the next frame is when done2() is called, which
   // invalidates itsBuf2:
@@ -143,7 +143,7 @@ void jevois::MovieInput::get2(RawImage & img)
   cv::Mat frame;
   if (itsRawFrame.cols != int(itsMapping.c2w) || itsRawFrame.rows != int(itsMapping.c2h))
   {
-    if (frameidx++ % 100 == 0)
+    if ((frameidx2++ % 100) == 0)
       LINFO("Note: Resizing get2() frame from " << itsRawFrame.cols <<'x'<< itsRawFrame.rows << " to " <<
             itsMapping.c2w <<'x'<< itsMapping.c2h);
     cv::resize(itsRawFrame, frame, cv::Size(itsMapping.c2w, itsMapping.c2h));
