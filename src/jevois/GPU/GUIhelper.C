@@ -1914,6 +1914,7 @@ void jevois::GUIhelper::drawNewModuleForm()
 {
   float const fontw = ImGui::GetFontSize();
   auto e = engine();
+  static int templ = 0; // Which code template to use (pro, legacy, headless, clone). Resets for each new module.
 
   ImGui::PushStyleColor(ImGuiCol_PopupBg, 0xf0e0ffe0);
 
@@ -1921,6 +1922,7 @@ void jevois::GUIhelper::drawNewModuleForm()
   {
     ImGui::OpenPopup("Create new machine vision module");
     itsIdleBlocked = true; // prevent GUI from disappearing if we are slow to fill the form...
+    templ = 0; // default template pro/GUI each time
   }
   
   ImVec2 const center = ImGui::GetMainViewport()->GetCenter();
@@ -1933,7 +1935,6 @@ void jevois::GUIhelper::drawNewModuleForm()
     {
       static std::string name, vendor, synopsis, author, email, website, license, srcvendor, srcname;
       static int language = 0;
-      static int templ = 0;
       static int ofmt = 0; static int ow = 320, oh = 240; static float ofps = 30.0F;
       static int cmode = 0;
       static int wdrmode = 0;

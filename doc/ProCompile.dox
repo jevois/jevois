@@ -58,7 +58,11 @@ have to modify CMakeLists.txt unless they want to link against extra libraries o
 
 Let's try an edit. In \b PassThrough, at some point we draw a green circle around the mouse pointer. This is to demo the
 ability to draw things on top of rendered windows, using an ImGui foreground draw list. Let's change the radius of that
-green circle from 20 to 120 pixels:
+green circle from 20 to 120 pixels.
+
+\note Remember to edit the correct <b>process()</b> function. If your module is running in JeVois-Pro GUI mode, then you
+want to edit the function with this signature: <b>virtual void process(jevois::InputFrame && inframe, jevois::GUIhelper
+& helper) override</b>
 
 \jvimg{newmodule09.jpg, 60%}
 
