@@ -4,6 +4,7 @@
 
 The following pages will help you program with JeVois.
 
+- \subpage ProCompile
 - \subpage ProgrammerSource
 - \subpage Virtualbox
 - \subpage ProgrammerOrganization

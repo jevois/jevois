@@ -1,0 +1,31 @@
+/*! \page Change120log Changes and new features in JeVois 1.20
+
+JeVois 1.20 brings the following new features:
+
+- JeVois-Pro: New ability to clone and compile C++ modules directly on a running JeVois-Pro camera. It is a bit slow but
+  runs well! The procedure to modify and recompile one of our bundled C++ modules is: 1) clone the module by using the
+  clone option in the pop-up that comes up when you click "Create new machine vision module..." in the System tab of the
+  GUI. This will clone the module into its own separate directory and compile it and run it. 2) Then you can edit its
+  source code, and when you save your changes, the module will recompile and run.
+
+- JeVois-Pro: New demo mode that cycles through a variety of modules (defined in /jevoispro/config/demodata.yml). To
+  enable, set a non-zero time in seconds (will be used for each demo) in parameter "demomode" of Engine (in the GUI,
+  enable "Show systems parameters" to see the parameters of Engine).
+
+- Improved support for ONNX Runtime framework on CPU, both in C++ and in Python.
+
+- Fixed a bunch of warnings in some jevoisbase modules that we had not seen as some warnings are turned off because they
+  trip various third party libraries.
+
+- Updated to OpenCV 4.8.0.
+
+- JeVois-Pro: added a button in the System tab to allow easy editing of fan config, which can allow you to find tune the
+  threshold at which the fan will turn to full speed. Now detecting the presence of a Hailo chip and getting temperature
+  from it if present.
+
+- JeVois-Pro: major reorganization of the CMake process and of contribs, they get installed to /jevoispro now to allow
+  on-device compilation.
+
+- Miscellaneous bug fixes and performance improvements.
+
+*/

@@ -1,0 +1,98 @@
+/*! \page ProCompile JeVois-Pro: Cloning and compiling C++ modules on device
+
+\jvpro: Starting with \jvversion{1.20.0}, you can edit and compile C++ modules on a running camera. It is quite slow,
+but it works quite well. This is useful mainly to get a module started and for small debugging edits. For more extensive
+C++ code writing, we recommend using the JeVois-Pro SDK on a powerful Linux desktop, testing your module in host mode
+first, and then cross-compiling it to run on the camera. See \ref Programmer for more info.
+
+Step 1: Clone an existing module to provide a working starting point
+====================================================================
+
+In the \a System tab of the GUI, click "Create new machine vision module..."
+
+\jvimg{newmodule01.jpg, 60%}
+
+Step 2: Select which module to clone
+====================================
+
+Click on the "..." menu at top and select a module.
+
+\jvimg{newmodule02.jpg, 60%}
+
+Here we are going to clone the \b PassThrough module:
+
+\jvimg{newmodule03.jpg, 60%}
+
+A new module will be created with vendor name \a Testing and module name \a MyPassThrough (if you clone the same module
+several time, you will get \a MyPassThrough2, \a MyPassThrough3, etc). Feel free to edit those names if you do not like
+them. Then click the \b Create button.
+
+\jvimg{newmodule04.jpg, 60%}
+
+
+Step 3: Initial compilation of the clone
+========================================
+
+Once it is copied, a new window will open, and we will attempt to compile the clone right away. Please be patient, this
+takes a while (several minutes).
+
+\jvimg{newmodule05.jpg, 60%}
+
+One compilation is complete (which should always work on fresh clones), you will be asked whether you want to run the
+module. Say \b Yes to run it.
+
+\jvimg{newmodule06.jpg, 60%}
+
+Step 4: Edit code
+=================
+
+Once the clone is loaded and running, you can access its source code in the \a Code tab of the GUI.
+
+\jvimg{newmodule07.jpg, 60%}
+
+Note that both the C++ source and the associated CMakeLists.txt are available in the code editor. Most users will not
+have to modify CMakeLists.txt unless they want to link against extra libraries or compile additional source files.
+
+\jvimg{newmodule08.jpg, 60%}
+
+Let's try an edit. In \b PassThrough, at some point we draw a green circle around the mouse pointer. This is to demo the
+ability to draw things on top of rendered windows, using an ImGui foreground draw list. Let's change the radius of that
+green circle from 20 to 120 pixels:
+
+\jvimg{newmodule09.jpg, 60%}
+
+Click \b Save to save the modified code:
+
+\jvimg{newmodule10.jpg, 60%}
+
+This will trigger a recompilation.
+
+\jvimg{newmodule11.jpg, 60%}
+
+Once compiled, you can run the module:
+
+\jvimg{newmodule12.jpg, 60%}
+
+Yep, that green circle around the mouse pointer is larger now!
+
+\jvimg{newmodule13.jpg, 60%}
+
+Step 5: Dealing with errors
+===========================
+
+If any step in the build process fails, you will see an error message. Here let's add some buggy C++ code to see what
+happens:
+
+\jvimg{newmodule14.jpg, 60%}
+
+That will trigger a compilation error:
+
+\jvimg{newmodule15.jpg, 60%}
+
+If you scroll back up to the top of the compilation window, you can use the buttons to edit the offending source code or
+CMakeLists.txt:
+
+\jvimg{newmodule16.jpg, 60%}
+
+
+*/
