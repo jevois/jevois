@@ -15,16 +15,17 @@ In the \a System tab of the GUI, click "Create new machine vision module..."
 Step 2: Select which module to clone
 ====================================
 
-Click on the "..." menu at top and select a module.
+Click on the "..." menu at top and select a module to clone.
 
 \jvimg{newmodule02.jpg, 60%}
 
-Here we are going to clone the \b PassThrough module:
+Here we are going to clone the \b PassThrough module, with 1920x1080 video for display purposes, and 512x288 greyscale
+video for processing purposes:
 
 \jvimg{newmodule03.jpg, 60%}
 
 A new module will be created with vendor name \a Testing and module name \a MyPassThrough (if you clone the same module
-several time, you will get \a MyPassThrough2, \a MyPassThrough3, etc). The cource code will be saved in
+several time, you will get \a MyPassThrough2, \a MyPassThrough3, etc). The source code will be saved in
 <b>/jevoispro/modules/Testing/MyPassThrough/</b> and you should back it up often in case your microSD card gets corrupt
 somehow. Feel free to edit those names if you do not like them. Then click the \b Create button.
 
@@ -40,7 +41,7 @@ takes a while (several minutes).
 \jvimg{newmodule05.jpg, 60%}
 
 Once compilation is complete (which should always work on fresh clones), you will be asked whether you want to run the
-module. Say \b Yes to run it.
+module. Click \b Yes to run it.
 
 \jvimg{newmodule06.jpg, 60%}
 
