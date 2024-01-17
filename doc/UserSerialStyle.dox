@@ -20,7 +20,7 @@ The parameters \p serstyle and \p serprec of jevois::StdModule define the follow
 styles. Parameter \p serstamp allow additional stamping of every message with a frame number, date, and/or time.
 
 \note Beware that \p serstyle and \p serprec are reset to their default value each time a vision processing module is
-loaded. Hence, you should set them after loading the module. Parameter \p sertamp is not affected by module change,
+loaded. Hence, you should set them after loading the module. Parameter \p serstamp is not affected by module change,
 because it is owned by the JeVois Engine.
 
 Coordinates conventions and precision
