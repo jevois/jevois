@@ -111,7 +111,7 @@ jevois::GUIhelper::~GUIhelper()
 }
 
 // ##############################################################################################################
-void jevois::GUIhelper::reset(bool modulechanged)
+void jevois::GUIhelper::resetstate(bool modulechanged)
 {
   itsEndFrameCalled = true;
   itsImages.clear();
@@ -188,7 +188,7 @@ bool jevois::GUIhelper::startFrame(unsigned short & w, unsigned short & h)
     fullscreen::freeze();
 
     // Reset the GUI:
-    reset();
+    resetstate();
   }
 
   // Poll events:
@@ -1017,7 +1017,7 @@ void jevois::GUIhelper::drawInfo()
         {
           std::string const cmdout =
             jevois::system("cd " + m->absolutePath().string() + " && "
-                           "JEVOIS_SRC_ROOT=none jevois-modinfo " + vm.modulename, true);
+                           "JEVOIS_SRC_ROOT=none jevoispro-modinfo " + vm.modulename, true);
           
           if (! std::filesystem::exists(fname))
             throw std::runtime_error("Failed to create " + vm.modinfopath() + ": " + cmdout);
@@ -1207,7 +1207,7 @@ void jevois::GUIhelper::drawParameters()
         
         // We need a unique ID for each ImGui widget, and we will use no visible widget name:
         static char wname[16]; snprintf(wname, 16, "##p%d", widgetnum);
-        bool reset = true; // will set to false if we do not want a reset button
+        bool rst = true; // will set to false if we do not want a reset button
         
         // Start with parameter name and a tooltip with its descriptor:
         ImGui::AlignTextToFramePadding();
@@ -1359,7 +1359,7 @@ void jevois::GUIhelper::drawParameters()
         }
         
         // Possibly add a reset button:
-        if (reset)
+        if (rst)
         {
           static char rname[18]; snprintf(rname, 18, "Reset##%d", widgetnum);
           ImGui::SameLine();
@@ -2636,10 +2636,33 @@ void jevois::GUIhelper::demoBanner(std::string const & title, std::string const 
 // ##############################################################################################################
 void jevois::GUIhelper::startCompilation()
 {
-  if (std::filesystem::exists(itsNewMapping.srcpath()) && std::filesystem::exists(itsNewMapping.cmakepath()))
+  if (itsCompileState == CompilationState::Cmake || itsCompileState == CompilationState::Make ||
+      itsCompileState == CompilationState::Install || itsCompileState == CompilationState::CPack)
+    reportError("Still compiling... Try again later...");
+  else if (std::filesystem::exists(itsNewMapping.srcpath()) && std::filesystem::exists(itsNewMapping.cmakepath()))
     itsCompileState = CompilationState::Start;
   else
-    reportError("Cannot find " + itsNewMapping.srcpath() + " or " + itsNewMapping.cmakepath() + " -- IGNORED");
+  {
+    // Maybe the user opened another file than the currently running module, which can occur if a module gives a hard
+    // crash and cannot be loaded anymore. See if we can compile it using the code editor's current file path:
+    std::filesystem::path const & fpath = itsCodeEditor->getLoadedFilePath();
+    std::filesystem::path const fn = fpath.filename();
+
+    if (fn == "CMakeLists.txt" || fn.extension() == ".C")
+    {
+      itsNewMapping = { };
+      std::filesystem::path p = fpath.parent_path();
+      itsNewMapping.modulename = p.filename();
+      itsNewMapping.vendor = p.parent_path().filename();
+      itsNewMapping.ispython = false;
+      
+      // Beware that the rest of the mapping is uninitialized but that should be enough to recompile...
+      if (std::filesystem::exists(itsNewMapping.srcpath()) && std::filesystem::exists(itsNewMapping.cmakepath()))
+        itsCompileState = CompilationState::Start;
+      else reportError("Cannot find " + itsNewMapping.srcpath() + " or " + itsNewMapping.cmakepath() + " -- IGNORED");
+    }
+    else reportError("Cannot compile " + fpath.string() + " -- IGNORED");
+  }
 }
 
 // ##############################################################################################################
@@ -2660,7 +2683,37 @@ void jevois::GUIhelper::compileModule()
   ImGui::Separator();
   std::string const modpath = itsNewMapping.path();
   std::string const buildpath = modpath + "/build";
-  
+
+  // Write a small script to allow users to recompile by hand in case of a bad crashing module:
+  try
+  {
+    std::filesystem::path sp(modpath + "/rebuild.sh");
+    
+    std::ofstream ofs(sp);
+    if (ofs.is_open() == false)
+      reportError("Cannot write " + sp.string() + " -- check that you are running as root.");
+    else
+    {
+      // Keep this in sync with the commands run below:
+      ofs << "#!/bin/sh" << std::endl << "set -e" << std::endl;
+      ofs << "cmake -S " << modpath << " -B " << buildpath << " -DJEVOIS_HARDWARE=PRO"
+#ifdef JEVOIS_PLATFORM
+          << " -DJEVOIS_PLATFORM=ON -DJEVOIS_NATIVE=ON"
+#endif
+          << std::endl;
+      ofs << "JEVOIS_SRC_ROOT=none cmake --build " << buildpath << std::endl;
+      ofs << "cmake --install " << buildpath << std::endl;
+      ofs << "cd " << buildpath << " && cpack && mkdir -p /jevoispro/debs && /bin/mv *.deb /jevoispro/debs/"<<std::endl;
+      ofs.close();
+
+      // Set the file as executable:
+      using std::filesystem::perms;
+      std::filesystem::permissions(sp, perms::owner_all | perms::group_read | perms::group_exec |
+                                   perms::others_read | perms::others_exec);
+    }
+  } catch (...) { }
+    
+      
   try
   {
     switch (itsCompileState)

@@ -515,13 +515,17 @@ void jevois::Component::setPath(std::string const & path)
 }
 
 // ######################################################################
-void jevois::Component::removeDynamicParameter(std::string const & name)
+void jevois::Component::removeDynamicParameter(std::string const & name, bool throw_if_not_found)
 {
   std::lock_guard<std::mutex> _(itsDynParMtx);
 
   auto itr = itsDynParams.find(name);
-  if (itr == itsDynParams.end()) LFATAL("No dynamic parameter with name [" << name << ']');
-
+  if (itr == itsDynParams.end())
+  {
+    if (throw_if_not_found) LFATAL("No dynamic parameter with name [" << name << ']');
+    return;
+  }
+  
   // Upon erase, DynamicParameter destructor will remove the param from the registry:
   itsDynParams.erase(itr);
 }

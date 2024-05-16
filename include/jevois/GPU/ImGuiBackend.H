@@ -39,6 +39,9 @@ namespace jevois
       //! Virtual destructor for safe inheritance, free resources
       virtual ~ImGuiBackend();
 
+      //! Avoid warning about overloaded virtual
+      using VideoDisplayBackend::init;
+    
       //! Initialize the underlying engine that will process events, create windows, etc
       /*! The init starts with the given initial window/framebuffer size. */
       virtual void init(unsigned short w, unsigned short h, bool fullscreen = false, float scale = 1.0f,

@@ -24,6 +24,17 @@ set(JEVOIS_HARDWARE A33 CACHE STRING "JeVois hardware platform type (A33 or PRO)
 set_property(CACHE JEVOIS_HARDWARE PROPERTY STRINGS A33 PRO)
 message(STATUS "JEVOIS_HARDWARE: ${JEVOIS_HARDWARE}")
 
+####################################################################################################
+# Helper to transform a list of libraries into versioned linker flags, used when a package contains
+# somelib.so.4.9.0 but is missing the somelib.so link. Included here because JeVoisPro.cmake needs it.
+# First arg is raw name of a list, second is version value, third is name of destination variable.
+# Keep it sync with the definition in JeVois.cmake
+macro(jevois_versioned_libs libs ver retvar)
+  list(TRANSFORM ${libs} APPEND ${ver})
+  list(TRANSFORM ${libs} PREPEND "-l:lib")
+  string(REPLACE ";" " " ${retvar} "${${libs}}")
+endmacro()
+
 ########################################################################################################################
 if (JEVOIS_HARDWARE STREQUAL "A33")
   set(JEVOIS_A33 ON)

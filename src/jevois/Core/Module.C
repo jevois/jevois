@@ -292,7 +292,7 @@ void jevois::StdModule::sendSerialContour2D(unsigned int camw, unsigned int camh
   {
     // Compute center of gravity:
     float cx = 0.0F, cy = 0.0F;
-    for (cv::Point const & p : points) { cx += p.x; cy += p.y; }
+    for (cv::Point2f const p : points) { cx += p.x; cy += p.y; }
     if (points.size()) { cx /= points.size(); cy /= points.size(); }
     sendSerialImg2D(camw, camh, cx, cy, 0.0F, 0.0F, id, extra);
   }
@@ -353,7 +353,7 @@ void jevois::StdModule::sendSerialContour2D(unsigned int camw, unsigned int camh
     if (id.empty()) oss << "unknown "; else oss << jevois::replaceWhitespace(id) << ' ';
     oss << points.size(); // number of vertices
 
-    for (cv::Point const & p : points)
+    for (cv::Point2f const p : points)
     {
       float x = p.x, y = p.y;
       jevois::coords::imgToStd(x, y, camw, camh, eps);

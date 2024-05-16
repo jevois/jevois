@@ -16,17 +16,19 @@
 
 ########################################################################################################################
 # Python version to use for python modules, on host:
-if (EXISTS "/usr/lib/x86_64-linux-gnu/libboost_python310.so")
-  # Ubuntu 22.04 jammy
-  set(JEVOIS_COMPILER_VERSION 10)
+if (EXISTS "/usr/lib/x86_64-linux-gnu/libboost_python312.so")
+  # Ubuntu 24.04 noble
+  set(JEVOIS_COMPILER_VERSION 14)
+  set(JEVOIS_HOST_CXX_STD "c++26")
   set(JEVOIS_HOST_PYTHON_MAJOR 3)
-  set(JEVOIS_HOST_PYTHON_MINOR 10)
+  set(JEVOIS_HOST_PYTHON_MINOR 12)
   set(JEVOIS_HOST_PYTHON_M "")
-  set(JEVOIS_HOST_BOOST_PYTHON "boost_python310")
+  set(JEVOIS_HOST_BOOST_PYTHON "boost_python312")
   set(TURBOJPEG_PKG "libjpeg-turbo8-dev, libturbojpeg-dev")
 elseif (EXISTS "/usr/lib/x86_64-linux-gnu/libboost_python38.so")
   # Ubuntu 20.04 focal
   set(JEVOIS_COMPILER_VERSION 10)
+  set(JEVOIS_HOST_CXX_STD "c++20")
   set(JEVOIS_HOST_PYTHON_MAJOR 3)
   set(JEVOIS_HOST_PYTHON_MINOR 8)
   set(JEVOIS_HOST_PYTHON_M "")
@@ -35,6 +37,7 @@ elseif (EXISTS "/usr/lib/x86_64-linux-gnu/libboost_python38.so")
 elseif (EXISTS "/usr/lib/x86_64-linux-gnu/libboost_python3-py37.so")
   # Ubuntu 18.04 bionic
   set(JEVOIS_COMPILER_VERSION 7)
+  set(JEVOIS_HOST_CXX_STD "c++17")
   set(JEVOIS_HOST_PYTHON_MAJOR 3)
   set(JEVOIS_HOST_PYTHON_MINOR 7)
   set(JEVOIS_HOST_PYTHON_M "m")
@@ -43,14 +46,6 @@ elseif (EXISTS "/usr/lib/x86_64-linux-gnu/libboost_python3-py37.so")
 else()
   message(FATAL_ERROR "Cannot find libboost-python, please apt install libboost-all-dev")
 endif()
-
-########################################################################################################################
-# Python version installed on platform, fixed for now but may change later:
-set(JEVOIS_PLATFORM_PYTHON_MAJOR 3)
-set(JEVOIS_PLATFORM_PYTHON_MINOR 8)
-set(JEVOIS_PLATFORM_PYTHON_M "")
-
-set(JEVOIS_PLATFORM_BOOST_PYTHON "boost_python${JEVOIS_PLATFORM_PYTHON_MAJOR}${JEVOIS_PLATFORM_PYTHON_MINOR}")
 
 ########################################################################################################################
 # Compiler flags optimized for platform:
@@ -68,6 +63,24 @@ message(STATUS "JeVoisPro SDK root: ${JEVOISPRO_SDK_ROOT}")
 set(JEVOIS_BUILD_BASE "${JEVOISPRO_SDK_ROOT}/jevoispro-sysroot")
 message(STATUS "JeVoisPro platform sysroot: ${JEVOIS_BUILD_BASE}")
 
+#######################################################################################################################
+# Python version installed on platform:
+if (EXISTS "${JEVOIS_BUILD_BASE}/usr/include/python3.12/Python.h")
+  # Ubuntu 24.04 noble
+  set(JEVOIS_PLATFORM_PYTHON_MAJOR 3)
+  set(JEVOIS_PLATFORM_PYTHON_MINOR 12)
+  set(JEVOIS_PLATFORM_PYTHON_M "")
+elseif (EXISTS "${JEVOIS_BUILD_BASE}/usr/include/python3.8/Python.h")
+  # Ubuntu 20.04 focal
+  set(JEVOIS_PLATFORM_PYTHON_MAJOR 3)
+  set(JEVOIS_PLATFORM_PYTHON_MINOR 8)
+  set(JEVOIS_PLATFORM_PYTHON_M "")
+else()
+  message(FATAL_ERROR "Cannot find Python.h for platform, please install jevoispro-sdk")
+endif()
+
+set(JEVOIS_PLATFORM_BOOST_PYTHON "boost_python${JEVOIS_PLATFORM_PYTHON_MAJOR}${JEVOIS_PLATFORM_PYTHON_MINOR}")
+
 ########################################################################################################################
 # Setup compilers to use on host:
 set(JEVOIS_HOST_C_COMPILER "gcc-${JEVOIS_COMPILER_VERSION}")
@@ -83,24 +96,30 @@ set(JEVOIS_PLATFORM_FORTRAN_COMPILER "${CROSS_COMPILE}gfortran-${JEVOIS_COMPILER
 
 ########################################################################################################################
 # OpenCV and other libraries on host and platform:
+# Note: with 4.9.0 compiled for platform, we are missing the plain .so links somehow... They were created on compile
+# but included by our checkinstall...
+#set(OPENCV_LIBS_FOR_JEVOIS "-lopencv_core -lopencv_imgproc -lopencv_features2d -lopencv_flann -lopencv_ml \
+#-lopencv_objdetect -lopencv_imgcodecs -lopencv_tracking -lopencv_video -lopencv_videoio -lopencv_dnn_objdetect \
+#-lopencv_dnn -lopencv_highgui")
 
-set(OPENCV_LIBS_FOR_JEVOIS "-lopencv_core -lopencv_imgproc -lopencv_features2d -lopencv_flann -lopencv_ml \
--lopencv_objdetect -lopencv_imgcodecs -lopencv_tracking -lopencv_video -lopencv_videoio -lopencv_dnn_objdetect \
--lopencv_dnn -lopencv_highgui")
+set(JVOCVLIBS opencv_core opencv_imgproc opencv_features2d opencv_flann opencv_ml
+  opencv_objdetect opencv_imgcodecs opencv_tracking opencv_video opencv_videoio opencv_dnn_objdetect
+  opencv_dnn opencv_highgui)
+jevois_versioned_libs(JVOCVLIBS ".so.${JEVOIS_OPENCV_VERSION}" OPENCV_LIBS_FOR_JEVOIS)
+#message(STATUS "OpenCV libs: ${OPENCV_LIBS_FOR_JEVOIS}")
 
 # openvino libs for platform. NOTE: the package is missing some symlinks, so get the exact lib files:
-# from /usr/share/jevoispro-sdk/jevoispro-sysroot/usr/share/jevoispro-openvino-2022.3/runtime/lib/aarch64/
-set(JEVOIS_PLATFORM_OPENVINO_LIBS "-lopenvino_auto_batch_plugin -l:libopenvino_c.so.2231 \
--lopenvino_intel_myriad_plugin -l:libopenvino_onnx_frontend.so.2231 -l:libopenvino_paddle_frontend.so.2231 \
--l:libopenvino_tensorflow_frontend.so.2231 -lopenvino_auto_plugin -lopenvino_arm_cpu_plugin \
--lopenvino_gapi_preproc -l:libopenvino_ir_frontend.so.2231 -l:libopenvino.so.2231 -lopenvino_hetero_plugin")
+# from /usr/share/jevoispro-sdk/jevoispro-sysroot/usr/share/jevoispro-openvino-2022.3.2/runtime/lib/aarch64/
+set(JEVOIS_PLATFORM_OPENVINO_LIBS "-lopenvino_auto_batch_plugin -l:libopenvino_c.so.2232 \
+-lopenvino_intel_myriad_plugin -l:libopenvino_onnx_frontend.so.2232 -l:libopenvino_paddle_frontend.so.2232 \
+-l:libopenvino_tensorflow_frontend.so.2232 -lopenvino_auto_plugin -lopenvino_arm_cpu_plugin \
+-lopenvino_gapi_preproc -l:libopenvino_ir_frontend.so.2232 -l:libopenvino.so.2232 -lopenvino_hetero_plugin")
 
-# openvino libs for host, from /usr/share/jevoispro-openvino-2022.3/runtime/lib/intel64/
-set(JEVOIS_HOST_OPENVINO_LIBS "-l:libopenvino.so.2231 -l:libopenvino_c.so.2231 -lopenvino_auto_plugin \
--l:libopenvino_onnx_frontend.so.2231 -lopenvino_intel_gna_plugin -lopenvino_intel_cpu_plugin \
--l:libopenvino_paddle_frontend.so.2231 -lopenvino_hetero_plugin -lopenvino_intel_gpu_plugin \
--lopenvino_intel_myriad_plugin -l:libopenvino_tensorflow_frontend.so.2231 -lopenvino_gapi_preproc \
--lopenvino_auto_batch_plugin -l:libopenvino_ir_frontend.so.2231")
+# openvino libs for host, from /usr/share/jevoispro-openvino-2022.3.2/runtime/lib/intel64/
+set(JEVOIS_HOST_OPENVINO_LIBS "-lopenvino_auto_batch_plugin -lopenvino_auto_plugin -lopenvino_c \
+-lopenvino_gapi_preproc -lopenvino_hetero_plugin -lopenvino_intel_cpu_plugin -lopenvino_intel_gna_plugin \
+-lopenvino_intel_gpu_plugin -lopenvino_intel_myriad_plugin -lopenvino_onnx_frontend -lopenvino_paddle_frontend \
+-lopenvino -lopenvino_tensorflow_frontend -l:libgna.so.3 -l:libopenvino_ir_frontend.so.2232")
 
 # Ok, set the libs and paths for opencv and openvino:
 set(JEVOIS_PLATFORM_OPENCV_PREFIX "${JEVOIS_BUILD_BASE}/usr/share/${JEVOIS}-opencv-${JEVOIS_OPENCV_VERSION}")
@@ -139,11 +158,16 @@ set(JEVOIS_PLATFORM_TBB_INCLUDE "")
 
 # Find python 3.x on host and platform:
 set(JEVOIS_PLATFORM_PYTHON_INCLUDE
-  "-I${JEVOIS_BUILD_BASE}/usr/include/python${JEVOIS_PLATFORM_PYTHON_MAJOR}.${JEVOIS_PLATFORM_PYTHON_MINOR}${JEVOIS_PLATFORM_PYTHON_M} -I${JEVOIS_BUILD_BASE}/usr/local/lib/python${JEVOIS_PLATFORM_PYTHON_MAJOR}.${JEVOIS_PLATFORM_PYTHON_MINOR}${JEVOIS_PLATFORM_PYTHON_M}/dist-packages/numpy/core/include/")
+  "-I${JEVOIS_BUILD_BASE}/usr/include/python${JEVOIS_PLATFORM_PYTHON_MAJOR}.${JEVOIS_PLATFORM_PYTHON_MINOR}${JEVOIS_PLATFORM_PYTHON_M} \
+  -I${JEVOIS_BUILD_BASE}/usr/local/lib/python${JEVOIS_PLATFORM_PYTHON_MAJOR}.${JEVOIS_PLATFORM_PYTHON_MINOR}${JEVOIS_PLATFORM_PYTHON_M}/dist-packages/numpy/core/include/ \
+  -I${JEVOIS_BUILD_BASE}/usr/lib/python${JEVOIS_PLATFORM_PYTHON_MAJOR}/dist-packages/numpy/core/include/")
+
 set(JEVOIS_PLATFORM_PYTHON_LIBS "-lpython${JEVOIS_PLATFORM_PYTHON_MAJOR}.${JEVOIS_PLATFORM_PYTHON_MINOR}${JEVOIS_PLATFORM_PYTHON_M} -l${JEVOIS_PLATFORM_BOOST_PYTHON}")
 
 set(JEVOIS_HOST_PYTHON_INCLUDE
-  "-I/usr/include/python${JEVOIS_HOST_PYTHON_MAJOR}.${JEVOIS_HOST_PYTHON_MINOR}${JEVOIS_HOST_PYTHON_M}")
+  "-I/usr/include/python${JEVOIS_HOST_PYTHON_MAJOR}.${JEVOIS_HOST_PYTHON_MINOR}${JEVOIS_HOST_PYTHON_M} \
+   -I/usr/lib/python${JEVOIS_PLATFORM_PYTHON_MAJOR}/dist-packages/numpy/core/include/")
+
 set(JEVOIS_HOST_PYTHON_LIBS "-lpython${JEVOIS_HOST_PYTHON_MAJOR}.${JEVOIS_HOST_PYTHON_MINOR}${JEVOIS_HOST_PYTHON_M} -l${JEVOIS_HOST_BOOST_PYTHON}")
 
 # We link against OpenGL on JeVois-Pro:

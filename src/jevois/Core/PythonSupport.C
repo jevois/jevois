@@ -78,9 +78,19 @@ namespace
   void * init_numpy()
   {
     // Initialize Python:
+#if JEVOIS_PYTHON_MAJOR == 3 && JEVOIS_PYTHON_MINOR >= 10
+    PyConfig config; PyConfig_InitPythonConfig(&config);
+
+    PyStatus status = PyConfig_SetString(&config, &config.program_name, Py_DecodeLocale("", nullptr));
+    if (PyStatus_Exception(status)) { PyConfig_Clear(&config); LFATAL("Could not initialize Python"); }
+
+    status = Py_InitializeFromConfig(&config);
+    if (PyStatus_Exception(status)) { PyConfig_Clear(&config); LFATAL("Could not initialize Python"); }
+#else
     Py_SetProgramName(Py_DecodeLocale("", nullptr)); // black magic
     Py_Initialize();
-
+#endif
+    
     // Initialize numpy array. Use the signal handler hack to prevent numpy from grabbing CTRL-C from
     // https://stackoverflow.com/questions/28750774/
     //         python-import-array-makes-it-impossible-to-kill-embedded-python-with-ctrl-c

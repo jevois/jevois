@@ -163,6 +163,9 @@ namespace jevois
             follows in your constructor or postInit() or parameter callback:
 
             \code
+            // Select custom pre-processor mode. Will nuke previous preproc and not instantiate a new one:
+            itsPipeline->preproc::set(jevois::dnn::pipeline::PreProc::Custom);
+
             // Create an instance of our custom pre-processor and attach it as a sub-component of our pipeline
             auto sptr = itsPipeline->addSubComponent<MyCustomPreProc>("preproc");
             itsPipeline->setCustomPreProcessor(std::static_pointer_cast<jevois::dnn::PreProcessor>(sptr));
@@ -187,10 +190,6 @@ namespace jevois
         std::shared_ptr<PostProcessor> itsPostProcessor;
         void reloadZoo(std::string const & root, std::string const & filt, std::string const & zoofile);
         
-      private:
-        jevois::TimerOne itsTpre, itsTnet, itsTpost;
-
-        bool itsZooChanged = false;
         void onParamChange(pipeline::zooroot const & param, std::string const & val) override;
         void onParamChange(pipeline::zoo const & param, std::string const & val) override;
         void onParamChange(pipeline::filter const & param, pipeline::Filter const & val) override;
@@ -200,6 +199,14 @@ namespace jevois
         void onParamChange(pipeline::postproc const & param, pipeline::PostProc const & val) override;
         void onParamChange(pipeline::benchmark const & param, bool const & val) override;
 
+        void showInfo(std::vector<std::string> const & info, jevois::StdModule * mod,
+                      jevois::RawImage * outimg, jevois::OptGUIhelper * helper, bool ovl, bool idle);
+        void asyncNetWait();
+        bool checkAsyncNetComplete();
+
+      private:
+        jevois::TimerOne itsTpre, itsTnet, itsTpost;
+        bool itsZooChanged = false;
         std::future<std::vector<cv::Mat>> itsNetFut;
         std::array<std::string, 3> itsProcTimes { "PreProc: -", "Network: -", "PstProc: -" };
         std::array<double, 3> itsProcSecs { 0.0, 0.0, 0.0 };
@@ -208,10 +215,6 @@ namespace jevois
         std::vector<std::string> itsNetInfo, itsAsyncNetInfo;
         std::string itsAsyncNetworkTime = "Network: -";
         double itsAsyncNetworkSecs = 0.0;
-        void showInfo(std::vector<std::string> const & info, jevois::StdModule * mod,
-                      jevois::RawImage * outimg, jevois::OptGUIhelper * helper, bool ovl, bool idle);
-        void asyncNetWait();
-        bool checkAsyncNetComplete();
         double itsSecsSum = 0.0, itsSecsAvg = 0.0;
         int itsSecsSumNum = 0;
         bool itsPipeThrew = false;

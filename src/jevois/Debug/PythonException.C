@@ -85,8 +85,13 @@ namespace
   {
     traceback_step entry = {
       pytb->tb_lineno,
+#if JEVOIS_PYTHON_MAJOR == 3 && JEVOIS_PYTHON_MINOR >= 10
+      python_string_as_std_string(PyFrame_GetCode(pytb->tb_frame)->co_filename),
+      python_string_as_std_string(PyFrame_GetCode(pytb->tb_frame)->co_name)
+#else
       python_string_as_std_string(pytb->tb_frame->f_code->co_filename),
       python_string_as_std_string(pytb->tb_frame->f_code->co_name)
+#endif
     };
     output.push_back(entry);
   }

@@ -1137,7 +1137,7 @@ int jevois::Engine::mainLoop()
         
 #ifdef JEVOIS_PRO
         // Reset the GUI to clear various texture caches and such:
-        if (itsGUIhelper) itsGUIhelper->reset( (rf != -1) );
+        if (itsGUIhelper) itsGUIhelper->resetstate( (rf != -1) );
 #endif
 
         // Restart camera and gadget if we stopped them:

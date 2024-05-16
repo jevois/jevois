@@ -100,5 +100,20 @@ CMakeLists.txt:
 
 \jvimg{newmodule16.jpg, 60%}
 
+Step 6: Dealing hard crashes
+============================
+
+If you modify a module in such a way that it hard crashes the whole JeVois framework (e.g., segmentation fault by
+accessing memory past the end of an array), then you will not be able to load and run that module anymore, which means
+that you cannot easily change its source code anymore.
+
+The way to handle this is as follows: load any other working module. Then in the Code editor, select "Browse / Create
+file..." at the end of the standard files. Then navigate to the C++ source code of your file, for example
+/jevoispro/modules/Testing/MyX.C and open that file.
+
+Fix the code and save. This will recompile the module. Because the source file was selected manually, we do not know
+which videomapping (camera resolution, etc) you want to run on that code. Hence, after compiling, it will fail to load
+with an internal error. That is ok, just ignore the error, and from the pull-down list of available modules you can now
+manually select your module.
 
 */

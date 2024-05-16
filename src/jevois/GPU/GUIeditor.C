@@ -493,6 +493,10 @@ void jevois::GUIeditor::loadFileInternal(std::filesystem::path const & fpath, st
 }
 
 // ##############################################################################################################
+std::filesystem::path const & jevois::GUIeditor::getLoadedFilePath() const
+{ return itsFilename; }
+
+// ##############################################################################################################
 void jevois::GUIeditor::saveFile()
 {
   LINFO("Saving " << itsFilename << " ...");

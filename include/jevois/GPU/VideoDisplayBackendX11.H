@@ -20,6 +20,7 @@
 #ifdef JEVOIS_HOST_PRO
 
 #include <jevois/GPU/VideoDisplayBackend.H>
+#include <memory>
 
 namespace jevois
 {
@@ -47,9 +48,9 @@ namespace jevois
       virtual bool pollEvents(bool & shouldclose) override;
 
     protected:
-      // On host, use an X11 window:
-      Display *itsX11display = nullptr;
-      Window itsWindow = 0;
+      // pimpl the implementation so that we do not need to pull X11 headers here as they conflict with our code:
+      class Impl;
+      std::unique_ptr<Impl> pimpl;
   };
 
 } // namespace jevois

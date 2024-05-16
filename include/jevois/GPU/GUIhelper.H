@@ -296,7 +296,7 @@ namespace jevois
 
       //! Reset to default state, typically called on Module or video format change
       /*! Free images, reset matrices, etc. */
-      void reset(bool modulechanged = true);
+      void resetstate(bool modulechanged = true);
 
       //! Report an error in an overlay window
       void reportError(std::string const & err);

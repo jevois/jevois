@@ -36,10 +36,18 @@
 #include <X11/Xatom.h>
 #include <X11/Xutil.h>
 #include <X11/extensions/dpms.h>
+// ##############################################################################################################
+class jevois::VideoDisplayBackendX11::Impl
+{
+  public:
+    // On host, use an X11 window:
+    Display *itsX11display = nullptr;
+    Window itsWindow = 0;
+};
 
 // ##############################################################################################################
 jevois::VideoDisplayBackendX11::VideoDisplayBackendX11() :
-    jevois::VideoDisplayBackend()
+    jevois::VideoDisplayBackend(), pimpl(new Impl)
 { }
 
 // ##############################################################################################################
@@ -53,11 +61,11 @@ jevois::VideoDisplayBackendX11::~VideoDisplayBackendX11()
 void jevois::VideoDisplayBackendX11::init(unsigned short w, unsigned short h, bool fullscreen)
 {
   // Open the default display:
-  itsX11display = XOpenDisplay(NULL);
-  if (itsX11display == nullptr) LFATAL("Cannot open X11 display");
+  pimpl->itsX11display = XOpenDisplay(NULL);
+  if (pimpl->itsX11display == nullptr) LFATAL("Cannot open X11 display");
   
   // Access to the top level window:
-  Window win_root = DefaultRootWindow(itsX11display);
+  Window win_root = DefaultRootWindow(pimpl->itsX11display);
 
   // Allow the window manager to control the window that will be created:
   XSetWindowAttributes xattr { };
@@ -67,57 +75,57 @@ void jevois::VideoDisplayBackendX11::init(unsigned short w, unsigned short h, bo
   xattr.event_mask = ExposureMask | KeyPressMask;
   
   // Set the background to white, making it clear when X has the window cleared:
-  xattr.background_pixel = XWhitePixel(itsX11display, XDefaultScreen(itsX11display));
+  xattr.background_pixel = XWhitePixel(pimpl->itsX11display, XDefaultScreen(pimpl->itsX11display));
   
   // create the native window based on the attributes selected an resolution passed in.
-  itsWindow = XCreateWindow(itsX11display, win_root, 0, 0, w, h, 0,
-                            CopyFromParent, InputOutput, CopyFromParent,
-                            CWOverrideRedirect | CWEventMask | CWBackPixel, &xattr);
+  pimpl->itsWindow = XCreateWindow(pimpl->itsX11display, win_root, 0, 0, w, h, 0,
+                                   CopyFromParent, InputOutput, CopyFromParent,
+                                   CWOverrideRedirect | CWEventMask | CWBackPixel, &xattr);
 
   // Set the window properties:
-  XSetStandardProperties(itsX11display, itsWindow, itsName.c_str(), itsName.c_str(), None, NULL, 0, NULL);
+  XSetStandardProperties(pimpl->itsX11display, pimpl->itsWindow, itsName.c_str(), itsName.c_str(), None, NULL, 0, NULL);
 
   // Disable the display power management to turn keep the display on:
-  DPMSDisable(itsX11display);
+  DPMSDisable(pimpl->itsX11display);
 
   // Set the window to the background pixel and display it to the front:
-  XClearWindow(itsX11display, itsWindow);
-  XMapRaised (itsX11display, itsWindow);
+  XClearWindow(pimpl->itsX11display, pimpl->itsWindow);
+  XMapRaised (pimpl->itsX11display, pimpl->itsWindow);
   
   // Optionally request that the window becomes full screen and borderless. It will take some time for the display to
   // acknowledge the event. An Expose event will occur when this is completed:
   if (fullscreen)
   {
-    Atom wm_state = XInternAtom(itsX11display, "_NET_WM_STATE", false);
-    Atom fs = XInternAtom(itsX11display, "_NET_WM_STATE_FULLSCREEN", false);
+    Atom wm_state = XInternAtom(pimpl->itsX11display, "_NET_WM_STATE", false);
+    Atom fs = XInternAtom(pimpl->itsX11display, "_NET_WM_STATE_FULLSCREEN", false);
     
     XEvent fs_event { };
     fs_event.type = ClientMessage;
-    fs_event.xclient.window = itsWindow;
+    fs_event.xclient.window = pimpl->itsWindow;
     fs_event.xclient.message_type = wm_state;
     fs_event.xclient.format = 32;
     fs_event.xclient.data.l[0] = 1;
     fs_event.xclient.data.l[1] = fs;
     fs_event.xclient.data.l[2] = 0;
     
-    XSendEvent(itsX11display, win_root, false, SubstructureRedirectMask | SubstructureNotifyMask, &fs_event);
+    XSendEvent(pimpl->itsX11display, win_root, false, SubstructureRedirectMask | SubstructureNotifyMask, &fs_event);
   }
 
   // Initialize OpenGL. Will turn itsDisplayReady to true:
-  jevois::VideoDisplayBackend::init(w, h, (EGLNativeWindowType)(itsWindow));
+  jevois::VideoDisplayBackend::init(w, h, (EGLNativeWindowType)(pimpl->itsWindow));
 }
 
 // ##############################################################################################################
 void jevois::VideoDisplayBackendX11::uninit()
 {
-  if (itsX11display)
+  if (pimpl->itsX11display)
   {
     // Turn display power management back on:
-    DPMSEnable(itsX11display);
+    DPMSEnable(pimpl->itsX11display);
     
     // Close the application window and release display handle::
-    if (itsWindow) { XDestroyWindow(itsX11display, itsWindow); itsWindow = 0; }
-    XCloseDisplay(itsX11display); itsX11display = nullptr;
+    if (pimpl->itsWindow) { XDestroyWindow(pimpl->itsX11display, pimpl->itsWindow); pimpl->itsWindow = 0; }
+    XCloseDisplay(pimpl->itsX11display); pimpl->itsX11display = nullptr;
   }
 
   // ALso close OpenGL using our base class:
@@ -131,11 +139,11 @@ bool jevois::VideoDisplayBackendX11::pollEvents(bool & shouldclose)
   bool gotsome = false;
   
   // Process events, one at a time, until there are none remaining:
-  while (XPending(itsX11display))
+  while (XPending(pimpl->itsX11display))
   {
     gotsome = true;
     
-    XNextEvent(itsX11display, &event);
+    XNextEvent(pimpl->itsX11display, &event);
     switch (event.type)
     {
     case Expose:

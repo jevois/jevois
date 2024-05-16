@@ -15,7 +15,7 @@
 ######################################################################################################################
 
 # CMAKE BUILD RULES FOR JEVOIS CORE LIBRARY AND EXECUTABLES
-CMAKE_MINIMUM_REQUIRED(VERSION 3.1)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.6)
 
 ########################################################################################################################
 # Set vendor names, our modules will be placed in a directory by that name under /jevois/modules:
@@ -24,18 +24,18 @@ set(JEVOIS_VENDOR "JeVois")
 ########################################################################################################################
 # Project version:
 set(JEVOIS_VERSION_MAJOR  1)
-set(JEVOIS_VERSION_MINOR  20)
+set(JEVOIS_VERSION_MINOR  21)
 set(JEVOIS_VERSION_PATCH  0)
 set(JEVOIS_SOVERSION "${JEVOIS_VERSION_MAJOR}.${JEVOIS_VERSION_MINOR}.${JEVOIS_VERSION_PATCH}" )
 
 ########################################################################################################################
 # OpenCV version to use with JeVois:
 set(JEVOIS_OPENCV_MAJOR 4)
-set(JEVOIS_OPENCV_MINOR 8)
+set(JEVOIS_OPENCV_MINOR 9)
 set(JEVOIS_OPENCV_PATCH 0)
 set(JEVOIS_OPENCV_VERSION "${JEVOIS_OPENCV_MAJOR}.${JEVOIS_OPENCV_MINOR}.${JEVOIS_OPENCV_PATCH}")
 
-set(JEVOIS_OPENVINO_VERSION "2022.3")
+set(JEVOIS_OPENVINO_VERSION "2022.3.2")
 set(JEVOIS_ONNX_VERSION "1.15.1")
 
 message(STATUS "JeVois OpenCV: ${JEVOIS_OPENCV_VERSION}")
@@ -102,15 +102,18 @@ file(TO_NATIVE_PATH "/var/lib/${JEVOIS}-build-pdeb" JEVOIS_PLATFORM_MODULES_ROOT
 
 ########################################################################################################################
 # Set compiler flags:
-set(JEVOIS_WARN_FLAGS "-W -Wall -Wextra -Wundef -Wwrite-strings -Wlogical-op -Wredundant-decls")
-# too strict, trips opencv, tensorflow, etc:
+set(JEVOIS_WARN_C_FLAGS "-W -Wall -Wextra -Wundef -Wwrite-strings -Wlogical-op -Wredundant-decls")
+set(JEVOIS_WARN_CPP_FLAGS "${JEVOIS_WARN_C_FLAGS} -Wno-deprecated-enum-enum-conversion")
+# Other available warn flags are too strict, they trip opencv, tensorflow, etc:
 # -Wcast-align -Wfloat-equal -Wshadow -Wmissing-declarations -Woverloaded-virtual
 
-set(JEVOIS_HOST_CFLAGS "${JEVOIS_HOST_ARCH_FLAGS} ${JEVOIS_WARN_FLAGS} -g -O4 \
--I${JEVOIS_SRC_ROOT}/jevois/include ${JEVOIS_HOST_INCLUDE} -fPIC") # -Wno-deprecated-declarations")
-set(JEVOIS_PLATFORM_CFLAGS "${JEVOIS_PLATFORM_ARCH_FLAGS} ${JEVOIS_WARN_FLAGS} -g -O4 \
+set(JEVOIS_HOST_CFLAGS "${JEVOIS_HOST_ARCH_FLAGS} -g -O4 \
+-I${JEVOIS_SRC_ROOT}/jevois/include ${JEVOIS_HOST_INCLUDE} -fPIC")
+
+set(JEVOIS_PLATFORM_CFLAGS "${JEVOIS_PLATFORM_ARCH_FLAGS} -g -O4 \
 -I${JEVOIS_SRC_ROOT}/jevois/include ${JEVOIS_PLATFORM_INCLUDE} -fPIC -Wno-psabi")
-set(JEVOIS_PLATFORM_NATIVE_CFLAGS "${JEVOIS_PLATFORM_ARCH_FLAGS} ${JEVOIS_WARN_FLAGS} -g -O4 \
+
+set(JEVOIS_PLATFORM_NATIVE_CFLAGS "${JEVOIS_PLATFORM_ARCH_FLAGS} -g -O4 \
 -I${JEVOIS_SRC_ROOT}/jevois/include ${JEVOIS_HOST_INCLUDE} -fPIC -Wno-psabi")
 
 ########################################################################################################################
@@ -143,12 +146,8 @@ configure_file(src/pyjevois.py.in pyjevois.py @ONLY)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/pyjevois.py DESTINATION "${JEVOIS_MODULES_ROOT}/config" COMPONENT bin)
 
 # Pass the compiler flags to cmake (doing this before project() gives problems with wrong compiler detection):
-set(CMAKE_C_FLAGS "-std=gnu99 ${JEVOIS_CFLAGS} -include Config-${JEVOIS}.H")
-if (JEVOIS_PRO)
-  set(CMAKE_CXX_FLAGS "-std=c++20 ${JEVOIS_CFLAGS} -include Config-${JEVOIS}.H") # g++-10 supports c++-20
-else()
-  set(CMAKE_CXX_FLAGS "-std=c++2a ${JEVOIS_CFLAGS} -include Config-${JEVOIS}.H") # g++-8.3 supports c++-2a
-endif()
+set(CMAKE_C_FLAGS "-std=gnu99 ${JEVOIS_CFLAGS} ${JEVOIS_WARN_C_FLAGS} -include Config-${JEVOIS}.H")
+set(CMAKE_CXX_FLAGS "-std=${JEVOIS_HOST_CXX_STD} ${JEVOIS_CFLAGS} ${JEVOIS_WARN_CPP_FLAGS} -include Config-${JEVOIS}.H")
 
 # Enable address sanitizer (to debug illegal memory accesses and such; should normally be commented out):
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
@@ -322,15 +321,18 @@ if (JEVOIS_PRO)
   install(TARGETS ${JEVOIS}-restore-console RUNTIME DESTINATION bin COMPONENT bin)
 endif ()
 
-install(PROGRAMS "scripts/jevois-modinfo" DESTINATION bin COMPONENT bin)
+install(PROGRAMS "scripts/jevois-modinfo" DESTINATION bin COMPONENT bin
+   RENAME "${JEVOIS}-modinfo")
 
 if (JEVOIS_PLATFORM)
   # On platform only, install jevois[pro].sh from bin/ in the source tree into /usr/bin:
   install(PROGRAMS "bin/${JEVOIS}.sh" DESTINATION bin COMPONENT bin)
 else (JEVOIS_PLATFORM)
   # On host only, install helper scripts:
-  install(PROGRAMS "scripts/jevois-create-module" DESTINATION bin COMPONENT bin)
-  install(PROGRAMS "scripts/jevois-create-python-module" DESTINATION bin COMPONENT bin)
+  install(PROGRAMS "scripts/jevois-create-module" DESTINATION bin COMPONENT bin
+    RENAME "${JEVOIS}-create-module")
+  install(PROGRAMS "scripts/jevois-create-python-module" DESTINATION bin COMPONENT bin
+    RENAME "${JEVOIS}-create-python-module")
   if (NOT JEVOIS_PRO)
     install(PROGRAMS "scripts/jevois-jvpkg" DESTINATION bin COMPONENT bin)
     install(PROGRAMS "scripts/jevois-usbsd" DESTINATION bin COMPONENT bin)
@@ -427,8 +429,8 @@ libv4l-dev, libtbb2, libtbb-dev, libfaac-dev, libmp3lame-dev, libopencore-amrnb-
 libopencore-amrwb-dev, libtheora-dev, libvorbis-dev, libxvidcore-dev, x264, v4l-utils, unzip, qt5-default, \
 libgtk-3-dev, libatlas-base-dev, libturbojpeg, libtbb2, libsdl2-dev, \
 python${JEVOIS_HOST_PYTHON_MAJOR}.${JEVOIS_HOST_PYTHON_MINOR}-dev, python${JEVOIS_HOST_PYTHON_MAJOR}-numpy, \
-python${JEVOIS_HOST_PYTHON_MAJOR}-pip, python${JEVOIS_HOST_PYTHON_MAJOR}-pil, \
-${JEVOIS}-opencv (>=${JEVOIS_OPENCV_VERSION}), libglm-dev")
+python${JEVOIS_HOST_PYTHON_MAJOR}-pip, python${JEVOIS_HOST_PYTHON_MAJOR}-pil, python-dev-is-python3 \
+${JEVOIS}-opencv (>=${JEVOIS_OPENCV_VERSION}), libglm-dev, libx11-dev")
                                                                                   
 # Add cross-compiler dependencies on jevois-pro-host; on jevois-a33 it is provided by buildroot:
 if (JEVOIS_PRO)

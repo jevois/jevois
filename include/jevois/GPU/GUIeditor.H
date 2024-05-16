@@ -59,6 +59,9 @@ namespace jevois
       //! Load a file and set it as the current file
       void loadFile(std::filesystem::path const & fn);
 
+      //! Get path of file last loaded with loadFile(), may be empty
+      std::filesystem::path const & getLoadedFilePath() const;
+      
       //! Refresh list of files
       void refresh();
 

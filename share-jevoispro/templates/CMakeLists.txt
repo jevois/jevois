@@ -144,10 +144,13 @@ set(CPACK_DEB_COMPONENTS_ALL bin)
 set(CPACK_DEBIAN_PACKAGE_DEPENDS "${JEVOIS_DEPEND}")
 
 # Add the videomapping on install of the deb, and ldconfig:
-file(WRITE "${CMAKE_CURRENT_SOURCE_DIR}/postinst" "jevois-add-videomapping __VIDEOMAPPING__\nldconfig")
+file(WRITE "${CMAKE_CURRENT_SOURCE_DIR}/postinst" "jevoispro-add-videomapping __VIDEOMAPPING__\nldconfig")
 file(WRITE "${CMAKE_CURRENT_SOURCE_DIR}/prerm" " ")
 set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_CURRENT_SOURCE_DIR}/postinst;${CMAKE_CURRENT_SOURCE_DIR}/prerm;")
 
 # Use helper from JeVois.cmake for all other settings:
+if (JEVOIS_PLATFORM)
+  set(JEVOISPRO_PLATFORM_DEB ON)
+endif()
 jevois_setup_cpack(__PROJECT__)
 set(CPACK_PACKAGE_NAME "__PROJECT__-platform")

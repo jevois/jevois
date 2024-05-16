@@ -472,7 +472,7 @@ namespace jevois
                                        bool callnow = true);
 
       //! Remove a previously added dynamic parameter
-      void removeDynamicParameter(std::string const & name);
+      void removeDynamicParameter(std::string const & name, bool throw_if_not_found = true);
       
       //! @}
 

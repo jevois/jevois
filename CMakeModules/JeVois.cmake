@@ -60,7 +60,7 @@ if (JEVOIS_PLATFORM)
     message(STATUS "JEVOIS_MODULES_TO_LIVE: ${JEVOIS_MODULES_TO_LIVE}")
   endif()
   
-# Flags for native compilation on platform from the JeVois-Pro GUI (as opposed to cross-compilation):
+  # Flags for native compilation on platform from the JeVois-Pro GUI (as opposed to cross-compilation):
   if (JEVOIS_NATIVE)
     
     set(CMAKE_C_COMPILER ${JEVOIS_HOST_C_COMPILER})
@@ -272,7 +272,7 @@ macro(jevois_setup_modules basedir deps)
       
       # add a dependency and command to build modinfo.html:
       add_custom_command(OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/${basedir}/${JV_MODULE}/modinfo.html"
-	    COMMAND jevois-modinfo ${JV_MODULE}.C
+	    COMMAND ${JEVOIS}-modinfo ${JV_MODULE}.C
 	    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${basedir}/${JV_MODULE}/${JV_MODULE}.C
 	    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${basedir}/${JV_MODULE})
       
@@ -289,7 +289,7 @@ macro(jevois_setup_modules basedir deps)
       
       # Add a dependency and command to build modinfo.html:
       add_custom_command(OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/${basedir}/${JV_MODULE}/modinfo.html"
-	    COMMAND jevois-modinfo ${JV_MODULE}.py
+	    COMMAND ${JEVOIS}-modinfo ${JV_MODULE}.py
 	    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${basedir}/${JV_MODULE}/${JV_MODULE}.py
 	    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${basedir}/${JV_MODULE})
       
@@ -459,4 +459,15 @@ macro(jevois_compute_next_so_version module version_returned)
   endforeach ()
 
   MATH(EXPR ${version_returned} "${v}+1")
+endmacro()
+
+####################################################################################################
+# Helper to transform a list of libraries into versioned linker flags, used when a package contains
+# somelib.so.4.9.0 but is missing the somelib.so link.
+# First arg is raw name of a list, second is version value, third is name of destination variable.
+# Keep it sync with the definition in JeVoisHardware.cmake
+macro(jevois_versioned_libs libs ver retvar)
+  list(TRANSFORM ${libs} APPEND ${ver})
+  list(TRANSFORM ${libs} PREPEND "-l:lib")
+  string(REPLACE ";" " " ${retvar} "${${libs}}")
 endmacro()

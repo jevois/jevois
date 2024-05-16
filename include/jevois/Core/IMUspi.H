@@ -21,6 +21,7 @@
 
 #include <jevois/Core/IMU.H>
 #include <string>
+#include <cstdint>
 
 namespace jevois
 {

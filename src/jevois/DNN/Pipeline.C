@@ -545,9 +545,9 @@ void jevois::dnn::Pipeline::onParamChange(pipeline::preproc const & JEVOIS_UNUSE
 // ####################################################################################################
 void jevois::dnn::Pipeline::setCustomPreProcessor(std::shared_ptr<jevois::dnn::PreProcessor> pp)
 {
-  itsPreProcessor.reset(); removeSubComponent("preproc", false);
-  itsPreProcessor = pp;
   preproc::set(jevois::dnn::pipeline::PreProc::Custom);
+
+  itsPreProcessor = pp;
 
   if (itsPreProcessor) LINFO("Attached pre-processor of type " << itsPreProcessor->className());
   else LINFO("No pre-processor");
@@ -621,10 +621,9 @@ void jevois::dnn::Pipeline::onParamChange(pipeline::nettype const & JEVOIS_UNUSE
 // ####################################################################################################
 void jevois::dnn::Pipeline::setCustomNetwork(std::shared_ptr<jevois::dnn::Network> n)
 {
-  asyncNetWait(); // If currently processing async net, wait until done
-  itsNetwork.reset(); removeSubComponent("network", false);
-  itsNetwork = n;
   nettype::set(jevois::dnn::pipeline::NetType::Custom);
+
+  itsNetwork = n;
 
   if (itsNetwork) LINFO("Attached network of type " << itsNetwork->className());
   else LINFO("No network");
@@ -659,6 +658,7 @@ void jevois::dnn::Pipeline::onParamChange(pipeline::postproc const & JEVOIS_UNUS
     break;
   case jevois::dnn::pipeline::PostProc::Stub:
     itsPostProcessor = addSubComponent<jevois::dnn::PostProcessorStub>("postproc");
+    break;
   case jevois::dnn::pipeline::PostProc::Custom:
     // Nothing here, user must call setCustomPostProcessor() later
     break;
@@ -671,10 +671,9 @@ void jevois::dnn::Pipeline::onParamChange(pipeline::postproc const & JEVOIS_UNUS
 // ####################################################################################################
 void jevois::dnn::Pipeline::setCustomPostProcessor(std::shared_ptr<jevois::dnn::PostProcessor> pp)
 {
-  asyncNetWait(); // If currently processing async net, wait until done
-  itsPostProcessor.reset(); removeSubComponent("postproc", false);
-  itsPostProcessor = pp;
   postproc::set(jevois::dnn::pipeline::PostProc::Custom);
+
+  itsPostProcessor = pp;
 
   if (itsPostProcessor) LINFO("Attached post-processor of type " << itsPostProcessor->className());
   else LINFO("No post-processor");

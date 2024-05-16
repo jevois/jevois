@@ -92,6 +92,9 @@ namespace jevois
       //! Virtual destructor for safe inheritance, free resources
       virtual ~ImGuiBackendMALI();
 
+      //! Avoid masking virtual overloads
+      using VideoDisplayBackendMALI::init;
+    
       //! Initialize the underlying engine that will process events, create windows, etc
       /*! The init starts with the given initial window/framebuffer size. If conslock is true, we lock the console and
           the framebuffer; set to false when running in gdb for debugging, using gdb --args jevoispro-daemon

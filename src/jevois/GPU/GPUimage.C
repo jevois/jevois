@@ -72,25 +72,25 @@ void jevois::GPUimage::setInternal(unsigned int width, unsigned int height, unsi
     case V4L2_PIX_FMT_YUYV: // YUYV shader gets YUYV (2 pixels) from one RGBA texture value (1 texel)
       if (itsTwirl) frag_shader = jevois::shader::frag_yuyv_twirl;
       else frag_shader = jevois::shader::frag_yuyv;
-      itsGLtextureWidth = width / 2; itsGLtextureFmt = GL_RGBA;
+      itsGLtextureFmt = GL_RGBA;
       break;
 
     case V4L2_PIX_FMT_RGB32: // RGBA shader is simple pass-through
       if (itsTwirl) frag_shader = jevois::shader::frag_rgba_twirl;
       else frag_shader = jevois::shader::frag_rgba;
-      itsGLtextureWidth = width; itsGLtextureFmt = GL_RGBA;
+      itsGLtextureFmt = GL_RGBA;
       break;
 
     case V4L2_PIX_FMT_GREY: // GRAY shader just converts from greyscale to RGBA
       if (itsTwirl) frag_shader = jevois::shader::frag_grey_twirl;
       else frag_shader = jevois::shader::frag_grey;
-      itsGLtextureWidth = width; itsGLtextureFmt = GL_LUMINANCE;
+      itsGLtextureFmt = GL_LUMINANCE;
       break;
 
     case V4L2_PIX_FMT_RGB24: // RGB shader gets R,G,B from 3 successive texels in a 3x wide luminance texture
       if (itsTwirl) frag_shader = jevois::shader::frag_rgb_twirl;
       else frag_shader = jevois::shader::frag_rgb;
-      itsGLtextureWidth = width * 3; itsGLtextureFmt = GL_LUMINANCE;
+      itsGLtextureFmt = GL_LUMINANCE;
       break;
 
     case V4L2_PIX_FMT_BGR24:
@@ -116,9 +116,31 @@ void jevois::GPUimage::setInternal(unsigned int width, unsigned int height, unsi
   // Generate a texture for incoming image data if needed:
   if (width != itsTextureWidth || height != itsTextureHeight || fmt != itsFormat || !itsTexture)
   {
-    // Now create our texture:
+    // If the width has changed, we need to update itsGLtextureWidth:
+    if (width != itsTextureWidth)
+      switch (fmt)
+      {
+        // YUYV shader gets YUYV (2 pixels) from one RGBA texture value (1 texel)
+      case V4L2_PIX_FMT_YUYV: itsGLtextureWidth = width / 2; break;
+
+        // RGBA shader is simple pass-through
+      case V4L2_PIX_FMT_RGB32: itsGLtextureWidth = width; break;
+
+        // GRAY shader just converts from greyscale to RGBA
+      case V4L2_PIX_FMT_GREY: itsGLtextureWidth = width; break;
+
+        // RGB shader gets R,G,B from 3 successive texels in a 3x wide luminance texture
+      case V4L2_PIX_FMT_RGB24: itsGLtextureWidth = width * 3; break;
+
+      default: LFATAL("Unsupported pixel format " << jevois::fccstr(fmt));
+      }
+    
+    // Create the texture:
     itsTexture.reset(new jevois::GPUtexture(itsGLtextureWidth, height, itsGLtextureFmt, false));
     LDEBUG("Input texture for " << width << 'x' << height << ' ' << jevois::fccstr(fmt) << " ready.");
+
+    // Remember our latest size and format:
+    itsTextureWidth = width; itsTextureHeight = height; itsFormat = fmt;
   }
 
 #ifdef JEVOIS_PLATFORM_PRO
@@ -127,9 +149,6 @@ void jevois::GPUimage::setInternal(unsigned int width, unsigned int height, unsi
   
   // Assign pixel data to our texture:
   itsTexture->setPixels(data);
-
-  // Remember our latest size and format:
-  itsTextureWidth = width; itsTextureHeight = height; itsFormat = fmt;
 }
 
 // ##############################################################################################################
