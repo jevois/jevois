@@ -34,32 +34,9 @@ if (NOT DEFINED JEVOIS_VENDOR)
 endif (NOT DEFINED JEVOIS_VENDOR)
 message(STATUS "JEVOIS_VENDOR: ${JEVOIS_VENDOR}")
 
-# Mount point for the microSD exported by JeVois:
-set(JEVOIS_USER "$ENV{USER}" CACHE STRING "JeVois user name (before any sudo)")
-set(JEVOIS_USBSERIAL_DEV "/dev/ttyACM0" CACHE STRING "JeVois serial-over-USB device")
-string(TOUPPER "${JEVOIS}" JEVOIS_PART)
-set(JEVOIS_MICROSD_MOUNTPOINT "/media/${JEVOIS_USER}/${JEVOIS_PART}" CACHE STRING "Mountpoint for JeVois microSD card")
-
-if (NOT JEVOIS_PRO)
-  message(STATUS "JeVois microSD card mount point: ${JEVOIS_MICROSD_MOUNTPOINT}")
-  message(STATUS "JeVois serial-over-USB device: ${JEVOIS_USBSERIAL_DEV}")
-endif()
-
-# Settings for native host compilation or hardware platform compilation:
+# Settings for native host compilation, or cross-compilation for the platform hardware:
 if (JEVOIS_PLATFORM)
 
-  # On platform, install to jvpkg, staging area, or live microSD?
-  option(JEVOIS_MODULES_TO_STAGING "Install modules to ${JEVOIS_PLATFORM_INSTALL_PREFIX} as opposed to jvpkg" OFF)
-  option(JEVOIS_MODULES_TO_MICROSD "Install modules to ${JEVOIS_MICROSD_MOUNTPOINT} as opposed to jvpkg" OFF)
-  option(JEVOIS_MODULES_TO_LIVE
-    "Install modules to live JeVois camera at ${JEVOIS_MICROSD_MOUNTPOINT} as opposed to jvpkg" OFF)
-
-  if (NOT JEVOIS_PRO)
-    message(STATUS "JEVOIS_MODULES_TO_STAGING: ${JEVOIS_MODULES_TO_STAGING}")
-    message(STATUS "JEVOIS_MODULES_TO_MICROSD: ${JEVOIS_MODULES_TO_MICROSD}")
-    message(STATUS "JEVOIS_MODULES_TO_LIVE: ${JEVOIS_MODULES_TO_LIVE}")
-  endif()
-  
   # Flags for native compilation on platform from the JeVois-Pro GUI (as opposed to cross-compilation):
   if (JEVOIS_NATIVE)
     
@@ -80,7 +57,7 @@ if (JEVOIS_PLATFORM)
     set(JEVOIS_ARCH "arm64")
 
   else (JEVOIS_NATIVE)
-    
+    # Flags for cross-compilation running on a x86_64 host and targetting ARM hardware:
     set(CMAKE_C_COMPILER ${JEVOIS_PLATFORM_C_COMPILER})
     set(CMAKE_CXX_COMPILER ${JEVOIS_PLATFORM_CXX_COMPILER})
     set(CMAKE_FC_COMPILER ${JEVOIS_PLATFORM_FORTRAN_COMPILER})
@@ -95,8 +72,8 @@ if (JEVOIS_PLATFORM)
     set(JEVOIS_PYTHON_MAJOR ${JEVOIS_PLATFORM_PYTHON_MAJOR})
     set(JEVOIS_PYTHON_MINOR ${JEVOIS_PLATFORM_PYTHON_MINOR})
     set(JEVOIS_PYTHON_M "${JEVOIS_PLATFORM_PYTHON_M}")
+
     if (JEVOIS_PRO)
-      
       option(JEVOISPRO_PLATFORM_DEB "Build .deb file for platform (aarch64) rather than host (amd64)." OFF)
       message(STATUS "JEVOISPRO_PLATFORM_DEB: ${JEVOISPRO_PLATFORM_DEB}")
 
@@ -130,7 +107,7 @@ if (JEVOIS_PLATFORM)
   endif (JEVOIS_NATIVE)
   
 else (JEVOIS_PLATFORM)
-  
+  # Native compilation on an x86_64 host:
   set(JEVOIS_ARCH "amd64")
 
   set(CMAKE_C_COMPILER ${JEVOIS_HOST_C_COMPILER})
@@ -174,47 +151,12 @@ macro(jevois_project_set_flags)
       -include jevois/Config/Config-${JEVOIS}.H")
   set(CMAKE_CXX_FLAGS "-std=${JEVOIS_CXX_STD} ${JEVOIS_CFLAGS} -I${JEVOIS_INSTALL_PREFIX}/include \
       -include jevois/Config/Config-${JEVOIS}.H")
+
+  message(STATUS "JeVois install prefix: ${JEVOIS_INSTALL_PREFIX}")
   set(CMAKE_INSTALL_PREFIX ${JEVOIS_INSTALL_PREFIX})
+
   link_directories(${JEVOIS_INSTALL_PREFIX}/lib) # to find libjevois
   message(STATUS "JeVois C++ standard used: ${JEVOIS_CXX_STD}")
-  
-  # add a dependency and command to create the jvpkg package:
-  add_custom_target(jvpkg
-    COMMAND jevois-jvpkg ../${JEVOIS_VENDOR}_${CMAKE_PROJECT_NAME}.jvpkg
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/jvpkg )
-  
-  # If installing to live microSD inside JeVois, mount it before make install:
-  if (JEVOIS_MODULES_TO_LIVE)
-    install(CODE "EXECUTE_PROCESS(COMMAND /usr/bin/jevois-usbsd start ${JEVOIS_MICROSD_MOUNTPOINT} ${JEVOIS_USBSERIAL_DEV})")
-  endif (JEVOIS_MODULES_TO_LIVE)
-    
-  # If installing to microSD, add a check that it is here before make install:
-  if (JEVOIS_MODULES_TO_MICROSD)
-    install(CODE "EXECUTE_PROCESS(COMMAND /bin/ls \"${JEVOIS_MICROSD_MOUNTPOINT}/\" )")
-  endif (JEVOIS_MODULES_TO_MICROSD)
-
-  # Set variable JEVOIS_INSTALL_ROOT which may be used by the CMakeLists.txt of modules:
-  # On platform, we install to jvpkg directory, staging, or live microsd; on host we always install to
-  # /jevois[pro]:
-  if (JEVOIS_PLATFORM)
-    if (JEVOIS_MODULES_TO_MICROSD OR JEVOIS_MODULES_TO_LIVE) # if both specified, microsd/live precedes staging
-      set(JEVOIS_INSTALL_ROOT "${JEVOIS_MICROSD_MOUNTPOINT}")
-    else ()
-      if (JEVOIS_MODULES_TO_STAGING)
-        if (JEVOISPRO_PLATFORM_DEB)
-          set(JEVOIS_INSTALL_ROOT ${JEVOIS_PLATFORM_MODULES_ROOT_PDEB})
-        else ()
-          set(JEVOIS_INSTALL_ROOT "${JEVOIS_PLATFORM_MODULES_ROOT}")
-        endif ()
-      else ()
-	    set(JEVOIS_INSTALL_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/jvpkg")
-      endif ()
-    endif ()
-  else (JEVOIS_PLATFORM)
-    set(JEVOIS_INSTALL_ROOT "${JEVOIS_MODULES_ROOT}")
-  endif (JEVOIS_PLATFORM)
-
-  message(STATUS "JeVois install root: ${JEVOIS_INSTALL_ROOT}")
 
   # Find includes and libs installed by JeVois (imgui, function2, tensorflow, etc):
   if (JEVOISPRO_PLATFORM_DEB)
@@ -239,15 +181,6 @@ macro(jevois_project_set_flags)
   #link_directories("${SUBLIBS}")
 endmacro()
 
-####################################################################################################
-# Helper to complete a project - should be called last in CMakeLists.txt:
-macro(jevois_project_finalize)
-  # If installing to live microSD inside JeVois, un-mount it after make install:
-  if (JEVOIS_MODULES_TO_LIVE)
-    install(CODE "EXECUTE_PROCESS(COMMAND /usr/bin/jevois-usbsd stop ${JEVOIS_MICROSD_MOUNTPOINT} ${JEVOIS_USBSERIAL_DEV})")
-  endif (JEVOIS_MODULES_TO_LIVE)
-endmacro()
-  
 ####################################################################################################
 # Setup some modules, base scenario:
 macro(jevois_setup_modules basedir deps)
@@ -310,6 +243,11 @@ macro(jevois_setup_modules basedir deps)
       install(TARGETS ${JV_MODULE} LIBRARY DESTINATION "${DESTDIR}/${JV_MODULE}")
     endif (MODFILES)
     
+    if (JEVOIS_PLATFORM AND NOT JEVOIS_PRO)
+      # Save vendor and module info into a file that can be used by jevois-jvpkg:
+      file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/jvpkg-args" "${JEVOIS_VENDOR} ${JV_MODULEDIRS}")
+    endif()
+  
   endforeach()
 endmacro()
 

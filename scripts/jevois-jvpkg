@@ -1,26 +1,37 @@
 #!/usr/bin/perl
-# USAGE: jevois-jvpkg <dest>
-# Pack a JeVois .jvpkg package from all the files in the current directory
-# Assumes that current working directory is in the jvpkg/ folder to archive
+# USAGE: jevois-jvpkg <vendor> <module> [... <module>]
+# Pack <vendor>-<module>.jvpkg package(s) from all the files in /var/lib/jevois-microsd/modules/<vendor>/<module>/
 
 use File::Basename;
 
-my @excludes=qw/screenshot*.* icon*.* video*.mkv video*.mpg video*.avi modinfo.* *.H *.C *.h *.c *.cpp jvpkg-exclude.cfg/;
+my $root = "var/lib/jevois-microsd/modules";
+my $vendor = shift;
 
-my @elist = `find . -name jvpkg-exclude.cfg`;
-foreach my $e (@elist) {
-    chomp $e; my $dir = dirname($e); #$dir =~s/^\.\///;
-    open F, $e || die "oops";
-    while (my $line = <F>) { chomp $line; push(@excludes, "$dir/$line"); }
+foreach my $module (@ARGV)
+{
+    my $src = "/${root}/${vendor}/${module}";
+    my $pkg = "${vendor}-${module}.jvpkg";
+
+    die "Cannot find directory $src -- ABORT" unless (-d "$src" );
+
+    my @excludes=qw/video* jvpkg-exclude.cfg/;
+
+    my @elist = `find $dir -name jvpkg-exclude.cfg`;
+    foreach my $e (@elist) {
+        chomp $e; my $dir = dirname($e);
+        open F, $e || die "oops";
+        while (my $line = <F>) { chomp $line; push(@excludes, "$dir/$line"); }
+        close F;
+    }
+
+    my $tmpf = `mktemp`; chomp $tmpf;
+    open F, ">$tmpf" || die "ooops";
+    foreach my $e (@excludes) { print F "$e\n"; }
     close F;
+
+    system("tar jcf ${pkg} --exclude-from $tmpf -C / ${root}/${vendor}/${module} --transform 's,^${root},jevois/modules,'");
+
+    unlink($tmpf);
+
+    print "Created ${pkg} from /${root}/${vendor}/${module}\n";
 }
-
-my $tmpfile = `mktemp`; chomp $tmpfile;
-open F, ">$tmpfile" || die "ooops";
-foreach my $e (@excludes) { print F "$e\n"; }
-close F;
-
-system("tar jcvf $ARGV[0] . --exclude-from $tmpfile");
-
-unlink($tmpfile);
-
