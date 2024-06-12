@@ -83,6 +83,8 @@ static int TextEditCallbackStub(ImGuiInputTextCallbackData * data)
 // ##############################################################################################################
 void jevois::GUIconsole::draw()
 {
+  // Keep this in sync with GUIserial::draw() for aesthetic consistency
+
   // Reserve enough left-over height for 1 separator + 1 input text
   const float footer_height_to_reserve = ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeightWithSpacing();
   ImGui::BeginChild("ScrollingRegion", ImVec2(0, -footer_height_to_reserve), false,

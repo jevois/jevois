@@ -73,6 +73,7 @@ if (JEVOIS_PLATFORM)
     set(JEVOIS_MODULES_ROOT ${JEVOIS_HOST_MODULES_ROOT})
     set(JEVOIS_ARCH_FLAGS ${JEVOIS_PLATFORM_ARCH_FLAGS})
     set(JEVOIS_CFLAGS ${JEVOIS_PLATFORM_NATIVE_CFLAGS})
+    set(JEVOIS_CXX_STD ${JEVOIS_PLATFORM_CXX_STD})
     set(JEVOIS_PYTHON_MAJOR ${JEVOIS_PLATFORM_PYTHON_MAJOR})
     set(JEVOIS_PYTHON_MINOR ${JEVOIS_PLATFORM_PYTHON_MINOR})
     set(JEVOIS_PYTHON_M "${JEVOIS_PLATFORM_PYTHON_M}")
@@ -90,6 +91,7 @@ if (JEVOIS_PLATFORM)
     set(JEVOIS_MODULES_ROOT ${JEVOIS_PLATFORM_MODULES_ROOT})
     set(JEVOIS_ARCH_FLAGS ${JEVOIS_PLATFORM_ARCH_FLAGS})
     set(JEVOIS_CFLAGS ${JEVOIS_PLATFORM_CFLAGS})
+    set(JEVOIS_CXX_STD ${JEVOIS_PLATFORM_CXX_STD})
     set(JEVOIS_PYTHON_MAJOR ${JEVOIS_PLATFORM_PYTHON_MAJOR})
     set(JEVOIS_PYTHON_MINOR ${JEVOIS_PLATFORM_PYTHON_MINOR})
     set(JEVOIS_PYTHON_M "${JEVOIS_PLATFORM_PYTHON_M}")
@@ -141,6 +143,7 @@ else (JEVOIS_PLATFORM)
   set(JEVOIS_MODULES_ROOT ${JEVOIS_HOST_MODULES_ROOT})
   set(JEVOIS_ARCH_FLAGS ${JEVOIS_HOST_ARCH_FLAGS})
   set(JEVOIS_CFLAGS ${JEVOIS_HOST_CFLAGS})
+  set(JEVOIS_CXX_STD ${JEVOIS_HOST_CXX_STD})
   set(JEVOIS_PYTHON_MAJOR ${JEVOIS_HOST_PYTHON_MAJOR})
   set(JEVOIS_PYTHON_MINOR ${JEVOIS_HOST_PYTHON_MINOR})
   set(JEVOIS_PYTHON_M "${JEVOIS_HOST_PYTHON_M}")
@@ -169,16 +172,12 @@ macro(jevois_project_set_flags)
   # Pass the compiler flags to cmake (doing this before project() gives problems); same with the install prefix:
   set(CMAKE_C_FLAGS "-std=gnu99 ${JEVOIS_CFLAGS} -I${JEVOIS_INSTALL_PREFIX}/include \
       -include jevois/Config/Config-${JEVOIS}.H")
-  if (JEVOIS_PRO)
-    set(CMAKE_CXX_FLAGS "-std=c++20 ${JEVOIS_CFLAGS} -I${JEVOIS_INSTALL_PREFIX}/include \
+  set(CMAKE_CXX_FLAGS "-std=${JEVOIS_CXX_STD} ${JEVOIS_CFLAGS} -I${JEVOIS_INSTALL_PREFIX}/include \
       -include jevois/Config/Config-${JEVOIS}.H")
-  else()
-    set(CMAKE_CXX_FLAGS "-std=c++2a ${JEVOIS_CFLAGS} -I${JEVOIS_INSTALL_PREFIX}/include \
-      -include jevois/Config/Config-${JEVOIS}.H")
-  endif()
   set(CMAKE_INSTALL_PREFIX ${JEVOIS_INSTALL_PREFIX})
   link_directories(${JEVOIS_INSTALL_PREFIX}/lib) # to find libjevois
-
+  message(STATUS "JeVois C++ standard used: ${JEVOIS_CXX_STD}")
+  
   # add a dependency and command to create the jvpkg package:
   add_custom_target(jvpkg
     COMMAND jevois-jvpkg ../${JEVOIS_VENDOR}_${CMAKE_PROJECT_NAME}.jvpkg

@@ -17,9 +17,10 @@
 ########################################################################################################################
 # Python version to use for python modules, on host:
 if (EXISTS "/usr/lib/x86_64-linux-gnu/libboost_python312.so")
-  # Ubuntu 24.04 noble
-  set(JEVOIS_COMPILER_VERSION 14)
+  # Ubuntu 24.04 noble: we stick to g++-10 on host for better compatibility with the platform compiler g++-8.3
+  set(JEVOIS_COMPILER_VERSION 10)
   set(JEVOIS_HOST_CXX_STD "c++20")
+  set(JEVOIS_PLATFORM_CXX_STD "c++2a")
   set(JEVOIS_HOST_PYTHON_MAJOR 3)
   set(JEVOIS_HOST_PYTHON_MINOR 12)
   set(JEVOIS_HOST_PYTHON_M "")
@@ -29,6 +30,7 @@ elseif (EXISTS "/usr/lib/x86_64-linux-gnu/libboost_python38.so")
   # Ubuntu 20.04 focal
   set(JEVOIS_COMPILER_VERSION 10)
   set(JEVOIS_HOST_CXX_STD "c++20")
+  set(JEVOIS_PLATFORM_CXX_STD "c++2a")
   set(JEVOIS_HOST_PYTHON_MAJOR 3)
   set(JEVOIS_HOST_PYTHON_MINOR 8)
   set(JEVOIS_HOST_PYTHON_M "")
@@ -38,6 +40,7 @@ elseif (EXISTS "/usr/lib/x86_64-linux-gnu/libboost_python3-py37.so")
   # Ubuntu 18.04 bionic
   set(JEVOIS_COMPILER_VERSION 7)
   set(JEVOIS_HOST_CXX_STD "c++17")
+  set(JEVOIS_PLATFORM_CXX_STD "c++17")
   set(JEVOIS_HOST_PYTHON_MAJOR 3)
   set(JEVOIS_HOST_PYTHON_MINOR 7)
   set(JEVOIS_HOST_PYTHON_M "m")
@@ -46,6 +49,7 @@ elseif (EXISTS "/usr/lib/x86_64-linux-gnu/libboost_python3-py37.so")
 elseif (EXISTS "/usr/lib/x86_64-linux-gnu/libboost_python3-py36.so")
   set(JEVOIS_COMPILER_VERSION 5)
   set(JEVOIS_HOST_CXX_STD "c++11")
+  set(JEVOIS_PLATFORM_CXX_STD "c++11")
   set(JEVOIS_HOST_PYTHON_MAJOR 3)
   set(JEVOIS_HOST_PYTHON_MINOR 6)
   set(JEVOIS_HOST_PYTHON_M "m")
@@ -54,6 +58,7 @@ elseif (EXISTS "/usr/lib/x86_64-linux-gnu/libboost_python3-py36.so")
 elseif (EXISTS "/usr/lib/x86_64-linux-gnu/libboost_python3-py35.so")
   set(JEVOIS_COMPILER_VERSION 5)
   set(JEVOIS_HOST_CXX_STD "c++11")
+  set(JEVOIS_PLATFORM_CXX_STD "c++11")
   set(JEVOIS_HOST_PYTHON_MAJOR 3)
   set(JEVOIS_HOST_PYTHON_MINOR 5)
   set(JEVOIS_HOST_PYTHON_M "m")
@@ -122,7 +127,7 @@ set(JEVOIS_HOST_OPENCV_LIBS "-L${JEVOIS_HOST_OPENCV_PREFIX}/lib ${OPENCV_LIBS_FO
 # Use TBB and kernel includes for platform from the buildroot installation.  On the host, we may have local packages,
 # eg, latest opencv compiled from source:
 set(JEVOIS_PLATFORM_KERNEL_INCLUDE "-I${JEVOIS_BUILD_BASE}/build/linux-headers-3.4.113/usr/include")
-set(JEVOIS_PLATFORM_TBB_INCLUDE "-I${JEVOIS_BUILD_BASE}/build/opencv3-${JEVOIS_OPENCV_VERSION}/buildroot-build/3rdparty/tbb/oneTBB-2020.2/include")
+set(JEVOIS_PLATFORM_TBB_INCLUDE "-I${JEVOIS_BUILD_BASE}/build/opencv3-${JEVOIS_OPENCV_VERSION}/buildroot-build/3rdparty/tbb/oneTBB-2021.11.0/include")
 
 # Find python 3.x on host and platform:
 # NOTE: it is too early here to try to use standard find_package() of CMake. In any case, that will not find the
@@ -132,7 +137,8 @@ set(JEVOIS_PLATFORM_PYTHON_INCLUDE
 set(JEVOIS_PLATFORM_PYTHON_LIBS "-lpython${JEVOIS_PLATFORM_PYTHON_MAJOR}.${JEVOIS_PLATFORM_PYTHON_MINOR}${JEVOIS_PLATFORM_PYTHON_M} -l${JEVOIS_PLATFORM_BOOST_PYTHON}")
 
 set(JEVOIS_HOST_PYTHON_INCLUDE
-  "-I/usr/include/python${JEVOIS_HOST_PYTHON_MAJOR}.${JEVOIS_HOST_PYTHON_MINOR}${JEVOIS_HOST_PYTHON_M}")
+  "-I/usr/include/python${JEVOIS_HOST_PYTHON_MAJOR}.${JEVOIS_HOST_PYTHON_MINOR}${JEVOIS_HOST_PYTHON_M} \
+   -I/usr/lib/python${JEVOIS_HOST_PYTHON_MAJOR}/dist-packages/numpy/core/include")
 set(JEVOIS_HOST_PYTHON_LIBS "-lpython${JEVOIS_HOST_PYTHON_MAJOR}.${JEVOIS_HOST_PYTHON_MINOR}${JEVOIS_HOST_PYTHON_M} -l${JEVOIS_HOST_BOOST_PYTHON}")
 
 # We link against OpenGL on JeVois-A33:

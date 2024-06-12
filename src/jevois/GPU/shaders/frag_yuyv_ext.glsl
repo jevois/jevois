@@ -1,7 +1,7 @@
 #version 300 es
 #extension GL_EXT_YUV_target : require
 
-precision mediump float;
+precision highp float;
 in vec2 v_tex_coord;
 layout(location = 0) out vec4 out_color;
 uniform __samplerExternal2DY2YEXT u_sTexture;

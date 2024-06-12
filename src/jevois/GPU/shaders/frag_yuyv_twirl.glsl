@@ -1,6 +1,6 @@
 #version 300 es
 
-precision mediump float;
+precision highp float;
 in vec2 v_tex_coord;
 layout(location = 0) out vec4 out_color;
 uniform sampler2D s_texture;
@@ -22,8 +22,8 @@ void main()
   uv = radius * vec2(cos(angle), sin(angle)) + 0.5;
 
   // Then get YUYV and convert to RGB:
-  highp vec4 yuyv = texture(s_texture, uv);
-  highp float tx = uv.x * tdim.x;
+  vec4 yuyv = texture(s_texture, uv);
+  float tx = uv.x * tdim.x;
   float odd = floor(mod(tx, 2.0));
   float y = odd * yuyv.z + (1.0 - odd) * yuyv.x;
   

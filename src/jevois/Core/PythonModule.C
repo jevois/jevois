@@ -507,6 +507,13 @@ void jevois::GUIhelperPython::itext(char const * txt, ImU32 const & col, int lin
 }
 
 // ####################################################################################################
+void jevois::GUIhelperPython::itext2(char const * txt)
+{
+  if (itsGUIhelper == nullptr) LFATAL("Internal error");
+  itsGUIhelper->itext(txt, 0, -1);
+}
+
+// ####################################################################################################
 void jevois::GUIhelperPython::iinfo(jevois::InputFramePython const & inframe, std::string const & fpscpu,
                                     unsigned short winw, unsigned short winh)
 {

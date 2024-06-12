@@ -32,6 +32,7 @@
 #include <jevois/Core/VideoDisplayGUI.H>
 #include <jevois/GPU/GUIhelper.H>
 #include <jevois/GPU/GUIconsole.H>
+#include <jevois/GPU/GUIserial.H>
 
 #include <jevois/Core/Serial.H>
 #include <jevois/Core/StdioInterface.H>
@@ -263,7 +264,7 @@ void jevois::Engine::onParamChange(jevois::engine::serialdev const & JEVOIS_UNUS
     if ((*itr)->instanceName() == "serial") itr = itsSerials.erase(itr);
   removeComponent("serial", false);
   
-  // Open the usb hardware (4-pin connector) serial port, if any:
+  // Open the hardware (4-pin connector) serial port, if any:
   if (newval.empty() == false)
     try
     {
@@ -272,7 +273,17 @@ void jevois::Engine::onParamChange(jevois::engine::serialdev const & JEVOIS_UNUS
         s = addComponent<jevois::StdioInterface>("serial");
       else
       {
+#ifdef JEVOIS_PRO
+        // Typically, it is too early here to know whether we will use a GUI or not. On JeVois-Pro, always instantiate a
+        // GUIserial if serialmonitors allows it. Later, if the GUIhelper is activated, we will invoke
+        // GUIserial::draw(); otherwise, GUIserial will just behave as a regular serial except that it caches all data:
+        if (serialmonitors::get())
+          s = addComponent<jevois::GUIserial>("serial", jevois::UserInterface::Type::Hard);
+        else
+          s = addComponent<jevois::Serial>("serial", jevois::UserInterface::Type::Hard);
+#else
         s = addComponent<jevois::Serial>("serial", jevois::UserInterface::Type::Hard);
+#endif
         s->setParamVal("devname", newval);
       }
       
@@ -298,8 +309,19 @@ void jevois::Engine::onParamChange(jevois::engine::usbserialdev const & JEVOIS_U
   if (newval.empty() == false)
     try
     {
+#ifdef JEVOIS_PRO
+      // Typically, it is too early here to know whether we will use a GUI or not. On JeVois-Pro, always instantiate a
+      // GUIserial if serialmonitors allows it. Later, if the GUIhelper is activated, we will invoke GUIserial::draw();
+      // otherwise, GUIserial will just behave as a regular serial except that it caches all data:
+      std::shared_ptr<jevois::UserInterface> s;
+      if (serialmonitors::get())
+        s = addComponent<jevois::GUIserial>("usbserial", jevois::UserInterface::Type::USB);
+      else
+        s = addComponent<jevois::Serial>("usbserial", jevois::UserInterface::Type::USB);
+#else
       std::shared_ptr<jevois::UserInterface> s =
         addComponent<jevois::Serial>("usbserial", jevois::UserInterface::Type::USB);
+#endif
       s->setParamVal("devname", newval);
       itsSerials.push_back(s);
       LINFO("Using [" << newval << "] USB serial port");
@@ -635,6 +657,9 @@ void jevois::Engine::postInit()
   JEVOIS_TIMED_LOCK(itsMtx);
   
   // Freeze the serial port device names, their params, and camera and gadget too:
+#ifdef JEVOIS_PRO
+  serialmonitors::freeze();
+#endif
   serialdev::freeze();
   usbserialdev::freeze();
   for (auto & s : itsSerials) s->freezeAllParams();
@@ -1245,7 +1270,7 @@ int jevois::Engine::mainLoop()
         }
         catch (...) { reportErrorInternal(); }
 
-        // For standard modules, indicate frame start stop if user wants it:
+        // For standard modules, indicate frame stop if user wants it:
         if (stdmod) stdmod->sendSerialMarkStop();
 
         // Increment our master frame counter
@@ -1273,10 +1298,18 @@ int jevois::Engine::mainLoop()
     {
       try
       {
-        std::string str; bool parsed = false; bool success = false;
+        std::string str; int received = 0;
         
-        if (s->readSome(str))
+        while (s->readSome(str))
         {
+          bool parsed = false; bool success = false;
+
+          // Issue a warning if getting a lot of serial inputs:
+          if ((++received % 10) == 0)
+            reportError("Warning: high rate of serial inputs on port: " + s->instanceName() + ". \n\n"
+                        "This may adversely affect JeVois framerate.");
+
+          // Lock up for thread safety:
           JEVOIS_TIMED_LOCK(itsMtx);
 
           // If the command starts with our hidden command prefix, set the prefix, otherwise clear it:
@@ -1441,6 +1474,58 @@ std::shared_ptr<jevois::IMU> jevois::Engine::imu() const
 // ####################################################################################################
 std::shared_ptr<jevois::Camera> jevois::Engine::camera() const
 { return std::dynamic_pointer_cast<jevois::Camera>(itsCamera); }
+
+// ####################################################################################################
+jevois::CameraCalibration jevois::Engine::loadCameraCalibration(std::string const & stem, bool do_throw)
+{
+  // itsMtx should be locked
+    
+  // If Current mapping is using dual-stream, use the resolution of the processing stream:
+  int w, h;
+  if (itsCurrentMapping.c2fmt) { w = itsCurrentMapping.c2w; h = itsCurrentMapping.c2h; }
+  else { w = itsCurrentMapping.cw; h = itsCurrentMapping.ch; }
+    
+  std::string const fname = std::string(JEVOIS_SHARE_PATH) + "/camera/" + stem +
+    '-' + camerasens::strget() + '-' + std::to_string(w) + 'x' + std::to_string(h) +
+    '-' + cameralens::strget() + ".yaml";
+
+  jevois::CameraCalibration calib;
+
+  try
+  {
+    calib.load(fname);
+    LINFO("Camera calibration loaded from [" << fname << ']');
+  }
+  catch (...)
+  {
+    if (do_throw)
+      LFATAL("Failed to read camera parameters from file [" << fname << ']');
+    else
+    {
+      reportError("Failed to read camera parameters from file [" + fname + "] -- IGNORED");
+
+      // Return a default identity matrix:
+      calib.sensor = camerasens::get();
+      calib.lens = cameralens::get();
+      calib.w = w; calib.h = h;
+    }
+  }
+  return calib;
+}
+
+// ####################################################################################################
+void jevois::Engine::saveCameraCalibration(jevois::CameraCalibration const & calib, std::string const & stem)
+{
+  // itsMtx should be locked
+
+  std::string const fname = std::string(JEVOIS_SHARE_PATH) + "/camera/" + stem +
+    '-' + jevois::to_string(calib.sensor) + '-' + std::to_string(calib.w) + 'x' + std::to_string(calib.h) +
+    '-' + jevois::to_string(calib.lens) + ".yaml";
+  
+  calib.save(fname);
+
+  LINFO("Camera calibration saved to [" << fname << ']');
+}
 
 // ####################################################################################################
 jevois::VideoMapping const & jevois::Engine::getCurrentVideoMapping() const

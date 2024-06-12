@@ -74,7 +74,7 @@ std::shared_ptr<Comp> jevois::Manager::getComponent(std::string const & instance
       LFATAL("Component [" << instance << "] is not of type [" << jevois::demangledName<Comp>() << ']');
     }
 
-  LFATAL("Component [" << instance << "] not found");
+  LTHROW("Component [" << instance << "] not found");
 }
 
 // ######################################################################
@@ -90,7 +90,7 @@ namespace jevois
     for (std::shared_ptr<Component> c : itsSubComponents)
       if (c->instanceName() == instance) return c;
 
-    LFATAL("Component [" << instance << "] not found");
+    LTHROW("Component [" << instance << "] not found");
   }
 }
 #endif

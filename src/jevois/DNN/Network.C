@@ -161,8 +161,8 @@ std::vector<cv::Mat> jevois::dnn::Network::process(std::vector<cv::Mat> const & 
       
       case VSI_NN_TYPE_FLOAT16:
       {
-        cv::float16_t * ptr = reinterpret_cast<cv::float16_t *>(b.data);
-        for (std::string const & v : vals) *ptr++ = cv::float16_t(std::stof(v));
+        cv::hfloat * ptr = reinterpret_cast<cv::hfloat *>(b.data);
+        for (std::string const & v : vals) *ptr++ = cv::hfloat(std::stof(v));
       }
       break;
 

@@ -65,7 +65,7 @@ namespace jevois
                                              "", ParamCateg);
       
       //! Enum \relates jevois::Pipeline
-      JEVOIS_DEFINE_ENUM_CLASS(PreProc, (Blob) (Python) (Custom) );
+      JEVOIS_DEFINE_ENUM_CLASS(PreProc, (Blob) (Python) );
 
       //! Parameter \relates jevois::Pipeline
       JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(preproc, PreProc, "Pre-Processor to use, usually set automatically "
@@ -73,9 +73,9 @@ namespace jevois
                                              PreProc::Blob, PreProc_Values, ParamCateg);
       //! Enum \relates jevois::Pipeline
 #ifdef JEVOIS_PRO
-      JEVOIS_DEFINE_ENUM_CLASS(NetType, (OpenCV) (ORT) (NPU) (TPU) (SPU) (Python) (Custom) );
+      JEVOIS_DEFINE_ENUM_CLASS(NetType, (OpenCV) (ORT) (NPU) (TPU) (SPU) (Python) );
 #else
-      JEVOIS_DEFINE_ENUM_CLASS(NetType, (OpenCV) (Python) (Custom) );
+      JEVOIS_DEFINE_ENUM_CLASS(NetType, (OpenCV) (Python) );
 #endif
 
       //! Parameter \relates jevois::Pipeline
@@ -83,7 +83,7 @@ namespace jevois
                                              "automatically by selecting a pipeline from the zoo file",
                                              NetType::OpenCV, NetType_Values, ParamCateg);
       //! Enum \relates jevois::Pipeline
-      JEVOIS_DEFINE_ENUM_CLASS(PostProc, (Classify) (Detect) (Segment) (YuNet) (Python) (Stub) (Custom) );
+      JEVOIS_DEFINE_ENUM_CLASS(PostProc, (Classify) (Detect) (Segment) (YuNet) (Python) (Stub) );
 
       //! Parameter \relates jevois::Pipeline
       JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(postproc, PostProc, "Post-Processor to use, usually set automatically "
@@ -155,33 +155,6 @@ namespace jevois
         //! Freeze/unfreeze parameters that users should not change while running
         void freeze(bool doit);
 
-        //! Set a custom pre-processor
-        /*! To create a custom pre-processor, create a new class that derives from jevois::dnn::PreProcessor and that
-            implements the pure virtual functions of that base class. Then, in your module, you should hold a
-            shared_ptr<jevois::Pipeline> which we will call itsPipeline, and in your constructor you instantiate it and
-            add it as a sub-component of your module (see constructor of \jvmod{DNN} for an example). Then proceed as
-            follows in your constructor or postInit() or parameter callback:
-
-            \code
-            // Select custom pre-processor mode. Will nuke previous preproc and not instantiate a new one:
-            itsPipeline->preproc::set(jevois::dnn::pipeline::PreProc::Custom);
-
-            // Create an instance of our custom pre-processor and attach it as a sub-component of our pipeline
-            auto sptr = itsPipeline->addSubComponent<MyCustomPreProc>("preproc");
-            itsPipeline->setCustomPreProcessor(std::static_pointer_cast<jevois::dnn::PreProcessor>(sptr));
-            \endcode
-
-            And you are ready to rock. */
-        void setCustomPreProcessor(std::shared_ptr<PreProcessor> pp);
-
-        // Set a custom network type
-        /*! See doc of setCustomPreProcessor() for instructions, but use the name "network" instead of "preproc". */
-        void setCustomNetwork(std::shared_ptr<Network> n);
-
-        // Set a custom post-processor
-        /*! See doc of setCustomPreProcessor() for instructions, but use the name "postproc" instead of "preproc". */
-        void setCustomPostProcessor(std::shared_ptr<PostProcessor> pp);
-        
       protected:
         void postInit() override;
         void preUninit() override;

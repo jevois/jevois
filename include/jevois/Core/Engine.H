@@ -21,7 +21,7 @@
 #include <jevois/Component/Manager.H>
 #include <jevois/Types/Enum.H>
 #include <jevois/Image/RawImage.H>
-#include <jevois/Core/CameraSensor.H>
+#include <jevois/Core/CameraCalibration.H>
 #include <jevois/Debug/Watchdog.H>
 
 #include <memory>
@@ -144,6 +144,11 @@ namespace jevois
                              "manually, it is set through boot-time configuration.",
                              JEVOIS_CAMERASENS_DEFAULT, CameraSensor_Values, ParamCateg);
 
+    //! Parameter \relates jevois::Engine
+    JEVOIS_DECLARE_PARAMETER(cameralens, CameraLens, "Camera lens. Users should usually not set this parameter "
+                             "using the global JeVois params.cfg config file.",
+                             CameraLens::standard, CameraLens_Values, ParamCateg);
+
     JEVOIS_DECLARE_PARAMETER(imudev, std::string, "IMU SPI device name, typically starting with /dev/spidev..., "
                              "or empty if device does not have an IMU with SPI interface.",
                              JEVOIS_IMUSPI_DEFAULT, ParamCateg);
@@ -170,6 +175,15 @@ namespace jevois
                              "At runtime, the setmapping command should be used instead.",
                              -1, ParamCateg);
 
+#ifdef JEVOIS_PRO
+    //! Parameter \relates jevois::Engine
+    JEVOIS_DECLARE_PARAMETER(serialmonitors, bool, "If true, serial port monitors will be enabled "
+                             "in the GUI, which can be used to peek at serial communications not "
+                             "directed to the console. Can be turned off at start time (e.g., in the "
+                             "global JeVois params.cfg) as there is some small CPU cost to it.",
+                             true, ParamCateg);
+#endif
+    
     //! Parameter \relates jevois::Engine
     JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(serialdev, std::string, "Hardware (4-pin connector) serial device name, "
                                            "or 'stdio' to use the console, or empty for no hardware serial port",
@@ -385,14 +399,15 @@ namespace jevois
 
      \ingroup core */
   class Engine : public Manager,
-                 public Parameter<engine::cameradev, engine::camerasens, engine::cameranbuf, engine::gadgetdev,
-                                  engine::gadgetnbuf, engine::imudev, engine::videomapping, engine::serialdev,
-                                  engine::usbserialdev, engine::camreg, engine::imureg, engine::camturbo,
-                                  engine::serlog, engine::videoerrors, engine::serout, engine::cpumode, engine::cpumax,
-                                  engine::multicam, engine::quietcmd, engine::python, engine::serlimit
+                 public Parameter<engine::cameradev, engine::camerasens, engine::cameralens, engine::cameranbuf,
+                                  engine::gadgetdev, engine::gadgetnbuf, engine::imudev, engine::videomapping,
+                                  engine::serialdev, engine::usbserialdev, engine::camreg, engine::imureg,
+                                  engine::camturbo, engine::serlog, engine::videoerrors, engine::serout,
+                                  engine::cpumode, engine::cpumax, engine::multicam, engine::quietcmd,
+                                  engine::python, engine::serlimit
 #ifdef JEVOIS_PRO
-                                  , engine::gui, engine::conslock, engine::cpumaxl, engine::cpumodel, engine::watchdog,
-                                  engine::demomode
+                                  , engine::serialmonitors, engine::gui, engine::conslock, engine::cpumaxl,
+                                  engine::cpumodel, engine::watchdog, engine::demomode
 #endif
                                   >
   {
@@ -498,6 +513,16 @@ namespace jevois
       void drawCameraGUI();
 #endif
 
+      //! Helper to load an OpenCV camera matrix and distortion coeffs for the current running module
+      /*! If do_throw is false, just report an error and provide identity defaults if calibration mot found. This would
+          typically be called in preInit() or postInit() of any module that will need the calibration parameters. Note:
+          for thread safety, engine should be locked; calling this inside Module::process() is safe. */
+      CameraCalibration loadCameraCalibration(std::string const & stem = "calibration", bool do_throw = false);
+
+      //! Helper to save an OpenCV camera matrix and distortion coeffs for the current running module
+      /*! Note: for thread safety, engine should be locked; calling this inside Module::process() is safe. */
+      void saveCameraCalibration(CameraCalibration const & calib, std::string const & stem = "calibration");
+      
       //! Register a component as linked to some python code, used by dynamic params created in python
       /*! Use with extreme caution to guarantee thread safety and object lifetime since we just use raw pointers here */
       void registerPythonComponent(Component * comp, void * pyinst);

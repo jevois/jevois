@@ -122,7 +122,7 @@
 #else
 #define JEVOIS_OPENCV_PREFIX "@JEVOIS_HOST_OPENCV_PREFIX@"
 #define JEVOIS_OPENCV_PYTHON_PATH JEVOIS_OPENCV_PREFIX "/lib/python" JEVOIS_MACRO_STRING(JEVOIS_PYTHON_MAJOR) "." \
-  JEVOIS_MACRO_STRING(JEVOIS_PYTHON_MINOR) "/site-packages"
+  JEVOIS_MACRO_STRING(JEVOIS_PYTHON_MINOR) "/dist-packages"
 #endif
 
 // Doxygen does not like the macros below, so replace them by no-ops when compiling the documentation:

@@ -76,7 +76,7 @@ std::shared_ptr<Comp> jevois::Component::getSubComponent(std::string const & ins
       LFATAL("SubComponent [" << instance << "] is not of type [" << jevois::demangledName<Comp>() << ']');
     }
 
-  LFATAL("SubComponent [" << instance << "] not found");
+  LTHROW("SubComponent [" << instance << "] not found");
 }
 
 // ######################################################################
@@ -93,7 +93,7 @@ namespace jevois
     for (std::shared_ptr<Component> c : itsSubComponents)
       if (c->instanceName() == instance) return c;
 
-    LFATAL("SubComponent [" << instance << "] not found");
+    LTHROW("SubComponent [" << instance << "] not found");
   }
 }
 
@@ -251,7 +251,7 @@ void jevois::Component::setDynamicParameterCallback(std::string const & name, st
   std::lock_guard<std::mutex> _(itsDynParMtx);
 
   auto itr = itsDynParams.find(name);
-  if (itr == itsDynParams.end()) LFATAL("No dynamic parameter found with name [" << name << ']');
+  if (itr == itsDynParams.end()) LTHROW("No dynamic parameter found with name [" << name << ']');
 
   jevois::ParameterBase * basepar = itr->second.get();
   jevois::ParameterCore<T> * par = dynamic_cast<jevois::ParameterCore<T> *>(basepar);

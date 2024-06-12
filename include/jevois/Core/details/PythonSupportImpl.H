@@ -61,9 +61,9 @@ void jevois::python::tupleToArray(boost::python::object const & o, std::array<T,
 template <typename T> inline
 T jevois::python::pyextract(boost::python::object const & o)
 {
-#ifdef JEVOIS_PLATFORM_A33
+#ifdef JEVOIS_PLATFORM
 
-  // False alarm warning on g++-8.3 on platform, FIXME can remove once jevois-a33 platform compiler is updated
+  // False alarm warning on g++ on platform
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
   return boost::python::extract<T>(o);

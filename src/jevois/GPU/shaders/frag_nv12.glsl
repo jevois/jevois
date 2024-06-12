@@ -1,7 +1,7 @@
 #version 300 es
 //FRAGMENT_SHADER
 
-precision mediump float;
+precision highp float;
 
 // position lookup used for both textures
 in vec2 v_tex_coord;

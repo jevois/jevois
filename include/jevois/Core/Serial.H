@@ -104,7 +104,6 @@ namespace jevois
       void sendBreak(void);
 
       //! Read some bytes if available, and return true and a string when one is complete
-      /*! This would usually only make sense to use in non-blocking mode. */
       bool readSome(std::string & str) override;
       
       //! Write a string, using the line termination convention of serial::linestyle

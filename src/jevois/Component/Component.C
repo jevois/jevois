@@ -298,7 +298,7 @@ void jevois::Component::findParamAndActOnIt(std::string const & descrip,
   // Split this parameter descriptor by single ":" (skipping over all "::")
   std::vector<std::string> desc = jevois::split(descrip, ":" /*"FIXME "(?<!:):(?!:)" */);
 
-  if (desc.empty()) std::range_error(descriptor() + ": Cannot parse empty parameter name");
+  if (desc.empty()) throw std::range_error(descriptor() + ": Cannot parse empty parameter name");
 
   // Recursive call with the vector of tokens:
   findParamAndActOnIt(desc, true, 0, "", doit);

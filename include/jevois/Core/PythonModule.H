@@ -296,6 +296,9 @@ namespace jevois
       //! Draw some overlay text on top of an image
       void itext(char const * txt, ImU32 const & col = IM_COL32_BLACK_TRANS, int line = -1);
       
+      //! Draw some overlay text on top of an image, default color and line
+      void itext2(char const * txt);
+      
       //! Display processing and video info at bottom of screen
       void iinfo(jevois::InputFramePython const & inframe, std::string const & fpscpu,
                  unsigned short winw = 0, unsigned short winh = 0);

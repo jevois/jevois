@@ -337,3 +337,4 @@ std::future_status::timeout) LFATAL("Timeout waiting for future " #f); } while(f
   if (f.wait_for(std::chrono::seconds(5)) == std::future_status::timeout) LERROR("Timeout waiting for future " #f); \
   try { f.get(); } catch (...) { jevois::warnAndIgnoreException(); } } } while(false)
 
+

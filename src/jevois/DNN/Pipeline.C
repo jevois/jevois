@@ -175,21 +175,21 @@ void jevois::dnn::Pipeline::asyncNetWait()
 
 // ####################################################################################################
 void jevois::dnn::Pipeline::onParamChange(pipeline::filter const & JEVOIS_UNUSED_PARAM(param),
-                                          jevois::dnn::pipeline::Filter const & JEVOIS_UNUSED_PARAM(val))
+                                          jevois::dnn::pipeline::Filter const & val)
 {
   // Reload the zoo file so that the filter can be applied to create the parameter def of pipe, but first we need this
   // parameter to indeed be updated. So here we just set a flag and the update will occur in process(), after we run the
   // current model one last time:
-  itsZooChanged = true;
+  if (val != filter::get()) itsZooChanged = true;
 }
 
 // ####################################################################################################
 void jevois::dnn::Pipeline::onParamChange(pipeline::zooroot const & JEVOIS_UNUSED_PARAM(param),
-                                          std::string const & JEVOIS_UNUSED_PARAM(val))
+                                          std::string const & val)
 {
   // Reload the zoo file, but first we need this parameter to indeed be updated. So here we just set a flag and the
   // update will occur in process(), after we run the current model one last time:
-  itsZooChanged = true;
+  if (val.empty() == false && val != zooroot::get()) itsZooChanged = true;
 }
 
 // ####################################################################################################
@@ -234,6 +234,8 @@ void jevois::dnn::Pipeline::onParamChange(pipeline::zoo const & JEVOIS_UNUSED_PA
     // Just changing the def does not change the param value, so change it now:
     pipe::set(pipes[0]);
   }
+
+  itsZooChanged = false;
 }
 
 // ####################################################################################################
@@ -339,6 +341,7 @@ void jevois::dnn::Pipeline::scanZoo(std::filesystem::path const & zoofile, std::
 void jevois::dnn::Pipeline::onParamChange(pipeline::pipe const & JEVOIS_UNUSED_PARAM(param), std::string const & val)
 {
   if (val.empty()) return;
+  if (val == pipe::get()) return;
   itsPipeThrew = false;
   freeze(false);
 
@@ -532,24 +535,9 @@ void jevois::dnn::Pipeline::onParamChange(pipeline::preproc const & JEVOIS_UNUSE
   case jevois::dnn::pipeline::PreProc::Python:
     itsPreProcessor = addSubComponent<jevois::dnn::PreProcessorPython>("preproc");
     break;
-
-  case jevois::dnn::pipeline::PreProc::Custom:
-    // nothing here, user must call setCustomPreProcessor() later
-    break;
   }
 
   if (itsPreProcessor) LINFO("Instantiated pre-processor of type " << itsPreProcessor->className());
-  else LINFO("No pre-processor");
-}
-
-// ####################################################################################################
-void jevois::dnn::Pipeline::setCustomPreProcessor(std::shared_ptr<jevois::dnn::PreProcessor> pp)
-{
-  preproc::set(jevois::dnn::pipeline::PreProc::Custom);
-
-  itsPreProcessor = pp;
-
-  if (itsPreProcessor) LINFO("Attached pre-processor of type " << itsPreProcessor->className());
   else LINFO("No pre-processor");
 }
 
@@ -593,10 +581,6 @@ void jevois::dnn::Pipeline::onParamChange(pipeline::nettype const & JEVOIS_UNUSE
   case jevois::dnn::pipeline::NetType::Python:
     itsNetwork = addSubComponent<jevois::dnn::NetworkPython>("network");
     break;
-
-  case jevois::dnn::pipeline::NetType::Custom:
-    // Nothing here, user must call setCustomNetwork() later
-    break;
   }
 
   if (itsNetwork) LINFO("Instantiated network of type " << itsNetwork->className());
@@ -616,19 +600,6 @@ void jevois::dnn::Pipeline::onParamChange(pipeline::nettype const & JEVOIS_UNUSE
   itsAsyncNetInfo = itsNetInfo;
   itsAsyncNetworkTime = "Network: -";
   itsAsyncNetworkSecs = 0.0;
-}
-
-// ####################################################################################################
-void jevois::dnn::Pipeline::setCustomNetwork(std::shared_ptr<jevois::dnn::Network> n)
-{
-  nettype::set(jevois::dnn::pipeline::NetType::Custom);
-
-  itsNetwork = n;
-
-  if (itsNetwork) LINFO("Attached network of type " << itsNetwork->className());
-  else LINFO("No network");
-
-  itsInputAttrs.clear();
 }
 
 // ####################################################################################################
@@ -659,23 +630,9 @@ void jevois::dnn::Pipeline::onParamChange(pipeline::postproc const & JEVOIS_UNUS
   case jevois::dnn::pipeline::PostProc::Stub:
     itsPostProcessor = addSubComponent<jevois::dnn::PostProcessorStub>("postproc");
     break;
-  case jevois::dnn::pipeline::PostProc::Custom:
-    // Nothing here, user must call setCustomPostProcessor() later
-    break;
   }
 
   if (itsPostProcessor) LINFO("Instantiated post-processor of type " << itsPostProcessor->className());
-  else LINFO("No post-processor");
-}
-
-// ####################################################################################################
-void jevois::dnn::Pipeline::setCustomPostProcessor(std::shared_ptr<jevois::dnn::PostProcessor> pp)
-{
-  postproc::set(jevois::dnn::pipeline::PostProc::Custom);
-
-  itsPostProcessor = pp;
-
-  if (itsPostProcessor) LINFO("Attached post-processor of type " << itsPostProcessor->className());
   else LINFO("No post-processor");
 }
 
@@ -705,7 +662,7 @@ void jevois::dnn::Pipeline::process(jevois::RawImage const & inimg, jevois::StdM
                                     jevois::OptGUIhelper * helper, bool idle)
 {
   // Reload the zoo file if filter has changed:
-  if (itsZooChanged) { itsZooChanged = false; zoo::set(zoo::get()); }
+  if (itsZooChanged) zoo::set(zoo::get());
 
   // If the pipeline is throwing exception at any stage, do not do anything here, itsPipeThrew is cleared when selecting
   // a new pipe:
@@ -716,7 +673,15 @@ void jevois::dnn::Pipeline::process(jevois::RawImage const & inimg, jevois::StdM
   
 #ifdef JEVOIS_PRO
   // Open an info window if using GUI and not idle:
-  if (helper && idle == false) ImGui::Begin((instanceName() + ':' + getParamStringUnique("pipe")).c_str());
+  if (helper && idle == false)
+  {
+    // Set window size applied only on first use ever, otherwise from imgui.ini:
+    ImGui::SetNextWindowPos(ImVec2(24, 159), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(464, 877), ImGuiCond_FirstUseEver);
+    
+    // Open the window:
+    ImGui::Begin((instanceName() + ':' + getParamStringUnique("pipe")).c_str());
+  }
 #else
   (void)helper; // avoid compiler warning
 #endif

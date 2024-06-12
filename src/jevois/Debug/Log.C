@@ -39,6 +39,27 @@ namespace
   template <> char const * levelStr<LOG_CRIT>() { return "FTL"; }
 }
 
+// ##############################################################################################################
+template <>
+jevois::Log<LOG_ALERT>::Log(char const * JEVOIS_UNUSED_PARAM(fullFileName),
+                            char const * JEVOIS_UNUSED_PARAM(functionName), std::string * outstr) :
+    itsOutStr(outstr)
+{
+  // No prefix added here, will just throw the user message
+}
+
+// ##############################################################################################################
+// Explicit instantiations:
+namespace jevois
+{
+  template class Log<LOG_DEBUG>;
+  template class Log<LOG_INFO>;
+  template class Log<LOG_ERR>;
+  template class Log<LOG_CRIT>;
+  template class Log<LOG_ALERT>;
+}
+
+// ##############################################################################################################
 #ifdef JEVOIS_USE_SYNC_LOG
 namespace jevois
 {
@@ -47,7 +68,7 @@ namespace jevois
 }
 
 void jevois::logSetEngine(Engine * e)
-{ LFATAL("Cannot set Engine for logs when JeVois has been compiled with -D JEVOIS_USE_SYNC_LOG"); }
+{ LERROR("Cannot set Engine for logs when JeVois has been compiled with -D JEVOIS_USE_SYNC_LOG -- IGNORED"); }
 void jevois::logEnd()
 { LINFO("Terminating Log service"); }
 
@@ -141,15 +162,6 @@ jevois::Log<Level>::Log(char const * fullFileName, char const * functionName, st
 }
 
 // ##############################################################################################################
-template <>
-jevois::Log<LOG_ALERT>::Log(char const * JEVOIS_UNUSED_PARAM(fullFileName),
-                            char const * JEVOIS_UNUSED_PARAM(functionName), std::string * outstr) :
-    itsOutStr(outstr)
-{
-  // No prefix added here, will just throw the user message
-}
-
-// ##############################################################################################################
 #ifdef JEVOIS_USE_SYNC_LOG
 
 template <int Level>
@@ -186,17 +198,6 @@ jevois::Log<Level> & jevois::Log<Level>::operator<<(int8_t const & out_item)
 {
   itsLogStream << static_cast<int>(out_item);
   return * this;
-}
-
-// ##############################################################################################################
-// Explicit instantiations:
-namespace jevois
-{
-  template class Log<LOG_DEBUG>;
-  template class Log<LOG_INFO>;
-  template class Log<LOG_ERR>;
-  template class Log<LOG_CRIT>;
-  template class Log<LOG_ALERT>;
 }
 
 // ##############################################################################################################

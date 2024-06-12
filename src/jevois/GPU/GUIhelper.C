@@ -29,6 +29,7 @@
 #include <jevois/GPU/GPUimage.H>
 #include <jevois/Core/Module.H>
 #include <jevois/GPU/GUIeditor.H>
+#include <jevois/GPU/GUIserial.H>
 #include <jevois/Debug/SysInfo.H>
 #include <jevois/Util/Utils.H>
 #include <jevois/Debug/PythonException.H>
@@ -757,6 +758,10 @@ void jevois::GUIhelper::endFrame()
 // ##############################################################################################################
 void jevois::GUIhelper::drawJeVoisGUI()
 {
+  // Set window size applied only on first use ever, otherwise from imgui.ini:
+  ImGui::SetNextWindowPos(ImVec2(920, 358), ImGuiCond_FirstUseEver);
+  ImGui::SetNextWindowSize(ImVec2(941, 639), ImGuiCond_FirstUseEver);
+  
   if (ImGui::Begin(itsWindowTitle.c_str(), nullptr /* no closing */))//, ImGuiWindowFlags_MenuBar))
   {
     //drawMenuBar();
@@ -830,6 +835,44 @@ void jevois::GUIhelper::drawJeVoisGUI()
   }
   if (itsShowAppMetrics) ImGui::ShowMetricsWindow(&itsShowAppMetrics);
   if (itsShowImGuiDemo) ImGui::ShowDemoWindow(&itsShowImGuiDemo);
+
+  // Show Hardware serial monitor if desired:
+  if (itsShowHardSerialWin)
+  {
+    // Set window size applied only on first use ever, otherwise from imgui.ini:
+    ImGui::SetNextWindowSize(ImVec2(700, 500), ImGuiCond_FirstUseEver);
+
+    // Open or display window until user closes it:
+    ImGui::Begin("Hardware 4-pin Serial Monitor", &itsShowHardSerialWin);
+    try { engine()->getComponent<jevois::GUIserial>("serial")->draw(); }
+    catch (...)
+    {
+      ImGui::TextUnformatted("No Hardware serial port found!");
+      ImGui::Separator();
+      ImGui::TextUnformatted("Check engine:serialdev parameter, and");
+      ImGui::TextUnformatted("that engine:serialmonitors is true.");
+    }
+    ImGui::End();
+  }
+
+  // Show USB serial monitor if desired:
+  if (itsShowUsbSerialWin)
+  {
+    // Set window size applied only on first use ever, otherwise from imgui.ini:
+    ImGui::SetNextWindowSize(ImVec2(700, 500), ImGuiCond_FirstUseEver);
+
+    // Open or display window until user closes it:
+    ImGui::Begin("USB Serial Monitor", &itsShowUsbSerialWin);
+    try { engine()->getComponent<jevois::GUIserial>("usbserial")->draw(); }
+    catch (...)
+    {
+      ImGui::TextUnformatted("No USB serial port found!");
+      ImGui::Separator();
+      ImGui::TextUnformatted("Check engine:usbserialdev parameter, and");
+      ImGui::TextUnformatted("that engine:serialmonitors is true.");
+    }
+    ImGui::End();
+  }
 
   // Draw an error popup, if any exception was received through reportError():
   drawErrorPopup();
@@ -1622,6 +1665,12 @@ void jevois::GUIhelper::drawSystem()
   
   // #################### Create new module:
   drawNewModuleForm();
+  ImGui::Separator();
+
+  // #################### Open serial monitors:
+  if (ImGui::Button("Open Hardware serial monitor...")) itsShowHardSerialWin = true;
+  ImGui::SameLine();
+  if (ImGui::Button("Open USB serial monitor...")) itsShowUsbSerialWin = true;
   ImGui::Separator();
 
   // #################### ping:

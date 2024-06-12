@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 cd /root
 
@@ -16,12 +16,18 @@ if [ "X${gserial}" = "X1" ] ; then
     extra="${extra} --usbserialdev=/dev/ttyGS0"
 fi
 
+# Activate python virtual environment if found:
+if [ "X$VIRTUAL_ENV" = "X" -a -d /root/jevois_venv ]; then source /root/jevois_venv/bin/activate; fi
+
 # Launch jevois software:
 /usr/bin/jevoispro-daemon ${extra} $@
 rc=$?
 
-# Restore the console, which was disabled by jevois:
+# Restore the console, which was disabled by jevoispro-daemon:
 /usr/bin/jevoispro-restore-console
+
+# Deactivate virtual env if we used it:
+if [ "X$VIRTUAL_ENV" != "X" ]; then deactivate; fi
 
 # Return whatever jevoispro-daemon returned:
 exit $rc

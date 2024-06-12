@@ -435,6 +435,8 @@ namespace jevois
       bool itsShowImGuiDemo = false;
       bool itsSerLogEnabled = true;
       bool itsSerOutEnabled = false;
+      bool itsShowHardSerialWin = false;
+      bool itsShowUsbSerialWin = false;
       
       void drawJeVoisGUI();
       void drawInfo();

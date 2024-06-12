@@ -23,15 +23,15 @@ set(JEVOIS_VENDOR "JeVois")
 
 ########################################################################################################################
 # Project version:
-set(JEVOIS_VERSION_MAJOR  1)
-set(JEVOIS_VERSION_MINOR  21)
-set(JEVOIS_VERSION_PATCH  0)
+set(JEVOIS_VERSION_MAJOR 1)
+set(JEVOIS_VERSION_MINOR 21)
+set(JEVOIS_VERSION_PATCH 0)
 set(JEVOIS_SOVERSION "${JEVOIS_VERSION_MAJOR}.${JEVOIS_VERSION_MINOR}.${JEVOIS_VERSION_PATCH}" )
 
 ########################################################################################################################
 # OpenCV version to use with JeVois:
 set(JEVOIS_OPENCV_MAJOR 4)
-set(JEVOIS_OPENCV_MINOR 9)
+set(JEVOIS_OPENCV_MINOR 10)
 set(JEVOIS_OPENCV_PATCH 0)
 set(JEVOIS_OPENCV_VERSION "${JEVOIS_OPENCV_MAJOR}.${JEVOIS_OPENCV_MINOR}.${JEVOIS_OPENCV_PATCH}")
 
@@ -147,7 +147,8 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/pyjevois.py DESTINATION "${JEVOIS_MODU
 
 # Pass the compiler flags to cmake (doing this before project() gives problems with wrong compiler detection):
 set(CMAKE_C_FLAGS "-std=gnu99 ${JEVOIS_CFLAGS} ${JEVOIS_WARN_C_FLAGS} -include Config-${JEVOIS}.H")
-set(CMAKE_CXX_FLAGS "-std=${JEVOIS_HOST_CXX_STD} ${JEVOIS_CFLAGS} ${JEVOIS_WARN_CPP_FLAGS} -include Config-${JEVOIS}.H")
+set(CMAKE_CXX_FLAGS "-std=${JEVOIS_CXX_STD} ${JEVOIS_CFLAGS} ${JEVOIS_WARN_CPP_FLAGS} -include Config-${JEVOIS}.H")
+message(STATUS "JeVois C++ standard used: ${JEVOIS_CXX_STD}")
 
 # Enable address sanitizer (to debug illegal memory accesses and such; should normally be commented out):
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
@@ -420,27 +421,25 @@ set(CPACK_PACKAGE_VERSION_MINOR "${JEVOIS_VERSION_MINOR}")
 set(CPACK_PACKAGE_VERSION_PATCH "${JEVOIS_VERSION_PATCH}")
 set(JEVOIS_PACKAGE_RELEASE "1") # packager revision number
 
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "build-essential, cmake (>= 3.1), gcc-${JEVOIS_COMPILER_VERSION}, \
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "build-essential, cmake (>= 3.6), gcc-${JEVOIS_COMPILER_VERSION}, \
 g++-${JEVOIS_COMPILER_VERSION}, gfortran-${JEVOIS_COMPILER_VERSION}, \
 guvcview, subversion, cmake, git, mercurial, doxygen-gui, graphviz, libboost-all-dev, ${TURBOJPEG_PKG}, \
-autoconf, libeigen3-dev, screen, libgtk2.0-dev, libdc1394-22, libdc1394-22-dev, libjpeg-dev, libpng-dev, libtiff5-dev, \
+autoconf, libeigen3-dev, screen, libgtk2.0-dev, libdc1394-dev, libjpeg-dev, libpng-dev, libtiff5-dev, \
 libavcodec-dev, libavformat-dev, libswscale-dev, libxine2-dev, libgstreamer1.0-dev, libgstreamer-plugins-base1.0-dev, \
-libv4l-dev, libtbb2, libtbb-dev, libfaac-dev, libmp3lame-dev, libopencore-amrnb-dev, \
-libopencore-amrwb-dev, libtheora-dev, libvorbis-dev, libxvidcore-dev, x264, v4l-utils, unzip, qt5-default, \
-libgtk-3-dev, libatlas-base-dev, libturbojpeg, libtbb2, libsdl2-dev, \
+libv4l-dev, libtbb-dev, libfaac-dev, libmp3lame-dev, libopencore-amrnb-dev, \
+libopencore-amrwb-dev, libtheora-dev, libvorbis-dev, libxvidcore-dev, x264, v4l-utils, unzip, \
+libgtk-3-dev, libturbojpeg, libsdl2-dev, libopenblas-dev, libopenblas-openmp-dev, liblapacke-dev, \
 python${JEVOIS_HOST_PYTHON_MAJOR}.${JEVOIS_HOST_PYTHON_MINOR}-dev, python${JEVOIS_HOST_PYTHON_MAJOR}-numpy, \
-python${JEVOIS_HOST_PYTHON_MAJOR}-pip, python${JEVOIS_HOST_PYTHON_MAJOR}-pil, python-dev-is-python3 \
+python${JEVOIS_HOST_PYTHON_MAJOR}-pil, python-dev-is-python3, pipx, \
 ${JEVOIS}-opencv (>=${JEVOIS_OPENCV_VERSION}), libglm-dev, libx11-dev")
                                                                                   
 # Add cross-compiler dependencies on jevois-pro-host; on jevois-a33 it is provided by buildroot:
 if (JEVOIS_PRO)
 
   # Add a few more depends needed by jevois pro host and platform:
-  set(JVPRODEPS "${JEVOIS}-openvino, libedgetpu-dev, libedgetpu1-std, python3-tflite-runtime, \
-                 python3-pycoral, ca-certificates, zlib1g, zlib1g-dev, libssl-dev, curl, libcurl4-openssl-dev, \
-                 liblttng-ust0, libcurl4, libssl1.1, libkrb5-3, libtinfo-dev, libtinfo5, libtool, openssh-server, \
-                 aria2, bzip2, unzip, zip, rsync, libunwind8, libpng-dev, libexpat1-dev,")
-  #openjdk-11-jdk,
+  set(JVPRODEPS "${JEVOIS}-openvino, libedgetpu-dev, libedgetpu1-std, zlib1g-dev, curl, libcurl4, libtool, \
+                 bzip2, unzip, zip, rsync, libpng-dev, libexpat1-dev,")
+#python3-tflite-runtime, python3-pycoral
   set(CPACK_DEBIAN_PACKAGE_DEPENDS "${JVPRODEPS} ${CPACK_DEBIAN_PACKAGE_DEPENDS}")
 
   if (JEVOIS_PLATFORM)
