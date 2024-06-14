@@ -20,7 +20,7 @@ Procedure for JeVois-Pro
 Procedure for JeVois-A33
 ========================
 
-When you run `./rebuild-platform.sh` in \b jevois and `./rebuild-platform.sh --staging` in \b jevoisbase, compiled files
+When you run `./rebuild-platform.sh` in \b jevois and in \b jevoisbase, compiled files
 get installed into the staging area (see \ref ProgrammerOrganization).
 
 The last step to run them on the JeVois smart camera is to flash the whole Linux OS, kernel, JeVois framework (including
@@ -59,8 +59,8 @@ Re-flashing after some code update - full recompilation
 
 \verbatim
 cd ~/jevois && ./rebuild-platform.sh
-cd ~/jevoisbase && ./rebuild-platform.sh --staging
-cd ~/mymodule && ./rebuild-platform.sh --staging     # optional: for your own modules
+cd ~/jevoisbase && ./rebuild-platform.sh
+cd ~/mymodule && ./rebuild-platform.sh     # optional: for your own modules
 jevois-flash-card -y /dev/sdX
 \endverbatim
 
@@ -79,8 +79,8 @@ Pulling the latest from github and re-flashing - full recompilation
 
 \verbatim
 cd ~/jevois && git pull && ./rebuild-platform.sh
-cd ~/jevoisbase && git pull && ./rebuild-platform.sh --staging
-cd ~/mymodule && ./rebuild-platform.sh --staging     # optional: for your own modules
+cd ~/jevoisbase && git pull && ./rebuild-platform.sh
+cd ~/mymodule && ./rebuild-platform.sh     # optional: for your own modules
 jevois-flash-card -y /dev/sdX
 \endverbatim
 
@@ -89,84 +89,10 @@ Pulling the latest from github and re-flashing - partial recompilation
 
 \verbatim
 cd ~/jevois && git pull && cd pbuild && make -j
-cd ~/jevoisbase && git pull && cd pbuild && maje -j
+cd ~/jevoisbase && git pull && cd pbuild && make -j
 cd ~/mymodule/pbuild && make -j     # optional: for your own modules
 jevois-flash-card -y /dev/sdX
 \endverbatim
-
-Updating a module directly to live microSD inside JeVois - full recompilation
------------------------------------------------------------------------------
-
-With \jvversion{1.3} or later, you can directly install your new modules to the microSD card inside JeVois, without
-having to eject the card and connect it to your host computer.
-
-The JeVois smart camera should be connected to your host computer, booted up, and not streaming video.
-
-\verbatim
-cd ~/mymodule && ./rebuild-platform.sh --live
-\endverbatim
-
-\note This internally just uses `jevois-usbsd start` to tell JeVois to export its microSD as a virtual flash drive, then
-copies the module files, and finally issues a `jevois-usbsd stop` to eject the virtual flash drive and reboot
-JeVois. This assumes that the JeVois microSD will appear on your host as <b>/media/<em>username</em>/JEVOIS/</b> where
-<em>username</em> is your Linux user name. You may want to confirm this by just typing `jevois-usbsd start` and then
-checking in /media where the virtual flash drive appeared.
-
-\note Once you select a destination in `./rebuild-platform.sh` (none, staging, or microsd), that will remain for
-subsequent `make install` commands, until you change it by re-running `./rebuild-platform.sh` with another destination.
-
-
-Updating a module directly to live microSD inside JeVois - partial recompilation
---------------------------------------------------------------------------------
-
-You must have done at least one `./rebuild-platform.sh --live` which sets the live microSD inside JeVois as install
-target.
-
-Make sure JeVois is connected, booted up, and not streaming video.
-
-\verbatim
-cd ~/mymodule/pbuild && make -j && sudo make install
-\endverbatim
-
-\note Once you select a destination in `./rebuild-platform.sh` (none, staging, or microsd), that will remain for
-subsequent `make install` commands, until you change it by re-running `./rebuild-platform.sh` with another destination.
-
-Updating a module directly to microSD inserted into host - full recompilation
------------------------------------------------------------------------------
-
-The microSD should either inserted into your host using some microSD flash reader, or already exported by JeVois using
-the \c usbsd command in the JeVois command-line interface (see \ref CompilingJeVoisBase and \ref UserCli), or the
-`jevois-usbsd start` command from any Linux terminal on your host.
-
-It must be mounted and available under <b>/media/<em>username</em>/JEVOIS/</b> where <em>username</em> is your Linux
-user name.
-
-\verbatim
-cd ~/mymodule && ./rebuild-platform.sh --microsd
-\endverbatim
-
-\note Once you select a destination in `./rebuild-platform.sh` (none, staging, or microsd), that will remain for
-subsequent `make install` commands, until you change it by re-running `./rebuild-platform.sh` with another destination.
-
-
-Updating a module directly to microSD inserted into host - partial recompilation
---------------------------------------------------------------------------------
-
-The microSD should either inserted into your host using some microSD flash reader, or already exported by JeVois using
-the \c usbsd command in the JeVois command-line interface (see \ref CompilingJeVoisBase and \ref UserCli), or the
-`jevois-usbsd start` command from any Linux terminal on your host.
-
-It must be mounted and available under <b>/media/<em>username</em>/JEVOIS/</b> where <em>username</em> is your Linux
-user name.
-
-You must have done at least one `./rebuild-platform.sh --microsd` which sets the mounted microSD as install target.
-
-\verbatim
-cd ~/mymodule/pbuild && make -j && sudo make install
-\endverbatim
-
-\note Once you select a destination in `./rebuild-platform.sh` (none, staging, or microsd), that will remain for
-subsequent `make install` commands, until you change it by re-running `./rebuild-platform.sh` with another destination.
 
 
 */
