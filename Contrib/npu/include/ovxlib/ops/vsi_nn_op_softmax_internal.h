@@ -44,6 +44,7 @@ typedef struct _vsi_nn_softmax_internal_param
 {
     vsi_nn_softmax_internal_lcl_data *data;
     float beta;
+    int32_t axis;
 } vsi_nn_softmax_internal_param;
 
 #ifdef __cplusplus

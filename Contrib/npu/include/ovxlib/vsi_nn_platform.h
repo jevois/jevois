@@ -24,6 +24,15 @@
 #ifndef _VSI_NN_PLATFORM_H
 #define _VSI_NN_PLATFORM_H
 
+#include "vsi_nn_feature_config.h"
+
+#ifdef VSI_40BIT_VA_SUPPORT
+#ifdef VX_VA40_EXT_SUPPORT
+#undef VX_VA40_EXT_SUPPORT
+#endif
+#define VX_VA40_EXT_SUPPORT 1
+#endif
+
 #include <VX/vx_khr_cnn.h>
 #include <VX/vx_helper.h>
 #include <VX/vx_ext_program.h>
@@ -41,14 +50,6 @@
 
 #if defined(__cplusplus)
 extern "C"{
-#endif
-
-#if defined(VSI_CFG_NNAPI_0_3)
-#define VSI_NNAPI_0_3
-#elif defined(VSI_CFG_NNAPI_0_4)
-#define VSI_NNAPI_0_4
-#else
-#define VSI_NNAPI_0_4
 #endif
 
 #if defined(__cplusplus)

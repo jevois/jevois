@@ -68,7 +68,7 @@ The Amlogic/VeriSilicon NPU SDK is distributed by Khadas, which manufactures a d
 Amlogic A311D processor as \jvpro.
 
 \code{.py}
-git clone --recursive https://github.com/khadas/aml_npu_sdk.git
+git lfs clone --recursive https://github.com/khadas/aml_npu_sdk.git
 cd aml_npu_sdk/acuity-toolkit/demo
 \endcode
 
@@ -184,6 +184,8 @@ $pegasus generate inputmeta \
 	--source-file dataset.txt
   \endcode
 
+\note Do not cut and paste the '# JEVOIS edited' comments above, they will break the code, remove them.
+
 - Run it, it should complete with no errors:
   \code{.py}
 ./0_import_model.sh
@@ -191,6 +193,10 @@ $pegasus generate inputmeta \
 
 - You can check out yolov7-tiny_inputmeta.yml for a description of the input parameters, and yolov7-tiny.json for a
   description of the model graph.
+
+- If this steps yields errors, maybe some operations are not supported, which may happen towards the end of the
+  network. In such case, examine the network in Netron and look at which layer failed to convert, then add
+  **--outputs /some/layer*** to truncate the network to that layer.
 
 4. Edit and run 1_quantize_model.sh
 -----------------------------------
@@ -431,5 +437,39 @@ Tips
 
 - Also see \ref UserDNNtips
 
+Another example: Object Detection using YOLOv10n
+================================================
+
+- The procedure for YOLOv10n was almost the same. We had to fine-tune a few things:
+
+- Get the code at https://github.com/THU-MIG/yolov10/tree/main
+
+- Go through their installation steps, including creating a conda environment and getting all dependencies.
+
+- You can also retrain on a custom dataset at this stage.
+
+- To export to ONNX, using opset 13 gave some conversion errors, so we used opset 12. We can also set a custom image
+  resolution in that step using `imgsz` parameter:
+  \code{.py}
+  yolo export model=jameslahm/yolov10n format=onnx opset=12 simplify imgsz=576,1024
+  \endcode
+
+- Some layers towards the end of the network were giving size errors, maybe because of the different opset. In any case,
+  we wanted the raw YOLO output. Thus, we inspected the network in Netron and decided to use
+  `/model.23/Transpose_output_0` as output layer in **0_import_model.sh**:
+  \code{.py}
+  # ...
+  
+  #Onnx
+  $pegasus import onnx\
+      --model  ${NAME}.onnx \
+      --output-model ${NAME}.json \
+      --outputs /model.23/Transpose_output_0 \
+      --output-data ${NAME}.data
+  
+  # ...
+  \endcode
+
+- It converted fine and is now included in the JeVois distribution and microSD image.
 */
 

@@ -58,7 +58,7 @@ factory for three sub-components:
   + NetworkNPU (C++)
   + NetworkHailo (C++)
   + NetworkTPU (C++)
-  + NetworkORT (C++) for ONN Runtime (also available in Python)
+  + NetworkONNX (C++) for ONNX Runtime (also available in Python)
   + write your own in python following the interface in Network, NetworkPython and the example in \ref PyNetOpenCV.py
 
 - PostProcessor: receives the raw network outputs and presents them in a human-friendly way. For example, draw boxes

@@ -224,17 +224,15 @@ void jevois::dnn::Pipeline::onParamChange(pipeline::zoo const & JEVOIS_UNUSED_PA
   LINFO("Found a total of " << pipes.size() << " valid pipelines.");
 
   // Update the parameter def of pipe:
-  if (pipes.empty() == false)
-  {
-    jevois::ParameterDef<std::string> newdef("pipe", "Pipeline to use, determined by entries in the zoo file and "
-                                             "by the current filter",
-                                             pipes[0], pipes, jevois::dnn::pipeline::ParamCateg);
-    pipe::changeParameterDef(newdef);
+  jevois::ParameterDef<std::string> newdef("pipe", "Pipeline to use, determined by entries in the zoo file and "
+                                           "by the current filter",
+                                           pipes[0], pipes, jevois::dnn::pipeline::ParamCateg);
+  pipe::changeParameterDef(newdef);
 
-    // Just changing the def does not change the param value, so change it now:
-    pipe::set(pipes[0]);
-  }
+  // Just changing the def does not change the param value, so change it now:
+  pipe::set(pipes[0]);
 
+  // Mark the zoo as not changed anymore, unless we are just starting the module and need to load a first net:
   itsZooChanged = false;
 }
 
@@ -341,7 +339,6 @@ void jevois::dnn::Pipeline::scanZoo(std::filesystem::path const & zoofile, std::
 void jevois::dnn::Pipeline::onParamChange(pipeline::pipe const & JEVOIS_UNUSED_PARAM(param), std::string const & val)
 {
   if (val.empty()) return;
-  if (val == pipe::get()) return;
   itsPipeThrew = false;
   freeze(false);
 
@@ -562,11 +559,7 @@ void jevois::dnn::Pipeline::onParamChange(pipeline::nettype const & JEVOIS_UNUSE
     break;
 
   case jevois::dnn::pipeline::NetType::NPU:
-#ifdef JEVOIS_PLATFORM
     itsNetwork = addSubComponent<jevois::dnn::NetworkNPU>("network");
-#else // JEVOIS_PLATFORM
-    LFATAL("NPU network is only supported on JeVois-Pro Platform");
-#endif
     break;
     
   case jevois::dnn::pipeline::NetType::SPU:

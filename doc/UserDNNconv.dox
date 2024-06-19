@@ -23,7 +23,7 @@ for the following runtime frameworks:
   
   The JeVois DNN framework supports OpenCV with CPU, Myriad-X, and TIM-VX, through the NetworkOpenCV class.
 
-- ** ONNX Runtime:** Accepts models in ONNX format, and runs them directly on CPU with no further conversion needed. Can
+- **ONNX Runtime:** Accepts models in ONNX format, and runs them directly on CPU with no further conversion needed. Can
   be invoked from C++ and Python.
 
 - **Verisilicon / Amlogic A311D NPU integrated into the JeVois-Pro processor (5 TOPS):** The NPU SDK provided by

@@ -736,6 +736,13 @@ vsi_bool vsi_nn_ConvertTensor
     vsi_nn_tensor_t* output
     );
 
+vsi_nn_tensor_t * vsi_nn_dropout_tensor
+    (
+    vsi_nn_graph_t  * graph,
+    vsi_nn_tensor_t * input,
+    float             rate
+    );
+
 #ifdef __cplusplus
 }
 #endif

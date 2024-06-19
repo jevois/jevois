@@ -81,7 +81,7 @@ namespace jevois
                                1.0F, ParamCateg);
       
       //! Enum \relates jevois::PostProcessorDetect
-      JEVOIS_DEFINE_ENUM_CLASS(DetectType, (FasterRCNN) (YOLO) (SSD) (TPUSSD) (RAWYOLO) );
+      JEVOIS_DEFINE_ENUM_CLASS(DetectType, (FasterRCNN) (YOLO) (SSD) (TPUSSD) (RAWYOLO) (YOLOv10) (YOLOv10pp) );
       
       //! Parameter \relates jevois::PostProcessorDetect
       JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(detecttype, DetectType, "Type of detection output format",

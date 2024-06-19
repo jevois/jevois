@@ -260,7 +260,96 @@ void jevois::dnn::PostProcessorDetect::process(std::vector<cv::Mat> const & outs
       }
     }
     break;
+    
+    // ----------------------------------------------------------------------------------------------------
+    case jevois::dnn::postprocessor::DetectType::YOLOv10:
+    {
+      for (size_t i = 0; i < outs.size(); ++i)
+      {
+        // Network produces output blob(s) with shape Nx(4+C) where N is a number of detected objects and C is a number
+        // of classes + 4 where the first 4 numbers are [center_x, center_y, width, height]. There is no box score, just
+        // scores for individual classes for each detection.
+        cv::Mat const & out = outs[i];
+        cv::MatSize const & ms = out.size; int const nd = ms.dims();
+        int nbox = -1, ndata = -1;
+        
+        if (nd >= 2)
+        {
+          nbox = ms[nd-2];
+          ndata = ms[nd-1];
+          for (int i = 0; i < nd-2; ++i) if (ms[i] != 1) nbox = -1; // reject if more than 2 effective dims
+        }
 
+        if (nbox < 0 || ndata < 4)
+          LTHROW("Expected 1 or more output blobs with shape Nx(4+C) where N is the number of "
+                 "detected objects, C is the number of classes, and the first 4 columns are "
+                 "[center_x, center_y, width, height]. // "
+                 "Incorrect size " << jevois::dnn::shapestr(out) << " for output " << i <<
+                 ": need Nx(4+C) or 1xNx(4+C)");
+
+        // Some networks may output 3D 1xNx(4+C), so here we slice off the last 2 dims:
+        int sz2[] = { nbox, ndata };
+        cv::Mat const out2(2, sz2, out.type(), out.data);
+        
+        LINFO("output: " << out2);
+
+        float const * data = (float const *)out2.data;
+        for (int j = 0; j < nbox; ++j, data += ndata)
+        {
+          cv::Mat scores = out2.row(j).colRange(4, ndata);
+          cv::Point classIdPoint; double confidence;
+          cv::minMaxLoc(scores, 0, &confidence, 0, &classIdPoint);
+
+          if (confidence < confThreshold) continue; // skip if class score too low
+
+          int centerX, centerY, width, height;
+          // Boxes are already scaled by input blob size:
+          centerX = (int)(data[0]);
+          centerY = (int)(data[1]);
+          width = (int)(data[2]);
+          height = (int)(data[3]);
+          
+          int left = centerX - width / 2;
+          int top = centerY - height / 2;
+          boxes.push_back(cv::Rect(left, top, width, height));
+          classIds.push_back(classIdPoint.x);
+          confidences.push_back((float)confidence);
+          if (classIds.size() > maxbox) break; // Stop if too many boxes
+        }
+      }
+    }
+    break;
+
+    // ----------------------------------------------------------------------------------------------------
+    case jevois::dnn::postprocessor::DetectType::YOLOv10pp:
+    {
+      // Network produces output blob with a shape 1xNx6 where N is a number of detections and an every detection is
+      // a vector of values [left, top, right, bottom, confidence, classId]
+      if (outs.size() != 1 || msiz.dims() != 3 || msiz[0] != 1 || msiz[2] != 6)
+        LTHROW("Expected 1 output blob with shape 1xNx6 for N detections with values "
+               "[left, top, right, bottom, confidence, classId]");
+      
+      float const * data = (float const *)out.data;
+      for (size_t i = 0; i < out.total(); i += 6)
+      {
+        float confidence = data[i + 4];
+        if (confidence > confThreshold)
+        {
+          int left = (int)data[i + 0];
+          int top = (int)data[i + 1];
+          int right = (int)data[i + 2];
+          int bottom = (int)data[i + 3];
+          int width = right - left + 1;
+          int height = bottom - top + 1;
+          classIds.push_back((int)(data[i + 5]) + fudge);  // Skip 0th background class id.
+          boxes.push_back(cv::Rect(left, top, width, height));
+          confidences.push_back(confidence);
+          if (classIds.size() > maxbox) break; // Stop if too many boxes
+        }
+      }
+    }
+    break;
+  
     // ----------------------------------------------------------------------------------------------------
     case jevois::dnn::postprocessor::DetectType::RAWYOLO:
     {
