@@ -987,6 +987,8 @@ void jevois::dnn::Pipeline::process(jevois::RawImage const & inimg, jevois::StdM
       helper->itext("OVERALL: " + total + "/inference");
     }
   }
+#else
+  (void)refresh_data_peek; // prevent compiler warning
 #endif
 
   // Report processing times to outimg if present:

@@ -195,6 +195,8 @@ void jevois::dnn::PreProcessor::sendreport(jevois::StdModule * mod, jevois::RawI
       }
     }
   }
+#else
+  (void)mod; (void)helper; (void)overlay; (void)idle;
 #endif
 
   // On JeVois-A33, we do not have much room on screen, so write nothing here, the network will write some info about
