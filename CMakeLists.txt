@@ -236,6 +236,8 @@ install(DIRECTORY Contrib/npu/detect_library/source_code/include/
   DESTINATION "${JEVOIS_MODULES_ROOT}/include/detect_library" COMPONENT bin)
 
 if (JEVOIS_PRO)
+  add_definitions(-DVX_STREAM_PROCESSOR_SUPPORT=0)
+
   if (JEVOIS_PLATFORM)
     add_definitions(-DLINUX -D_REENTRANT -DgcdENABLE_3D=1 -DgcdENABLE_2D=0 -DgcdENABLE_VG=0 -DgcdUSE_VX=1 -DUSE_VDK=1
       -DgcdMOVG=0 -DEGL_API_FB -DgcdSTATIC_LINK=0 -DgcdFPGA_BUILD=0 -DGC_ENABLE_LOADTIME_OPT=1 -DgcdUSE_VXC_BINARY=0

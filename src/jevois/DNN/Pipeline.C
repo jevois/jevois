@@ -338,6 +338,14 @@ void jevois::dnn::Pipeline::scanZoo(std::filesystem::path const & zoofile, std::
 // ####################################################################################################
 void jevois::dnn::Pipeline::onParamChange(pipeline::pipe const & JEVOIS_UNUSED_PARAM(param), std::string const & val)
 {
+#ifdef JEVOIS_PRO
+  // Reset the data peekin on each pipe change:
+  itsShowDataPeek = false;
+  itsDataPeekOutIdx = 0;
+  itsDataPeekFreeze = false;
+  itsDataPeekStr.clear();
+#endif
+  
   if (val.empty()) return;
   itsPipeThrew = false;
   freeze(false);
@@ -557,15 +565,19 @@ void jevois::dnn::Pipeline::onParamChange(pipeline::nettype const & JEVOIS_UNUSE
   case jevois::dnn::pipeline::NetType::ORT:
     itsNetwork = addSubComponent<jevois::dnn::NetworkONNX>("network");
     break;
-
+    
   case jevois::dnn::pipeline::NetType::NPU:
+#ifdef JEVOIS_PLATFORM
     itsNetwork = addSubComponent<jevois::dnn::NetworkNPU>("network");
+#else // JEVOIS_PLATFORM
+    LFATAL("NPU network is only supported on JeVois-Pro Platform");
+#endif
     break;
     
   case jevois::dnn::pipeline::NetType::SPU:
     itsNetwork = addSubComponent<jevois::dnn::NetworkHailo>("network");
     break;
-
+    
   case jevois::dnn::pipeline::NetType::TPU:
     itsNetwork = addSubComponent<jevois::dnn::NetworkTPU>("network");
     break;
@@ -663,6 +675,7 @@ void jevois::dnn::Pipeline::process(jevois::RawImage const & inimg, jevois::StdM
   
   bool const ovl = overlay::get();
   itsOutImgY = 5; // y text position when using outimg text drawings
+  bool refresh_data_peek = false; // Will be true after each post-processing is actually run
   
 #ifdef JEVOIS_PRO
   // Open an info window if using GUI and not idle:
@@ -750,6 +763,7 @@ void jevois::dnn::Pipeline::process(jevois::RawImage const & inimg, jevois::StdM
         itsPostProcessor->process(itsOuts, itsPreProcessor.get());
         itsProcTimes[2] = itsTpost.stop(&itsProcSecs[2]);
         itsPostProcessor->report(mod, outimg, helper, ovl, idle);
+        refresh_data_peek = true;
       }
       break;
       
@@ -803,6 +817,7 @@ void jevois::dnn::Pipeline::process(jevois::RawImage const & inimg, jevois::StdM
           itsTpost.start();
           itsPostProcessor->process(itsOuts, itsPreProcessor.get());
           itsProcTimes[2] = itsTpost.stop(&itsProcSecs[2]);
+          refresh_data_peek = true;
         }
         
         // Report/draw post-processing results on every frame:
@@ -948,12 +963,22 @@ void jevois::dnn::Pipeline::process(jevois::RawImage const & inimg, jevois::StdM
     
     if (idle == false)
     {
+      // Show processing times:
       if (ImGui::CollapsingHeader("Processing Times", ImGuiTreeNodeFlags_DefaultOpen))
       {
         for (std::string const & s : itsProcTimes) ImGui::TextUnformatted(s.c_str());
         ImGui::Text("OVERALL: %s/inference", total.c_str());
       }
+      ImGui::Separator();
+      
+      // Show a button to allow users to peek output data:
+      if (ImGui::Button("Peek output data")) itsShowDataPeek = true;
+
+      // Done with this window:
       ImGui::End();
+
+      // Allow user to peek into output data:
+      showDataPeekWindow(helper, refresh_data_peek);
     }
     
     if (ovl)
@@ -1014,3 +1039,86 @@ void jevois::dnn::Pipeline::showInfo(std::vector<std::string> const & info,
   }
 }
 
+#ifdef JEVOIS_PRO
+// ####################################################################################################
+void jevois::dnn::Pipeline::showDataPeekWindow(jevois::GUIhelper * helper, bool refresh)
+{
+  // Do not show anything if user closed the window:
+  if (itsShowDataPeek == false) return;
+
+  // Set window size applied only on first use ever, otherwise from imgui.ini:
+  ImGui::SetNextWindowPos(ImVec2(100, 50), ImGuiCond_FirstUseEver);
+  ImGui::SetNextWindowSize(ImVec2(900, 600), ImGuiCond_FirstUseEver);
+
+  // Light blue window background:
+  ImGui::PushStyleColor(ImGuiCol_WindowBg, 0xf0ffe0e0);
+
+  // Open the window:
+  ImGui::Begin("DNN Output Peek", &itsShowDataPeek, ImGuiWindowFlags_HorizontalScrollbar);
+
+  // Draw a combo to select which output:
+  std::vector<std::string> outspecs;
+  for (size_t i = 0; cv::Mat const & out : itsOuts)
+    outspecs.emplace_back("Out " + std::to_string(i++) + ": " + jevois::dnn::shapestr(out));
+  if (helper->combo("##dataPeekOutSelect", outspecs, itsDataPeekOutIdx)) itsDataPeekFreeze = false;
+
+  ImGui::SameLine(); ImGui::TextUnformatted("  "); ImGui::SameLine();
+  helper->toggleButton("Freeze", &itsDataPeekFreeze);
+  ImGui::Separator();
+
+  // Draw the data:
+  if ( (itsDataPeekFreeze && itsDataPeekStr.empty() == false) || refresh == false)
+    ImGui::TextUnformatted(itsDataPeekStr.c_str());
+  else
+  {
+    // OpenCV Mat::operator<< cannot handle >2D, try to collapse any dimensions with size 1:
+    cv::Mat const & out = itsOuts[itsDataPeekOutIdx];
+    std::vector<int> newsz;
+    cv::MatSize const & ms = out.size; int const nd = ms.dims();
+    for (int i = 0; i < nd; ++i) if (ms[i] > 1) newsz.emplace_back(ms[i]);
+    cv::Mat const out2(newsz, out.type(), out.data);
+
+    try
+    {
+      std::ostringstream oss;
+      if (newsz.size() > 3)
+        throw "too many dims";
+      else if (newsz.size() == 3)
+      {
+        cv::Range ranges[3];
+        ranges[2] = cv::Range::all();
+        ranges[1] = cv::Range::all();
+        for (int i = 0; i < newsz[0]; ++i)
+        {
+          oss << "-------------------------------------------------------------------------------\n";
+          oss << "Third dimension index = " << i << ":\n";
+          oss << "-------------------------------------------------------------------------------\n\n";
+          ranges[0] = cv::Range(i, i+1);
+          cv::Mat slice = out2(ranges); // still 3D but with 1 as 3D dimension...
+          cv::Mat slice2d(cv::Size(newsz[2], newsz[1]), slice.type(), slice.data); // Now 2D
+          oss << slice2d << "\n\n";
+        }
+      }
+      else
+        oss << out2;
+
+      itsDataPeekStr = oss.str();
+    }
+    catch (...) { itsDataPeekStr = "Sorry, cannot display this type of tensor..."; }
+
+    ImGui::TextUnformatted(itsDataPeekStr.c_str());
+
+    if (out2.total() > 10000)
+    {
+      helper->reportError("Large data peek - Freezing data display\n"
+                          "Click the Freeze button to refresh once");
+      itsDataPeekFreeze = true;
+    }
+  }
+  
+  // Done with this window:
+  ImGui::End();
+  ImGui::PopStyleColor();
+}
+#endif
+  

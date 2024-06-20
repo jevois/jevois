@@ -155,8 +155,8 @@ std::vector<cv::Mat> jevois::dnn::PreProcessor::process(jevois::RawImage const &
 void jevois::dnn::PreProcessor::sendreport(jevois::StdModule * mod, jevois::RawImage * outimg,
                                            jevois::OptGUIhelper * helper, bool overlay, bool idle)
 {
-  // First some info about the input:
 #ifdef JEVOIS_PRO
+  // First some info about the input:
   if (helper && idle == false && ImGui::CollapsingHeader("Pre-Processing", ImGuiTreeNodeFlags_DefaultOpen))
   {
     ImGui::BulletText("Input image: %dx%d %s", itsImageSize.width, itsImageSize.height,
@@ -170,44 +170,38 @@ void jevois::dnn::PreProcessor::sendreport(jevois::StdModule * mod, jevois::RawI
 
     // Now a report from the derived class:
     report(mod, outimg, helper, overlay, idle);
-  }
-#endif
 
-  // Now a report from the derived class, when not using a GUI helper:
-  if (helper == nullptr) report(mod, outimg, helper, overlay, idle);
-
-  // If desired, draw a rectangle around the network input:
-  if (showin::get())
-  {
-#ifdef JEVOIS_PRO
-    if (helper)
+    // If desired, draw a rectangle around the network input:
+    if (showin::get())
       for (cv::Rect const & r : itsCrops)
         ImGui::GetBackgroundDrawList()->AddRect(helper->i2d(r.x, r.y),
                                                 helper->i2d(r.x + r.width, r.y + r.height), 0x80808080, 0, 0, 5);
-#endif
-    
-    if (outimg)
-      for (cv::Rect const & r : itsCrops)
-        jevois::rawimage::drawRect(*outimg, r.x, r.y, r.width, r.height, 3, jevois::yuyv::MedGrey);
-  }
 
-  // Finally some info about the blobs, if detailed info was not requested (detailed info is provided by derived class):
-#ifdef JEVOIS_PRO
-  if (helper && idle == false && details::get() == false)
-  {
-    int idx = 0;
-    for (cv::Mat const & blob : itsBlobs)
+    // Finally some info about the blobs, if detailed info was not requested (detailed info provided by derived class):
+    if (details::get() == false)
     {
-      cv::Rect const & r = itsCrops[idx];
-      bool const stretch = (r.x == 0 && r.y == 0);
-      
-      ImGui::BulletText("Crop %d: %dx%d @ %d,%d %s", idx, r.width, r.height, r.x, r.y,
-                        stretch ? "" : "(letterbox)");
-      ImGui::BulletText("Blob %d: %s %s", idx, jevois::dnn::shapestr(blob).c_str(),
-                        stretch ? "(stretch)" : "(uniform)");
-
-      ++idx;
+      int idx = 0;
+      for (cv::Mat const & blob : itsBlobs)
+      {
+        cv::Rect const & r = itsCrops[idx];
+        bool const stretch = (r.x == 0 && r.y == 0);
+        
+        ImGui::BulletText("Crop %d: %dx%d @ %d,%d %s", idx, r.width, r.height, r.x, r.y,
+                          stretch ? "" : "(letterbox)");
+        ImGui::BulletText("Blob %d: %s %s", idx, jevois::dnn::shapestr(blob).c_str(),
+                          stretch ? "(stretch)" : "(uniform)");
+        
+        ++idx;
+      }
     }
   }
 #endif
+
+  // On JeVois-A33, we do not have much room on screen, so write nothing here, the network will write some info about
+  // input tensors; just draw the crop rectangles:
+  if (outimg)
+  {
+    for (cv::Rect const & r : itsCrops)
+      jevois::rawimage::drawRect(*outimg, r.x, r.y, r.width, r.height, 3, jevois::yuyv::MedGrey);
+  }
 }

@@ -291,8 +291,6 @@ void jevois::dnn::PostProcessorDetect::process(std::vector<cv::Mat> const & outs
         int sz2[] = { nbox, ndata };
         cv::Mat const out2(2, sz2, out.type(), out.data);
         
-        LINFO("output: " << out2);
-
         float const * data = (float const *)out2.data;
         for (int j = 0; j < nbox; ++j, data += ndata)
         {
@@ -302,16 +300,8 @@ void jevois::dnn::PostProcessorDetect::process(std::vector<cv::Mat> const & outs
 
           if (confidence < confThreshold) continue; // skip if class score too low
 
-          int centerX, centerY, width, height;
-          // Boxes are already scaled by input blob size:
-          centerX = (int)(data[0]);
-          centerY = (int)(data[1]);
-          width = (int)(data[2]);
-          height = (int)(data[3]);
-          
-          int left = centerX - width / 2;
-          int top = centerY - height / 2;
-          boxes.push_back(cv::Rect(left, top, width, height));
+          // Boxes are already scaled by input blob size, and are x1, y1, x2, y2:
+          boxes.push_back(cv::Rect(data[0], data[1], data[2]-data[0]+1, data[3]-data[1]+1));
           classIds.push_back(classIdPoint.x);
           confidences.push_back((float)confidence);
           if (classIds.size() > maxbox) break; // Stop if too many boxes
@@ -335,6 +325,7 @@ void jevois::dnn::PostProcessorDetect::process(std::vector<cv::Mat> const & outs
         float confidence = data[i + 4];
         if (confidence > confThreshold)
         {
+          // Boxes are already scaled by input blob size, and are x1, y1, x2, y2:
           int left = (int)data[i + 0];
           int top = (int)data[i + 1];
           int right = (int)data[i + 2];

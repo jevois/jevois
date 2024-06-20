@@ -1301,16 +1301,9 @@ void jevois::GUIhelper::drawParameters()
           {
             // Find the index of the current value:
             int index = 0; for (auto const & v : vv) if (v == ps.value) break; else ++index;
-            if (ImGui::Combo(wname, &index,
-                             [](void * vec, int idx, const char ** out_text)
-                             {
-                               auto & ve = *static_cast<std::vector<std::string>*>(vec);
-                               if (idx < 0 || idx >= static_cast<int>(ve.size())) return false;
-                               *out_text = ve.at(idx).c_str();
-                               return true;
-                             },
-                             static_cast<void *>(&vv), vv.size()))
-              setparstr(ps.descriptor, vv[index]);
+
+            // Draw a combobox widget:
+            if (combo(wname, vv, index)) setparstr(ps.descriptor, vv[index]);
           }
         }
         // ----------------------------------------------------------------------
@@ -1535,16 +1528,7 @@ void jevois::GUIhelper::drawConsole()
     int idx = 0; for (auto const & v : jevois::module::SerStyle_Values) if (v == sp) break; else ++idx;
 
     ImGui::SameLine();
-    if (ImGui::Combo("serstyle", &idx,
-                     [](void * vec, int idx, const char ** out_text)
-                     {
-                       auto & ve = *static_cast<std::vector<std::string>*>(vec);
-                       if (idx < 0 || idx >= static_cast<int>(ve.size())) return false;
-                       *out_text = ve.at(idx).c_str();
-                       return true;
-                     },
-                     const_cast<void *>(static_cast<void const *>(&jevois::module::SerStyle_Strings)),
-                     jevois::module::SerStyle_Strings.size()))
+    if (combo("serstyle", jevois::module::SerStyle_Strings, idx))
       try { e->setParamValUnique("serstyle", jevois::module::SerStyle_Values[idx]); }
       catch (...) { jevois::warnAndIgnoreException(); }
   }
@@ -1620,6 +1604,20 @@ int jevois::GUIhelper::modal(std::string const & title, char const * text, int *
   else *retptr = dont_ask_me_next_time ? 3 : 0; // propagate checkbox status
   
   return ret;
+}
+
+// ##############################################################################################################
+bool jevois::GUIhelper::combo(std::string const & name, std::vector<std::string> const & items, int & selected_index)
+{
+  return ImGui::Combo(name.c_str(), &selected_index,
+                      [](void * vec, int idx, const char ** out_text)
+                      {
+                        auto & ve = *static_cast<std::vector<std::string>*>(vec);
+                        if (idx < 0 || idx >= static_cast<int>(ve.size())) return false;
+                        *out_text = ve.at(idx).c_str();
+                        return true;
+                      },
+                      const_cast<void *>(static_cast<void const *>(&items)), items.size());
 }
 
 // ##############################################################################################################

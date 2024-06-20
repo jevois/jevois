@@ -340,6 +340,11 @@ namespace jevois
       int modal(std::string const & title, char const * text, int * default_val = nullptr,
                 char const * b1txt = "Ok", char const * b2txt = "Cancel");
 
+      //! Helper to draw a combobox from a vector of strings
+      /*! Note that selected_index is read-write: the passed value is used to display the current item in the combobox,
+          and, when a new item is selected, its index is returned in selected_index and true is returned. */
+      bool combo(std::string const & name, std::vector<std::string> const & items, int & selected_index);
+      
       //! Show a message that we are running headless
       void headlessDisplay();
 

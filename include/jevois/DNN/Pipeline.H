@@ -176,7 +176,11 @@ namespace jevois
                       jevois::RawImage * outimg, jevois::OptGUIhelper * helper, bool ovl, bool idle);
         void asyncNetWait();
         bool checkAsyncNetComplete();
-
+#ifdef JEVOIS_PRO
+        // Allow user to peek into outputs. Caller must make sure helper is valid and idle is false
+        void showDataPeekWindow(jevois::GUIhelper * helper, bool refresh);
+#endif
+        
       private:
         jevois::TimerOne itsTpre, itsTnet, itsTpost;
         bool itsZooChanged = false;
@@ -201,6 +205,12 @@ namespace jevois
         std::map<std::string, size_t> itsAccelerators;
         std::vector<double> itsPreStats, itsNetStats, itsPstStats;
         bool itsStatsWarmup = true;
+#ifdef JEVOIS_PRO
+        bool itsShowDataPeek = false;
+        int itsDataPeekOutIdx = 0;
+        bool itsDataPeekFreeze = false;
+        std::string itsDataPeekStr;
+#endif
     };
 
   } // namespace dnn

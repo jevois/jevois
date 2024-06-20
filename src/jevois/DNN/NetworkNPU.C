@@ -21,6 +21,7 @@
 #include <jevois/Util/Utils.H>
 #include <jevois/DNN/Utils.H>
 #include <vsi_nn_version.h>
+#include <filesystem>
 
 #define VNN_APP_DEBUG (FALSE)
 
@@ -168,6 +169,9 @@ void jevois::dnn::NetworkNPU::load()
   // Get NBG file name:
   std::string const m = jevois::absolutePath(dataroot::get(), model::get());
 
+  // Check that the file does exist so we avoid cryptic errors if not:
+  if (std::filesystem::exists(m) == false) LFATAL("Missing network file " << m << " -- ABORT");
+  
   // Initialize node:
   vsi_nn_node_t * node[1];
   NEW_VXNODE(node[0], VSI_NN_OP_NBG, numin, numout, 0);
@@ -182,7 +186,7 @@ void jevois::dnn::NetworkNPU::load()
   auto status = vsi_nn_SetupGraph(itsGraph, FALSE);
   if (status != VSI_SUCCESS)
     LFATAL("Failed to setup graph -- Possible causes:\n"
-           "- Your source network uses unsupported layer types?\n"
+           "- Incorrect intensors/outtensors in your YAML file?\n"
            "- Wrong NPU model? Check --optimize VIPNANOQI_PID0X88\n"
            "- Wrong NPU SDK version? Running ovxlib " <<
            VSI_NN_VERSION_MAJOR << '.' << VSI_NN_VERSION_MINOR << '.' << VSI_NN_VERSION_PATCH);
@@ -191,7 +195,9 @@ void jevois::dnn::NetworkNPU::load()
   if (verifygraph::get())
   {
     status = vsi_nn_VerifyGraph(itsGraph);
-    if (status != VSI_SUCCESS) LFATAL("Graph verification failed");
+    if (status != VSI_SUCCESS) LFATAL("Graph verification failed -- \n"
+                                      "check that intensors/outtensors specs exactly match\n"
+                                      "those provided during model conversion.");
     else LINFO("Graph verification ok");
   }
 }

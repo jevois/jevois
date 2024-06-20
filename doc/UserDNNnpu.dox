@@ -470,6 +470,16 @@ Another example: Object Detection using YOLOv10n
   # ...
   \endcode
 
-- It converted fine and is now included in the JeVois distribution and microSD image.
-*/
+- It converted fine. However, it was not generating any boxes on the display. Upon inspection of the output tensor,
+  confidence values for all classes were always zero. Looking at the yolov10n-576x288.quantize generated during
+  conversion showed a range of [-108.24 .. 611.29] for the values in the output tensor. Indeed, in that output tensor,
+  which is 1x3024x84 for inputs 1x3x288x576, both 4 box coordinates (which can vary within 512x288, and more in case
+  boxes partially go outside the input image), and 80 class confidences (in [0..1]), were concatenated. That means that
+  with 8 bits of quantization, any class confidence in [0..1] would always map to the same number (the zero-point of
+  quantization)...
+
+- So we changed the quantization to dynamic_fixed_point and int16. The results used 5 bits for the decimal portion,
+  which should be enough to represent class accuracies reasonably well.
+
+- This worked well, and YOLOv10n for NPU now included in the JeVois distribution and microSD image.  */
 
