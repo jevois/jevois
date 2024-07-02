@@ -135,9 +135,8 @@ void jevois::GUIconsole::draw()
   // Command-line input:
   bool reclaim_focus = false;
   ImGuiInputTextFlags input_text_flags = ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CallbackHistory;
+  // | ImGuiInputTextFlags_CallbackCompletion 
 
-  // |
-  //ImGuiInputTextFlags_CallbackCompletion 
   if (ImGui::InputTextWithHint("Input", "Type JeVois commands here...",
                                itsInputBuf, IM_ARRAYSIZE(itsInputBuf), input_text_flags,
                                &TextEditCallbackStub, this))

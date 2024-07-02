@@ -239,7 +239,12 @@ namespace jevois
       //! Draw polygon over an image
       /*! Coordinates used should be image coordinates, as this function internally calls i2d(). */
       void drawPoly(std::vector<cv::Point2f> const & pts, ImU32 col = IM_COL32(128,255,128,255), bool filled = true);
-      
+
+      //! Draw polygon over an image
+      /*! For N vertices, pts should be either CV_32F and 2xN or Nx2 for x,x,x,x,... y,y,y,y,..., or 1x2N or 2Nx1 for
+          x,y,x,y,x,y...; or CV_32FC2 and 1xN or Nx1. If N < 2, nothing is drawn. Other shapes are illegal. */
+      void drawPoly(cv::Mat const & pts, ImU32 col = IM_COL32(128,255,128,255), bool filled = true);
+
       //! Draw circle over an image
       /*! Coordinates used should be image coordinates, as this function internally calls i2d(). */
       void drawCircle(float x, float y, float r, ImU32 col = IM_COL32(128,255,128,255), bool filled = true);
@@ -489,7 +494,7 @@ namespace jevois
       // Compilation progress
       enum CompilationState { Idle, Start, Cmake, Make, Install, CPack, Success, Error };
       CompilationState itsCompileState = CompilationState::Idle;
-      VideoMapping itsNewMapping = { };
+      VideoMapping itsNewMapping;
       std::future<std::string> itsCompileFut;
       bool compileCommand(std::string const & cmd, std::string & msg); // true on success, false in progress, throws
       std::array<std::string, 4> itsCompileMessages; // messages for the compilation steps

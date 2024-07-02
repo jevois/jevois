@@ -144,15 +144,12 @@ namespace jevois
       //! Get summary info about this parameter
       virtual ParameterSummary const summary() const = 0;
 
-      //! Freeze this parameter, it becomes read-only and will not show up in the help message
-      void freeze();
-
-      //! Unfreeze this parameter, it becomes read-write and will show up in the help message
-      void unFreeze();
-
-      //! Alternate syntax that can be used instead of freeze()/unFreeze(), useful for programmatic freezing
+      //! Freeze or un-freeze a parameter; frozen parameters cannot be set(), but get() is still allowed
       void freeze(bool doit);
 
+      //! Returns whether parameter is frozen
+      bool frozen() const;
+      
       //! Reset this parameter to its default value
       virtual void reset() = 0;
       

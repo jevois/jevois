@@ -28,7 +28,7 @@ void jevois::dnn::Network::freeze(bool doit)
 {
   comment::freeze(doit);
   url::freeze(doit);
-  extraintensors::freeze();
+  extraintensors::freeze(doit);
 }
 
 // ####################################################################################################

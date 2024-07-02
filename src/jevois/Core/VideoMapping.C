@@ -252,6 +252,7 @@ namespace
     // Set the defaults in case no qualifier is given:
     wdr = jevois::WDRtype::Linear;
     crop = jevois::CropType::Scale;
+    c2fmt = 0;
     
     // Parse:
     auto tok = jevois::split(str, ":");
@@ -327,7 +328,7 @@ std::vector<jevois::VideoMapping> jevois::videoMappingsFromStream(jevois::Camera
 {
   size_t linenum = 1;
   std::vector<jevois::VideoMapping> mappings;
-  jevois::VideoMapping defmapping = { };
+  jevois::VideoMapping defmapping;
   
   for (std::string line; std::getline(is, line); ++linenum)
   {

@@ -408,18 +408,12 @@ namespace jevois
           @throws jevois::exception::ParameterException if not exactly one Parameter matches the given descriptor. */
       std::string getParamStringUnique(std::string const & paramdescriptor) const;
 
-      //! Freeze a parameter, by name, see ParameterBase::freeze()
-      void freezeParam(std::string const & paramdescriptor);
-
-      //! Unfreeze a parameter, by name, see ParameterBase::unFreeze()
-      void unFreezeParam(std::string const & paramdescriptor);
+      //! Freeze/unfreeze a parameter, by name, see ParameterBase::freeze()
+      void freezeParam(std::string const & paramdescriptor, bool doit);
 
       //! Freeze all parameters
-      void freezeAllParams();
+      void freezeAllParams(bool doit);
 
-      //! Unfreeze all parameters
-      void unFreezeAllParams();
-      
       //! Get our full descriptor (including all parents) as [Instancename]:[...]:[...]
       std::string descriptor() const;
 

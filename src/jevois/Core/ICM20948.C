@@ -164,7 +164,7 @@ void jevois::ICM20948::preInit()
 void jevois::ICM20948::postInit()
 {
   // Configure the DMP if desired:
-  mode::freeze();
+  mode::freeze(true);
   switch (mode::get())
   {
   case jevois::imu::Mode::DMP:
@@ -218,7 +218,7 @@ void jevois::ICM20948::postInit()
     computeFIFOpktSize(-1.0F, -1.0F, -1);
 
     // DMP is not available:
-    dmp::freeze();
+    dmp::freeze(true);
     
     LINFO("IMU FIFO mode enabled.");
   }
@@ -233,8 +233,8 @@ void jevois::ICM20948::postInit()
     itsIMU->writeRegister(ICM20948_REG_USER_CTRL, v);
 
     // DMP is not available:
-    dmp::freeze();
-    pktdbg::freeze();
+    dmp::freeze(true);
+    pktdbg::freeze(true);
 
     LINFO("IMU raw data mode enabled.");
   }
@@ -245,7 +245,7 @@ void jevois::ICM20948::postInit()
 // ####################################################################################################
 void jevois::ICM20948::preUninit()
 {
-  mode::unFreeze();
+  mode::freeze(false);
 }
 
 // ####################################################################################################

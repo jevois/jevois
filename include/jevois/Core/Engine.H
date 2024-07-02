@@ -595,7 +595,7 @@ namespace jevois
       
       size_t itsDefaultMappingIdx; //!< Index of default mapping
       std::vector<VideoMapping> itsMappings; //!< All our mappings from videomappings.cfg
-      VideoMapping itsCurrentMapping { }; //!< Current mapping, may not match any in itsMappings if setmapping2 used
+      VideoMapping itsCurrentMapping; //!< Current mapping, may not match any in itsMappings if setmapping2 used
 
       std::shared_ptr<VideoInput> itsCamera; //!< Our camera
       std::shared_ptr<IMU> itsIMU; //! Our IMU

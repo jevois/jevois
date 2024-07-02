@@ -65,7 +65,7 @@ void jevois::dnn::PostProcessorSegment::process(cv::Mat const & results)
   cv::MatSize const rs = results.size;
   T const * r = reinterpret_cast<T const *>(results.data);
   T const thresh(cthresh::get() * 0.01F);
-  
+
   switch (segtype::get())
   {
     // ----------------------------------------------------------------------------------------------------
@@ -73,14 +73,13 @@ void jevois::dnn::PostProcessorSegment::process(cv::Mat const & results)
   {
     // tensor should be 4D 1xHxWxC, where C is the number of classes. We pick the class index with max value and
     // apply the colormap to it:
-    if (rs.dims() != 4 || rs[0] != 1)
-      LFATAL("Output tensor is " << jevois::dnn::shapestr(results) << ", but need 1xHxWxC for C classes");
+    if (rs.dims() != 4 || rs[0] != 1) LTHROW("Need 1xHxWxC for C classes");
     int const numclass = rs[3]; int const siz = rs[1] * rs[2] * numclass;
     
     // Apply colormap, converting from RGB to RGBA:
     itsOverlay = cv::Mat(rs[1], rs[2], CV_8UC4);
     uint32_t * im = reinterpret_cast<uint32_t *>(itsOverlay.data);
-
+    
     for (int i = 0; i < siz; i += numclass)
     {
       int maxc = -1; T maxval = thresh;
@@ -96,19 +95,18 @@ void jevois::dnn::PostProcessorSegment::process(cv::Mat const & results)
   }
   break;
   
-    // ----------------------------------------------------------------------------------------------------
+  // ----------------------------------------------------------------------------------------------------
   case jevois::dnn::postprocessor::SegType::ClassesCHW:
   {
     // tensor should be 4D 1xCxHxW, where C is the number of classes. We pick the class index with max value and
     // apply the colormap to it:
-    if (rs.dims() != 4 || rs[0] != 1)
-      LFATAL("Output tensor is " << jevois::dnn::shapestr(results) << ", but need 1xCxHxW for C classes");
+    if (rs.dims() != 4 || rs[0] != 1) LTHROW("Need 1xCxHxW for C classes");
     int const numclass = rs[1]; int const hw = rs[2] * rs[3];
     
     // Apply colormap, converting from RGB to RGBA:
     itsOverlay = cv::Mat(rs[2], rs[3], CV_8UC4);
     uint32_t * im = reinterpret_cast<uint32_t *>(itsOverlay.data);
-
+    
     for (int i = 0; i < hw; ++i)
     {
       int maxc = -1; T maxval = thresh;
@@ -129,7 +127,7 @@ void jevois::dnn::PostProcessorSegment::process(cv::Mat const & results)
   {
     // tensor should be 2D HxW, 3D 1xHxW, or 4D 1xHxWx1 and contain class ID in each pixel:
     if (rs.dims() != 2 && (rs.dims() != 3 || rs[0] != 1) && (rs.dims() != 4 || rs[0] != 1 || rs[3] != 1))
-      LFATAL("Output tensor is " << jevois::dnn::shapestr(results) << ", but need HxW, 1xHxW, or 1xHxWx1");
+      LTHROW("Need shape HxW, 1xHxW, or 1xHxWx1 with class ID in each pixel");
     int const siz = rs[1] * rs[2];
     
     // Apply colormap, converting from RGB to RGBA:
@@ -150,22 +148,34 @@ void jevois::dnn::PostProcessorSegment::process(cv::Mat const & results)
 // ####################################################################################################
 void jevois::dnn::PostProcessorSegment::process(std::vector<cv::Mat> const & outs, jevois::dnn::PreProcessor * preproc)
 {
-  if (outs.size() != 1) LFATAL("Need exactly one output blob, received " << outs.size());
-
-  // Patch up the colormap if background class ID is 0:
-  if (bgid::get() != 0) itsColor[0] = 0xff0000; else itsColor[0] = 0;
-
-  // Post-process:
-  cv::Mat const & results = outs[0];
-
-  switch (results.type())
+  try
   {
-  case CV_8UC1: process<uint8_t>(results); break;
-  case CV_16UC1: process<uint16_t>(results); break;
-  case CV_32FC1: process<float>(results); break;
-  case CV_32SC1: process<int32_t>(results); break;
+    if (outs.size() != 1) LTHROW("Need exactly one output blob");
 
-  default: LFATAL("Unsupported data type in tensor " << jevois::dnn::shapestr(results));
+    // Patch up the colormap if background class ID is 0:
+    if (bgid::get() != 0) itsColor[0] = 0xff0000; else itsColor[0] = 0;
+    
+    // Post-process:
+    cv::Mat const & results = outs[0];
+    
+    switch (results.type())
+    {
+    case CV_8UC1: process<uint8_t>(results); break;
+    case CV_16UC1: process<uint16_t>(results); break;
+    case CV_32FC1: process<float>(results); break;
+    case CV_32SC1: process<int32_t>(results); break;
+      
+    default: LTHROW("Unsupported data type in tensor " << jevois::dnn::shapestr(results));
+    }
+  }
+  // Abort here if the received outputs were malformed:
+  catch (std::exception const & e)
+  {
+    std::string err = "Selected segtype is " + segtype::strget() + " and network produced:\n\n";
+    for (cv::Mat const & m : outs) err += "- " + jevois::dnn::shapestr(m) + "\n";
+    err += "\nFATAL ERROR(s):\n\n";
+    err += e.what();
+    LFATAL(err);
   }
 
   // Compute overlay corner coords within the input image, for use in report():

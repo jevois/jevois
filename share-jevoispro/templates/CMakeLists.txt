@@ -19,7 +19,7 @@
 ## You may provide the installed JeVois config root as:
 #   cmake -DJEVOIS_CONFIG=/jevois/config ..
 
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.6)
 
 ## Set vendor names, our modules will be placed in a directory by that name under /jevois/modules:
 set(JEVOIS_VENDOR "__VENDOR__")
@@ -52,7 +52,7 @@ set_target_properties(__MODULE__ PROPERTIES PREFIX "") # no lib prefix in the .s
 
 ## Add a dependency and command to build modinfo.html:
 add_custom_command(OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/modinfo.html"
-  COMMAND jevois-modinfo __MODULE__.C
+  COMMAND jevoispro-modinfo __MODULE__.C
   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/__MODULE__.C
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 

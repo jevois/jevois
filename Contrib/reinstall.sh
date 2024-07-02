@@ -68,7 +68,7 @@ fi
 
 ###################################################################################################
 # Cleanup:
-/bin/rm -rf tensorflow pycoral threadpool tflite include lib
+/bin/rm -rf tensorflow threadpool tflite include lib
 
 ###################################################################################################
 # Get the jevois version:
@@ -102,6 +102,7 @@ mkdir -p lib/amd64 lib/armhf lib/arm64
 #tc=`grep ^TENSORFLOW_COMMIT pycoral/workspace.bzl |awk '{ print \$3 }'`
 #tc="48c3bae94a8b324525b45f157d638dfd4e8c3be1" # version used by frogfish tpu release
 tc="a4dfb8d1a71385bd6d122e4f27f86dcebb96712d" # TF 2.5.0, for use with grouper tpu release
+#tc="5bc9d26649cca274750ad3625bd93422617eed4b" # TF 2.16.1, fo ruse with jevois 1.21.0 and compiled libcoral
 get_github tensorflow tensorflow ${tc//\"/}
 
 # C++20 thread pool (we actually implement our own ThreadPool.H/C but need the dependencies):
@@ -125,6 +126,13 @@ mkdir include/all/concurrentqueue
 cd tensorflow
 ./tensorflow/lite/tools/make/download_dependencies.sh
 
+# Patch downloaded deps:
+sed -i '/#include <cstdint>/a #include <limits>' \
+    tensorflow/lite/tools/make/downloads/ruy/ruy/block_map.cc
+
+sed -i '/#include <limits.h>/a #include <cstdint>' \
+    tensorflow/lite/tools/make/downloads/absl/absl/strings/internal/str_format/extension.h
+
 # We need bazel-3.7.2 to compile tensorflow:
 wget http://jevois.org/data/bazel_3.7.2-linux-x86_64.deb
 sudo dpkg -i bazel_3.7.2-linux-x86_64.deb
@@ -133,10 +141,18 @@ bzl="bazel-3.7.2"
 
 # Build for host:
 echo "### JeVois: compiling tensorflow for host ..."
-${bzl} build -c opt //tensorflow/lite:libtensorflowlite.so
+${bzl} build -c opt //tensorflow/lite:libtensorflowlite.so || true
+
+echo "\n\n\nJEVOIS: no worries, we will fix that error now...\n\n\n"
+
+for f in `find ~/.cache/bazel -name block_map.cc`; do sed -i '/#include <cstdint>/a #include <limits>' $f; done
+for f in `find ~/.cache/bazel -name extension.h`; do sed -i '/#include <limits.h>/a #include <cstdint>' $f; done
+for f in `find ~/.cache/bazel -name spectrogram.h`; do sed -i '/#include <vector>/a #include <cstdint>' $f; done
+
+${bzl} build -c opt //tensorflow/lite:libtensorflowlite.so || true
 sudo cp -v bazel-bin/tensorflow/lite/libtensorflowlite.so ../lib/amd64/
 
-# Copy some includes:
+# Copy some includes that we may need when compiling our code:
 /usr/bin/find tensorflow/lite -name '*.h' -print0 | \
     tar cvf - --null --files-from - | \
     ( cd ../include/all/ && tar xf - )
@@ -152,12 +168,23 @@ ${bzl} build --config=elinux_armhf -c opt //tensorflow/lite:libtensorflowlite.so
 sudo mkdir -p /var/lib/jevois-microsd/lib
 sudo cp -v bazel-bin/tensorflow/lite/libtensorflowlite.so ../lib/armhf/
 
+# Build wheel for host: currently disabled as we use the pycoral wheels instead
+## We need docker installed
+#docker --version || ( echo "\n\n\nJEVOIS: Please install docker to compile tensorflow -- ABORT"; exit 1 )
+#cd tensorflow/lite/tools/pip_package/
+#make BASE_IMAGE=ubuntu:24.04 PYTHON=python3 TENSORFLOW_TARGET=k8 docker-build
+#mv out/python3/ubuntu*/tflite_runtime*.whl ../../../../../
+## Build wheel for platform:
+#make BASE_IMAGE=ubuntu:24.04 PYTHON=python3 TENSORFLOW_TARGET=aarch64 docker-build
+#mv out/python3/ubuntu*/tflite_runtime*.whl ../../../../../
+#cd ../../../..
+
 cd ..
 
 ###################################################################################################
 # ONNX Runtime for C++: need to download tarballs from github
 # In our CMakeLists.txt we include the onnxruntime includes and libs into the jevois deb
-ORT_VER="1.15.1"
+ORT_VER="1.18.0"
 
 # For host:
 wget https://github.com/microsoft/onnxruntime/releases/download/v${ORT_VER}/onnxruntime-linux-x64-${ORT_VER}.tgz
@@ -176,12 +203,6 @@ mkdir -p include/arm64/onnxruntime
 /bin/cp -a onnxruntime-linux-aarch64-${ORT_VER}/include/* include/arm64/onnxruntime/
 /bin/cp onnxruntime-linux-aarch64-${ORT_VER}/lib/libonnxruntime.so lib/arm64/libonnxruntime.so.${ORT_VER}
 /bin/rm -rf onnxruntime-linux-aarch64-${ORT_VER}
-
-# pycoral build
-#cd pycoral
-#./scripts/build.sh
-#make wheel
-#cd ..
 
 ###################################################################################################
 # Keep track of the last installed release:

@@ -129,6 +129,9 @@ namespace jevois
       //! Freeze/unfreeze this parameter, it becomes read-only and will not show up in the help message
       void freeze(bool doit);
 
+      //! Returns whether parameter is frozen
+      bool frozen() const;
+      
       //! Reset this parameter to its default value
       void reset();
 

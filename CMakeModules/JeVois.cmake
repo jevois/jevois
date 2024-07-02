@@ -348,7 +348,7 @@ macro(jevois_check_sdk_version ver)
   endif()
   if (NOT EXISTS "${verfile}")
     message(FATAL_ERROR "Cannot find ${verfile}. Install the ${JEVOIS} SDK first with: \
-            sudo apt install ${JEVOIS}-sdk-dev -- ABORT")
+            'sudo apt install ${JEVOIS}-sdk-dev' --ABORT")
   endif()
   
   file (STRINGS "${verfile}" SDK_VERSION)

@@ -1,8 +1,8 @@
 diff --git a/tensorflow/lite/core/api/op_resolver.h b/tensorflow/lite/core/api/op_resolver.h
-index b6a8171d2a3..f8fade23461 100644
+index f43c6ba5658..c63c0ebb41f 100644
 --- a/tensorflow/lite/core/api/op_resolver.h
 +++ b/tensorflow/lite/core/api/op_resolver.h
-@@ -40,7 +40,7 @@ class OpResolver {
+@@ -41,7 +41,7 @@ class OpResolver {
    // lookup for graph resolution.
    using TfLiteDelegatePtrVector =
        std::vector<std::unique_ptr<TfLiteDelegate, void (*)(TfLiteDelegate*)>>;
@@ -12,7 +12,7 @@ index b6a8171d2a3..f8fade23461 100644
    }
  
 diff --git a/tensorflow/lite/core/api/profiler.h b/tensorflow/lite/core/api/profiler.h
-index 897efbe1438..99916195d69 100644
+index f2dd12c2f95..d749e80a6e3 100644
 --- a/tensorflow/lite/core/api/profiler.h
 +++ b/tensorflow/lite/core/api/profiler.h
 @@ -70,8 +70,8 @@ class Profiler {
@@ -40,10 +40,10 @@ index 897efbe1438..99916195d69 100644
   protected:
    friend class ScopedProfile;
 diff --git a/tensorflow/lite/core/subgraph.h b/tensorflow/lite/core/subgraph.h
-index 14b4f068a11..67955453ee2 100644
+index 9a7039c483e..152d7da1e03 100644
 --- a/tensorflow/lite/core/subgraph.h
 +++ b/tensorflow/lite/core/subgraph.h
-@@ -356,7 +356,7 @@ class Subgraph {
+@@ -367,7 +367,7 @@ class Subgraph {
  
      uint32_t BeginEvent(const char* tag, EventType event_type,
                          int64_t event_metadata1,
@@ -52,7 +52,7 @@ index 14b4f068a11..67955453ee2 100644
        if (!profiler_) return 0;
        return profiler_->BeginEvent(tag, event_type, event_metadata1,
                                     subgraph_index_);
-@@ -375,7 +375,7 @@ class Subgraph {
+@@ -386,7 +386,7 @@ class Subgraph {
  
      void AddEvent(const char* tag, EventType event_type, uint64_t start,
                    uint64_t end, int64_t event_metadata1,
@@ -61,3 +61,110 @@ index 14b4f068a11..67955453ee2 100644
        if (!profiler_) return;
        profiler_->AddEvent(tag, event_type, start, end, event_metadata1,
                            subgraph_index_);
+diff --git a/tensorflow/lite/kernels/internal/spectrogram.h b/tensorflow/lite/kernels/internal/spectrogram.h
+index 879dc1c9700..5a24cad8a49 100644
+--- a/tensorflow/lite/kernels/internal/spectrogram.h
++++ b/tensorflow/lite/kernels/internal/spectrogram.h
+@@ -34,6 +34,7 @@ limitations under the License.
+ #include <complex>
+ #include <deque>
+ #include <vector>
++#include <cstdint>
+ 
+ #include "third_party/fft2d/fft.h"
+ 
+diff --git a/tensorflow/lite/tools/pip_package/Dockerfile b/tensorflow/lite/tools/pip_package/Dockerfile
+index 834fe5efca7..ca55955c396 100644
+--- a/tensorflow/lite/tools/pip_package/Dockerfile
++++ b/tensorflow/lite/tools/pip_package/Dockerfile
+@@ -6,19 +6,11 @@ RUN /update_sources.sh
+ 
+ RUN dpkg --add-architecture armhf
+ RUN dpkg --add-architecture arm64
+-RUN apt-get update && \
++RUN DEBIAN_FRONTEND=noninteractive apt-get update && \
+     apt-get install -y \
+       debhelper \
+       dh-python \
+-      python-all \
+-      python-setuptools \
+-      python-wheel \
+-      python-numpy \
+-      python-pip \
+       pybind11-dev \
+-      libpython-dev \
+-      libpython-dev:armhf \
+-      libpython-dev:arm64 \
+       python3-all \
+       python3-setuptools \
+       python3-wheel \
+@@ -34,9 +26,9 @@ RUN apt-get update && \
+       zlib1g-dev:arm64 \
+       curl \
+       unzip \
+-      git && \
++      git python3-pybind11 python-is-python3 && \
+     apt-get clean
+-RUN pip install pip --upgrade
+-RUN pip install pybind11
+-RUN pip3 install pip --upgrade
+-RUN pip3 install pybind11
++#RUN pip install pip --upgrade
++#RUN pip install pybind11
++#RUN pip3 install pip --upgrade
++#RUN pip3 install pybind11
+diff --git a/tensorflow/lite/tools/pip_package/build_pip_package_with_cmake.sh b/tensorflow/lite/tools/pip_package/build_pip_package_with_cmake.sh
+index b13a70be37b..ee62c4afecf 100755
+--- a/tensorflow/lite/tools/pip_package/build_pip_package_with_cmake.sh
++++ b/tensorflow/lite/tools/pip_package/build_pip_package_with_cmake.sh
+@@ -97,6 +97,7 @@ case "${TENSORFLOW_TARGET}" in
+       -DCMAKE_CXX_FLAGS="${ARMCC_FLAGS}" \
+       -DCMAKE_SYSTEM_NAME=Linux \
+       -DCMAKE_SYSTEM_PROCESSOR=aarch64 \
++      -DTFLITE_ENABLE_XNNPACK=ON \
+       "${TENSORFLOW_LITE_DIR}"
+     ;;
+   native)
+diff --git a/tensorflow/lite/tools/pip_package/setup.py b/tensorflow/lite/tools/pip_package/setup.py
+index a85053b1602..3d86f3a3399 100644
+--- a/tensorflow/lite/tools/pip_package/setup.py
++++ b/tensorflow/lite/tools/pip_package/setup.py
+@@ -210,6 +210,7 @@ setup(
+         'Programming Language :: Python :: 3.6',
+         'Programming Language :: Python :: 3.7',
+         'Programming Language :: Python :: 3.8',
++        'Programming Language :: Python :: 3.12',
+         'Topic :: Scientific/Engineering',
+         'Topic :: Scientific/Engineering :: Mathematics',
+         'Topic :: Scientific/Engineering :: Artificial Intelligence',
+diff --git a/tensorflow/lite/tools/pip_package/update_sources.sh b/tensorflow/lite/tools/pip_package/update_sources.sh
+index 40e3213c597..104943a74ae 100755
+--- a/tensorflow/lite/tools/pip_package/update_sources.sh
++++ b/tensorflow/lite/tools/pip_package/update_sources.sh
+@@ -19,10 +19,24 @@
+ 
+ [[ "${NAME}" == "Ubuntu" ]] || exit 0
+ 
+-sed -i "s/deb\ /deb \[arch=amd64\]\ /g" /etc/apt/sources.list
++if [[ "${VERSION_CODENAME}" == "noble" ]]; then
++    cat > /etc/apt/sources.list.d/ubuntu-arm64.sources <<EOF
++Types: deb
++Architectures: arm64 armhf
++URIs: http://ports.ubuntu.com/ubuntu-ports/
++Suites: noble noble-updates noble-backports
++Components: main restricted universe multiverse
++Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
++EOF
+ 
+-cat <<EOT >> /etc/apt/sources.list
++sed -i "/Types:/a Architectures: amd64 i386" /etc/apt/sources.list.d/ubuntu.sources
++else
++    
++    sed -i "s/deb\ /deb \[arch=amd64\]\ /g" /etc/apt/sources.list
++
++    cat <<EOT >> /etc/apt/sources.list
+ deb [arch=arm64,armhf] http://ports.ubuntu.com/ubuntu-ports ${UBUNTU_CODENAME} main universe
+ deb [arch=arm64,armhf] http://ports.ubuntu.com/ubuntu-ports ${UBUNTU_CODENAME}-updates main universe
+ deb [arch=arm64,armhf] http://ports.ubuntu.com/ubuntu-ports ${UBUNTU_CODENAME}-security main universe
+ EOT
++fi

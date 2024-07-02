@@ -658,21 +658,21 @@ void jevois::Engine::postInit()
   
   // Freeze the serial port device names, their params, and camera and gadget too:
 #ifdef JEVOIS_PRO
-  serialmonitors::freeze();
+  serialmonitors::freeze(true);
 #endif
-  serialdev::freeze();
-  usbserialdev::freeze();
-  for (auto & s : itsSerials) s->freezeAllParams();
-  cameradev::freeze();
-  imudev::freeze();
-  cameranbuf::freeze();
-  camturbo::freeze();
-  gadgetdev::freeze();
-  gadgetnbuf::freeze();
+  serialdev::freeze(true);
+  usbserialdev::freeze(true);
+  for (auto & s : itsSerials) s->freezeAllParams(true);
+  cameradev::freeze(true);
+  imudev::freeze(true);
+  cameranbuf::freeze(true);
+  camturbo::freeze(true);
+  gadgetdev::freeze(true);
+  gadgetnbuf::freeze(true);
   itsTurbo = camturbo::get();
-  multicam::freeze();
-  quietcmd::freeze();
-  python::freeze();
+  multicam::freeze(true);
+  quietcmd::freeze(true);
+  python::freeze(true);
   
   // On JeVois-Pro platform, we may get the camera sensor automatically from the device tree. Users should still load
   // the correct overlay in /boot/env.txt to match the installed sensor:
@@ -688,16 +688,16 @@ void jevois::Engine::postInit()
     LINFO("Camera sensor selected from device tree: " << camsens);
   }
 #endif
-  camerasens::freeze();
+  camerasens::freeze(true);
   LINFO("Using camera sensor: " << camsens);
   
   // Check iw we want to use GUI mode:
   bool usegui = false;
 #ifdef JEVOIS_PRO
-  gui::freeze();
+  gui::freeze(true);
   usegui = gui::get();
-  conslock::freeze();
-  watchdog::freeze();
+  conslock::freeze(true);
+  watchdog::freeze(true);
 #endif
   
   // Grab the log messages, itsSerials is not going to change anymore now that the serial params are frozen:
@@ -738,8 +738,8 @@ void jevois::Engine::postInit()
     
 #ifndef JEVOIS_PLATFORM
     // No need to confuse people with a non-working camreg and imureg params:
-    camreg::set(false); camreg::freeze();
-    imureg::set(false); imureg::freeze();
+    camreg::set(false); camreg::freeze(true);
+    imureg::set(false); imureg::freeze(true);
 #endif
 
     try
@@ -764,7 +764,7 @@ void jevois::Engine::postInit()
     
     // No need to confuse people with a non-working camreg param:
     camreg::set(false);
-    camreg::freeze();
+    camreg::freeze(true);
   }
   
   // Instantiate a USB gadget: Note: it will want to access the mappings. If the user-selected video mapping has no usb
@@ -772,7 +772,7 @@ void jevois::Engine::postInit()
   int midx = videomapping::get();
   
   // The videomapping parameter is now disabled, users should use the 'setmapping' command once running:
-  videomapping::freeze();
+  videomapping::freeze(true);
   
   if (midx >= int(itsMappings.size()))
   { LERROR("Mapping index " << midx << " out of range -- USING DEFAULT"); midx = -1; }

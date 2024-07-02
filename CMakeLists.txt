@@ -36,7 +36,7 @@ set(JEVOIS_OPENCV_PATCH 0)
 set(JEVOIS_OPENCV_VERSION "${JEVOIS_OPENCV_MAJOR}.${JEVOIS_OPENCV_MINOR}.${JEVOIS_OPENCV_PATCH}")
 
 set(JEVOIS_OPENVINO_VERSION "2022.3.2")
-set(JEVOIS_ONNX_VERSION "1.15.1")
+set(JEVOIS_ONNX_VERSION "1.18.0")
 
 message(STATUS "JeVois OpenCV: ${JEVOIS_OPENCV_VERSION}")
 message(STATUS "JeVois OpenVino: ${JEVOIS_OPENVINO_VERSION}")
@@ -440,8 +440,8 @@ if (JEVOIS_PRO)
 
   # Add a few more depends needed by jevois pro host and platform:
   set(JVPRODEPS "${JEVOIS}-openvino, libedgetpu-dev, libedgetpu1-std, zlib1g-dev, curl, libcurl4, libtool, \
-                 bzip2, unzip, zip, rsync, libpng-dev, libexpat1-dev,")
-#python3-tflite-runtime, python3-pycoral
+                 bzip2, unzip, zip, rsync, libpng-dev, libexpat1-dev, hailort,")
+  #python3-tflite-runtime, python3-pycoral
   set(CPACK_DEBIAN_PACKAGE_DEPENDS "${JVPRODEPS} ${CPACK_DEBIAN_PACKAGE_DEPENDS}")
 
   if (JEVOIS_PLATFORM)

@@ -32,6 +32,7 @@
 #include <jevois/GPU/GUIserial.H>
 #include <jevois/Debug/SysInfo.H>
 #include <jevois/Util/Utils.H>
+#include <jevois/DNN/Utils.H>
 #include <jevois/Debug/PythonException.H>
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -185,8 +186,8 @@ bool jevois::GUIhelper::startFrame(unsigned short & w, unsigned short & h)
 
     // Get the actual window size and update our param:
     unsigned short winw, winh; itsBackend.getWindowSize(winw, winh); winsize::set(cv::Size(winw, winh));
-    winsize::freeze();
-    fullscreen::freeze();
+    winsize::freeze(true);
+    fullscreen::freeze(true);
 
     // Reset the GUI:
     resetstate();
@@ -498,7 +499,14 @@ void jevois::GUIhelper::drawPolyInternal(ImVec2 const * pts, size_t npts, ImU32 
 
   if (npts > 1)
   {
-    for (size_t i = 0; i < npts - 1; ++i) dlb->AddLine(pts[i], pts[i + 1], col, thick);
+    for (size_t i = 0; i < npts - 1; ++i)
+    {
+      ImVec2 const & p1 = pts[i];
+      ImVec2 const & p2 = pts[i + 1];
+
+      // Draw line if it is not collapsed to a single point:
+      if (p1.x != p2.x || p1.y != p2.y) dlb->AddLine(p1, p2, col, thick);
+    }
     dlb->AddLine(pts[npts - 1], pts[0], col, thick); // close the polygon
   }
 }
@@ -507,10 +515,11 @@ void jevois::GUIhelper::drawPolyInternal(ImVec2 const * pts, size_t npts, ImU32 
 void jevois::GUIhelper::drawPoly(std::vector<cv::Point> const & pts, ImU32 col, bool filled)
 {
   size_t const npts = pts.size();
+  if (npts < 3) return;
   
-  ImVec2 iv[npts]; int i = 0;
-  for (auto const & p : pts) iv[i++] = i2d(p.x, p.y);
-
+  ImVec2 iv[npts+1];
+  for (int i = 0; auto const & p : pts) iv[i++] = i2d(p.x, p.y);
+  
   drawPolyInternal(iv, npts, col, filled);
 }
 
@@ -518,11 +527,72 @@ void jevois::GUIhelper::drawPoly(std::vector<cv::Point> const & pts, ImU32 col, 
 void jevois::GUIhelper::drawPoly(std::vector<cv::Point2f> const & pts, ImU32 col, bool filled)
 {
   size_t const npts = pts.size();
+  if (npts < 3) return;
   
-  ImVec2 iv[npts]; int i = 0;
-  for (auto const & p : pts) iv[i++] = i2d(p.x, p.y);
+  ImVec2 iv[npts];
+  for (int i = 0; auto const & p : pts) iv[i++] = i2d(p.x, p.y);
 
   drawPolyInternal(iv, npts, col, filled);
+}
+
+// ##############################################################################################################
+void jevois::GUIhelper::drawPoly(cv::Mat const & pts, ImU32 col, bool filled)
+{
+  float const * ptr = pts.ptr<float>(0);
+  
+  switch (pts.type())
+  {
+  case CV_32F:
+  {
+    if (pts.rows == 1 || pts.cols == 1)
+    {
+      // x,y,x,y,x,y... on one row or column of length 2N for N vertices:
+      int n = std::max(pts.rows, pts.cols);
+      if (n % 1) LFATAL("Incorrect input " << jevois::dnn::shapestr(pts) << ": odd number of coordinates");
+      if (std::min(pts.rows, pts.cols) < 3) return;
+      n /= 2; ImVec2 p[n]; for (int i = 0; i < n; ++i) { p[i] = i2d(ptr[0], ptr[1]); ptr += 2; }
+      drawPolyInternal(p, n, col, filled);
+    }
+    else if (pts.rows == 2)
+    {
+      // first row: x,x,x,x,x... second row: y,y,y,y,y... with N columns:
+      if (pts.cols < 3) return;
+      ImVec2 p[pts.cols]; for (int i = 0; i < pts.cols; ++i) { p[i] = i2d(ptr[0], ptr[pts.cols]); ++ptr; }
+      drawPolyInternal(p, pts.cols, col, filled);
+    }
+    else if (pts.cols == 2)
+    {
+      // x,y; x,y; x,y; ... for N rows of size 2 each:
+      if (pts.rows < 3) return;
+      ImVec2 p[pts.rows]; for (int i = 0; i < pts.rows; ++i) { p[i] = i2d(ptr[0], ptr[1]); ptr += 2; }
+      drawPolyInternal(p, pts.rows, col, filled);
+    }
+    else LFATAL("Incorrect input " << jevois::dnn::shapestr(pts) << ": 32F must be 1x2N, 2xN, 2Nx1, or Nx2");
+  }
+  break;
+
+  case CV_32FC2:
+  {
+    if (pts.rows == 1)
+    {
+      // (x,y),(x,y),... for N columns of pairs:
+      if (pts.cols < 3) return;
+      ImVec2 p[pts.cols]; for (int i = 0; i < pts.cols; ++i) { p[i] = i2d(ptr[0], ptr[1]); ptr += 2; }
+      drawPolyInternal(p, pts.cols, col, filled);
+    }
+    else if (pts.cols == 1)
+    {
+      // (x,y); (x,y); (x,y); ... for N rows of pairs
+      if (pts.rows < 3) return;
+      ImVec2 p[pts.rows]; for (int i = 0; i < pts.rows; ++i) { p[i] = i2d(ptr[0], ptr[1]); ptr += 2; }
+      drawPolyInternal(p, pts.rows, col, filled);
+    }
+    else LFATAL("Incorrect input " << jevois::dnn::shapestr(pts) << ": 32FC2 must be Nx1 or 1xN");
+  }
+  break;
+  
+  default: LFATAL("Incorrect input " << jevois::dnn::shapestr(pts) << ": must be 32F or 32FC2");
+  }
 }
 
 // ##############################################################################################################
@@ -1285,10 +1355,12 @@ void jevois::GUIhelper::drawParameters()
         bool const is_real = (vtype == "float" || vtype == "double" || vtype == "long double");
         
         // Grey out the item if it is disabled:
+        int textflags = ImGuiInputTextFlags_EnterReturnsTrue;
         if (ps.frozen)
         {
           ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
           ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+          textflags |= ImGuiInputTextFlags_ReadOnly;
         }
         
         // ----------------------------------------------------------------------
@@ -1360,7 +1432,7 @@ void jevois::GUIhelper::drawParameters()
           {
             // For more complex types, just allow free typing, parameter will do the checking:
             char buf[256]; strncpy(buf, ps.value.c_str(), sizeof(buf)-1);
-            if (ImGui::InputText(wname, buf, sizeof(buf), ImGuiInputTextFlags_EnterReturnsTrue))
+            if (ImGui::InputText(wname, buf, sizeof(buf), textflags))
               setparstr(ps.descriptor, buf);
           }
         }
@@ -1390,7 +1462,7 @@ void jevois::GUIhelper::drawParameters()
         {
           // User will type in some value, parameter will check it:
           char buf[256]; strncpy(buf, ps.value.c_str(), sizeof(buf)-1);
-          if (ImGui::InputText(wname, buf, sizeof(buf), ImGuiInputTextFlags_EnterReturnsTrue))
+          if (ImGui::InputText(wname, buf, sizeof(buf), textflags))
             setparstr(ps.descriptor, buf);
         }
         
@@ -1987,7 +2059,7 @@ void jevois::GUIhelper::drawNewModuleForm()
       static int wdrmode = 0;
       static int cfmt = 0; static int cw = 1920, ch = 1080; static float cfps = 30.0F;
       static int c2fmt = 1; static int c2w = 512, c2h = 288;
-      static jevois::VideoMapping m { };
+      static jevois::VideoMapping m;
       
       ImGui::AlignTextToFramePadding();
       ImGui::Text("Fill out the details below, or clone from");

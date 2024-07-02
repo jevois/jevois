@@ -37,6 +37,7 @@
 #include <jevois/Component/ParameterStringConversion.H>
 #include <jevois/DNN/PreProcessorPython.H>
 #include <jevois/DNN/Utils.H>
+#include <jevois/GPU/ChatBox.H>
 
 #define PY_ARRAY_UNIQUE_SYMBOL pbcvt_ARRAY_API
 #include <jevois/Core/PythonOpenCV.H>
@@ -536,6 +537,15 @@ BOOST_PYTHON_MODULE(libjevois)
     .def("isMouseDown", &jevois::GUIhelperPython::isMouseDown)
     .def("isMouseReleased", &jevois::GUIhelperPython::isMouseReleased)
     ;
+
+  // #################### ChatBox.H:
+  boost::python::class_<jevois::ChatBox>("ChatBox", boost::python::init<std::string>())
+    .def("get", &jevois::ChatBox::get)
+    .def("writeString", &jevois::ChatBox::writeString)
+    .def("draw", &jevois::ChatBox::draw)
+    .def("freeze", &jevois::ChatBox::freeze)
+    .def("clear", &jevois::ChatBox::clear)
+    ;
 #endif
   
   // #################### ParameterDef.H
@@ -560,6 +570,7 @@ BOOST_PYTHON_MODULE(libjevois)
     .def("strget", &jevois::PythonParameter::strget)
     .def("strset", &jevois::PythonParameter::strset)
     .def("freeze", &jevois::PythonParameter::freeze)
+    .def("frozen", &jevois::PythonParameter::frozen)
     .def("reset", &jevois::PythonParameter::reset)
     .def("setCallback", &jevois::PythonParameter::setCallback)
     ;

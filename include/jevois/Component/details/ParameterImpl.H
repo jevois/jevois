@@ -34,12 +34,8 @@ inline jevois::ParameterBase::~ParameterBase()
 }
 
 // ######################################################################
-inline void jevois::ParameterBase::freeze()
-{ itsFrozen = true; }
-
-// ######################################################################
-inline void jevois::ParameterBase::unFreeze()
-{ itsFrozen = false; }
+inline bool jevois::ParameterBase::frozen() const
+{ return itsFrozen; }
 
 // ######################################################################
 inline void jevois::ParameterBase::freeze(bool doit)

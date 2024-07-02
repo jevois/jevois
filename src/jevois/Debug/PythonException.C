@@ -83,16 +83,19 @@ namespace
 
   void add_traceback_step(std::vector<traceback_step> & output, PyTracebackObject const * pytb)
   {
-    traceback_step entry = {
-      pytb->tb_lineno,
+    traceback_step entry =
+      {
 #if JEVOIS_PYTHON_MAJOR == 3 && JEVOIS_PYTHON_MINOR >= 10
+      PyFrame_GetLineNumber(pytb->tb_frame),        
       python_string_as_std_string(PyFrame_GetCode(pytb->tb_frame)->co_filename),
       python_string_as_std_string(PyFrame_GetCode(pytb->tb_frame)->co_name)
 #else
+      pytb->tb_lineno,
       python_string_as_std_string(pytb->tb_frame->f_code->co_filename),
       python_string_as_std_string(pytb->tb_frame->f_code->co_name)
 #endif
-    };
+      };
+    
     output.push_back(entry);
   }
 

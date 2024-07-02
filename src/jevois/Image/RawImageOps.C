@@ -770,6 +770,41 @@ void jevois::rawimage::writeText(jevois::RawImage & img, char const * txt, int x
 }
 
 // ####################################################################################################
+int jevois::rawimage::itext(RawImage & img, std::string const & txt, int y, unsigned int col, Font font)
+{
+  return jevois::rawimage::itext(img, txt.c_str(), y, col, font);
+}
+
+// ####################################################################################################
+int jevois::rawimage::itext(RawImage & img, char const * txt, int y, unsigned int col, Font font)
+{
+  if (y < 3) y = 3;
+  
+  jevois::rawimage::writeText(img, txt, 3, y, col, font);
+  
+  // Keep this in exact sync with writeText():
+  int fonth;
+  switch (font)
+  {
+  case Font5x7:      fonth =  7; break;
+  case Font6x10:     fonth = 10; break;
+  case Font7x13:     fonth = 13; break;
+  case Font8x13bold: fonth = 13; break;
+  case Font9x15bold: fonth = 15; break;
+  case Font10x20:    fonth = 20; break;
+  case Font11x22:    fonth = 22; break;
+  case Font12x22:    fonth = 22; break;
+  case Font14x26:    fonth = 26; break;
+  case Font15x28:    fonth = 28; break;
+  case Font16x29:    fonth = 29; break;
+  case Font20x38:    fonth = 38; break;
+  default: LFATAL("Invalid font");
+  }
+
+  return y + fonth + 2;
+}
+
+// ####################################################################################################
 namespace
 {
   class bgrToBayer : public cv::ParallelLoopBody

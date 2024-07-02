@@ -414,43 +414,23 @@ std::string jevois::Component::getParamStringUnique(std::string const & descript
 }
 
 // ######################################################################
-void jevois::Component::freezeParam(std::string const & paramdescriptor)
+void jevois::Component::freezeParam(std::string const & paramdescriptor, bool doit)
 {
   int n = 0;
   findParamAndActOnIt(paramdescriptor,
-                      [&n](jevois::ParameterBase * param, std::string const & JEVOIS_UNUSED_PARAM(unrolled))
-                      { param->freeze(); ++n; },
+                      [&n,doit](jevois::ParameterBase * param, std::string const & JEVOIS_UNUSED_PARAM(unrolled))
+                      { param->freeze(doit); ++n; },
 
                       [&n]() { return (n == 0); }
                       );
 }
 
 // ######################################################################
-void jevois::Component::unFreezeParam(std::string const & paramdescriptor)
-{
-  int n = 0;
-  findParamAndActOnIt(paramdescriptor,
-                      [&n](jevois::ParameterBase * param, std::string const & JEVOIS_UNUSED_PARAM(unrolled))
-                      { param->unFreeze(); ++n; },
-
-                      [&n]() { return (n == 0); }
-                      );
-}
-
-// ######################################################################
-void jevois::Component::freezeAllParams()
+void jevois::Component::freezeAllParams(bool doit)
 {
   boost::shared_lock<boost::shared_mutex> lck(itsParamMtx);
 
-  for (auto const & p : itsParameterList) p.second->freeze();
-}
-
-// ######################################################################
-void jevois::Component::unFreezeAllParams()
-{
-  boost::shared_lock<boost::shared_mutex> lck(itsParamMtx);
-
-  for (auto const & p : itsParameterList) p.second->unFreeze();
+  for (auto const & p : itsParameterList) p.second->freeze(doit);
 }
 
 // ######################################################################

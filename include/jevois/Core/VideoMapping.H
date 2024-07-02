@@ -58,30 +58,30 @@ namespace jevois
       \ingroup core */
   struct VideoMapping
   {
-      unsigned int ofmt; //!< output pixel format, or 0 for no output over USB
-      unsigned int ow;   //!< output width
-      unsigned int oh;   //!< output height
-      float ofps;        //!< output frame rate in frames/sec
+      unsigned int ofmt = 0; //!< output pixel format, or 0 for no output over USB
+      unsigned int ow = 0;   //!< output width
+      unsigned int oh = 0;   //!< output height
+      float ofps = 0.0F;     //!< output frame rate in frames/sec
 
-      unsigned int cfmt; //!< camera pixel format
-      unsigned int cw;   //!< camera width
-      unsigned int ch;   //!< camera height
-      float cfps;        //!< camera frame rate in frames/sec
+      unsigned int cfmt = 0; //!< camera pixel format
+      unsigned int cw = 0;   //!< camera width
+      unsigned int ch = 0;   //!< camera height
+      float cfps = 0.0F;     //!< camera frame rate in frames/sec
 
       unsigned int uvcformat; //!< USB-UVC format number (1-based)
       unsigned int uvcframe;  //!< USB UVC frame number (1-based)
 
-      std::string vendor; //!< Module creator name, used as a directory to organize the modules
+      std::string vendor;     //!< Module creator name, used as a directory to organize the modules
 
       std::string modulename; //!< Name of the Module that will process this mapping
 
-      WDRtype wdr;        //!< Type of wide-dynamic-range (WDR) to use, if sensor supports it
-      CropType crop;      //!< Type of crop or scaling to apply if camera frame size does not match sensor native
-      bool ispython;      //!< True if the module is written in Python; affects behavior of sopath() only
+      WDRtype wdr = WDRtype::Linear;   //!< Type of wide-dynamic-range (WDR) to use, if sensor supports it
+      CropType crop = CropType::Scale; //!< Type of crop/scale to apply if camera size does not match sensor native
+      bool ispython = false;  //!< True if the module is written in Python; affects behavior of sopath() only
 
-      unsigned int c2fmt; //!< When crop is CropScale, pixel format of the scaled images, otherwise 0
-      unsigned int c2w;   //!< When crop is CropScale, width of the scaled images, otherwise 0
-      unsigned int c2h;   //!< When crop is CropScale, height of the scaled images, otherwise 0
+      unsigned int c2fmt = 0; //!< When crop is CropScale, pixel format of the scaled images, otherwise 0
+      unsigned int c2w = 0;   //!< When crop is CropScale, width of the scaled images, otherwise 0
+      unsigned int c2h = 0;   //!< When crop is CropScale, height of the scaled images, otherwise 0
       
       //! Return the full absolute path the module's directory
       std::string path() const;

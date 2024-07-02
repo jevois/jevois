@@ -173,6 +173,18 @@ namespace jevois
     /*! \ingroup image */
     void writeText(RawImage & img, char const * txt, int x, int y, unsigned int col, Font font = Font6x10);
 
+    //! Shorthand to write some text in an image, with x = 3 and return the next y position
+    /*! Used to show several lines of text messages on top of a video image. The given y position is initialized to 3 if
+        < 3; then the returned value is the y that should be used for the next line. \ingroup image */
+    int itext(RawImage & img, std::string const & txt, int y = 3, unsigned int col = jevois::yuyv::White,
+              Font font = Font6x10);
+    
+    //! Shorthand to write some text in an image, with x = 3 and return the next y position
+    /*! Used to show several lines of text messages on top of a video image. The given y position is initialized to 3 if
+        < 3; then the returned value is the y that should be used for the next line. \ingroup image */
+    int itext(RawImage & img, char const * txt, int y = 3, unsigned int col = jevois::yuyv::White,
+              Font font = Font6x10);
+    
     //! Convert a BGR cv::Mat to RawImage with already-allocated pixels and pixel type
     /*! This is used to output video frames over USB from internally computed results in opencv BGR format.  dst should
         already have an allocated pixel buffer (typically, it should be obtained from the USB gadget), and its size

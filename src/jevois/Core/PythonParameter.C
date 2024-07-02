@@ -151,6 +151,10 @@ void jevois::PythonParameter::freeze(bool doit)
 { itsPyPar->par()->freeze(doit); }
 
 // ####################################################################################################
+bool jevois::PythonParameter::frozen() const
+{ return itsPyPar->par()->frozen(); }
+
+// ####################################################################################################
 void jevois::PythonParameter::reset()
 { itsPyPar->par()->reset(); }
 

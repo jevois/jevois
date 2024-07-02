@@ -64,11 +64,11 @@ void jevois::Manager::postInit()
 
   // The --help parameter is only useful for parsing of command-line arguments. After that is done, we here hide it as
   // we will instead provide a 'help' command:
-  help::freeze();
+  help::freeze(true);
 
   // Do not confuse users with a non-working tracelevel parameter if tracing has not been compiled in:
 #if !defined(JEVOIS_TRACE_ENABLE) || !defined(JEVOIS_LDEBUG_ENABLE)
-  tracelevel::freeze();
+  tracelevel::freeze(true);
 #endif
 }
 
