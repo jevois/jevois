@@ -8,7 +8,6 @@ Contrib/onnxruntime
 Contrib/tensorflow
 Contrib/threadpool
 Contrib/imgui/.github
-Contrib/npu
 /hbuild/
 /pbuild/
 /phbuild/
