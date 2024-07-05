@@ -61,63 +61,10 @@ After running `./rebuild-pro-platform-pdeb.sh` a .deb file is created in ppdbuil
 
 - Your module should now appear under the menu of available modules and you can select it and run it.
 
-JeVois-A33: Adding your module to a microSD card: live microSD card
--------------------------------------------------------------------
-
-Insert a properly installed JeVois MicroSD (follow the steps at [JeVois Start](http://jevois.org/start) to make one from
-a disk image) into your computer, either physically inserted into your host computer using a microSD-to-USB adapter, or
-exported live by JeVois using the \c usbsd command in the JeVois command-line interface). The microSD card must be be
-available under <b>/media/<em>username</em>/JEVOIS/</b> where <em>username</em> is your Linux user name.
-
-Run:
-
-\verbatim
-./rebuild-platform.sh --microsd
-\endverbatim
-
-Modules, config files, etc will be installed to the live microSD card at <b>/media/<em>username</em>/JEVOIS/</b> where
-<em>username</em> is your Linux user name.
-
-\note Once you select a destination in `rebuild-platform.sh` (none, staging, or microsd), that will remain for
-subsequent `make install` commands, until you change it by re-running `rebuild-platform.sh` with another destination.
-
-Here is a simple command to export the microSD of a live JeVois camera without having to start a terminal program, etc
-(make sure JeVois is not streaming video):
-
-\verbatim
-sudo sh -c 'echo usbsd > /dev/ttyACM0'
-\endverbatim
-
-With \jvversion{1.2} and later, you can just instead type `jevois-usbsd start` to start exporting the microSD, and
-`jevois-usbsd stop` to eject it and restart JeVois.
-
-With \jvversion{1.3} and later, you do not need to manually take out or even manually export the microSD inside JeVois
-anymore. A new build option `--live` can do it automatically. Just connect JeVois and allow it to start, then type:
-
-\verbatim
-./rebuild-platform.sh --live
-\endverbatim
-
-which will:
-
-- cross-compile the module for platform
-- issue a `jevois-usbsd start` to instruct JeVois to export its microSD as a virtual flash drive
-- install the cross-compiled module to the microSD inside JeVois
-- issue a `jevois-usbsd stop` to eject the virtual flash drive and restart JeVois.
-
 JeVois-A33: Adding your module to a microSD card: jvpkg
 -------------------------------------------------------
 
-This approach is useful if you also want to share your module with friends. You can just send them your jvpkg file.
-
-Once you have all the compiled and auxiliary files (icon.png, etc) in myalgo/jvpkg, you are ready to pack it:
-
-\verbatim
-cd pbuild
-make jvpkg
-\endverbatim
-
-This creates a file
+\c rebuild-platform.sh created a JeVois package file (it's just a zip):
 
 \verbatim
 myalgo/MyVendor_MyAlgo.jvpkg
@@ -210,7 +157,7 @@ sudo make install
 \verbatim
 cd pbuild
 make -j
-make install
+sudo make install
 make jvpkg
 \endverbatim
 
@@ -253,5 +200,4 @@ To create your own, roughly the first 50 lines of the \b jevoisbase \b CMakeList
 for your project. The rest of the \b jevoisbase \b CMakeLists.txt is basically to add required dependencies, such as on
 the ZBar library, the OpenCV library, etc and those will vary with your specific project.
 
-Make sure you keep the call to \c jevois_project_finalize() at the end of your \b CMakeLists.txt file.
 */

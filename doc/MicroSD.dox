@@ -364,7 +364,7 @@ Typical workflow is as follows:
   + edit a module written in Python, under \b JEVOIS:/modules
   + add any data, e.g., training images for the ObjectDetect module
   + retrieve any data, e.g., video files recorded by JeVois
-  + compile and install a new C++ module using `./rebuild-platform.sh --microsd`
+  + copy a new C++ module's .jvpkg package compiled with `./rebuild-platform.sh` to JEVOIS:/packages/
 
 - When you are done, properly eject the virtual USB drive (drag to trash, click eject button, etc). JeVois will detect
   this and will automatically restart and then be able to use the new or modified files. You should see the following on
@@ -373,11 +373,6 @@ Typical workflow is as follows:
   + Solid green - restarting
   + Orange blink - camera sensor detected
   + Solid orange: ready for action
-
-
-Note that \jvversion{1.3} adds an even simpler way to install new machine vision modules: `./rebuild-platform.sh
---live`, which will first issue a `jevois-usbsd start` to tell JeVois to export its microSD, will install the
-module, and will then issue a `jevois-usbsd stop` to restart JeVois.
 
 */
 

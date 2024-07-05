@@ -272,7 +272,7 @@ endif ()
 ########################################################################################################################
 # Coral edge TPU libraries and associated TensorFlow. We install libtensorflowlite.so later as part of our package:
 
-include_directories(Contrib/tensorflow/tensorflow/lite/tools/make/downloads/flatbuffers/include)
+include_directories(Contrib/include/all/tensorflow/lite/tools/make/downloads/flatbuffers/include)
 target_link_libraries(${JEVOIS} tensorflowlite)
 
 if (JEVOIS_PRO)
