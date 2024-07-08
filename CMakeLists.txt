@@ -441,7 +441,6 @@ if (JEVOIS_PRO)
   # Add a few more depends needed by jevois pro host and platform:
   set(JVPRODEPS "${JEVOIS}-openvino, libedgetpu-dev, libedgetpu1-std, zlib1g-dev, curl, libcurl4, libtool, \
                  bzip2, unzip, zip, rsync, libpng-dev, libexpat1-dev, hailort,")
-  #python3-tflite-runtime, python3-pycoral
   set(CPACK_DEBIAN_PACKAGE_DEPENDS "${JVPRODEPS} ${CPACK_DEBIAN_PACKAGE_DEPENDS}")
 
   if (JEVOIS_PLATFORM)

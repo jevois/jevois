@@ -1,10 +1,8 @@
-jevois is a C++17 software framework for real-time machine vision running on smart cameras
+jevois is a C++26 software framework for real-time machine vision running on smart cameras
 
 See http://jevois.org for full documentation.
 
 See https://github.com/jevois for full source code.
-
-See INSTALL for full installation instructions.
 
 On Github, the master branch is for stable releases, minor patch work, or addition of new features that do not break the
 current release version. More disruptive development is in devX.Y branches.
