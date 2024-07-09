@@ -132,6 +132,12 @@ namespace
   size_t pythonFrameNum()
   { return jevois::frameNum(); }
 
+  boost::python::tuple pythonLoadCameraCalibration(std::string const & stem, bool throw_if_not_found)
+  {
+    jevois::CameraCalibration c = jevois::python::engine()->loadCameraCalibration(stem, throw_if_not_found);
+    return boost::python::make_tuple(c.camMatrix, c.distCoeffs);
+  }
+  
   void pythonWriteCamRegister(unsigned short reg, unsigned short val)
   {
     auto cam = jevois::python::engine()->camera();
@@ -281,6 +287,9 @@ BOOST_PYTHON_MODULE(libjevois)
   JEVOIS_PYTHON_FUNC(whiteColor);
   JEVOIS_PYTHON_FUNC(flushcache);
   JEVOIS_PYTHON_FUNC(system);
+
+  // #################### Engine.H
+  boost::python::def("loadCameraCalibration", pythonLoadCameraCalibration);
 
   // #################### Coordinates.H
   void (*imgToStd1)(float & x, float & y, jevois::RawImage const & camimg, float const eps) = jevois::coords::imgToStd;
