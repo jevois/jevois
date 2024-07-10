@@ -56,6 +56,14 @@ for m in videobuf-core videobuf-dma-contig videodev vfe_os vfe_subdev v4l2-commo
 done
 
 ##############################################################################################################
+# Get a list of all our needed library paths:
+##############################################################################################################
+
+LIBPATH="/lib:/usr/lib"
+for d in `find /jevois/lib -type d -print`; do LIBPATH="${LIBPATH}:${d}"; done
+export LD_LIBRARY_PATH=${LIBPATH}
+
+##############################################################################################################
 # Install any new packages:
 ##############################################################################################################
 
@@ -95,14 +103,6 @@ if [ ! -f /jevois/config/videomappings.cfg ]; then
     echo 'YUYV 640 360 30.0 YUYV 320 240 30.0 JeVois JeVoisIntro *' > /jevois/config/videomappings.cfg
     echo 'YUYV 640 480 30.0 YUYV 320 240 30.0 JeVois JeVoisIntro' >> /jevois/config/videomappings.cfg
 fi
-
-##############################################################################################################
-# Get a list of all our needed library paths:
-##############################################################################################################
-
-LIBPATH="/lib:/usr/lib"
-for d in `find /jevois/lib -type d -print`; do LIBPATH="${LIBPATH}:${d}"; done
-export LD_LIBRARY_PATH=${LIBPATH}
 
 ##############################################################################################################
 # Insert the gadget driver:
