@@ -196,7 +196,7 @@ $pegasus generate inputmeta \
 
 - If this steps yields errors, maybe some operations are not supported, which may happen towards the end of the
   network. In such case, examine the network in Netron and look at which layer failed to convert, then add
-  **--outputs /some/layer*** to truncate the network to that layer.
+  **--outputs /some/layer** to truncate the network to that layer.
 
 4. Edit and run 1_quantize_model.sh
 -----------------------------------
@@ -451,7 +451,7 @@ Another example: Object Detection using YOLOv10n
 - To export to ONNX, using opset 13 gave some conversion errors, so we used opset 12. We can also set a custom image
   resolution in that step using `imgsz` parameter:
   \code{.py}
-  yolo export model=jameslahm/yolov10n format=onnx opset=12 simplify imgsz=576,1024
+  yolo export model=jameslahm/yolov10n format=onnx opset=12 simplify imgsz=288,512
   \endcode
 
 - Some layers towards the end of the network were giving size errors, maybe because of the different opset. In any case,
@@ -471,9 +471,9 @@ Another example: Object Detection using YOLOv10n
   \endcode
 
 - It converted fine. However, it was not generating any boxes on the display. Upon inspection of the output tensor,
-  confidence values for all classes were always zero. Looking at the yolov10n-576x288.quantize generated during
+  confidence values for all classes were always zero. Looking at the yolov10n-512x288.quantize generated during
   conversion showed a range of [-108.24 .. 611.29] for the values in the output tensor. Indeed, in that output tensor,
-  which is 1x3024x84 for inputs 1x3x288x576, both 4 box coordinates (which can vary within 512x288, and more in case
+  which is 1x3024x84 for inputs 1x3x288x512, both 4 box coordinates (which can vary within 512x288, and more in case
   boxes partially go outside the input image), and 80 class confidences (in [0..1]), were concatenated. That means that
   with 8 bits of quantization, any class confidence in [0..1] would always map to the same number (the zero-point of
   quantization)...
