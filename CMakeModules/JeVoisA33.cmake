@@ -130,7 +130,7 @@ set(JEVOIS_PLATFORM_OPENCV_LIBS "${OPENCV_LIBS_FOR_JEVOIS}") # note: do not use 
 set(JEVOIS_PLATFORM_NATIVE_OPENCV_LIBS "${OPENCV_LIBS_FOR_JEVOIS}")
 
 set(JEVOIS_HOST_OPENCV_PREFIX "/usr/share/jevois-opencv-${JEVOIS_OPENCV_VERSION}")
-set(JEVOIS_HOST_OPENCV_LIBS "-L${JEVOIS_HOST_OPENCV_PREFIX}/lib ${OPENCV_LIBS_FOR_JEVOIS} -lopencv_highgui")
+set(JEVOIS_HOST_OPENCV_LIBS "-L${JEVOIS_HOST_OPENCV_PREFIX}/lib ${OPENCV_LIBS_FOR_JEVOIS}")
 
 # Use TBB and kernel includes for platform from the buildroot installation.  On the host, we may have local packages,
 # eg, latest opencv compiled from source:
