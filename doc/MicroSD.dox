@@ -316,6 +316,16 @@ identical):
 
 \endverbatim
 
+MicroSD partition resizing
+==========================
+
+If you have a card larger than the image sizes we provide, you may want to resize the JEVOIS or JEVOISPRO partition to
+use all available free space on your card.
+
+The JEVOIS or JEVOISPRO partition is using a VFAT/FAT32 filesystem for greatest compatibility with a variety of
+hosts. To resize it under Linux, use `gparted` (you may have to first install it with `sudo apt install gparted`).
+
+
 JeVois-A33: Accessing and modifying the MicroSD while JeVois is running
 =======================================================================
 

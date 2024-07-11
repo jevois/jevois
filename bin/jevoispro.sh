@@ -1,7 +1,5 @@
 #!/bin/bash
 
-cd
-
 # Uncoment this if you want to get a core dump. After a crash, run: gdb /usr/bin/jevoispro-daemon core
 # and after you get to the location of the crash, type "bt" to get the backtrace that led to it.
 #
@@ -17,7 +15,7 @@ if [ "X${gserial}" = "X1" ] ; then
 fi
 
 # Activate python virtual environment if found:
-if [ "X$VIRTUAL_ENV" = "X" -a -d jvenv ]; then source jvenv/bin/activate; fi
+if [ "X$VIRTUAL_ENV" = "X" -a -d /root/jvenv ]; then source /root/jvenv/bin/activate; fi
 
 # Launch jevois software:
 /usr/bin/jevoispro-daemon ${extra} $@
