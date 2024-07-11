@@ -8,6 +8,7 @@ my $iconsize = 80; # icon size
 
 my $mods = [
     [ "DNN", "JeVois-Pro", "deep neural nets" ],
+    [ "PyLLM", "JeVois-Pro", "generative AI" ],
     [ "PyHandDetector", "JeVois-Pro mediapipe", "hand detection" ],
     [ "PyFaceMesh", "JeVois-Pro mediapipe", "face mesh detection" ],
     [ "MultiDNN", "JeVois-Pro parallel", "DNN accelerators" ],
@@ -21,6 +22,8 @@ my $mods = [
     [ "DarknetSingle", "Recognize 1000", "objects types" ],
     [ "DarknetYOLO", "Locate and identify", "objects in scenes" ],
     [ "PythonObject6D", "Vision example for", "FIRST Robotics 2018" ],
+    [ "AprilTag", "JeVois-Pro April Tag", "detection in Python" ],
+    [ "CalibrateCamera", "Camera calibration", "for 3D object pose" ],
     [ "DemoSaliency", "Detect attention-grabbing", "objects" ],
     [ "DemoSalGistFaceObj", "Find faces and", "handwritten digits" ],
     [ "RoadNavigation", "Detect roads", " " ],
@@ -29,6 +32,7 @@ my $mods = [
     [ "DemoARtoolkit", "Detect augmented", "reality markers" ],
     [ "DemoArUco", "Detect and decode", "ArUco tags" ],
     [ "MarkersCombo", "Detect multiple", "kinds of tags" ],
+    [ "PyPoseDetector", "JeVois-Pro mediapipe", "body pose detection" ],
     [ "ObjectDetect", "Detect objects", "by keypoint matching" ],
     [ "ObjectTracker", "Track objects", "by color" ],
     [ "OpticalFlow", "Compute motion", "flow at 100 Hz" ],
@@ -37,6 +41,7 @@ my $mods = [
     [ "DemoEyeTracker", "Track pupil and", "gaze at 120 Hz" ],
     [ "DemoGPU", "Filter video", "using OpenGL-ES 2.0" ],
     [ "ColorFiltering", "Morphological", "processing" ],
+    [ "PyLicensePlate", "JeVois-Pro", "license plate detection" ],
     [ "SuperPixelSeg", "Segment video", "into super-pixels" ],
     [ "EdgeDetectionX4", "Detect edges at", "4 scales simultaneously" ],
     [ "SalientRegions", "Grab the 3 most", "salient regions of interest" ],

@@ -99,8 +99,8 @@ set(JEVOIS_PLATFORM_FORTRAN_COMPILER "${CROSS_COMPILE}gfortran-${JEVOIS_COMPILER
 
 ########################################################################################################################
 # OpenCV and other libraries on host and platform:
-# Note: with 4.9.0 compiled for platform, we are missing the plain .so links somehow... They were created on compile
-# but included by our checkinstall...
+# Note: with 4.10.0 compiled for platform, we are missing the plain .so links somehow... They were created on compile
+# but not included by our checkinstall...
 #set(OPENCV_LIBS_FOR_JEVOIS "-lopencv_core -lopencv_imgproc -lopencv_features2d -lopencv_flann -lopencv_ml \
 #-lopencv_objdetect -lopencv_imgcodecs -lopencv_tracking -lopencv_video -lopencv_videoio -lopencv_dnn_objdetect \
 #-lopencv_dnn -lopencv_highgui")
