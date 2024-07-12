@@ -33,7 +33,7 @@
 #include <type_traits>
 
 #include "function2/function2.hpp"
-#include "concurrentqueue.h"
+#include "concurrentqueue/concurrentqueue.h"
 
 #include <sched.h>
 
