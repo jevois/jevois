@@ -99,16 +99,9 @@ set(JEVOIS_PLATFORM_FORTRAN_COMPILER "${CROSS_COMPILE}gfortran-${JEVOIS_COMPILER
 
 ########################################################################################################################
 # OpenCV and other libraries on host and platform:
-# Note: with 4.10.0 compiled for platform, we are missing the plain .so links somehow... They were created on compile
-# but not included by our checkinstall...
-#set(OPENCV_LIBS_FOR_JEVOIS "-lopencv_core -lopencv_imgproc -lopencv_features2d -lopencv_flann -lopencv_ml \
-#-lopencv_objdetect -lopencv_imgcodecs -lopencv_tracking -lopencv_video -lopencv_videoio -lopencv_dnn_objdetect \
-#-lopencv_dnn -lopencv_highgui")
-
-set(JVOCVLIBS opencv_core opencv_imgproc opencv_features2d opencv_flann opencv_ml
-  opencv_objdetect opencv_imgcodecs opencv_tracking opencv_video opencv_videoio opencv_dnn_objdetect
-  opencv_dnn opencv_highgui)
-jevois_versioned_libs(JVOCVLIBS ".so.${JEVOIS_OPENCV_VERSION}" OPENCV_LIBS_FOR_JEVOIS)
+set(OPENCV_LIBS_FOR_JEVOIS "-lopencv_core -lopencv_imgproc -lopencv_features2d -lopencv_flann -lopencv_ml \
+-lopencv_objdetect -lopencv_imgcodecs -lopencv_tracking -lopencv_video -lopencv_videoio -lopencv_dnn_objdetect \
+-lopencv_dnn -lopencv_highgui")
 #message(STATUS "OpenCV libs: ${OPENCV_LIBS_FOR_JEVOIS}")
 
 # openvino libs for platform. NOTE: the package is missing some symlinks, so get the exact lib files:
