@@ -2803,36 +2803,6 @@ void jevois::GUIhelper::compileModule()
   std::string const modpath = itsNewMapping.path();
   std::string const buildpath = modpath + "/build";
 
-  // Write a small script to allow users to recompile by hand in case of a bad crashing module:
-  try
-  {
-    std::filesystem::path sp(modpath + "/rebuild.sh");
-    
-    std::ofstream ofs(sp);
-    if (ofs.is_open() == false)
-      reportError("Cannot write " + sp.string() + " -- check that you are running as root.");
-    else
-    {
-      // Keep this in sync with the commands run below:
-      ofs << "#!/bin/sh" << std::endl << "set -e" << std::endl;
-      ofs << "cmake -S " << modpath << " -B " << buildpath << " -DJEVOIS_HARDWARE=PRO"
-#ifdef JEVOIS_PLATFORM
-          << " -DJEVOIS_PLATFORM=ON -DJEVOIS_NATIVE=ON"
-#endif
-          << std::endl;
-      ofs << "JEVOIS_SRC_ROOT=none cmake --build " << buildpath << std::endl;
-      ofs << "cmake --install " << buildpath << std::endl;
-      ofs << "cd " << buildpath << " && cpack && mkdir -p /jevoispro/debs && /bin/mv *.deb /jevoispro/debs/"<<std::endl;
-      ofs.close();
-
-      // Set the file as executable:
-      using std::filesystem::perms;
-      std::filesystem::permissions(sp, perms::owner_all | perms::group_read | perms::group_exec |
-                                   perms::others_read | perms::others_exec);
-    }
-  } catch (...) { }
-    
-      
   try
   {
     switch (itsCompileState)
@@ -2844,6 +2814,36 @@ void jevois::GUIhelper::compileModule()
       for (std::string & s : itsCompileMessages) s.clear();
       std::filesystem::remove_all(buildpath);
       itsCompileState = CompilationState::Cmake;
+
+      // Write a small script to allow users to recompile by hand in case of a bad crashing module:
+      try
+      {
+        std::filesystem::path sp(modpath + "/rebuild.sh");
+        
+        std::ofstream ofs(sp);
+        if (ofs.is_open() == false)
+          reportError("Cannot write " + sp.string() + " -- check that you are running as root.");
+        else
+        {
+          // Keep this in sync with the commands run below:
+          ofs << "#!/bin/sh" << std::endl << "set -e" << std::endl;
+          ofs << "cmake -S " << modpath << " -B " << buildpath << " -DJEVOIS_HARDWARE=PRO"
+#ifdef JEVOIS_PLATFORM
+              << " -DJEVOIS_PLATFORM=ON -DJEVOIS_NATIVE=ON"
+#endif
+              << std::endl;
+          ofs << "JEVOIS_SRC_ROOT=none cmake --build " << buildpath << std::endl;
+          ofs << "cmake --install " << buildpath << std::endl;
+          ofs << "cd " << buildpath <<
+            " && cpack && mkdir -p /jevoispro/debs && /bin/mv *.deb /jevoispro/debs/" << std::endl;
+          ofs.close();
+          
+          // Set the file as executable:
+          using std::filesystem::perms;
+          std::filesystem::permissions(sp, perms::owner_all | perms::group_read | perms::group_exec |
+                                       perms::others_read | perms::others_exec);
+        }
+      } catch (...) { }
       break;
       
       // ----------------------------------------------------------------------------------------------------
