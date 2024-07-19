@@ -52,53 +52,53 @@ namespace jevois
       (purple) axis, with some limited opportunity for variations using the luminance value. \ingroup image */
   namespace yuyv
   {
-    static unsigned short const Black = 0x8000;
-    static unsigned short const DarkGrey = 0x8050;
-    static unsigned short const MedGrey = 0x8080;
-    static unsigned short const LightGrey = 0x80a0;
-    static unsigned short const White = 0x80ff;
+    unsigned short constexpr Black = 0x8000;     //!< YUYV color value
+    unsigned short constexpr DarkGrey = 0x8050;  //!< YUYV color value
+    unsigned short constexpr MedGrey = 0x8080;   //!< YUYV color value
+    unsigned short constexpr LightGrey = 0x80a0; //!< YUYV color value
+    unsigned short constexpr White = 0x80ff;     //!< YUYV color value
 
-    static unsigned short const DarkGreen = 0x0000;
-    static unsigned short const MedGreen = 0x0040;
-    static unsigned short const LightGreen = 0x00ff;
+    unsigned short constexpr DarkGreen = 0x0000;  //!< YUYV color value
+    unsigned short constexpr MedGreen = 0x0040;   //!< YUYV color value
+    unsigned short constexpr LightGreen = 0x00ff; //!< YUYV color value
 
-    static unsigned short const DarkTeal = 0x7070;
-    static unsigned short const MedTeal = 0x7090;
-    static unsigned short const LightTeal = 0x70b0;
+    unsigned short constexpr DarkTeal = 0x7070;  //!< YUYV color value
+    unsigned short constexpr MedTeal = 0x7090;   //!< YUYV color value
+    unsigned short constexpr LightTeal = 0x70b0; //!< YUYV color value
 
-    static unsigned short const DarkPurple = 0xa030;
-    static unsigned short const MedPurple = 0xa050;
-    static unsigned short const LightPurple = 0xa080;
+    unsigned short constexpr DarkPurple = 0xa030;  //!< YUYV color value
+    unsigned short constexpr MedPurple = 0xa050;   //!< YUYV color value
+    unsigned short constexpr LightPurple = 0xa080; //!< YUYV color value
 
-    static unsigned short const DarkPink = 0xff00;
-    static unsigned short const MedPink = 0xff80;
-    static unsigned short const LightPink = 0xffff;
+    unsigned short constexpr DarkPink = 0xff00;  //!< YUYV color value
+    unsigned short constexpr MedPink = 0xff80;   //!< YUYV color value
+    unsigned short constexpr LightPink = 0xffff; //!< YUYV color value
   } // namespace yuyv
 
   //! Helper RGB565 colors
-  /*! We also assume little endian encoding here. These colors are from
+  /*! We assume little endian encoding here. These colors are from
       http://stackoverflow.com/questions/13720937/c-defined-16bit-high-color \ingroup image */
   namespace rgb565
   {
-    static unsigned short const Black       = 0x0000; //   0,   0,   0
-    static unsigned short const Navy        = 0x000F; //   0,   0, 128
-    static unsigned short const DarkGreen   = 0x03E0; //   0, 128,   0
-    static unsigned short const DarkCyan    = 0x03EF; //   0, 128, 128
-    static unsigned short const Maroon      = 0x7800; // 128,   0,   0
-    static unsigned short const Purple      = 0x780F; // 128,   0, 128
-    static unsigned short const Olive       = 0x7BE0; // 128, 128,   0
-    static unsigned short const LightGrey   = 0xC618; // 192, 192, 192
-    static unsigned short const DarkGrey    = 0x7BEF; // 128, 128, 128
-    static unsigned short const Blue        = 0x001F; //   0,   0, 255
-    static unsigned short const Green       = 0x07E0; //   0, 255,   0
-    static unsigned short const Cyan        = 0x07FF; //   0, 255, 255
-    static unsigned short const Red         = 0xF800; // 255,   0,   0
-    static unsigned short const Magenta     = 0xF81F; // 255,   0, 255
-    static unsigned short const Yellow      = 0xFFE0; // 255, 255,   0
-    static unsigned short const White       = 0xFFFF; // 255, 255, 255
-    static unsigned short const Orange      = 0xFD20; // 255, 165,   0
-    static unsigned short const GreenYellow = 0xAFE5; // 173, 255,  47
-    static unsigned short const Pink        = 0xF81F;
+    unsigned short constexpr Black       = 0x0000; //!< RGB565 value for:   0,   0,   0
+    unsigned short constexpr Navy        = 0x000F; //!< RGB565 value for:   0,   0, 128
+    unsigned short constexpr DarkGreen   = 0x03E0; //!< RGB565 value for:   0, 128,   0
+    unsigned short constexpr DarkCyan    = 0x03EF; //!< RGB565 value for:   0, 128, 128
+    unsigned short constexpr Maroon      = 0x7800; //!< RGB565 value for: 128,   0,   0
+    unsigned short constexpr Purple      = 0x780F; //!< RGB565 value for: 128,   0, 128
+    unsigned short constexpr Olive       = 0x7BE0; //!< RGB565 value for: 128, 128,   0
+    unsigned short constexpr LightGrey   = 0xC618; //!< RGB565 value for: 192, 192, 192
+    unsigned short constexpr DarkGrey    = 0x7BEF; //!< RGB565 value for: 128, 128, 128
+    unsigned short constexpr Blue        = 0x001F; //!< RGB565 value for:   0,   0, 255
+    unsigned short constexpr Green       = 0x07E0; //!< RGB565 value for:   0, 255,   0
+    unsigned short constexpr Cyan        = 0x07FF; //!< RGB565 value for:   0, 255, 255
+    unsigned short constexpr Red         = 0xF800; //!< RGB565 value for: 255,   0,   0
+    unsigned short constexpr Magenta     = 0xF81F; //!< RGB565 value for: 255,   0, 255
+    unsigned short constexpr Yellow      = 0xFFE0; //!< RGB565 value for: 255, 255,   0
+    unsigned short constexpr White       = 0xFFFF; //!< RGB565 value for: 255, 255, 255
+    unsigned short constexpr Orange      = 0xFD20; //!< RGB565 value for: 255, 165,   0
+    unsigned short constexpr GreenYellow = 0xAFE5; //!< RGB565 value for: 173, 255,  47
+    unsigned short constexpr Pink        = 0xF618; //!< RGB565 value for: F4 C2 C2
   } // namespace rgb565
   
   //! A raw image as coming from a V4L2 Camera and/or being sent out to a USB Gadget

@@ -24,6 +24,7 @@
 // Two thread pools on JeVois-Pro Platform:
 namespace jevois
 {
+  //! Details that do not affect users of JeVois code
   namespace details
   {
     jevois::ThreadPool ThreadpoolLittle { 32, true };

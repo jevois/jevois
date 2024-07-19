@@ -42,9 +42,9 @@ namespace jevois
       - When the first video frame arrives, we then initialize OpenGL and create 2 triangles that will be rendered in
         the whole window. The reason for this is to avoid threading issues (so OpenGL is initialized in the same thread
         as rendering calls will be made). We also initialize a texture of the same size as the incoming image. We
-        finally create a surface of same size as the window or fbdev. We then load a compile shaders to render our
+        finally create a surface of same size as the window or fbdev. We then load and compile shaders to render our
         texture into our surface.
-      - On every frame, we just update the texture's pixel location and render the scene.
+      - On every frame, we just update the texture's pixel data location in memory and render the scene.
 
       \ingroup core */
   class VideoDisplayGL : public VideoOutput

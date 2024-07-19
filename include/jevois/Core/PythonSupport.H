@@ -28,7 +28,8 @@
 namespace jevois
 {
   class Engine;
-  
+
+  //! Python-related helpers and functions
   namespace python
   {
    /*! \defgroup pysupport Python support functions

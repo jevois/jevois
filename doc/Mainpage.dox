@@ -85,6 +85,7 @@ hardware (ARM processor).
 - \subpage UserTutos
 - \subpage Programmer
 - \subpage ProgrammerTutos
+- \ref JeVoisBaseDocs
 - \subpage History
 
 For tutorials on how to use and program JeVois, see the <a href="/tutorials">JeVois Tutorials</a>.

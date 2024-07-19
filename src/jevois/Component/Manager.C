@@ -55,22 +55,22 @@ void jevois::Manager::preInit()
 }
 
 // ######################################################################
+// BEGIN_JEVOIS_CODE_SNIPPET manager4.C
 void jevois::Manager::postInit()
 {
-  // Note: exit() tries to uninit which can deadlock since we are in init() here...
-  //if (jevois::manager::help::get()) { printHelpMessage(); std::abort(); /*exit(0);*/ } // yes this is brutal!
-
-  if (jevois::manager::help::get()) { printHelpMessage(); LINFO("JeVois: exit after help message"); exit(0); }
-
+  // If --help was given on command-line, print help message and exit:
+  if (help::get()) { printHelpMessage(); LINFO("JeVois: exit after help message"); exit(0); }
+  
   // The --help parameter is only useful for parsing of command-line arguments. After that is done, we here hide it as
-  // we will instead provide a 'help' command:
+  // we will instead provide a 'help' command in the JeVois console:
   help::freeze(true);
-
+  
   // Do not confuse users with a non-working tracelevel parameter if tracing has not been compiled in:
 #if !defined(JEVOIS_TRACE_ENABLE) || !defined(JEVOIS_LDEBUG_ENABLE)
   tracelevel::freeze(true);
 #endif
 }
+// END_JEVOIS_CODE_SNIPPET
 
 // ######################################################################
 void jevois::Manager::printHelpMessage() const
@@ -203,13 +203,11 @@ void jevois::Manager::onParamChange(jevois::manager::loglevel const &, jevois::m
 // ######################################################################
 void jevois::Manager::onParamChange(jevois::manager::tracelevel const &, unsigned int const & newval)
 {
-  if (newval)
-  {
 #if !defined(JEVOIS_TRACE_ENABLE) || !defined(JEVOIS_LDEBUG_ENABLE)
+  if (newval)
     LERROR("Debug trace has been disabled at compile-time, re-compile with -DJEVOIS_LDEBUG_ENABLE=ON and "
            "-DJEVOIS_TRACE_ENABLE=ON to see trace info");
 #endif
-  }
   
   jevois::traceLevel = newval;
 }

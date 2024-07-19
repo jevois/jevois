@@ -128,7 +128,8 @@ namespace jevois
   class GUIconsole;
   class Camera;
   class IMU;
-  
+
+  //! Parameters of the Engine class
   namespace engine
   {
     static ParameterCategory const ParamCateg("Engine Options");

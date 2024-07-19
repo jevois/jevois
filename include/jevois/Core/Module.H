@@ -186,7 +186,7 @@ namespace jevois
       virtual void supportedCommands(std::ostream & os);
   };
 
-  namespace module
+  namespace modul
   {
     static ParameterCategory const ParamCateg("Module Serial Message Options");
 
@@ -230,7 +230,7 @@ namespace jevois
       etc of StdModule functions are directly inherited from Module. See \ref UserSerialStyle for standardized serial
       messages. \ingroup core */
   class StdModule : public Module,
-		    public Parameter<module::serprec, module::serstyle, module::serstamp, module::sermark>
+		    public Parameter<modul::serprec, modul::serstyle, modul::serstamp, modul::sermark>
   {
     public:
       //! Constructor

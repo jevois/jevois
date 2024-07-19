@@ -30,6 +30,7 @@
 
 namespace jevois
 {
+  //! Deep neural networks
   namespace dnn
   {
     /*! \defgroup dnn Tensor/Neural Processing networks

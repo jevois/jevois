@@ -47,7 +47,8 @@ namespace jevois
 {
   class GPUimage;
   class GUIeditor;
-  
+
+  //! Parameters for GUIhelper class
   namespace gui
   {
     static jevois::ParameterCategory const ParamCateg("Graphical Interface Options");

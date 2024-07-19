@@ -667,6 +667,7 @@ void jevois::rawimage::drawFilledRect(jevois::RawImage & img, int x, int y, unsi
 // Font pattern definitions:
 namespace jevois
 {
+  //! Fonts available for drawing text strings into RawImage
   namespace font
   {
     extern const unsigned char font10x20[95][200];

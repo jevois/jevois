@@ -173,7 +173,7 @@ namespace jevois
       entire hierarchy is either initialized or not.
       
       Because powering up the JeVois hardware platform automatically constructs and initializes the default processing
-      pipeline, and because of the aforementioned was in which Engine changes processing modules when users change video
+      pipeline, and because of Engine instantiates and then initializes processing modules when users change video
       format, most components just assume that their vision processing functions will never be called when the component
       is not initialized, and thus they just skip testing for initialized() altogether (to save CPU cycles).
 

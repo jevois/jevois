@@ -40,5 +40,14 @@ cat > /lab/jevois/doc/ProgrammerTutos.html <<EOF
 EOF
 
 # Make and publish the blog:
-cd $JEVOIS_SRC_ROOT/jevois-blog
-make docweb
+#cd $JEVOIS_SRC_ROOT/jevois-blog
+#make docweb
+
+# Patch up index.js for jevoisbase; on latest doxygen the whole index from jevois gets pulled somehow...
+cat > /lab/jevois/basedoc/index.js <<EOF
+var index =
+[
+    [ "JeVois Base Modules documentation", "index.html#welcomebase", null ],
+    [ "Contents - JeVoisBase", "index.html#contentsbase", null ]
+];
+EOF

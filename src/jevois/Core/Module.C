@@ -84,14 +84,14 @@ std::string jevois::StdModule::getStamp() const
   
   switch(serstamp::get())
   {
-  case jevois::module::SerStamp::None:
+  case jevois::modul::SerStamp::None:
     break;
     
-  case jevois::module::SerStamp::Frame:
+  case jevois::modul::SerStamp::Frame:
     ret = std::to_string(frameNum());
     break;
     
-  case jevois::module::SerStamp::Time:
+  case jevois::modul::SerStamp::Time:
   {
     std::time_t t = std::time(nullptr); char str[100];
     std::strftime(str, sizeof(str), "%T", std::localtime(&t));
@@ -99,7 +99,7 @@ std::string jevois::StdModule::getStamp() const
   }
   break;
   
-  case jevois::module::SerStamp::FrameTime:
+  case jevois::modul::SerStamp::FrameTime:
   {
     std::time_t t = std::time(nullptr); char str[100];
     std::strftime(str, sizeof(str), "%T", std::localtime(&t));
@@ -107,7 +107,7 @@ std::string jevois::StdModule::getStamp() const
   }
   break;
   
-  case jevois::module::SerStamp::FrameDateTime:
+  case jevois::modul::SerStamp::FrameDateTime:
   {
     std::time_t t = std::time(nullptr); char str[100];
     std::strftime(str, sizeof(str), "%F/%T", std::localtime(&t));
@@ -146,18 +146,18 @@ void jevois::StdModule::sendSerialStd1Dx(float x, float size, std::string const 
   // Format the message depending on parameter serstyle:
   switch (serstyle::get())
   {
-  case jevois::module::SerStyle::Terse:
+  case jevois::modul::SerStyle::Terse:
     oss << "T1 " << x;
     break;
     
-  case jevois::module::SerStyle::Normal:
+  case jevois::modul::SerStyle::Normal:
     oss << "N1 ";
     if (id.empty()) oss << "unknown "; else oss << jevois::replaceWhitespace(id) << ' ';
     oss << x << ' ' << size;
     break;
     
-  case jevois::module::SerStyle::Detail:
-  case jevois::module::SerStyle::Fine:
+  case jevois::modul::SerStyle::Detail:
+  case jevois::modul::SerStyle::Fine:
     oss << "D1 ";
     if (id.empty()) oss << "unknown "; else oss << jevois::replaceWhitespace(id) << ' ';
     oss << x - 0.5F * size << ' ' << x + 0.5F * size;
@@ -194,18 +194,18 @@ void jevois::StdModule::sendSerialStd1Dy(float y, float size, std::string const 
   // Format the message depending on parameter serstyle:
   switch (serstyle::get())
   {
-  case jevois::module::SerStyle::Terse:
+  case jevois::modul::SerStyle::Terse:
     oss << "T1 " << y;
     break;
     
-  case jevois::module::SerStyle::Normal:
+  case jevois::modul::SerStyle::Normal:
     oss << "N1 ";
     if (id.empty()) oss << "unknown "; else oss << jevois::replaceWhitespace(id) << ' ';
     oss << y << ' ' << size;
     break;
     
-  case jevois::module::SerStyle::Detail:
-  case jevois::module::SerStyle::Fine:
+  case jevois::modul::SerStyle::Detail:
+  case jevois::modul::SerStyle::Fine:
     oss << "D1 ";
     if (id.empty()) oss << "unknown "; else oss << jevois::replaceWhitespace(id) << ' ';
     oss << y - 0.5F * size << ' ' << y + 0.5F * size;
@@ -243,17 +243,17 @@ void jevois::StdModule::sendSerialStd2D(float x, float y, float w, float h, std:
   // Format the message depending on parameter serstyle:
   switch (serstyle::get())
   {
-  case jevois::module::SerStyle::Terse:
+  case jevois::modul::SerStyle::Terse:
     oss << "T2 " << x << ' ' << y;
     break;
     
-  case jevois::module::SerStyle::Normal:
+  case jevois::modul::SerStyle::Normal:
     oss << "N2 ";
     if (id.empty()) oss << "unknown "; else oss << jevois::replaceWhitespace(id) << ' ';
     oss << x << ' ' << y << ' ' << w << ' ' << h;
     break;
     
-  case jevois::module::SerStyle::Detail:
+  case jevois::modul::SerStyle::Detail:
     oss << "D2 ";
     if (id.empty()) oss << "unknown "; else oss << jevois::replaceWhitespace(id) << ' ';
     oss << x - 0.5F * w << ' ' << y - 0.5F * h << ' ';
@@ -263,7 +263,7 @@ void jevois::StdModule::sendSerialStd2D(float x, float y, float w, float h, std:
     if (extra.empty() == false) oss << ' ' << extra;
     break;
 
-  case jevois::module::SerStyle::Fine:
+  case jevois::modul::SerStyle::Fine:
     oss << "F2 ";
     if (id.empty()) oss << "unknown "; else oss << jevois::replaceWhitespace(id) << ' ';
     oss << 4 << ' '; // number of vertices
@@ -287,7 +287,7 @@ void jevois::StdModule::sendSerialContour2D(unsigned int camw, unsigned int camh
   // Format the message depending on parameter serstyle:
   switch (serstyle::get())
   {
-  case jevois::module::SerStyle::Terse:
+  case jevois::modul::SerStyle::Terse:
   {
     // Compute center of gravity:
     float cx = 0.0F, cy = 0.0F;
@@ -297,7 +297,7 @@ void jevois::StdModule::sendSerialContour2D(unsigned int camw, unsigned int camh
   }
   break;
     
-  case jevois::module::SerStyle::Normal:
+  case jevois::modul::SerStyle::Normal:
   {
     // Compute upright bounding rectangle:
     cv::Rect r = cv::boundingRect(points);
@@ -305,7 +305,7 @@ void jevois::StdModule::sendSerialContour2D(unsigned int camw, unsigned int camh
   }
   break;
     
-  case jevois::module::SerStyle::Detail:
+  case jevois::modul::SerStyle::Detail:
   {
     // Compute minimal rotated rectangle enclosing the points:
     cv::RotatedRect r = cv::minAreaRect(points);
@@ -338,7 +338,7 @@ void jevois::StdModule::sendSerialContour2D(unsigned int camw, unsigned int camh
   }
   break;
 
-  case jevois::module::SerStyle::Fine:
+  case jevois::modul::SerStyle::Fine:
   {
     // Build the message:
     unsigned int const prec = serprec::get(); float const eps = std::pow(10.0F, -float(prec));
@@ -395,17 +395,17 @@ void jevois::StdModule::sendSerialStd3D(float x, float y, float z, float w, floa
   // Format the message depending on parameter serstyle:
   switch (serstyle::get())
   {
-  case jevois::module::SerStyle::Terse:
+  case jevois::modul::SerStyle::Terse:
     oss << "T3 " << x << ' ' << y << ' ' << z;
     break;
     
-  case jevois::module::SerStyle::Normal:
+  case jevois::modul::SerStyle::Normal:
     oss << "N3 ";
     if (id.empty()) oss << "unknown "; else oss << jevois::replaceWhitespace(id) << ' ';
     oss << x << ' ' << y << ' ' << z << ' ' << w << ' ' << h << ' ' << d;
     break;
     
-  case jevois::module::SerStyle::Detail:
+  case jevois::modul::SerStyle::Detail:
     oss << "D3 ";
     if (id.empty()) oss << "unknown "; else oss << jevois::replaceWhitespace(id) << ' ';
     oss << x << ' ' << y << ' ' << z << ' ' << w << ' ' << h << ' ' << d << ' '
@@ -413,7 +413,7 @@ void jevois::StdModule::sendSerialStd3D(float x, float y, float z, float w, floa
     if (extra.empty() == false) oss << ' ' << extra;
     break;
 
-  case jevois::module::SerStyle::Fine:
+  case jevois::modul::SerStyle::Fine:
     oss << "F3 ";
     if (id.empty()) oss << "unknown "; else oss << jevois::replaceWhitespace(id) << ' ';
     oss << 8 << ' '; // number of vertices
@@ -440,7 +440,7 @@ void jevois::StdModule::sendSerialStd3D(std::vector<cv::Point3f> points, std::st
   // Format the message depending on parameter serstyle:
   switch (serstyle::get())
   {
-  case jevois::module::SerStyle::Terse:
+  case jevois::modul::SerStyle::Terse:
   {
     // Compute center of gravity:
     cv::Point3f cg(0.0F, 0.0F, 0.0F);
@@ -450,7 +450,7 @@ void jevois::StdModule::sendSerialStd3D(std::vector<cv::Point3f> points, std::st
   }
   break;
     
-  case jevois::module::SerStyle::Normal:
+  case jevois::modul::SerStyle::Normal:
   {
     // Compute upright bounding parallelepiped:
     cv::Point3f cg(0.0F, 0.0F, 0.0F), pmin(1e30F, 1e30F, 1e30F), pmax(-1e30F, -1e30F, -1e30F);
@@ -470,7 +470,7 @@ void jevois::StdModule::sendSerialStd3D(std::vector<cv::Point3f> points, std::st
   }
   break;
   
-  case jevois::module::SerStyle::Detail:
+  case jevois::modul::SerStyle::Detail:
   {
     // Compute upright bounding parallelepiped:
     cv::Point3f cg(0.0F, 0.0F, 0.0F), pmin(1e30F, 1e30F, 1e30F), pmax(-1e30F, -1e30F, -1e30F);
@@ -491,7 +491,7 @@ void jevois::StdModule::sendSerialStd3D(std::vector<cv::Point3f> points, std::st
   }
   break;
   
-  case jevois::module::SerStyle::Fine:
+  case jevois::modul::SerStyle::Fine:
   {
     // Build the message:
     unsigned int const prec = serprec::get();
@@ -518,16 +518,16 @@ void jevois::StdModule::sendSerialStd3D(std::vector<cv::Point3f> points, std::st
 // ####################################################################################################
 void jevois::StdModule::sendSerialMarkStart()
 {
-  jevois::module::SerMark const m = sermark::get();
-  if (m == jevois::module::SerMark::None || m == jevois::module::SerMark::Stop) return;
+  jevois::modul::SerMark const m = sermark::get();
+  if (m == jevois::modul::SerMark::None || m == jevois::modul::SerMark::Stop) return;
   sendSerial(getStamp() + "MARK START");
 }
 
 // ####################################################################################################
 void jevois::StdModule::sendSerialMarkStop()
 {
-  jevois::module::SerMark const m = sermark::get();
-  if (m == jevois::module::SerMark::None || m == jevois::module::SerMark::Start) return;
+  jevois::modul::SerMark const m = sermark::get();
+  if (m == jevois::modul::SerMark::None || m == jevois::modul::SerMark::Start) return;
   sendSerial(getStamp() + "MARK STOP");
 }
 
@@ -545,20 +545,20 @@ void jevois::StdModule::sendSerialObjReco(std::vector<jevois::ObjReco> const & r
   // Format the message depending on parameter serstyle:
   switch (serstyle::get())
   {
-  case jevois::module::SerStyle::Terse:
+  case jevois::modul::SerStyle::Terse:
     oss << "TO " << jevois::replaceWhitespace(res[0].category);
     break;
     
-  case jevois::module::SerStyle::Normal:
+  case jevois::modul::SerStyle::Normal:
     oss << "NO " << jevois::replaceWhitespace(res[0].category) << ':' << res[0].score;
     break;
     
-  case jevois::module::SerStyle::Detail:
+  case jevois::modul::SerStyle::Detail:
     oss << "DO";
     for (auto const & r : res) oss << ' ' << jevois::replaceWhitespace(r.category) << ':' << r.score;
     break;
 
-  case jevois::module::SerStyle::Fine:
+  case jevois::modul::SerStyle::Fine:
     oss << "FO";
     for (auto const & r : res) oss << ' ' << jevois::replaceWhitespace(r.category) << ':' << r.score;
     break;
@@ -581,7 +581,7 @@ void jevois::StdModule::sendSerialObjDetImg2D(unsigned int camw, unsigned int ca
   {
     switch (serstyle::get())
     {
-    case jevois::module::SerStyle::Terse:
+    case jevois::modul::SerStyle::Terse:
       (*ptr) += jevois::replaceWhitespace(r.category);
       break;
       

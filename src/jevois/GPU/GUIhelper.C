@@ -1595,12 +1595,12 @@ void jevois::GUIhelper::drawConsole()
   auto m = dynamic_cast<jevois::StdModule *>(e->module().get());
   if (m)
   {
-    auto sp = m->getParamValUnique<jevois::module::SerStyle>("serstyle");
-    int idx = 0; for (auto const & v : jevois::module::SerStyle_Values) if (v == sp) break; else ++idx;
+    auto sp = m->getParamValUnique<jevois::modul::SerStyle>("serstyle");
+    int idx = 0; for (auto const & v : jevois::modul::SerStyle_Values) if (v == sp) break; else ++idx;
 
     ImGui::SameLine();
-    if (combo("serstyle", jevois::module::SerStyle_Strings, idx))
-      try { e->setParamValUnique("serstyle", jevois::module::SerStyle_Values[idx]); }
+    if (combo("serstyle", jevois::modul::SerStyle_Strings, idx))
+      try { e->setParamValUnique("serstyle", jevois::modul::SerStyle_Values[idx]); }
       catch (...) { jevois::warnAndIgnoreException(); }
   }
   ImGui::Separator();

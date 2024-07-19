@@ -24,62 +24,63 @@
 // Get our helpers
 #include <jevois/Component/details/ParameterHelpers.H>
 
+/*! \defgroup parameter Parameter-related classes and functions
+    \ingroup component
+
+    The concept of parameter in the JeVois framework embodies wrappers around a single value of any type, with
+    associated documentation (description), default values, possible specification of valid values, accessor functions
+    to obtain or change the value, and optional callback functions that are triggered when the value is
+    changed. Parameters are intended to be used in objects that inherit from Component. The goal of parameters is to
+    expose parameters of a given vision algorithm in such a way that any piece of code that is using that algorithm will
+    automatically inherit and expose these parameters.
+
+    How to explore this documentation module:
+    
+    - Start with a bit of general philosophy about components and parameters: \ref Component
+    - Then understand how one may specify valid values for parameters: \ref validvalues
+    - Then have a look at how one may define the name, type, description, default value, category, and optionally
+      valid values for a parameter: \ref ParameterDef<T>
+    - Then you are ready for [Parameter](classjevois_1_1Parameter_3_01Param_00_01Tail_01_8_8_8_01_4.html)
+    
+    The other classes in this documentation module are mainly for support of the above ones.
+
+    Convenience macro to define a Parameter type
+    --------------------------------------------
+
+    \code
+    JEVOIS_DECLARE_PARAMETER(ParamName, ParamType, ...)
+    \endcode
+    
+    ParamName is the name chosen for the parameter. A new class type will be created with that name, so it must be
+    syntactically correct as a class name. ParamType is the type of the parameter value. The remaining arguments are
+    passed to the constructor of jevois::ParameterDef<T> with T=ParamType.
+    
+    Convenience macro to define a Parameter type, with callback
+    -----------------------------------------------------------
+
+    \code
+    JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(ParamName, ParamType, ...)
+    \endcode
+    
+    ParamName is the name chosen for the parameter. A new class type will be created with that name, so it must be
+    syntactically correct as a class name. ParamType is the type of the parameter value. The remaining arguments are
+    passed to the constructor of jevois::ParameterDef<T> with T=ParamType.
+    
+    In this version with callback, a pure virtual method is included in the new class that is defined, with the
+    following signature:
+    
+    \code
+    virtual void onParamChange(ParamName const & param, ParamType const & newval) = 0;
+    \endcode
+    
+    The host class (typically, a Component) that inherits from Parameter<ParamName> must implement an override of this
+    function. A compile-time error will be issued if that override has not been implemented. */
+
 namespace jevois
 {
-  /*! \defgroup parameter Parameter-related classes and functions
-      \ingroup component
-
-      The concept of parameter in the JeVois framework embodies wrappers around a single value of any type, with
-      associated documentation (description), default values, possible specification of valid values, accessor functions
-      to obtain or change the value, and optional callback functions that are triggered when the value is
-      changed. Parameters are intended to be used in objects that inherit from Component. The goal of parameters is to
-      expose parameters of a given vision algorithm in such a way that any piece of code that is using that algorithm
-      will automatically inherit and expose these parameters.
-
-      How to explore this documentation module:
-
-      - Start with a bit of general philosophy about components and parameters: Component
-      - Then understand how one may specify valid values for parameters: \ref validvalues
-      - Then have a look at how one may define the name, type, description, default value, category, and optionally
-        valid values for a parameter: ParameterDef
-      - Then you are ready for [Parameter](classjevois_1_1Parameter_3_01Param_00_01Tail_8_8_8_4.html)
-
-      The other classes in this documentation module are mainly for support of the above ones.
-
-
-
-      Convenience macro to define a Parameter type
-      --------------------------------------------
-
-      JEVOIS_DECLARE_PARAMETER(ParamName, ParamType, ...)
-      
-      ParamName is the name chosen for the parameter. A new class type will be created with that name, so it must be
-      syntactically correct as a class name. ParamType is the type of the parameter value. The remaining arguments are
-      passed to the constructor of jevois::ParameterDef<T> with T=ParamType.
-  
-      Convenience macro to define a Parameter type, with callback
-      -----------------------------------------------------------
-
-      JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(ParamName, ParamType, ...)
-      
-      ParamName is the name chosen for the parameter. A new class type will be created with that name, so it must be
-      syntactically correct as a class name. ParamType is the type of the parameter value. The remaining arguments are
-      passed to the constructor of jevois::ParameterDef<T> with T=ParamType.
-      
-      In this version with callback, a pure virtual method is included in the new class that is defined, with the
-      following signature:
-      
-      \code
-      virtual void onParamChange(ParamName const & param, ParamType const & newval) = 0;
-      \endcode
-      
-      The host class (typically, a Component) that inherits from Parameter<ParamName> must implement an override of this
-      function. A compile-time error will be issued if that override has not been implemented. */
-
-  /*! @{ */ // **********************************************************************
-
   // ######################################################################
   //! ParameterSummary provides a summary about a parameter
+  /*! This is used mainly for graphical interfaces. \ingroup parameter */
   class ParameterSummary
   {
     public:
@@ -117,7 +118,7 @@ namespace jevois
   // ######################################################################
   //! Base class for Parameter
   /*! This exposes the string interface to the Parameter while derived template classes will expose the
-      value-based interface. */
+      value-based interface. \ingroup parameter */
   class ParameterBase
   {
     public:
@@ -167,8 +168,12 @@ namespace jevois
          call that callback once during init(), unless it is already called during command-line parsing. */
       virtual void callbackInitCall() = 0;
   };
-} // namespace jevois
+
+  // Closing and then re-opening the namespace somehow makes doxygen ignore all classes defined below...
+#ifndef JEVOIS_DOXYGEN
   
+} // namespace jevois
+
 // Include ParameterDef now (it needs to know about ParameterBase):
 #include <jevois/Component/ParameterDef.H>
 
@@ -176,12 +181,14 @@ namespace jevois
 {
   class Component;
 
+#endif // JEVOIS_DOXYGEN
+  
   // ######################################################################
   //! A changeable parameter for a Component, core class
   /*! Parameters are used to expose user-configurable settings for a Component.  They can be specified from the command
       line and will be set by the time Component::postInit() is called on the Component which owns the
       Parameter. A Parameter may have a callback function which is invoked each time an attempt is made to change the
-      Parameter value. */
+      Parameter value. \ingroup parameter */
   template <typename T>
   class ParameterCore : public ParameterBase
   {
@@ -306,6 +313,9 @@ namespace jevois
       dubious at best). In reality, things are even worse since typically the paramdef, component class declaration, and
       component implementation, should be in 3 different files.
 
+      \note <em>``There are only two hard things in Computer Science: cache invalidation and naming things.'' <b>-- Phil
+      Karlton</b></em>
+    
       The approach we developed for the Neuromorphic Robotics Toolkit (NRT) and refined for JeVois works as follows:
 
       - each parameter is a unique new class type. We create that type once with one name, and it holds the parameter
@@ -329,20 +339,25 @@ namespace jevois
       - No need to declare parameter member variables (we inherit from them instead).
       - No need to do anything at construction of the component.
       - No need to manually hook the callback function in the component host class to the parameter.
+      - When implementing the callback, all members of the host class are available (since the host class inherits
+        from the Parameter). This is critical since usually callbacks are implemented so that the host component
+        will take some action when a parameter value is changed, e.g., reconfigure itself in some way.
       - Strong compile-time checking that the programmer did not forget to write the callback function for each
         parameter that was declared as having a callback.
       - Only one name used throughout for that parameter and all its associated machinery (definition, callback).
       - It is easy to write scripts that search the source tree for information about all the parameters of a component,
         since those are always all specified in the Parameter< ... > inheritance statement.
 
-      Remaining caveat: it is often desirable to use short names for parameters, such as "size", "length", "dims", etc
-      and those names may clash between several components as the .H files for these components are included when
-      building a more complex component that uses those. This is not an issue for Module, which is a terminal entity and
-      is typically written as a single .C file with no .H file. For components intended for broad use, we currently
-      recommend putting all the parameters in a namespace that is the lowercase version of the component class name.
+      Remaining caveat: it is often desirable to use short names for parameters, such as "size", "length", "dims",
+      "threshold", etc and those names may clash between several components as the .H files for these components are
+      included when building a more complex component or system that uses those. This is not an issue for Module, which
+      is a terminal entity and is typically written as a single .C file with no .H file. For components intended for
+      broad use, we currently recommend putting all the parameters in a namespace that is the lowercase version of the
+      component class name.
 
       Below is the resulting implementation in Manager.H. We start with declaring the parameters, and we inherit from
-      them when declaring the Manager class:
+      them when declaring the Manager class. We declare the parameters in a new namespace \a manager to avoid name
+      clashes with other parameters of other components:
 
       \include snip/manager1.C
 
@@ -363,12 +378,20 @@ namespace jevois
       \include snip/manager2.C
 
       There is nothing to do in the constructor, destructor, etc of Manager. The only thing that remains to be done is
-      to implement the onParamChange() functions in Manager.C. Note how we do not give a name to the first parameter
-      (which is a ref to the parameter itself; it is necessary to disambiguate among the various onParamChange()
-      functions for different parameters, but usually we only care about the new value and do not need the handle to the
-      parameter) to avoid compiler warnings about our callbacks not using it:
+      to implement the onParamChange() functions in Manager.C. Note how we do not give a name to the first argument
+      (which is a ref to the parameter itself; that first argument is necessary to disambiguate among the various
+      onParamChange() functions for different parameters, but usually we only care about the new value and do not need
+      the handle to the parameter). This is to avoid compiler warnings about our callback not using that first argument:
 
       \include snip/manager3.C
+
+      The host component can use a parameter's member functions by calling them with the parameter name as a prefix
+      (this prefix is basically selecting on which base class we want to run the given function). For example, in
+      Manager, we take some action if the \p help parameter has been set at the command line, and then we freeze it. All
+      member functions defined in ParameterBase and in ParameterCore<T> are available on every Parameter (get(), set(),
+      strget(), strset(), name(), descriptor(), summary(), freeze(), etc):
+      
+      \include snip/manager4.C
 
       For completeness, if you wonder what JEVOIS_DECLARE_PARAMETER(ParamName, ParamType, ...) and 
       JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(ParamName, ParamType, ...)  exactly do, here they are in
@@ -376,7 +399,7 @@ namespace jevois
 
       \include snip/parametermacros.C
 
-      Also see Engine.H or the many components in the jevoisbase library. */
+      Also see Engine.H or the many components in the jevoisbase library. \ingroup parameter */
   template <class Param, class ... Tail>
   class Parameter<Param, Tail ...> : public Param, public Parameter<Tail ...>
   {
@@ -384,13 +407,13 @@ namespace jevois
                     "jevois::Parameter<...> template arguments must all be parameters "
                     "(derive from jevois::ParameterBase");
   };
-
+  
   // ######################################################################
   //! Dynamic parameter added to a component at runtime
   /*! Dynamic parameters can only be accessed by descriptor at the Component level (using getParamVal(), setParamVal(),
       etc), since there is no unique class type for them and the owning Component does not inherit from them. Typically
       for use via Component::addDynamicParameter(). Use with caution. Mainly developed to enable endowing python modules
-      with JeVois parameters. */
+      with JeVois parameters. \ingroup parameter */
   template <typename T>
   class DynamicParameter : public jevois::ParameterCore<T>
   {
@@ -411,8 +434,6 @@ namespace jevois
     private:
       Component * itsComp;
   };
-
-  /*! @} */ // **********************************************************************
 
 } // namespace jevois
 

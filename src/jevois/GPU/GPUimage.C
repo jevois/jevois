@@ -30,6 +30,7 @@
 // Shaders used here:
 namespace jevois
 {
+  //! OpenGL shaders for video rendering
   namespace shader
   {
     extern char const * vert;      // Vertex shader

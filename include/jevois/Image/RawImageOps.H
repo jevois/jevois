@@ -23,6 +23,7 @@
 
 namespace jevois
 {
+  //! Functions for RawImage conversion, processing, drawing
   namespace rawimage
   {
     //! Create an OpenCV image from the existing RawImage data, sharing the pixel memory rather than copying it
