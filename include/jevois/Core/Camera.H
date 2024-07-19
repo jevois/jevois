@@ -64,6 +64,7 @@ namespace jevois
     public:
       //! Construct and open the device
       /*! \param devname device name, e.g., /dev/video0
+          \param s currently installed camera sensor
           \param nbufs number of video grab buffers, or 0 for automatic. */
       Camera(std::string const & devname, jevois::CameraSensor s = jevois::CameraSensor::any,
              unsigned int const nbufs = 0);

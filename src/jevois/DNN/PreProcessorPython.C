@@ -107,9 +107,8 @@ std::vector<cv::Mat> jevois::dnn::PreProcessorPythonImpl::process(cv::Mat const 
 }
 
 // ####################################################################################################
-void jevois::dnn::PreProcessorPythonImpl::report(jevois::StdModule * JEVOIS_UNUSED_PARAM(mod),
-                                                 jevois::RawImage * outimg, jevois::OptGUIhelper * helper,
-                                                 bool overlay, bool idle)
+void jevois::dnn::PreProcessorPythonImpl::report(jevois::StdModule *, jevois::RawImage * outimg,
+                                                 jevois::OptGUIhelper * helper, bool overlay, bool idle)
 {
   // default constructed boost::python::object is None on the python side
   if (outimg)
@@ -165,8 +164,8 @@ void jevois::dnn::PreProcessorPython::freeze(bool doit)
 }
 
 // ####################################################################################################
-void jevois::dnn::PreProcessorPython::onParamChange(jevois::dnn::preprocessor::pypre const &
-                                                     JEVOIS_UNUSED_PARAM(param), std::string const & newval)
+void jevois::dnn::PreProcessorPython::onParamChange(jevois::dnn::preprocessor::pypre const &,
+                                                    std::string const & newval)
 {
   if (newval.empty() == false) itsImpl->loadpy(newval);
 }

@@ -37,16 +37,16 @@ jevois::Module::~Module()
 { }
 
 // ####################################################################################################
-void jevois::Module::process(InputFrame && JEVOIS_UNUSED_PARAM(inframe), OutputFrame && JEVOIS_UNUSED_PARAM(outframe))
+void jevois::Module::process(InputFrame &&, OutputFrame &&)
 { LFATAL("Not implemented in this module"); }
 
 // ####################################################################################################
-void jevois::Module::process(InputFrame && JEVOIS_UNUSED_PARAM(inframe))
+void jevois::Module::process(InputFrame &&)
 { LFATAL("Not implemented in this module"); }
 
 #ifdef JEVOIS_PRO
 // ####################################################################################################
-void jevois::Module::process(InputFrame && JEVOIS_UNUSED_PARAM(inframe), GUIhelper & JEVOIS_UNUSED_PARAM(helper))
+void jevois::Module::process(InputFrame &&, GUIhelper &)
 { LFATAL("Not implemented in this module, and only available on JeVois-Pro"); }
 #endif
 
@@ -60,8 +60,7 @@ void jevois::Module::sendSerial(std::string const & str)
 }
 
 // ####################################################################################################
-void jevois::Module::parseSerial(std::string const & str,
-                                 std::shared_ptr<jevois::UserInterface> JEVOIS_UNUSED_PARAM(s))
+void jevois::Module::parseSerial(std::string const & str, std::shared_ptr<jevois::UserInterface>)
 { throw std::runtime_error("Unsupported command [" + str + ']'); }
 
 // ####################################################################################################

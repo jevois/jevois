@@ -159,7 +159,7 @@ void jevois::dnn::NetworkHailo::load()
 }
 
 // ####################################################################################################
-void jevois::dnn::NetworkHailo::onParamChange(network::turbo const & JEVOIS_UNUSED_PARAM(par), bool const & newval)
+void jevois::dnn::NetworkHailo::onParamChange(network::turbo const &, bool const & newval)
 {
   if (itsDevice) itsDevice->set_throttling_state(! newval);
 }

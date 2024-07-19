@@ -376,9 +376,8 @@ std::vector<cv::Mat> jevois::dnn::PreProcessorBlob::process(cv::Mat const & img,
 }
 
 // ####################################################################################################
-void jevois::dnn::PreProcessorBlob::report(jevois::StdModule * JEVOIS_UNUSED_PARAM(mod),
-                                           jevois::RawImage * JEVOIS_UNUSED_PARAM(outimg),
-                                           jevois::OptGUIhelper * helper, bool JEVOIS_UNUSED_PARAM(overlay), bool idle)
+void jevois::dnn::PreProcessorBlob::report(jevois::StdModule *, jevois::RawImage *, jevois::OptGUIhelper * helper,
+                                           bool /*overlay*/, bool idle)
 {
 #ifdef JEVOIS_PRO
     if (helper && idle == false)

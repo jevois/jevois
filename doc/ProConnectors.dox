@@ -240,8 +240,8 @@ The Linux kernel device in charge of each bank is as follows:
 
 Kernel device    | Bank
 -----------------|------------------
-pinctrl@ff800014 | AO (always-on)
-pinctrl@ff634480 | Standard
+pinctrl\@ff800014 | AO (always-on)
+pinctrl\@ff634480 | Standard
 
 Each bank is organized as a number of \a pins. You can get a list of pins here:
 

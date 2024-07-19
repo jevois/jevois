@@ -170,7 +170,7 @@ jevois::dnn::PostProcessorYuNet::~PostProcessorYuNet()
 { }
 
 // ####################################################################################################
-void jevois::dnn::PostProcessorYuNet::freeze(bool JEVOIS_UNUSED_PARAM(doit))
+void jevois::dnn::PostProcessorYuNet::freeze(bool)
 { }
 
 // ####################################################################################################
@@ -232,8 +232,7 @@ void jevois::dnn::PostProcessorYuNet::process(std::vector<cv::Mat> const & outs,
 
 // ####################################################################################################
 void jevois::dnn::PostProcessorYuNet::report(jevois::StdModule * mod, jevois::RawImage * outimg,
-                                              jevois::OptGUIhelper * helper, bool overlay,
-                                              bool JEVOIS_UNUSED_PARAM(idle))
+                                             jevois::OptGUIhelper * helper, bool overlay, bool /*idle*/)
 {
   for (jevois::dnn::yunet::Face const & f : itsDetections)
   {

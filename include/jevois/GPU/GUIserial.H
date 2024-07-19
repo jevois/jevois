@@ -26,6 +26,10 @@
 
 namespace jevois
 {
+  //! Simple class to monitor a serial port in the JeVois-Pro GUI
+  /*! This class opens a window and displays traffic on a given serial port. Its interface is the same as a regular
+      Serial (or its parent, UserInterface), with the addition of a draw() function to render into a window managed by
+      the caller. */
   class GUIserial : public Serial
   {
     public:

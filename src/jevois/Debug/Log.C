@@ -41,8 +41,7 @@ namespace
 
 // ##############################################################################################################
 template <>
-jevois::Log<LOG_ALERT>::Log(char const * JEVOIS_UNUSED_PARAM(fullFileName),
-                            char const * JEVOIS_UNUSED_PARAM(functionName), std::string * outstr) :
+jevois::Log<LOG_ALERT>::Log(char const * /*fullFileName*/, char const * /*functionName*/, std::string * outstr) :
     itsOutStr(outstr)
 {
   // No prefix added here, will just throw the user message

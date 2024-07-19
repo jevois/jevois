@@ -191,7 +191,7 @@ namespace jevois
     static ParameterCategory const ParamCateg("Module Serial Message Options");
 
     //! Enum for Parameter \relates jevois::StdModule
-    JEVOIS_DEFINE_ENUM_CLASS(SerStyle, (Terse) (Normal) (Detail) (Fine) )
+    JEVOIS_DEFINE_ENUM_CLASS(SerStyle, (Terse) (Normal) (Detail) (Fine) );
     
     //! Parameter \relates jevois::StdModule
     JEVOIS_DECLARE_PARAMETER(serstyle, SerStyle, "Style for standardized serial messages as defined in "
@@ -204,7 +204,7 @@ namespace jevois
                              0U, jevois::Range<unsigned int>(0U, 10U), ParamCateg);
 
     //! Enum for Parameter \relates jevois::StdModule
-    JEVOIS_DEFINE_ENUM_CLASS(SerStamp, (None) (Frame) (Time) (FrameTime) (FrameDateTime) )
+    JEVOIS_DEFINE_ENUM_CLASS(SerStamp, (None) (Frame) (Time) (FrameTime) (FrameDateTime) );
 
     //! Parameter \relates jevois::StdModule
     JEVOIS_DECLARE_PARAMETER(serstamp, SerStamp, "Prepend standardized serial messages with a frame number, "
@@ -213,7 +213,7 @@ namespace jevois
                              SerStamp::None, SerStamp_Values, ParamCateg);
 
     //! Enum for Parameter \relates jevois::StdModule
-    JEVOIS_DEFINE_ENUM_CLASS(SerMark, (None) (Start) (Stop) (Both) )
+    JEVOIS_DEFINE_ENUM_CLASS(SerMark, (None) (Start) (Stop) (Both) );
 
     //! Parameter \relates jevois::StdModule
     JEVOIS_DECLARE_PARAMETER(sermark, SerMark, "Send serial message to mark the beginning (MARK START) of the "
@@ -308,18 +308,18 @@ namespace jevois
                            std::string const & extra = "");
 
       //! Send a standardized object recognition message
-      /*! \param res should be a list of scores and category names, in descending order of scores. Note that no message
+      /*! res should be a list of scores and category names, in descending order of scores. Note that no message
           is sent if the vector is empty. */
       void sendSerialObjReco(std::vector<ObjReco> const & res);
 
       //! Send a standardized object detection + recognition message
-      /*! \param res should be a list of scores and category names, in descending order of scores. Note that no message
+      /*! res should be a list of scores and category names, in descending order of scores. Note that no message
           is sent if the vector is empty. See sendSerialImg2D() for info about the object box. */
       void sendSerialObjDetImg2D(unsigned int camw, unsigned int camh, float x, float y, float w, float h,
 				 std::vector<ObjReco> const & res);
 
       //! Send a standardized object detection + recognition message
-      /*! \param res should be a list of scores and category names, in descending order of scores. Note that no message
+      /*! res should be a list of scores and category names, in descending order of scores. Note that no message
           is sent if the vector is empty. See sendSerialImg2D() for info about the object box. */
       void sendSerialObjDetImg2D(unsigned int camw, unsigned int camh, ObjDetect const & det);
      

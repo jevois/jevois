@@ -29,7 +29,6 @@ namespace jevois
 {
   namespace manager
   {
-    //! Parameter category \relates jevois::Manager
     static ParameterCategory const ParamCateg("General Options");
 
     //! Parameter \relates jevois::Manager
@@ -37,10 +36,10 @@ namespace jevois
 
 #ifdef JEVOIS_LDEBUG_ENABLE
     //! Enum for Parameter \relates jevois::Manager
-    JEVOIS_DEFINE_ENUM_CLASS(LogLevel, (fatal) (error) (info) (debug));
+    JEVOIS_DEFINE_ENUM_CLASS(LogLevel, (fatal) (error) (info) (debug) );
 #else
     //! Enum for Parameter \relates jevois::Manager
-    JEVOIS_DEFINE_ENUM_CLASS(LogLevel, (fatal) (error) (info));
+    JEVOIS_DEFINE_ENUM_CLASS(LogLevel, (fatal) (error) (info) );
 #endif
 
     //! Parameter \relates jevois::Manager

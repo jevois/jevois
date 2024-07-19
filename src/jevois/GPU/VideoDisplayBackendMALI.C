@@ -32,7 +32,7 @@ jevois::VideoDisplayBackendMALI::~VideoDisplayBackendMALI()
 }
 
 // ##############################################################################################################
-void jevois::VideoDisplayBackendMALI::init(unsigned short w, unsigned short h, bool JEVOIS_UNUSED_PARAM(fullscreen))
+void jevois::VideoDisplayBackendMALI::init(unsigned short w, unsigned short h, bool)
 {
   // On platform, use an fbdev_window to draw to the framebuffer directly. No other initialization is needed:
   itsWindow.width = w; itsWindow.height = h;

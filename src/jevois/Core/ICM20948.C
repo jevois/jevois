@@ -21,12 +21,12 @@
 
 // This code inspired by:
 
-/***************************************************************************//**
+/* *****************************************************************************
  * file ICM20648.cpp
- *******************************************************************************
+ * *****************************************************************************
  * section License
  * <b>(C) Copyright 2017 Silicon Labs, http://www.silabs.com</b>
- *******************************************************************************
+ * *****************************************************************************
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -42,7 +42,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- ******************************************************************************/
+ * ****************************************************************************/
 
 // motion event control reg
 #define JEVOIS_DMP_BAC_WEARABLE_EN          0x8000
@@ -469,7 +469,7 @@ void jevois::ICM20948::reset(void)
 }
 
 // ####################################################################################################
-void jevois::ICM20948::onParamChange(jevois::imu::arate const & JEVOIS_UNUSED_PARAM(param), float const & newval)
+void jevois::ICM20948::onParamChange(jevois::imu::arate const &, float const & newval)
 {
   // Disable or enable accelerometer:
   uint8_t pwr = itsIMU->readRegister(ICM20948_REG_PWR_MGMT_2);
@@ -497,7 +497,7 @@ void jevois::ICM20948::onParamChange(jevois::imu::arate const & JEVOIS_UNUSED_PA
 }
 
 // ####################################################################################################
-void jevois::ICM20948::onParamChange(jevois::imu::grate const & JEVOIS_UNUSED_PARAM(param), float const & newval)
+void jevois::ICM20948::onParamChange(jevois::imu::grate const &, float const & newval)
 {
   // Disable or enable gyro:
   uint8_t pwr = itsIMU->readRegister(ICM20948_REG_PWR_MGMT_2);
@@ -525,8 +525,7 @@ void jevois::ICM20948::onParamChange(jevois::imu::grate const & JEVOIS_UNUSED_PA
 }
 
 // ####################################################################################################
-void jevois::ICM20948::onParamChange(jevois::imu::mrate const & JEVOIS_UNUSED_PARAM(param),
-                                     jevois::imu::MagRate const & newval)
+void jevois::ICM20948::onParamChange(jevois::imu::mrate const &, jevois::imu::MagRate const & newval)
 {
   // Turn off the magnetometer:
   writeMagRegister(REG_AK09916_CNTL2, VAL_AK09916_CNTL2_PD);
@@ -567,8 +566,7 @@ void jevois::ICM20948::onParamChange(jevois::imu::mrate const & JEVOIS_UNUSED_PA
 }
 
 // ####################################################################################################
-void jevois::ICM20948::onParamChange(jevois::imu::abw const & JEVOIS_UNUSED_PARAM(param),
-                                     unsigned int const & newval)
+void jevois::ICM20948::onParamChange(jevois::imu::abw const &, unsigned int const & newval)
 {
   uint8_t reg = itsIMU->readRegister(ICM20948_REG_ACCEL_CONFIG);
 
@@ -590,8 +588,7 @@ void jevois::ICM20948::onParamChange(jevois::imu::abw const & JEVOIS_UNUSED_PARA
 }
  
 // ####################################################################################################
-void jevois::ICM20948::onParamChange(jevois::imu::gbw const & JEVOIS_UNUSED_PARAM(param),
-                                     unsigned int const & newval)
+void jevois::ICM20948::onParamChange(jevois::imu::gbw const &, unsigned int const & newval)
 {
   uint8_t reg = itsIMU->readRegister(ICM20948_REG_GYRO_CONFIG_1);
 
@@ -614,8 +611,7 @@ void jevois::ICM20948::onParamChange(jevois::imu::gbw const & JEVOIS_UNUSED_PARA
 }
 
 // ####################################################################################################
-void jevois::ICM20948::onParamChange(jevois::imu::tbw const & JEVOIS_UNUSED_PARAM(param),
-                                     unsigned int const & newval)
+void jevois::ICM20948::onParamChange(jevois::imu::tbw const &, unsigned int const & newval)
 {
   // Disable or enable temperature:
   uint8_t pwr = itsIMU->readRegister(ICM20948_REG_PWR_MGMT_1);
@@ -638,8 +634,7 @@ void jevois::ICM20948::onParamChange(jevois::imu::tbw const & JEVOIS_UNUSED_PARA
 }
 
 // ####################################################################################################
-void jevois::ICM20948::onParamChange(jevois::imu::arange const & JEVOIS_UNUSED_PARAM(param),
-                                     unsigned int const & newval)
+void jevois::ICM20948::onParamChange(jevois::imu::arange const &, unsigned int const & newval)
 {
   uint8_t reg = itsIMU->readRegister(ICM20948_REG_ACCEL_CONFIG) & ~ICM20948_MASK_ACCEL_FULLSCALE;
 
@@ -655,8 +650,7 @@ void jevois::ICM20948::onParamChange(jevois::imu::arange const & JEVOIS_UNUSED_P
 }
 
 // ####################################################################################################
-void jevois::ICM20948::onParamChange(jevois::imu::grange const & JEVOIS_UNUSED_PARAM(param),
-                                     unsigned int const & newval)
+void jevois::ICM20948::onParamChange(jevois::imu::grange const &, unsigned int const & newval)
 {
   uint8_t reg = itsIMU->readRegister(ICM20948_REG_GYRO_CONFIG_1) & ~ICM20948_MASK_GYRO_FULLSCALE;
 
@@ -702,7 +696,7 @@ uint32_t jevois::ICM20948::devid()
 { return itsIMU->readRegister(ICM20948_REG_WHO_AM_I); }
 
 // ####################################################################################################
-void jevois::ICM20948::onParamChange(imu::dmp const & JEVOIS_UNUSED_PARAM(param), std::string const & newval)
+void jevois::ICM20948::onParamChange(imu::dmp const &, std::string const & newval)
 {
   unsigned short ctl1 = 0, ctl2 = 0, mec = 0;
   bool a = false, g = false, m = false, h2 = false;

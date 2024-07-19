@@ -37,7 +37,7 @@ While we here focus on the JeVois \jvmod{DNN} module, several older modules prov
 JeVois-Pro DNN Benchmarks with various hardware accelerators
 ============================================================
 
-See \subpage JeVoisProBenchmarks
+See \ref JeVoisProBenchmarks
 
 JeVois DNN framework overview
 =============================

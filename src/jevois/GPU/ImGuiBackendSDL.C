@@ -43,13 +43,11 @@ jevois::ImGuiBackendSDL::~ImGuiBackendSDL()
 }
 
 // ##############################################################################################################
-void jevois::ImGuiBackendSDL::init(unsigned short JEVOIS_UNUSED_PARAM(w), unsigned short JEVOIS_UNUSED_PARAM(h),
-                                   bool JEVOIS_UNUSED_PARAM(fullscreen))
+void jevois::ImGuiBackendSDL::init(unsigned short, unsigned short, bool)
 { }
 
 // ##############################################################################################################
-void jevois::ImGuiBackendSDL::init(unsigned short w, unsigned short h, bool fullscreen, float scale,
-                                   bool JEVOIS_UNUSED_PARAM(conslock))
+void jevois::ImGuiBackendSDL::init(unsigned short w, unsigned short h, bool fullscreen, float scale, bool)
 {
   if (itsSDLwin) { LERROR("Already initialized -- IGNORED"); return; }
   

@@ -239,6 +239,8 @@ namespace jevois
           that forgot to pass it down to the base, but it may be a good idea to set an empty string default to instance
           in derived classes.
 
+          \param args any constructor parameters used to instantiate the sub-component
+          
           \note Sub-components always inherit the path of their top-level parent (a top-level component is one that was
           directly added to a Manager via Manager::addComponent()). See absolutePath(). This is so that different
           modules can provide different data for their components; for example, a FaceDetector component may require
@@ -527,30 +529,28 @@ namespace jevois
                                std::vector<std::pair<std::string /* component */, std::string /* value */ > > > > &
                                helplist, bool recurse = true) const;
 
-      //! Initialization
-      /*! Invoke: runPreInit(), then setInitialized(), finally runPostInit() */
+      // Initialization: Invoke: runPreInit(), then setInitialized(), finally runPostInit()
       virtual void init();
 
-      //! Recursively run preInit()
+      // Recursively run preInit()
       void runPreInit();
 
-      //! Recursively set initialized flag
+      // Recursively set initialized flag
       void setInitialized();
 
-      //! Recursively run postInit()
+      // Recursively run postInit()
       void runPostInit();
 
-      //! Un-initialize
-      /* Invoke: runPreUninit(), then setUninitialized(), finally runPostUninit() */
+      // Un-initialize: Invoke: runPreUninit(), then setUninitialized(), finally runPostUninit()
       virtual void uninit();
 
-      //! Recursively run preUninit()
+      // Recursively run preUninit()
       void runPreUninit();
 
-      //! Recursively set uninitialized flag
+      // Recursively set uninitialized flag
       void setUninitialized();
 
-      //! Recursively run postUninit()
+      // Recursively run postUninit()
       void runPostUninit();
 
       // Our meta information. Only access this through meta(), even from within Component!
@@ -565,7 +565,7 @@ namespace jevois
       // hierarchy, or is the manager.
       Component * itsParent;
 
-      void findParamAndActOnIt(std::string const & descriptor,
+      void findParamAndActOnIt(std::string const & descrip,
                                std::function<void(jevois::ParameterBase * param, std::string const & unrolled)> doit,
                                std::function<bool()> empty) const;
       void findParamAndActOnIt(std::vector<std::string> const & descrip, bool recur, size_t idx,
@@ -574,17 +574,17 @@ namespace jevois
 
       std::string itsPath; // filesystem path assigned to this Component, empty by default
 
-      //! Helper function to compute an automatic instance name, if needed
-      /*! Parent modules call this before adding a sub-module, to make sure its name will not clash with existing
-          sub-modules. Parameter classname can be empty if instance is not. Throws if a unique name cannot be created
-          (e.g., no # was provided and the instance name clashes with other sub-modules). itsSubMtx on the parent must
-          be locked by caller to make sure the computed name remains available as we return it */
+      // Helper function to compute an automatic instance name, if needed
+      /* Parent modules call this before adding a sub-module, to make sure its name will not clash with existing
+         sub-modules. Parameter classname can be empty if instance is not. Throws if a unique name cannot be created
+         (e.g., no # was provided and the instance name clashes with other sub-modules). itsSubMtx on the parent must
+         be locked by caller to make sure the computed name remains available as we return it */
       std::string computeInstanceName(std::string const & instance, std::string const & classname = "") const;
 
-      //! Actually remove a sub, no type checking here, for internal use only
-      /*! Uplck is assumed to already be locked for read, will be upgraded to write lock. Itr is an iterator on
-          itsSubComponents pointing at the component to remove. It will get reset(). displayname is just Component,
-          SubModule, etc for messages purposes. */
+      // Actually remove a sub, no type checking here, for internal use only
+      /* Uplck is assumed to already be locked for read, will be upgraded to write lock. Itr is an iterator on
+         itsSubComponents pointing at the component to remove. It will get reset(). displayname is just Component,
+         SubModule, etc for messages purposes. */
       void doRemoveSubComponent(std::vector<std::shared_ptr<Component> >::iterator & itr,
                                 boost::upgrade_lock<boost::shared_mutex> & uplck,
                                 std::string const & displayname);

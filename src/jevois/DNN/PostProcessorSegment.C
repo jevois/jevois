@@ -184,8 +184,7 @@ void jevois::dnn::PostProcessorSegment::process(std::vector<cv::Mat> const & out
 
 // ####################################################################################################
 void jevois::dnn::PostProcessorSegment::report(jevois::StdModule * mod, jevois::RawImage * outimg,
-                                               jevois::OptGUIhelper * helper, bool JEVOIS_UNUSED_PARAM(overlay),
-                                               bool JEVOIS_UNUSED_PARAM(idle))
+                                               jevois::OptGUIhelper * helper, bool /*overlay*/, bool /*idle*/)
 {
   // Remember our helper, will be used in destructor to free overlay OpenGL texture:
   itsHelper = helper;

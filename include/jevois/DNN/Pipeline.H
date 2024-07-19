@@ -38,24 +38,24 @@ namespace jevois
     {
       static jevois::ParameterCategory const ParamCateg("DNN Pipeline Options");
 
-      //! Parameter \relates jevois::Pipeline
+      //! Parameter \relates jevois::dnn::Pipeline
       JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(zooroot, std::string, "Path where to find zoo files (.yml). "
                                              "If not absolute, it is relative to this module's path",
                                              JEVOIS_SHARE_PATH "/dnn", ParamCateg);
 
-      //! Parameter \relates jevois::Pipeline
+      //! Parameter \relates jevois::dnn::Pipeline
       JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(zoo, std::string, "Filename for neural network zoo file (.yml). "
                                              "If not absolute, it is relative to zooroot",
                                              "models.yml", ParamCateg);
-      //! Enum \relates jevois::Pipeline
+      //! Enum \relates jevois::dnn::Pipeline
       JEVOIS_DEFINE_ENUM_CLASS(Filter, (All) (OpenCV) (TPU) (NPU) (VPU) (VPUX) (NPUX) (SPU) (ORT) );
 
-      //! Parameter \relates jevois::Pipeline
+      //! Parameter \relates jevois::dnn::Pipeline
       JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(filter, Filter, "Filter to possibly only show as options in "
                                              "the 'pipe' parameter some class of models from the zoo",
                                              Filter::All, Filter_Values, ParamCateg);
 
-      //! Parameter \relates jevois::Pipeline
+      //! Parameter \relates jevois::dnn::Pipeline
       JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(pipe, std::string, "Pipeline to use, which should correspond to a "
                                              "top-level entry in the zoo file. Network execution types are: OpenCV: "
                                              "on CPU, NPU: on JeVois NPU accelerator, TPU: on Coral Edge TPU if "
@@ -64,57 +64,57 @@ namespace jevois
                                              "of VPU, and SPU: on Hailo8 SPU if available.",
                                              "", ParamCateg);
       
-      //! Enum \relates jevois::Pipeline
+      //! Enum \relates jevois::dnn::Pipeline
       JEVOIS_DEFINE_ENUM_CLASS(PreProc, (Blob) (Python) );
 
-      //! Parameter \relates jevois::Pipeline
+      //! Parameter \relates jevois::dnn::Pipeline
       JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(preproc, PreProc, "Pre-Processor to use, usually set automatically "
                                              "by selecting a pipeline from the zoo file",
                                              PreProc::Blob, PreProc_Values, ParamCateg);
-      //! Enum \relates jevois::Pipeline
+      //! Enum \relates jevois::dnn::Pipeline
 #ifdef JEVOIS_PRO
       JEVOIS_DEFINE_ENUM_CLASS(NetType, (OpenCV) (ORT) (NPU) (TPU) (SPU) (Python) );
 #else
       JEVOIS_DEFINE_ENUM_CLASS(NetType, (OpenCV) (Python) );
 #endif
 
-      //! Parameter \relates jevois::Pipeline
+      //! Parameter \relates jevois::dnn::Pipeline
       JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(nettype, NetType, "Network runtime framework to use, usually set "
                                              "automatically by selecting a pipeline from the zoo file",
                                              NetType::OpenCV, NetType_Values, ParamCateg);
-      //! Enum \relates jevois::Pipeline
+      //! Enum \relates jevois::dnn::Pipeline
       JEVOIS_DEFINE_ENUM_CLASS(PostProc, (Classify) (Detect) (Segment) (YuNet) (Python) (Stub) );
 
-      //! Parameter \relates jevois::Pipeline
+      //! Parameter \relates jevois::dnn::Pipeline
       JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(postproc, PostProc, "Post-Processor to use, usually set automatically "
                                              "by selecting a pipeline from the zoo file",
                                              PostProc::Classify, PostProc_Values, ParamCateg);
-      //! Enum \relates jevois::Pipeline
+      //! Enum \relates jevois::dnn::Pipeline
       JEVOIS_DEFINE_ENUM_CLASS(Processing, (Sync) (Async) );
 
-      //! Parameter \relates jevois::Pipeline
+      //! Parameter \relates jevois::dnn::Pipeline
       JEVOIS_DECLARE_PARAMETER(processing, Processing, "Type of processing: Sync runs pre-processing, "
                                "network, and post-processing sequentially for every frame. Use for fast "
                                "networks only, otherwise it will slow down the GUI... Async runs the network in "
                                "a thread and should be used for networks slower than the camera framerate.",
                                Processing::Async, Processing_Values, ParamCateg);
       
-      //! Parameter \relates jevois::Pipeline
+      //! Parameter \relates jevois::dnn::Pipeline
       JEVOIS_DECLARE_PARAMETER(overlay, bool, "Show some pipeline info as an overlay over output or GUI video",
                                true, ParamCateg);
 
-      //! Parameter \relates jevois::Pipeline
+      //! Parameter \relates jevois::dnn::Pipeline
       JEVOIS_DECLARE_PARAMETER(paramwarn, bool, "Issue warning if parameters are specified in the zoo file for "
                                "a pipeline, but the pipeline's component is not using them. Warnings appear "
                                "in the console when the pipeline is loaded.",
                                true, ParamCateg);
 
-      //! Parameter \relates jevois::Pipeline
+      //! Parameter \relates jevois::dnn::Pipeline
       JEVOIS_DECLARE_PARAMETER(statsfile, std::string, "Append pre/net/post timing statistics in HTML table format "
                                "to the specified file if not empty. If path is relative, it is to " JEVOIS_SHARE_PATH,
                                "", ParamCateg);
 
-      //! Parameter \relates jevois::Pipeline
+      //! Parameter \relates jevois::dnn::Pipeline
       JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(benchmark, bool, "Cycle through all networks specified by filter and, "
                                              "for each, run it for a while and append pre/net/post timing statistics "
                                              "in HTML table format to " JEVOIS_SHARE_PATH "/benchmark.html",

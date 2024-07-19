@@ -40,7 +40,7 @@ namespace jevois
     - call draw() on every video frame.
 
     Note: because it is primarily intended for use in python, this class is not thread-safe (for example, calling
-    writeString() and draw() concurrently might crash the system. In most applications, the CharBox member functions
+    writeString() and draw() concurrently might crash the system. In most applications, the ChatBox member functions
     would all be called sequentially from a single thread).
     
     \ingroup core */

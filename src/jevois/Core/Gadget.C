@@ -398,8 +398,7 @@ void jevois::Gadget::processEventSetup(struct usb_ctrlrequest const & ctrl, stru
 }
 
 // ##############################################################################################################
-void jevois::Gadget::processEventStandard(struct usb_ctrlrequest const & ctrl,
-                                          struct uvc_request_data & JEVOIS_UNUSED_PARAM(resp))
+void jevois::Gadget::processEventStandard(struct usb_ctrlrequest const & ctrl, struct uvc_request_data &)
 {
   JEVOIS_TRACE(3);
   

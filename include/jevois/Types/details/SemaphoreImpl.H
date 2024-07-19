@@ -101,7 +101,7 @@ void jevois::Semaphore<jevois::BlockingBehavior::Throw>::decrement(size_t n)
   itsCount -= n;
 }
 
-#endif // __JEVOIS_DOXYGEN__
+#endif // JEVOIS_DOXYGEN
   
 // ##############################################################################################################
 template <jevois::BlockingBehavior BB> inline

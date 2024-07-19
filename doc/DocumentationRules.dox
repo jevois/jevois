@@ -106,7 +106,7 @@ group, like the drawText() function is.
   \code
   /*! blah blah. See for example #JEVOIS_MY_MACRO(x, y) */
   \endcode
-  See for example #JEVOIS_DEFINE_ENUM_CLASS(name, SEQ) in Types/Enum.H and Types/details/EnumImpl.H
+  See for example \#JEVOIS_DEFINE_ENUM_CLASS(name, SEQ) in Types/Enum.H and Types/details/EnumImpl.H
 
 \section enums JeVois Enums
 

@@ -37,8 +37,8 @@
 #cmakedefine JEVOIS_PRO
 
 //! Shortcuts to allow detection of a specific platform instead of testing JEVOIS_PLATFORM and JEVOIS_[A33|PRO|...]
-/*! Use #ifdef JEVOIS_PLATFORM_A33 as you would #if defined(JEVOIS_PLATFORM) && defined(JEVOIS_A33).
-    Use #ifdef JEVOIS_HOST_A33 as you would #if !defined(JEVOIS_PLATFORM) && defined(JEVOIS_A33) */
+/*! Use \#ifdef JEVOIS_PLATFORM_A33 as you would \#if defined(JEVOIS_PLATFORM) && defined(JEVOIS_A33).
+    Use \#ifdef JEVOIS_HOST_A33 as you would \#if !defined(JEVOIS_PLATFORM) && defined(JEVOIS_A33) */
 #if defined(JEVOIS_PLATFORM)
 #  if defined(JEVOIS_PRO)
 #    define JEVOIS_PLATFORM_PRO

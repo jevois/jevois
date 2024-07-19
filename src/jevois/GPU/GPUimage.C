@@ -260,7 +260,7 @@ void jevois::GPUimage::setWithDmaBuf(jevois::RawImage const & img, int dmafd, EG
 #else // JEVOIS_PLATFORM_PRO
 
 // ##############################################################################################################
-void jevois::GPUimage::set(jevois::InputFrame const & frame, EGLDisplay JEVOIS_UNUSED_PARAM(display))
+void jevois::GPUimage::set(jevois::InputFrame const & frame, EGLDisplay)
 {
   // DMABUF acceleration not supported:
   jevois::RawImage const img = frame.get();
@@ -268,7 +268,7 @@ void jevois::GPUimage::set(jevois::InputFrame const & frame, EGLDisplay JEVOIS_U
 }
 
 // ##############################################################################################################
-void jevois::GPUimage::set2(jevois::InputFrame const & frame, EGLDisplay JEVOIS_UNUSED_PARAM(display))
+void jevois::GPUimage::set2(jevois::InputFrame const & frame, EGLDisplay)
 {
   // DMABUF acceleration not supported:
   jevois::RawImage const img = frame.get2();

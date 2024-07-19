@@ -29,7 +29,7 @@
 //! Restore console operation after a violent crash of jevoispro-daemon
 /*! This utility is useful when debugging jevoispro-daemon on JeVois-Pro platform, as it mutes the keyboard and console
     framebuffer for direct access to the framebuffer device and keyboard/mouse/etc. */
-int main(int JEVOIS_UNUSED_PARAM(argc), char const * JEVOIS_UNUSED_PARAM(argv[]))
+int main(int, char const **)
 {
   int ret = 0;
   jevois::logLevel = LOG_CRIT;

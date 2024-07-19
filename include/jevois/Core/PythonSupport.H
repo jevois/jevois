@@ -39,11 +39,11 @@ namespace jevois
     
     /*! @{ */ // **********************************************************************
     
-      //! Initialize Python, numpy, and allow python modules to send serial outputs through the JeVois Engine
+    //! Initialize Python, numpy, and allow python modules to send serial outputs through the JeVois Engine
     /*! This command is not for common use, only Engine should use it. */
     void setEngine(jevois::Engine * e);
 
-    //! Get the Engine \relates PythonModule
+    //! Get the Engine
     jevois::Engine * engine();
 
     //! Check whether a boost::python::object has an attribute

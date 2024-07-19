@@ -32,8 +32,7 @@ void jevois::dnn::Network::freeze(bool doit)
 }
 
 // ####################################################################################################
-void jevois::dnn::Network::onParamChange(network::outreshape const & JEVOIS_UNUSED_PARAM(param),
-                                         std::string const & val)
+void jevois::dnn::Network::onParamChange(network::outreshape const &, std::string const & val)
 {
   itsReshape.clear();
   if (val.empty()) return;

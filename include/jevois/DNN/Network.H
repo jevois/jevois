@@ -35,26 +35,26 @@ namespace jevois
       // will use different subsets of all available parameters:
       static jevois::ParameterCategory const ParamCateg("DNN Network Options");
 
-      //! Parameter \relates jevois::Network
+      //! Parameter \relates jevois::dnn::Network
       JEVOIS_DECLARE_PARAMETER(comment, std::string, "Optional comment about the network",
                                "", ParamCateg);
 
-      //! Parameter \relates jevois::Network
+      //! Parameter \relates jevois::dnn::Network
       JEVOIS_DECLARE_PARAMETER(url, std::string, "Optional URL for the network",
                                "", ParamCateg);
 
-      //! Parameter \relates jevois::Network
+      //! Parameter \relates jevois::dnn::Network
       JEVOIS_DECLARE_PARAMETER(dataroot, std::string, "Root directory to use when config or model parameters "
                                "are relative paths.",
                                JEVOIS_SHARE_PATH, ParamCateg);
 
-      //! Parameter \relates jevois::Network
+      //! Parameter \relates jevois::dnn::Network
       JEVOIS_DECLARE_PARAMETER(config, std::string, "Path to a text file that contains network configuration. "
                                "Can have extension .prototxt (Caffe), .pbtxt (TensorFlow), or .cfg (Darknet). "
                                "If path is relative, it will be prefixed by dataroot.",
                                "", ParamCateg);
       
-      //! Parameter \relates jevois::Network
+      //! Parameter \relates jevois::dnn::Network
       JEVOIS_DECLARE_PARAMETER(model, std::string, "Path to a binary file of model contains trained weights. "
                                "Can have extension .caffemodel (Caffe), .pb (TensorFlow), .t7 or .net (Torch), "
                                ".tflite (TensorFlow Lite), or .weights (Darknet). If path is relative, it will be "
@@ -62,28 +62,28 @@ namespace jevois
                                "", ParamCateg);
       
 #ifdef JEVOIS_PRO
-      //! Enum \relates jevois::Network
+      //! Enum \relates jevois::dnn::Network
       JEVOIS_DEFINE_ENUM_CLASS(Target, (CPU) (OpenCL) (OpenCL_FP16) (Myriad) (NPU) );
 #else
-      //! Enum \relates jevois::Network
+      //! Enum \relates jevois::dnn::Network
       JEVOIS_DEFINE_ENUM_CLASS(Target, (CPU) );
 #endif
       
-      //! Parameter \relates jevois::Network
+      //! Parameter \relates jevois::dnn::Network
       JEVOIS_DECLARE_PARAMETER(target, Target, "OpenCV compute target to use. Changes will take effect "
                                "next time you load a different model.",
                                Target::CPU, Target_Values, ParamCateg);
 #ifdef JEVOIS_PRO
-      //! Enum \relates jevois::Network
+      //! Enum \relates jevois::dnn::Network
       JEVOIS_DEFINE_ENUM_CLASS(Backend, (OpenCV) (InferenceEngine) (TimVX) );
 #define JEVOIS_BACKEND_DEFAULT Backend::OpenCV
 #else
-      //! Enum \relates jevois::Network
+      //! Enum \relates jevois::dnn::Network
       JEVOIS_DEFINE_ENUM_CLASS(Backend, (Default) );
 #define JEVOIS_BACKEND_DEFAULT Backend::Default
 #endif
       
-      //! Parameter \relates jevois::Network
+      //! Parameter \relates jevois::dnn::Network
       JEVOIS_DECLARE_PARAMETER(backend, Backend, "OpenCV compute backend to use. Default will use the inference "
                                "engine if available, otherwise OpenCV (note that inference engine only works on Intel "
                                "processors or MyriadX hardware, thus you should normally select OpenCV when running "
@@ -91,22 +91,22 @@ namespace jevois
                                "Changes will take effect next time you load a model.",
                                JEVOIS_BACKEND_DEFAULT, Backend_Values, ParamCateg);
 
-      //! Parameter \relates jevois::Network
+      //! Parameter \relates jevois::dnn::Network
       JEVOIS_DECLARE_PARAMETER(intensors, std::string, "Specification of input tensors",
                                "", ParamCateg);
 
-      //! Parameter \relates jevois::Network
+      //! Parameter \relates jevois::dnn::Network
       JEVOIS_DECLARE_PARAMETER(extraintensors, std::string, "Specification of extra fixed input tensors that will be "
                                "added after the regular intensors. Format is: "
                                "<type>:<shape>:val1 val2 ... valN, <type>:<shape>:val1 ... valN. For example, for "
                                "URetinex-Net: 32F:1x1x1:3.0",
                                "", ParamCateg);
 
-      //! Parameter \relates jevois::Network
+      //! Parameter \relates jevois::dnn::Network
       JEVOIS_DECLARE_PARAMETER(outtensors, std::string, "Specification of output tensors",
                                "", ParamCateg);
 
-      //! Parameter \relates jevois::Network
+      //! Parameter \relates jevois::dnn::Network
       JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(outreshape, std::string, "Specification of reshaped output tensors; "
                                "sometimes useful to re-interpret tensors to what a post-processor expects; for "
                                "example, TPU YoloV4-Int-VOC outputs 5D tensors 32F:1x52x52x3x85, 32F:1x26x26x3x85, "
@@ -116,37 +116,37 @@ namespace jevois
                                "convert from NCHW to NHWC, convert data types, etc). Use sparingly and with caution.",
                                "", ParamCateg);
 
-      //! Parameter \relates jevois::Network
+      //! Parameter \relates jevois::dnn::Network
       JEVOIS_DECLARE_PARAMETER(dequant, bool, "Dequantize output tensors to float32 from their native quantized type",
                                true, ParamCateg);
 
-      //! Parameter \relates jevois::NetworkPython
+      //! Parameter \relates jevois::dnn::NetworkPython
       JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(pynet, std::string, "Full path of the python network processor file. "
                                              "Name of class defined in the file must match the file name without "
                                              "the trailing '.py'",
                                              "", ParamCateg);
 #ifdef JEVOIS_PRO
-      //! Parameter \relates jevois::Network
+      //! Parameter \relates jevois::dnn::Network
       JEVOIS_DECLARE_PARAMETER(tpunum, size_t, "Coral EdgeTPU number to use to run this model, typically 0, or can be "
                                "1 when using a dual-TPU add-on board, or more when using additional TPUs connected "
                                "to USB ports",
                                0, ParamCateg);
 
-      //! Parameter \relates jevois::Network
+      //! Parameter \relates jevois::dnn::Network
       JEVOIS_DECLARE_PARAMETER(spunum, size_t, "Hailo8 device number to use to run this model, typically 0 unless "
                                "several Hailo8 accelerators are connected to the system",
                                0, ParamCateg);
 
-      //! Parameter \relates jevois::NetworkNPU
+      //! Parameter \relates jevois::dnn::NetworkNPU
       JEVOIS_DECLARE_PARAMETER(verifygraph, bool, "Verify NPU graph after loading it",
                                true, ParamCateg);
 
-      //! Parameter \relates jevois::NetworkNPU
+      //! Parameter \relates jevois::dnn::NetworkNPU
       JEVOIS_DECLARE_PARAMETER(ovxver, std::string, "ovxlib version to use with NPU network, or leave blank "
                                "to use latest version",
                                "", boost::regex("^$|^[0-9]+\\.[0-9]+\\.[0-9]+$"), ParamCateg);
 
-      //! Parameter \relates jevois::NetworkHailo
+      //! Parameter \relates jevois::dnn::NetworkHailo
       JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(turbo, bool, "Turbo mode. Has no significant effect on small or "
                                              "fast networks. Use with caution as it may lead to overheating, not "
                                              "recommended for production",

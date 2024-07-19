@@ -30,8 +30,7 @@
 
 
 // ####################################################################################################
-void jevois::dnn::PostProcessorDetectYOLO::onParamChange(postprocessor::anchors const & JEVOIS_UNUSED_PARAM(param),
-                                                         std::string const & val)
+void jevois::dnn::PostProcessorDetectYOLO::onParamChange(postprocessor::anchors const &, std::string const & val)
 {
   itsAnchors.clear();
   if (val.empty()) return;

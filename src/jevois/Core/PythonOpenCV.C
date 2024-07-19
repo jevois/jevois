@@ -302,7 +302,7 @@ namespace pbcvt
     boost::python::converter::registry::push_back(convertible, construct, boost::python::type_id<Mat>());
   }
   
-  /// @brief Check if PyObject is an array and can be converted to OpenCV matrix.
+  // Check if PyObject is an array and can be converted to OpenCV matrix.
   void* matFromNDArrayBoostConverter::convertible(PyObject* object)
   {
     if (!PyArray_Check(object)) {
@@ -329,7 +329,7 @@ namespace pbcvt
     return object;
   }
   
-  /// Construct a Mat from an NDArray object.
+  // Construct a Mat from an NDArray object.
   void matFromNDArrayBoostConverter::construct(PyObject* object,
                                                boost::python::converter::rvalue_from_python_stage1_data* data) {
     namespace python = boost::python;

@@ -126,6 +126,14 @@ namespace jevois
     //! Returns the number of non-unit dims in a cv::Mat
     /*! For example, returns 2 for a 4D Mat with size 1x1x224x224, since it effectively is a 224x224 2D array */
     size_t effectiveDims(cv::Mat const & m);
+
+    //! Concatenate several tensors into one
+    /*! Axis may be positive starting at 0 for the first dimension (when reading dims from left to right), or negative
+        starting at -1 for the last dimension. For example, for a 10x20x30 tensor, axis 0 has size 10 and is also axis
+        -3, axis 1 has size 20 and is also axis -2, and axis 2 has size 30 and is also axis -1. The input tensors must
+        all have the same number of dimensions, same pixel type, and sizes must match for all dimensions except the one
+        that is being concatenated. */
+    cv::Mat concatenate(std::vector<cv::Mat> const & tensors, int axis);
     
 #ifdef JEVOIS_PRO
     //! Get a string of the form: "nD AxBxC... TYPE" from an n-dimensional Hailo tensor with data type TYPE

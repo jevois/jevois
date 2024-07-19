@@ -106,8 +106,7 @@ void jevois::dnn::NetworkPython::freeze(bool doit)
 }
 
 // ####################################################################################################
-void jevois::dnn::NetworkPython::onParamChange(jevois::dnn::network::pynet const & JEVOIS_UNUSED_PARAM(param),
-                                               std::string const & newval)
+void jevois::dnn::NetworkPython::onParamChange(jevois::dnn::network::pynet const &, std::string const & newval)
 {
   if (newval.empty() == false) itsImpl->loadpy(newval);
 }

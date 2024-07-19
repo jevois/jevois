@@ -94,8 +94,8 @@ namespace jevois
       inline float const & mz() const { return v[9]; }
   };
 
-  //! \defgroup icmdmpheader ICM-20948 DMP computation header fields
-  /*! \ingroup imu */
+  /*! \defgroup icmdmpheader ICM-20948 DMP computation header fields
+      \ingroup imu */
   /*! @{ */
 #define JEVOIS_DMP_ACCEL           0x8000 /*!< calibrated accel if accel calibrated, raw accel otherwise */
 #define JEVOIS_DMP_GYRO            0x4000 /*!< raw gyro */

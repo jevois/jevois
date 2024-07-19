@@ -187,8 +187,7 @@ void jevois::Manager::removeComponent(std::string const & instance, bool warnIfN
 // BEGIN_JEVOIS_CODE_SNIPPET manager3.C
 
 // ######################################################################
-void jevois::Manager::onParamChange(jevois::manager::loglevel const & JEVOIS_UNUSED_PARAM(param),
-                                    jevois::manager::LogLevel const & newval)
+void jevois::Manager::onParamChange(jevois::manager::loglevel const &, jevois::manager::LogLevel const & newval)
 { 
   switch(newval)
   {
@@ -202,8 +201,7 @@ void jevois::Manager::onParamChange(jevois::manager::loglevel const & JEVOIS_UNU
 }
 
 // ######################################################################
-void jevois::Manager::onParamChange(jevois::manager::tracelevel const & JEVOIS_UNUSED_PARAM(param),
-                                    unsigned int const & newval)
+void jevois::Manager::onParamChange(jevois::manager::tracelevel const &, unsigned int const & newval)
 {
   if (newval)
   {

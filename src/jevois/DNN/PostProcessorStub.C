@@ -28,17 +28,13 @@ jevois::dnn::PostProcessorStub::~PostProcessorStub()
 { }
 
 // ####################################################################################################
-void jevois::dnn::PostProcessorStub::freeze(bool JEVOIS_UNUSED_PARAM(doit))
+void jevois::dnn::PostProcessorStub::freeze(bool)
 { }
 
 // ####################################################################################################
-void jevois::dnn::PostProcessorStub::process(std::vector<cv::Mat> const & JEVOIS_UNUSED_PARAM(outs),
-                                             jevois::dnn::PreProcessor * JEVOIS_UNUSED_PARAM(preproc))
+void jevois::dnn::PostProcessorStub::process(std::vector<cv::Mat> const &, jevois::dnn::PreProcessor *)
 { }
 
 // ####################################################################################################
-void jevois::dnn::PostProcessorStub::report(jevois::StdModule * JEVOIS_UNUSED_PARAM(mod),
-                                            jevois::RawImage * JEVOIS_UNUSED_PARAM(outimg),
-                                            jevois::OptGUIhelper * JEVOIS_UNUSED_PARAM(helper),
-                                            bool JEVOIS_UNUSED_PARAM(overlay), bool JEVOIS_UNUSED_PARAM(idle))
+void jevois::dnn::PostProcessorStub::report(jevois::StdModule *, jevois::RawImage *, jevois::OptGUIhelper *, bool, bool)
 { }

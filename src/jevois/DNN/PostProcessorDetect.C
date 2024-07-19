@@ -40,8 +40,7 @@ void jevois::dnn::PostProcessorDetect::freeze(bool doit)
 }
 
 // ####################################################################################################
-void jevois::dnn::PostProcessorDetect::onParamChange(postprocessor::classes const & JEVOIS_UNUSED_PARAM(param),
-                                                     std::string const & val)
+void jevois::dnn::PostProcessorDetect::onParamChange(postprocessor::classes const &, std::string const & val)
 {
   if (val.empty()) { itsLabels.clear(); return; }
 
@@ -53,7 +52,7 @@ void jevois::dnn::PostProcessorDetect::onParamChange(postprocessor::classes cons
   itsLabels = jevois::dnn::readLabelsFile(jevois::absolutePath(dataroot, val));
 }
 // ####################################################################################################
-void jevois::dnn::PostProcessorDetect::onParamChange(postprocessor::detecttype const & JEVOIS_UNUSED_PARAM(param),
+void jevois::dnn::PostProcessorDetect::onParamChange(postprocessor::detecttype const &,
                                                      postprocessor::DetectType const & val)
 {
   if (val == postprocessor::DetectType::RAWYOLO)
@@ -396,7 +395,7 @@ void jevois::dnn::PostProcessorDetect::process(std::vector<cv::Mat> const & outs
 // ####################################################################################################
 void jevois::dnn::PostProcessorDetect::report(jevois::StdModule * mod, jevois::RawImage * outimg,
                                               jevois::OptGUIhelper * helper, bool overlay,
-                                              bool JEVOIS_UNUSED_PARAM(idle))
+                                              bool /*idle*/)
 {
   for (jevois::ObjDetect const & o : itsDetections)
   {

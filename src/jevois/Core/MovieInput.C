@@ -166,7 +166,7 @@ void jevois::MovieInput::get2(RawImage & img)
 }
 
 // ##############################################################################################################
-void jevois::MovieInput::done(RawImage & JEVOIS_UNUSED_PARAM(img))
+void jevois::MovieInput::done(RawImage &)
 {
   // Just nuke our buffer:
   itsBuf.reset();
@@ -174,26 +174,26 @@ void jevois::MovieInput::done(RawImage & JEVOIS_UNUSED_PARAM(img))
 }
 
 // ##############################################################################################################
-void jevois::MovieInput::done2(RawImage & JEVOIS_UNUSED_PARAM(img))
+void jevois::MovieInput::done2(RawImage &)
 {
   // Just nuke our buffer:
   itsBuf2.reset();
 }
 
 // ##############################################################################################################
-void jevois::MovieInput::queryControl(struct v4l2_queryctrl & JEVOIS_UNUSED_PARAM(qc)) const
+void jevois::MovieInput::queryControl(struct v4l2_queryctrl &) const
 { throw std::runtime_error("Operation queryControl() not supported by MovieInput"); }
 
 // ##############################################################################################################
-void jevois::MovieInput::queryMenu(struct v4l2_querymenu & JEVOIS_UNUSED_PARAM(qm)) const
+void jevois::MovieInput::queryMenu(struct v4l2_querymenu &) const
 { throw std::runtime_error("Operation queryMenu() not supported by MovieInput"); }
 
 // ##############################################################################################################
-void jevois::MovieInput::getControl(struct v4l2_control & JEVOIS_UNUSED_PARAM(ctrl)) const
+void jevois::MovieInput::getControl(struct v4l2_control &) const
 { throw std::runtime_error("Operation getControl() not supported by MovieInput"); }
 
 // ##############################################################################################################
-void jevois::MovieInput::setControl(struct v4l2_control const & JEVOIS_UNUSED_PARAM(ctrl))
+void jevois::MovieInput::setControl(struct v4l2_control const &)
 { throw std::runtime_error("Operation setControl() not supported by MovieInput"); }
 
 // ##############################################################################################################

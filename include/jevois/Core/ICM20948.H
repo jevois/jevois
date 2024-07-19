@@ -17,12 +17,12 @@
 
 // This code inspired by:
 
-/***************************************************************************//**
+/* *****************************************************************************
  * file ICM20648.cpp
- *******************************************************************************
+ * *****************************************************************************
  * section License
  * <b>(C) Copyright 2017 Silicon Labs, http://www.silabs.com</b>
- *******************************************************************************
+ * *****************************************************************************
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -38,7 +38,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- ******************************************************************************/
+ * ****************************************************************************/
 
 #pragma once
 
@@ -54,7 +54,7 @@ namespace jevois
     static jevois::ParameterCategory const ParamCateg("ICM-20948 IMU Options");
 
     //! Enum for Parameter \relates jevois::ICM20948
-    JEVOIS_DEFINE_ENUM_CLASS(Mode, (RAW) (FIFO) (DMP) )
+    JEVOIS_DEFINE_ENUM_CLASS(Mode, (RAW) (FIFO) (DMP) );
 
     //! Parameter \relates jevois::ICM20948
     JEVOIS_DECLARE_PARAMETER(mode, Mode, "Data collection mode. RAW means that the latest available raw "
@@ -105,7 +105,7 @@ namespace jevois
                                            30.0F, jevois::Range<float>(0.0F, 1125.0F), ParamCateg);
 
     //! Enum for Parameter \relates jevois::ICM20948
-    JEVOIS_DEFINE_ENUM_CLASS(MagRate, (Off) (Once) (M10Hz) (M20Hz) (M50Hz) (M100Hz) )
+    JEVOIS_DEFINE_ENUM_CLASS(MagRate, (Off) (Once) (M10Hz) (M20Hz) (M50Hz) (M100Hz) );
 
     //! Parameter \relates jevois::ICM20948
     JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(mrate, MagRate, "Magnetometer sampling rate (Hz), or Off to disable "

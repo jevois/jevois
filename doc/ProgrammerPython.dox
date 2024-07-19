@@ -88,7 +88,7 @@ The following functions and classes of the JeVois core software are wrapped for 
 of a given class or function, just inspect the C++ documentation and assume that the same class name, function name, and
 number and types of arguments will be used (except for a few exceptions noted below).
 
-Refer to the source code in \ref BOOST_PYTHON_MODULE() in \ref PythonSupport.C for the latest up-to-date list of Python
+Refer to the source code in \a BOOST_PYTHON_MODULE() in \ref PythonSupport.C for the latest up-to-date list of Python
 bindings.
 
 The bindings can be imported into Python through:
@@ -129,7 +129,7 @@ Click on any of the classes or functions below to see its documentation. Althoug
 functions and classes listed here have an exact binding to Python, except that you can ignore any C++ qualifiers
 (\c const and similar) and reference/pointer specifications (\c & or \c * before an argument name).
 
-\note Refer to the source code in \ref BOOST_PYTHON_MODULE() in \ref PythonSupport.C for the latest up-to-date list of
+\note Refer to the source code in \a BOOST_PYTHON_MODULE() in \ref PythonSupport.C for the latest up-to-date list of
 Python bindings.
 
 - General utility functions declared in \ref Utils.H

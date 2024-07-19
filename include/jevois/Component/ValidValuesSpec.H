@@ -192,7 +192,7 @@ namespace jevois
       virtual std::string const str() const;
 
     protected:
-      boost::regex const itsValidRegex; //!< Th eregex that defines our valid values
+      boost::regex const itsValidRegex; //!< The regex that defines our valid values
   };
 
   /*! @} */ // **********************************************************************

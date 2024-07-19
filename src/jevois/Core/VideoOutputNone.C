@@ -42,7 +42,7 @@ void jevois::VideoOutputNone::get(RawImage & img)
 { img = itsImage; }
 
 // ##############################################################################################################
-void jevois::VideoOutputNone::send(RawImage const & JEVOIS_UNUSED_PARAM(img))
+void jevois::VideoOutputNone::send(RawImage const &)
 { }
 
 // ##############################################################################################################

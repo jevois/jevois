@@ -83,6 +83,6 @@ OpenCV backend should get faster over time as more optimized kernels are added t
 accelerators tend to remain the same. Pre and Post processing are under our control and we strive to make those faster
 over time as well, though sometimes adding more features may decrease speed slightly.
 
-- \subpage JeVoisProBenchmarks-1.18.0
+- \subpage JeVoisProBenchmarks118
 
 */

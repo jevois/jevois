@@ -418,7 +418,7 @@ void jevois::Component::freezeParam(std::string const & paramdescriptor, bool do
 {
   int n = 0;
   findParamAndActOnIt(paramdescriptor,
-                      [&n,doit](jevois::ParameterBase * param, std::string const & JEVOIS_UNUSED_PARAM(unrolled))
+                      [&n,doit](jevois::ParameterBase * param, std::string const &)
                       { param->freeze(doit); ++n; },
 
                       [&n]() { return (n == 0); }

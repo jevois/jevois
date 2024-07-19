@@ -32,10 +32,10 @@ bool jevois::VideoInput::hasScaledImage() const
 { throw std::runtime_error("hasScaledImage(): Second ISP-scaled camera image not available on this hardware"); }
 
 // ##############################################################################################################
-void jevois::VideoInput::get2(RawImage & JEVOIS_UNUSED_PARAM(img))
+void jevois::VideoInput::get2(RawImage &)
 { throw std::runtime_error("get2(): Second ISP-scaled camera image not available on this hardware"); }
 
 // ##############################################################################################################
-void jevois::VideoInput::done2(RawImage & JEVOIS_UNUSED_PARAM(img))
+void jevois::VideoInput::done2(RawImage &)
 { throw std::runtime_error("done2(): Second ISP-scaled camera image not available on this hardware"); }
 

@@ -19,8 +19,12 @@
 
 #include <jevois/Image/RawImage.H>
 
+//! Main namespace for all JeVois classes and functions
+/*! See [Topics](http://jevois.org/doc/html/topics.html) for more details. */
 namespace jevois
 {
+  //! Namespace for helper functions to convert coordinates from camera resolution to standardized
+  /*! See \ref coordhelpers for more details. */
   namespace coords
   {
     /*! \defgroup coordhelpers Helper functions to convert coordinates from camera resolution to standardized

@@ -95,4 +95,6 @@
     return is; /* cannot happen but compiler complains */               \
   }
 
+#else
+#define JEVOIS_DEFINE_ENUM_CLASS(name, seq) enum class name; //!< Custom enum with values: seq
 #endif

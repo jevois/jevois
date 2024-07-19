@@ -37,26 +37,26 @@ namespace jevois
       // will use different subsets of all available parameters:
       static jevois::ParameterCategory const ParamCateg("DNN Pre-Processing Options");
 
-      //! Parameter \relates jevois::PreProcessor
+      //! Parameter \relates jevois::dnn::PreProcessor
       JEVOIS_DECLARE_PARAMETER(rgb, bool, "When true, model works with RGB input images instead BGR ones",
                                true, ParamCateg);
       
-      //! Parameter \relates jevois::PreProcessor
+      //! Parameter \relates jevois::dnn::PreProcessor
       JEVOIS_DECLARE_PARAMETER(scale, float, "Value scaling factor applied to input pixels after mean subtraction, "
                                "or 0.0 to extract an unscaled UINT8 blob, typically for use with quantized networks",
                                2.0F / 255.0F, ParamCateg);
       
-      //! Parameter \relates jevois::PreProcessor
+      //! Parameter \relates jevois::dnn::PreProcessor
       JEVOIS_DECLARE_PARAMETER(mean, cv::Scalar, "Mean values subtracted from input image, in the same RGB/BGR "
                                "order as the network's input",
                                cv::Scalar(127.5F, 127.5F, 127.5F), ParamCateg);
 
-      //! Parameter \relates jevois::PreProcessor
+      //! Parameter \relates jevois::dnn::PreProcessor
       JEVOIS_DECLARE_PARAMETER(stdev, cv::Scalar, "Input image is divided by stdev after mean subtraction and scale "
                                "factor are applied. This is rarely used. Same RGB/BGR order as the network's input",
                                cv::Scalar(1.0F, 1.0F, 1.0F), ParamCateg);
 
-      //! Parameter \relates jevois::PreProcessor
+      //! Parameter \relates jevois::dnn::PreProcessor
       JEVOIS_DECLARE_PARAMETER(letterbox, bool, "When true, extract the largest possible box from the input image "
                                "with same aspect ratio as the network's input tensor, and then rescale it to that "
                                "tensor's width and height (hence with cropping but no distortion). Otherwise, use "
@@ -64,29 +64,29 @@ namespace jevois
                                "possible stretching.",
                                false, ParamCateg);
       
-      //! Parameter \relates jevois::PreProcessor
+      //! Parameter \relates jevois::dnn::PreProcessor
       JEVOIS_DECLARE_PARAMETER(showin, bool, "Show outline of cropped image fed to network",
                                true, ParamCateg);
 
-      //! Parameter \relates jevois::PreProcessorPython
+      //! Parameter \relates jevois::dnn::PreProcessorPython
       JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(pypre, std::string, "Full path of the python pre-processor file. Name of "
                                              "class defined in the file must match the file name without the "
                                              "trailing '.py'",
                                              "", ParamCateg);
 
-      //! Parameter \relates jevois::PreProcessor
+      //! Parameter \relates jevois::dnn::PreProcessor
       JEVOIS_DECLARE_PARAMETER(details, bool, "Show more details about the pre-processing steps",
                                false, ParamCateg);
 
-      //! Enum for image resizing modes \relates jevois::PreProcessor
-      JEVOIS_DEFINE_ENUM_CLASS(InterpMode, (Nearest) (Linear) (Cubic) (Area) (Lanczos4));
+      //! Enum for image resizing modes \relates jevois::dnn::PreProcessor
+      JEVOIS_DEFINE_ENUM_CLASS(InterpMode, (Nearest) (Linear) (Cubic) (Area) (Lanczos4) );
 
-      //! Parameter \relates jevois::PreProcessor
+      //! Parameter \relates jevois::dnn::PreProcessor
       JEVOIS_DECLARE_PARAMETER(interp, InterpMode, "Image interpolation to use when resizing the input image "
                                "from camera to network input dims",
                                InterpMode::Nearest, InterpMode_Values, ParamCateg);
 
-      //! Parameter \relates jevois::PreProcessorBlob
+      //! Parameter \relates jevois::dnn::PreProcessorBlob
       JEVOIS_DECLARE_PARAMETER(numin, size_t, "Number of input blobs to generate from the received video image. "
                                "Any additional inputs required by the network would have to be specified using "
                                "Network parameter extraintensors",

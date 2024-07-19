@@ -27,9 +27,11 @@
 
 namespace jevois
 {
+  struct VideoMapping; // defined below; declared here to help doxygen
+  
   //! Enum for VideoMapping wide-dynamic-range (WDR) type
   /*! If nothing is specified in a VideoMapping, use Linear by default. \relates VideoMapping */
-  JEVOIS_DEFINE_ENUM_CLASS(WDRtype, (Linear) (DOL) )
+  JEVOIS_DEFINE_ENUM_CLASS(WDRtype, (Linear) (DOL) );
 
   //! Enum for VideoMapping crop or rescale
   /*! On JeVois-Pro Platform (only), the camera ISP can stream up to two images: 1) the raw frame from the sensor
@@ -40,7 +42,7 @@ namespace jevois
       not match the sensor's size, either do a centered crop, or a uniform rescaling. Note that rescaling can affect the
       image aspect ratio, and thus it is recommended that camera frame sizes with same aspect ratio at the native sensor
       size be used. If nothing is specified in a VideoMapping, use Scale as default.  \relates VideoMapping */
-  JEVOIS_DEFINE_ENUM_CLASS(CropType, (Scale) (Crop) (CropScale) )
+  JEVOIS_DEFINE_ENUM_CLASS(CropType, (Scale) (Crop) (CropScale) );
 
   //! Simple struct to hold video mapping definitions for the processing Engine
   /*! This struct specifies an output video format, resolution, and frame rate (to be send to the end user over USB),
@@ -163,15 +165,15 @@ namespace jevois
   };
 
   //! Stream a VideoMapping out, intended for machines
-  /*! Note that no std::endl is issued at the end. \relates VideoMapping */
+  /*! Note that no std::endl is issued at the end. \relates jevois::VideoMapping */
   std::ostream & operator<<(std::ostream & out, VideoMapping const & m);
 
   //! Stream a VideoMapping in, intended for machines
-  /*! Note that the assumption is that the mapping is clean (no extra garbage). \relates VideoMapping */
+  /*! Note that the assumption is that the mapping is clean (no extra garbage). \relates jevois::VideoMapping */
   std::istream & operator>>(std::istream & in, VideoMapping & m);
 
   //! Load all the video mappings from the default config file
-  /*! \relates VideoMapping */
+  /*! \relates jevois::VideoMapping */
   std::vector<VideoMapping> loadVideoMappings(CameraSensor s, size_t & defidx, bool checkso = true,
                                               bool hasgui = false);
   
@@ -214,7 +216,7 @@ namespace jevois
       specified, the first one prevails. 
 
       See \ref UserModes for explanations about how to organize \b videomappings.cfg
-      \relates VideoMapping */
+      \relates jevois::VideoMapping */
   std::vector<VideoMapping> videoMappingsFromStream(CameraSensor s, std::istream & is, size_t & defidx,
                                                     bool checkso, bool hasgui);
 }

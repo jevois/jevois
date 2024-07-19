@@ -356,7 +356,9 @@ add_custom_target(docsnip
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_custom_target(doc
-  COMMAND doxygen "${CMAKE_CURRENT_SOURCE_DIR}/doc/doxygen.cfg"
+  COMMAND /bin/cp "${CMAKE_CURRENT_BINARY_DIR}/Config-${JEVOIS}.H" include/jevois/Config/Config.H
+  COMMAND doxygen doc/doxygen.cfg
+  COMMAND /bin/rm -f include/jevois/Config/Config.H
   DEPENDS docsnip
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 

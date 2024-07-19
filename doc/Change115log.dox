@@ -31,14 +31,14 @@ JeVois 1.15 brings the following new features:
     useful for applications that require tight coupling between the IMU and the video sensor, such as visual-inertial
     odometry.
   + new functions on the command-line interface to allow users to tinker with low-level IMU and DMP registers:
-    - setimureg <reg> <val> - set raw IMU register <reg> to value <val>
-    - getimureg <reg> - get value of raw IMU register <reg>
-    - setimuregs <reg> <num> <val1> ... <valn> - set array of raw IMU register values
-    - getimuregs <reg> <num> - get array of raw IMU register values
-    - setdmpreg <reg> <val> - set raw DMP register <reg> to value <val>
-    - getdmpreg <reg> - get value of raw DMP register <reg>
-    - setdmpregs <reg> <num> <val1> ... <valn> - set array of raw DMP register values
-    - getdmpregs <reg> <num> - get array of raw DMP register values
+    - setimureg \c reg \c val - set raw IMU register \c reg to value \c val
+    - getimureg \c reg - get value of raw IMU register \c reg
+    - setimuregs \c reg \c num \c val1 ... \c valn - set array of raw IMU register values
+    - getimuregs \c reg \c num - get array of raw IMU register values
+    - setdmpreg \c reg \c val - set raw DMP register \c reg to value \c val
+    - getdmpreg \c reg - get value of raw DMP register \c reg
+    - setdmpregs \c reg \c num \c val1 ... \c valn - set array of raw DMP register values
+    - getdmpregs \c reg \c num - get array of raw DMP register values
 
     The registers and values can be specified in decimal, hex (with prefix 0x), or octal (with prefix 0 - beware of this
     and be careful - if you write 010 it will be octal 10). The values returned are always in hex (with no prefix).

@@ -171,13 +171,13 @@ jevois::VideoDisplay::VideoDisplay(char const * displayname, size_t nbufs) :
 jevois::VideoDisplay::~VideoDisplay()
 { LERROR("VideoDisplay is not supported on JeVois hardware platform"); }
 
-void jevois::VideoDisplay::setFormat(jevois::VideoMapping const & JEVOIS_UNUSED_PARAM(m))
+void jevois::VideoDisplay::setFormat(jevois::VideoMapping const &)
 { LFATAL("VideoDisplay is not supported on JeVois hardware platform"); }
 
-void jevois::VideoDisplay::get(jevois::RawImage & JEVOIS_UNUSED_PARAM(img))
+void jevois::VideoDisplay::get(jevois::RawImage &)
 { LFATAL("VideoDisplay is not supported on JeVois hardware platform"); }
 
-void jevois::VideoDisplay::send(jevois::RawImage const & JEVOIS_UNUSED_PARAM(img))
+void jevois::VideoDisplay::send(jevois::RawImage const &)
 { LFATAL("VideoDisplay is not supported on JeVois hardware platform"); }
 
 void jevois::VideoDisplay::streamOn()

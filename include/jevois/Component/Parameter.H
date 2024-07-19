@@ -363,8 +363,10 @@ namespace jevois
       \include snip/manager2.C
 
       There is nothing to do in the constructor, destructor, etc of Manager. The only thing that remains to be done is
-      to implement the onParamChange() functions in Manager.C. Note how we use the JEVOIS_UNUSED_PARAM(x) macro to avoid
-      compiler warnings about our callbacks not using the "param" function parameter:
+      to implement the onParamChange() functions in Manager.C. Note how we do not give a name to the first parameter
+      (which is a ref to the parameter itself; it is necessary to disambiguate among the various onParamChange()
+      functions for different parameters, but usually we only care about the new value and do not need the handle to the
+      parameter) to avoid compiler warnings about our callbacks not using it:
 
       \include snip/manager3.C
 

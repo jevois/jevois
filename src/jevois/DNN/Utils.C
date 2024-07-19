@@ -19,6 +19,7 @@
 #include <jevois/Util/Utils.H>
 #include <jevois/Debug/Log.H>
 #include <fstream>
+#include <cstring> // for std::memcpy()
 
 // ##############################################################################################################
 std::map<int, std::string> jevois::dnn::readLabelsFile(std::string const & fname)
@@ -834,6 +835,65 @@ size_t jevois::dnn::effectiveDims(cv::Mat const & m)
   size_t const ndims = rs.dims();
   size_t ret = ndims;
   for (size_t i = 0; i < ndims; ++i) if (rs[i] == 1) --ret; else break;
+  return ret;
+}
+
+// ##############################################################################################################
+cv::Mat jevois::dnn::concatenate(std::vector<cv::Mat> const & tensors, int axis)
+{
+  if (tensors.empty()) return cv::Mat();
+  if (tensors.size() == 1) return tensors[0];
+
+  cv::MatSize ms = tensors[0].size;
+  int const ndims = ms.dims();
+  auto const typ = tensors[0].type();
+  
+  // Convert negative axis to positive and check within bounds:
+  if (axis < - ndims || axis >= ndims)
+    LFATAL("Incorrect axis " << axis << ": must be in [" << -ndims << " ... " << ndims - 1 << ']');
+  if (axis < 0) axis = ndims - axis;
+
+  // Check number of dimensions and data type; compute new size along concatenated axis:
+  size_t newsize = tensors[0].size[axis];
+
+  for (size_t i = 1; i < tensors.size(); ++i)
+  {
+    if (tensors[i].type() != typ)
+      LFATAL("Mismatched tensor types: tensors[0] is " << jevois::cvtypestr(typ) << " while tensors[" << i <<
+             "] is " << jevois::cvtypestr(tensors[i].type()));
+    
+    if (tensors[i].size.dims() != ndims)
+      LFATAL("Mismatched number of dimensions: " << ndims << " for tensors[0] vs. " <<
+             tensors[i].size.dims() << " for tensors[" << i << ']');
+
+    newsize += tensors[i].size[axis];
+  }
+  
+  // Check that all other dims match:
+  for (int a = 0; a < ndims; ++a)
+    if (a != axis)
+      for (size_t i = 1; i < tensors.size(); ++i)
+        if (tensors[i].size[a] != ms[a])
+          LFATAL("Mismatched size for axis " << a << ": tensors[0] has " << ms[a] << " while tensors[" <<
+                 i << "] has " << tensors[i].size[a]);
+
+  // Ready to go:
+  ms[axis] = newsize;
+  cv::Mat ret(ndims, ms.p, typ);
+  unsigned char * optr = ret.data;
+
+  size_t numcopy = 1; for (int a = 0; a < axis; ++a) numcopy *= ms[a];
+  size_t elemsize = jevois::cvBytesPerPix(typ); for (int a = axis + 1; a < ndims; ++a) elemsize *= ms[a];
+  
+  for (size_t n = 0; n < numcopy; ++n)
+    for (size_t i = 0; i < tensors.size(); ++i)
+    {
+      size_t const axsize = tensors[i].size[axis];
+      unsigned char const * sptr = tensors[i].data + n * elemsize * axsize;
+      std::memcpy(optr, sptr, elemsize * axsize);
+      optr += elemsize * axsize;
+    }
+  
   return ret;
 }
 

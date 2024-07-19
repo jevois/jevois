@@ -194,6 +194,7 @@ namespace jevois
 } // namespace jevois
 
 
+#ifdef JEVOIS_DOXYGEN
 // ####################################################################################################
 //! Helper macro to execute an ioctl, ignore interruptions, and, if error, issue a fatal message and throw
 /*! \def XIOCTL(dev, req, mem)
@@ -201,6 +202,7 @@ namespace jevois
 
     This macro assumes that req is an identifier (\#define) for the corresponding ioctl number.
     \ingroup utils */
+#define XIOCTL(dev, req, mem) { }
 
 // ####################################################################################################
 //! Helper macro to execute an ioctl, ignore interruptions, and, if error throw quietly
@@ -211,6 +213,7 @@ namespace jevois
     with increasing format number until it fails. When that happens we don't want to display any fatal error 
     message as XIOCTL() does. This macro assumes that req is an identifier for the corresponding ioctl number. 
     \ingroup utils */
+#define XIOCTL_QUIET(dev, req, mem) { }
 
 // ####################################################################################################
 //! Helper macro to execute an ioctl, ignore interruptions, and, if error throw quietly
@@ -222,6 +225,8 @@ namespace jevois
     message as XIOCTL() does. This macro assumes that req is an identifier for the corresponding ioctl number.
     Note that in this version we throw on any error.
     \ingroup utils */
+#define XIOCTL_QUIET_ONCE(dev, req, mem) { }
+#endif
 
 // Include implementation details
 #include <jevois/Util/details/UtilsImpl.H>

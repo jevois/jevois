@@ -254,8 +254,7 @@ jevois::Engine::Engine(int argc, char const* argv[], std::string const & instanc
 }
 
 // ####################################################################################################
-void jevois::Engine::onParamChange(jevois::engine::serialdev const & JEVOIS_UNUSED_PARAM(param),
-                                   std::string const & newval)
+void jevois::Engine::onParamChange(jevois::engine::serialdev const &, std::string const & newval)
 {
   JEVOIS_TIMED_LOCK(itsMtx);
 
@@ -295,8 +294,7 @@ void jevois::Engine::onParamChange(jevois::engine::serialdev const & JEVOIS_UNUS
 }
 
 // ####################################################################################################
-void jevois::Engine::onParamChange(jevois::engine::usbserialdev const & JEVOIS_UNUSED_PARAM(param),
-                                   std::string const & newval)
+void jevois::Engine::onParamChange(jevois::engine::usbserialdev const &, std::string const & newval)
 {
   JEVOIS_TIMED_LOCK(itsMtx);
 
@@ -331,8 +329,7 @@ void jevois::Engine::onParamChange(jevois::engine::usbserialdev const & JEVOIS_U
 }
 
 // ####################################################################################################
-void jevois::Engine::onParamChange(jevois::engine::cpumode const & JEVOIS_UNUSED_PARAM(param),
-                                   jevois::engine::CPUmode const & newval)
+void jevois::Engine::onParamChange(jevois::engine::cpumode const &, jevois::engine::CPUmode const & newval)
 {
 #ifdef JEVOIS_PRO
   std::ofstream ofs("/sys/devices/system/cpu/cpu2/cpufreq/scaling_governor");
@@ -359,8 +356,7 @@ void jevois::Engine::onParamChange(jevois::engine::cpumode const & JEVOIS_UNUSED
 
 #ifdef JEVOIS_PRO
 // ####################################################################################################
-void jevois::Engine::onParamChange(jevois::engine::cpumodel const & JEVOIS_UNUSED_PARAM(param),
-                                   jevois::engine::CPUmode const & newval)
+void jevois::Engine::onParamChange(jevois::engine::cpumodel const &, jevois::engine::CPUmode const & newval)
 {
   std::ofstream ofs("/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor");
   if (ofs.is_open() == false)
@@ -383,8 +379,7 @@ void jevois::Engine::onParamChange(jevois::engine::cpumodel const & JEVOIS_UNUSE
 #endif
 
 // ####################################################################################################
-void jevois::Engine::onParamChange(jevois::engine::cpumax const & JEVOIS_UNUSED_PARAM(param),
-                                   unsigned int const & newval)
+void jevois::Engine::onParamChange(jevois::engine::cpumax const &, unsigned int const & newval)
 {
 #ifdef JEVOIS_PRO
   std::ofstream ofs("/sys/devices/system/cpu/cpu2/cpufreq/scaling_max_freq");
@@ -404,16 +399,14 @@ void jevois::Engine::onParamChange(jevois::engine::cpumax const & JEVOIS_UNUSED_
 }
 
 // ####################################################################################################
-void jevois::Engine::onParamChange(jevois::engine::videoerrors const & JEVOIS_UNUSED_PARAM(param),
-                                   bool const & newval)
+void jevois::Engine::onParamChange(jevois::engine::videoerrors const &, bool const & newval)
 {
   itsVideoErrors.store(newval);
 }
 
 #ifdef JEVOIS_PRO
 // ####################################################################################################
-void jevois::Engine::onParamChange(jevois::engine::gui const & JEVOIS_UNUSED_PARAM(param),
-                                   bool const & newval)
+void jevois::Engine::onParamChange(jevois::engine::gui const &, bool const & newval)
 {
   JEVOIS_TIMED_LOCK(itsMtx);
   if (newval)
@@ -438,8 +431,7 @@ void jevois::Engine::onParamChange(jevois::engine::gui const & JEVOIS_UNUSED_PAR
 }
 
 // ####################################################################################################
-void jevois::Engine::onParamChange(jevois::engine::cpumaxl const & JEVOIS_UNUSED_PARAM(param),
-                                   unsigned int const & newval)
+void jevois::Engine::onParamChange(jevois::engine::cpumaxl const &, unsigned int const & newval)
 {
   std::ofstream ofs("/sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq");
   
@@ -455,8 +447,7 @@ void jevois::Engine::onParamChange(jevois::engine::cpumaxl const & JEVOIS_UNUSED
 }
 
 // ####################################################################################################
-void jevois::Engine::onParamChange(jevois::engine::demomode const & JEVOIS_UNUSED_PARAM(param),
-                                   float const & newval)
+void jevois::Engine::onParamChange(jevois::engine::demomode const &, float const & newval)
 {
   // Restart the demo each time this param is changed to 0:
   if (newval == 0.0F) itsDemoReset = true;

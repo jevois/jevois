@@ -54,8 +54,7 @@ jevois::VideoDisplayBackend::~VideoDisplayBackend()
 }
 
 // ##############################################################################################################
-void jevois::VideoDisplayBackend::init(unsigned short JEVOIS_UNUSED_PARAM(w), unsigned short JEVOIS_UNUSED_PARAM(h),
-                                       EGLNativeWindowType win)
+void jevois::VideoDisplayBackend::init(unsigned short, unsigned short, EGLNativeWindowType win)
 {
   if (itsDisplay) { LERROR("Display already initialized -- IGNORED"); return; }
 

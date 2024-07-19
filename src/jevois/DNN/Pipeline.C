@@ -174,8 +174,7 @@ void jevois::dnn::Pipeline::asyncNetWait()
 }
 
 // ####################################################################################################
-void jevois::dnn::Pipeline::onParamChange(pipeline::filter const & JEVOIS_UNUSED_PARAM(param),
-                                          jevois::dnn::pipeline::Filter const & val)
+void jevois::dnn::Pipeline::onParamChange(pipeline::filter const &, jevois::dnn::pipeline::Filter const & val)
 {
   // Reload the zoo file so that the filter can be applied to create the parameter def of pipe, but first we need this
   // parameter to indeed be updated. So here we just set a flag and the update will occur in process(), after we run the
@@ -184,8 +183,7 @@ void jevois::dnn::Pipeline::onParamChange(pipeline::filter const & JEVOIS_UNUSED
 }
 
 // ####################################################################################################
-void jevois::dnn::Pipeline::onParamChange(pipeline::zooroot const & JEVOIS_UNUSED_PARAM(param),
-                                          std::string const & val)
+void jevois::dnn::Pipeline::onParamChange(pipeline::zooroot const &, std::string const & val)
 {
   // Reload the zoo file, but first we need this parameter to indeed be updated. So here we just set a flag and the
   // update will occur in process(), after we run the current model one last time:
@@ -193,8 +191,7 @@ void jevois::dnn::Pipeline::onParamChange(pipeline::zooroot const & JEVOIS_UNUSE
 }
 
 // ####################################################################################################
-void jevois::dnn::Pipeline::onParamChange(pipeline::benchmark const & JEVOIS_UNUSED_PARAM(param),
-                                          bool const & val)
+void jevois::dnn::Pipeline::onParamChange(pipeline::benchmark const &, bool const & val)
 {
   if (val)
   {
@@ -209,8 +206,7 @@ void jevois::dnn::Pipeline::onParamChange(pipeline::benchmark const & JEVOIS_UNU
 }
 
 // ####################################################################################################
-void jevois::dnn::Pipeline::onParamChange(pipeline::zoo const & JEVOIS_UNUSED_PARAM(param),
-                                          std::string const & val)
+void jevois::dnn::Pipeline::onParamChange(pipeline::zoo const &, std::string const & val)
 {
   // Just nuke everything:
   itsPreProcessor.reset();
@@ -336,7 +332,7 @@ void jevois::dnn::Pipeline::scanZoo(std::filesystem::path const & zoofile, std::
 }
 
 // ####################################################################################################
-void jevois::dnn::Pipeline::onParamChange(pipeline::pipe const & JEVOIS_UNUSED_PARAM(param), std::string const & val)
+void jevois::dnn::Pipeline::onParamChange(pipeline::pipe const &, std::string const & val)
 {
 #ifdef JEVOIS_PRO
   // Reset the data peekin on each pipe change:
@@ -526,8 +522,7 @@ void jevois::dnn::Pipeline::setZooParam(std::string const & k, std::string const
 }
 
 // ####################################################################################################
-void jevois::dnn::Pipeline::onParamChange(pipeline::preproc const & JEVOIS_UNUSED_PARAM(param),
-                                          pipeline::PreProc const & val)
+void jevois::dnn::Pipeline::onParamChange(pipeline::preproc const &, pipeline::PreProc const & val)
 {
   itsPreProcessor.reset(); removeSubComponent("preproc", false);
   
@@ -547,8 +542,7 @@ void jevois::dnn::Pipeline::onParamChange(pipeline::preproc const & JEVOIS_UNUSE
 }
 
 // ####################################################################################################
-void jevois::dnn::Pipeline::onParamChange(pipeline::nettype const & JEVOIS_UNUSED_PARAM(param),
-                                          pipeline::NetType const & val)
+void jevois::dnn::Pipeline::onParamChange(pipeline::nettype const &, pipeline::NetType const & val)
 {
   asyncNetWait(); // If currently processing async net, wait until done
 
@@ -608,8 +602,7 @@ void jevois::dnn::Pipeline::onParamChange(pipeline::nettype const & JEVOIS_UNUSE
 }
 
 // ####################################################################################################
-void jevois::dnn::Pipeline::onParamChange(pipeline::postproc const & JEVOIS_UNUSED_PARAM(param),
-                                          pipeline::PostProc const & val)
+void jevois::dnn::Pipeline::onParamChange(pipeline::postproc const &, pipeline::PostProc const & val)
 {
   asyncNetWait(); // If currently processing async net, wait until done
 
@@ -1006,10 +999,8 @@ void jevois::dnn::Pipeline::process(jevois::RawImage const & inimg, jevois::StdM
 }
 
 // ####################################################################################################
-void jevois::dnn::Pipeline::showInfo(std::vector<std::string> const & info,
-                                     jevois::StdModule * JEVOIS_UNUSED_PARAM(mod),
-                                     jevois::RawImage * outimg,
-                                     jevois::OptGUIhelper * helper, bool ovl, bool idle)
+void jevois::dnn::Pipeline::showInfo(std::vector<std::string> const & info, jevois::StdModule *,
+                                     jevois::RawImage * outimg, jevois::OptGUIhelper * helper, bool ovl, bool idle)
 {
   bool show = true;
 

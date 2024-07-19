@@ -44,12 +44,10 @@
 
 // ####################################################################################################
 // Convenience macro to define a Python binding for a free function in the jevois namespace
-#define JEVOIS_PYTHON_FUNC(funcname)                \
-  boost::python::def(#funcname, jevois::funcname)
+#define JEVOIS_PYTHON_FUNC(funcname) boost::python::def(#funcname, jevois::funcname)
 
 // Convenience macro to define a Python binding for a free function in the jevois::rawimage namespace
-#define JEVOIS_PYTHON_RAWIMAGE_FUNC(funcname)               \
-  boost::python::def(#funcname, jevois::rawimage::funcname)
+#define JEVOIS_PYTHON_RAWIMAGE_FUNC(funcname) boost::python::def(#funcname, jevois::rawimage::funcname)
 
 // Convenience macro to define a python enum value where the value is in jevois::rawimage
 #define JEVOIS_PYTHON_RAWIMAGE_ENUM_VAL(val) value(#val, jevois::rawimage::val)
@@ -61,8 +59,7 @@
 #define JEVOIS_PYTHON_CONSTANT(cst) boost::python::scope().attr(#cst) = cst;
 
 // Convenience macro to define a Python binding for a free function in the jevois:dnn namespace
-#define JEVOIS_PYTHON_DNN_FUNC(funcname)                \
-  boost::python::def(#funcname, jevois::dnn::funcname)
+#define JEVOIS_PYTHON_DNN_FUNC(funcname) boost::python::def(#funcname, jevois::dnn::funcname)
 
 // ####################################################################################################
 // Helper to provide jevois.sendSerial() function that emulates a C++ module's sendSerial()
@@ -183,7 +180,7 @@ namespace
 #ifdef JEVOIS_LDEBUG_ENABLE
   void pythonLDEBUG(std::string const & logmsg) { LDEBUG(logmsg); }
 #else
-  void pythonLDEBUG(std::string const & JEVOIS_UNUSED_PARAM(logmsg)) { }
+  void pythonLDEBUG(std::string const &) { }
 #endif
   void pythonLINFO(std::string const & logmsg) { LINFO(logmsg); }
   void pythonLERROR(std::string const & logmsg) { LERROR(logmsg); }

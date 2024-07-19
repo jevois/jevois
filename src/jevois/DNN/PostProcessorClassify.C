@@ -34,8 +34,7 @@ void jevois::dnn::PostProcessorClassify::freeze(bool doit)
 }
 
 // ####################################################################################################
-void jevois::dnn::PostProcessorClassify::onParamChange(postprocessor::classes const & JEVOIS_UNUSED_PARAM(param),
-                                                       std::string const & val)
+void jevois::dnn::PostProcessorClassify::onParamChange(postprocessor::classes const &, std::string const & val)
 {
   if (val.empty()) return;
 
@@ -48,8 +47,7 @@ void jevois::dnn::PostProcessorClassify::onParamChange(postprocessor::classes co
 }
 
 // ####################################################################################################
-void jevois::dnn::PostProcessorClassify::process(std::vector<cv::Mat> const & outs,
-                                                 jevois::dnn::PreProcessor * JEVOIS_UNUSED_PARAM(preproc))
+void jevois::dnn::PostProcessorClassify::process(std::vector<cv::Mat> const & outs, jevois::dnn::PreProcessor *)
 {
   if (outs.size() != 1 && itsFirstTime)
   {

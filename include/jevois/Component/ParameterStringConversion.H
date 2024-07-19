@@ -119,7 +119,6 @@ namespace jevois
   void paramStringToVal(std::string const & valstring, std::map<K,V> & result);
 
   //! Machine-readable conversion of bool to a string, for use in jevois::Parameter
-  /*! @returns "true" or "false". */
   template <>
   void paramValToString<bool>(bool const & val, std::string & result);
 

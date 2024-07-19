@@ -31,7 +31,7 @@
 using namespace std::string_literals;
 //using namespace std::literals::string_literals;
 
-//! Helper struct to key track of key states
+// Helper struct to key track of key states
 struct input_event_state
 {
     int altgr:1;

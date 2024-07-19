@@ -45,7 +45,7 @@ jevois::ValidValuesSpecNone<T>::~ValidValuesSpecNone()
 { }
 
 template <typename T> inline
-bool jevois::ValidValuesSpecNone<T>::checkValueValidity(T const & JEVOIS_UNUSED_PARAM(val)) const
+bool jevois::ValidValuesSpecNone<T>::checkValueValidity(T const &) const
 { return true; }
 
 template <typename T> inline

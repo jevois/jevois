@@ -244,8 +244,7 @@ void jevois::GUIhelper::onParamChange(jevois::gui::scale const & param, float co
 }
 
 // ##############################################################################################################
-void jevois::GUIhelper::onParamChange(jevois::gui::style const & JEVOIS_UNUSED_PARAM(param),
-                                      jevois::gui::GuiStyle const & newval)
+void jevois::GUIhelper::onParamChange(jevois::gui::style const &, jevois::gui::GuiStyle const & newval)
 {
   switch (newval)
   {
@@ -271,7 +270,7 @@ void jevois::GUIhelper::onParamChange(jevois::gui::style const & JEVOIS_UNUSED_P
 }
 
 // ##############################################################################################################
-void jevois::GUIhelper::onParamChange(jevois::gui::rounding const & JEVOIS_UNUSED_PARAM(param), int const & newval)
+void jevois::GUIhelper::onParamChange(jevois::gui::rounding const &, int const & newval)
 {
   auto & s = ImGui::GetStyle();
   s.WindowRounding = newval;
@@ -388,7 +387,7 @@ void jevois::GUIhelper::drawInputFrame2(char const * name, jevois::InputFrame co
 }
 
 // ##############################################################################################################
-void jevois::GUIhelper::onParamChange(gui::twirl const & JEVOIS_UNUSED_PARAM(param), float const & newval)
+void jevois::GUIhelper::onParamChange(gui::twirl const &, float const & newval)
 {
   // Compute alpha so that more twirl is also more faded (lower alpha). Here, we want to mask out the whole display,
   // including all GUI drawings except the banner. Hence we will just draw a full-screen semi-transparent rectangle in
@@ -2478,7 +2477,7 @@ void jevois::GUIhelper::runNewModule()
   else LFATAL("Internal error, could not find the module we just created -- CHECK LOGS");
     
   itsRefreshVideoMappings = true; // Force a refresh of our list of video mappings
-  /////itsRefreshCfgList = true; // Force a refresh of videomappings.cfg in the config editor
+  //itsRefreshCfgList = true; // Force a refresh of videomappings.cfg in the config editor
     
   // Switch to the mapping list that contains our new module:
   if (itsNewMapping.ofmt == JEVOISPRO_FMT_GUI) itsVideoMappingListType = 0;
@@ -2488,14 +2487,14 @@ void jevois::GUIhelper::runNewModule()
 }
 
 // ##############################################################################################################
-// imgui opengl demo in 1024 bytes:
-using V=ImVec2;using F=float;int h;struct E{V p;F z,w;bool operator<(E&o){return z<o.z;}};E G[999];
+// imgui opengl demo in 1024 bytes (before we renamed a couple things for clearer docs):
+using V=ImVec2;using F=float;int h;struct TinyImGUIdemo{V p;F z,w;bool operator<(TinyImGUIdemo&o){return z<o.z;}};TinyImGUIdemo G[999];
 #define L(i,x,y,z)for(F i=x;i<y;i+=z)
 #define Q(y)sin((y+t)*.03)*(1-sin(t*3)*cos(y/99+t))*9
 #define H(p,w)L(k,0,5,1)d->AddCircleFilled(p+V(1,-1)*w*k/8,w*(1-k/5),k<4?0xff000000+k*0x554400:-1);
-#define J(b)L(i,0,h,1){E&o=G[int(i)];if(b*o.z>0)H(o.p,(o.z*.3+4)*o.w)}
+#define J(b)L(i,0,h,1){TinyImGUIdemo&o=G[int(i)];if(b*o.z>0)H(o.p,(o.z*.3+4)*o.w)}
 #define O(b)i=t+1.6+j/99;if(b*sin(i)>0)H(c+v*j+u*(cos(i)*40+Q(j)),30)
-void FX(ImDrawList*d,V a,V b,V,ImVec4,F t){F i=sin(t)-.7;V u(cos(i),sin(i)),v(-sin(i),cos(i)),c=(a+b)/2;F l=300;
+void drawTinyImGUIdemo(ImDrawList*d,V a,V b,V,ImVec4,F t){F i=sin(t)-.7;V u(cos(i),sin(i)),v(-sin(i),cos(i)),c=(a+b)/2;F l=300;
 F w=0;L(z,4,20,1){w+=z;L(yy,-l,l,z*2){F y=yy+fmod(t*z*10,z*2);L(i,-1,2,2)d->AddCircle(c+v*y+u*i*(w+sin((y+t)/25)*w/30),z,0xff000000+0x110e00*int(z*z*z/384),12,z/2);}}
 h=0;L(y,-l,l,15)L(b,0,16,1){i=t+b*.2+y/99;G[h++]={c+v*y+u*(cos(i)*60+Q(y)),sinf(i),(b<1||b>14)?2.f:1.5f};}std::sort(G,G+h);
  F j=(-2+fmod(t*3,5))*99;J(-1)O(-1)a=c+v*-l;L(y,-l,l,15){b=c+v*y+u*((15-rand())&31)*.1;L(k,0,9,1)d->AddLine(a-v,b,k<8?0x11222200*k:-1,(9-k)*4);a=b;}O(1)J(1)}
@@ -2552,7 +2551,7 @@ void jevois::GUIhelper::drawTweaks()
   //{
     // from https://github.com/ocornut/imgui/issues/3606
     ImGuiIO& io = ImGui::GetIO();
-    ImGui::Begin("FX", NULL, ImGuiWindowFlags_AlwaysAutoResize);
+    ImGui::Begin("Tiny OpenGL demo", NULL, ImGuiWindowFlags_AlwaysAutoResize);
     ImVec2 size(320.0f, 180.0f);
     ImGui::InvisibleButton("canvas", size);
     ImVec2 p0 = ImGui::GetItemRectMin();
@@ -2566,7 +2565,7 @@ void jevois::GUIhelper::drawTweaks()
     mouse_data.z = io.MouseDownDuration[0];
     mouse_data.w = io.MouseDownDuration[1];
 
-    FX(draw_list, p0, p1, size, mouse_data, (float)ImGui::GetTime());
+    drawTinyImGUIdemo(draw_list, p0, p1, size, mouse_data, (float)ImGui::GetTime());
     draw_list->PopClipRect();
     ImGui::End();
     //}

@@ -27,7 +27,7 @@ namespace jevois
 {
   class Engine;
   class VideoBuf;
-  /*! \defgroup image Minimalistic support for images in the core JeVois library
+  /*! \defgroup image Raw zero-copy / memory-mapped video images and support functions
 
       The main purpose of the classes and functions that support images is to allow handling of image buffers whose
       memory is mapped onto hardware (camera or USB drivers) without having to copy the data over. Many other libraries

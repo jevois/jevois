@@ -212,7 +212,7 @@ mkdir sampledata
 cp `ls ./val2017/*.jpg | shuf -n 100` sampledata/
   \endcode
 
-- **sampledata/** should now contain 100 jpeg images.
+- <b>sampledata/</b> should now contain 100 jpeg images.
 
 - Hailo wants the sample dataset as a <em>".npy file containing numpy array of preprocessed images with shape
   (calib_size, h, w, c)"</em> (from running **hailo optimize --help**). So we need to write a little python script
