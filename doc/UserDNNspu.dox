@@ -381,7 +381,7 @@ Another example for Approach 1: YOLOv9s discrete head pose by PINTO0309
 
 - Inspect he model in Netron and determine which outputs to use.
 
-- We will use the output nodes for yolov9s as specified in our tutorial \ref UserYolo
+- We will use the output nodes for yolov9s as specified in our tutorial http://jevois.org/tutorials/UserYolo.html
 
 - Convert the model (say no to adding nms postprocess code, we will use faster JeVois post-processing):
   \code{.py}
@@ -420,7 +420,7 @@ yolov9s-headpose-1024x576-custom:
 \note Label file **dnn/labels/discrete-headpose.txt** is already on the \jvpro microSD, or create a new list of class
 names as needed.
 
-For more examples, see our tutorial: \ref UserYolo
+For more examples, see our tutorial: http://jevois.org/tutorials/UserYolo.html
 
 Approach 2: Model conversion using the Hailo Model Zoo converter
 ================================================================
@@ -518,7 +518,7 @@ echo 'performance_param(compiler_optimization_level=max)' >> ../alls/generic/yol
 \endcode
 
 \note Different YOLO network sizes (n,t,s,m,l,x) use different output node names. Always inspect in Netron. For a list
-of output nodes to use with various YOLO variants above v8, see our tutorial: \ref UserYolo
+of output nodes to use with various YOLO variants above v8, see our tutorial: http://jevois.org/tutorials/UserYolo.html
 
 2.3. Convert the model for Hailo using hailomz
 ----------------------------------------------

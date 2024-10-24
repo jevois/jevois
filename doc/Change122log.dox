@@ -22,7 +22,7 @@ jevoispro-npu-convert.sh yolov8n-pose-1024x576-custom.onnx /path/to/sample-datas
   without further editing or configuring.
   
 - JeVois-Pro: New docs and tutorials to convert YOLOv8-compatible networks for NPU and SPU (see \ref UserDNNnpu,
-  \ref UserDNNspu, \ref UserYolo)
+  \ref UserDNNspu, and http://jevois.org/tutorials/UserYolo.html )
 
 - Faster dequantization and image resizing using parallel code.
 

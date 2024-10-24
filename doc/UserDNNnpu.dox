@@ -153,7 +153,8 @@ yolo export model=yolov8n.pt format=onnx imgsz=576,1024 opset=12 optimize simpli
 mv yolov8n.onnx yolov8n-1024x576-custom.onnx
   \endcode
 
-- If you want to retrain the model on a custom dataset first, see our tutorial: \ref UserYolo
+- If you want to retrain the model on a custom dataset first, see our tutorial:
+  http://jevois.org/tutorials/UserYolo.html
 
 2. Convert for NPU using our script
 -----------------------------------
