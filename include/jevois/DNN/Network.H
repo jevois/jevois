@@ -60,6 +60,16 @@ namespace jevois
                                ".tflite (TensorFlow Lite), or .weights (Darknet). If path is relative, it will be "
                                "prefixed by dataroot.",
                                "", ParamCateg);
+#ifdef JEVOIS_PRO
+      //! Parameter \relates jevois::dnn::NetworkNPU
+      JEVOIS_DECLARE_PARAMETER(library, std::string, "Optional path to a compiled .so library that can load and "
+                               "instantiate a NPU model. If a library is provided, then intensors and outtensors "
+                               "can be left empty, otherwise they have to describe exactly the inputs and outputs "
+                               "of the NPU model. This library is obtained along with the NPU .nb model when "
+                               "converting for NPU using the KSNN convert tool. If path is relative, it will be "
+                               "prefixed by dataroot.",
+                               "", ParamCateg);
+#endif
       
 #ifdef JEVOIS_PRO
       //! Enum \relates jevois::dnn::Network
@@ -107,15 +117,21 @@ namespace jevois
                                "", ParamCateg);
 
       //! Parameter \relates jevois::dnn::Network
-      JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(outreshape, std::string, "Specification of reshaped output tensors; "
-                               "sometimes useful to re-interpret tensors to what a post-processor expects; for "
-                               "example, TPU YoloV4-Int-VOC outputs 5D tensors 32F:1x52x52x3x85, 32F:1x26x26x3x85, "
-                               "32F:1x13x13x3x85 but the YOLO post-processor expects 4D, which would be specified here "
-                               "as 32F:1x52x52x255, 32F:1x26x26x255, 32F:1x13x13x255. Note that this only changes "
-                               "the description of dimensions, but does not move any pixel data around (e.g., cannot "
-                               "convert from NCHW to NHWC, convert data types, etc). Use sparingly and with caution.",
-                               "", ParamCateg);
-
+      JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(outtransform, std::string, "Specification of a sequence of operations "
+                                             "(reshape, transpose, split, merge, etc) to be applied to the output "
+                                             "tensors. Useful to match a particular network's outputs to the "
+                                             "tensor shapes expected by a particular post-processor. The sequence of "
+                                             "operations is separated by semicolons, and applied from left to right. "
+                                             "Operations specified here are applied after any de-quantization.",
+                                             "", ParamCateg);
+      //"Specification of reshaped output tensors; "
+      //"sometimes useful to re-interpret tensors to what a post-processor expects; for "
+      //"example, TPU YoloV4-Int-VOC outputs 5D tensors 32F:1x52x52x3x85, 32F:1x26x26x3x85, "
+      //"32F:1x13x13x3x85 but the YOLO post-processor expects 4D, which would be specified here "
+      //"as 32F:1x52x52x255, 32F:1x26x26x255, 32F:1x13x13x255. Note that this only changes "
+      //"the description of dimensions, but does not move any pixel data around (e.g., cannot "
+      //"convert from NCHW to NHWC, convert data types, etc). Use sparingly and with caution.",
+      
       //! Parameter \relates jevois::dnn::Network
       JEVOIS_DECLARE_PARAMETER(dequant, bool, "Dequantize output tensors to float32 from their native quantized type",
                                true, ParamCateg);
@@ -156,9 +172,43 @@ namespace jevois
     
     //! Abstract class to represent a neural network
     /*! Derived classes provide implementation via OpenCV (on CPU, OpenCL, or OpenVino/Myriad-X), Amlogic/Vivante NPU,
-        Hailo-8, Python, or Google Coral TPU. \ingroup dnn */
+        Hailo-8, Python, or Google Coral TPU.
+
+        The Network class can apply optional transforms to the output tensors:
+
+        - `dequant`: dequantize the output tensors
+        
+        - `outtransform`: apply a semicolon-separated sequence (from left to right) of transforms to the
+          outputs. Outputs are numbered starting at 0. Available transforms are:
+          
+          + `shape(outnum, AxBxC...)` to reshape an output to a given new shape. Does not change or move any tensor
+            data. Total number of data elements must remain the same. Useful to squeeze/unsqueeze tensors.
+
+          + `transpose(outnum, oldaxisA, oldaxisB, ...)` where transposed new axis 0 (the outermost dimension, typically
+            batch size) will be from oldaxisA, new axis 1 from oldaxisB, etc. If outnum is *, transpose all outputs.
+
+          + `order(oldidx0, oldidx1, ...)` where the new ordering of the output tensors will be: new tensor 0: old
+            tensor oldidx0 (which is zero-based); new tensor 1: old tensor oldidx1, etc. It is ok to have duplicated or
+            missing entries.
+
+          + `split(outnum, axis, newsize1, ..., newsizeN)` where axis 0 is the outtermost dimension (typically, batch
+            size), and newsize1 + ... + newsizeN must be equal to the original size of that axis. If outnum is *, split
+            all outputs.
+
+          + `merge(axis, outnum1, ..., outnumN)` where axis 0 is the outermost dimension (typically, batch size) and
+            outnum1, ..., outnumN are the outputs to merge along that axis. All the outputs to be merged must have
+            matching number of dimensions, and matching sizes on all other axes.  The merged tensor will replace the
+            first output listed in the merge, and the other listed will be removed. Outputs to merge must be listed in
+            ascending order (use an order() transform first if needed)
+
+        See the model zoo files in /jevoispro/share/dnn/ for examples. For instance:
+        \code{.py}
+        outtransform: "split(*,1,80,64); order(1,0,3,2,5,4); transpose(*,0,2,3,1)"
+        \endcode
+        
+        \ingroup dnn */
     class Network : public Component,
-                    public Parameter<network::comment, network::url, network::outreshape, network::extraintensors>
+                    public Parameter<network::comment, network::url, network::outtransform, network::extraintensors>
     {
       public:
         //! Inherited constructor ok
@@ -200,13 +250,22 @@ namespace jevois
         virtual std::vector<cv::Mat> doprocess(std::vector<cv::Mat> const & blobs,
                                                std::vector<std::string> & info) = 0;
 
-        void onParamChange(network::outreshape const & param, std::string const & val) override;
+        void onParamChange(network::outtransform const & param, std::string const & val) override;
         
       private:
         std::atomic<bool> itsLoading = false;
         std::atomic<bool> itsLoaded = false;
         std::future<void> itsLoadFut;
-        std::vector<vsi_nn_tensor_attr_t> itsReshape;
+
+        // Output transformations:
+        enum class Operator { Shape, Transpose, Order, Split, Merge };
+        struct Oper
+        {
+            Operator op;
+            std::vector<size_t> tnum; // output tensor numbers (indices within the output array)
+            std::vector<int> newvals; // New values (operator-dependent: could be new output orders, new tensor dims)
+        };
+        std::vector<Oper> itsOps;
     };
     
   } // namespace dnn

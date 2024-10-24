@@ -19,13 +19,24 @@
 
 #include <jevois/Types/ObjReco.H>
 #include <vector>
+#include <opencv2/core/types.hpp>
 
 namespace jevois
 {
-  //! A trivial struct to store object detection results
+  //! A trivial struct to store object detection results, for standard (straight up) bounding boxes
+  /*! \ingroup types */
   struct ObjDetect
   {
-      int tlx, tly, brx, bry; //!< The box
-      std::vector<ObjReco> reco; //!< The recognized classes with their scores
+      int tlx, tly, brx, bry;           //!< Bounding box
+      std::vector<ObjReco> reco;        //!< Recognized classes with their scores
+      std::vector<cv::Point> contour;   //!< For instance segmentation models (e.g., yolov8-seg), object contour
+  };
+
+  //! A trivial struct to store object detection results, for oriented bounding boxes (OBB)
+  /*! \ingroup types */
+  struct ObjDetectOBB
+  {
+      cv::RotatedRect rect;       //!< Oriented bounding box
+      std::vector<ObjReco> reco;  //!< Recognized classes with their scores
   };
 }

@@ -60,7 +60,7 @@ std::vector<cv::Mat> jevois::dnn::PreProcessorBlob::process(cv::Mat const & img,
     cv::Size bsiz = jevois::dnn::attrsize(attr);
     cv::Rect crop;
     std::string prefix; if (detail) prefix = "Blob " + std::to_string(bnum) + ": ";
-    
+
     // Start with an unscaled crop:
     unsigned int bw = bsiz.width, bh = bsiz.height;
     if (bw == 1 || bw == 3 || bh == 1 || bh == 3)
@@ -381,7 +381,7 @@ void jevois::dnn::PreProcessorBlob::report(jevois::StdModule *, jevois::RawImage
 {
 #ifdef JEVOIS_PRO
     if (helper && idle == false)
-      for (std::string const & s : itsInfo) ImGui::BulletText(s.c_str());
+      for (std::string const & s : itsInfo) ImGui::BulletText("%s", s.c_str());
 #else
     (void)helper; (void)idle;
 #endif

@@ -20,6 +20,7 @@
 #ifdef JEVOIS_PRO
 
 #include <jevois/DNN/Network.H>
+#include <hailo/hailort.hpp>
 
 namespace hailort
 { class Device; class ConfiguredNetworkGroup; class InputVStream; class OutputVStream; class ActivatedNetworkGroup; }
@@ -47,9 +48,15 @@ namespace jevois
         //! Get shapes of all input tensors
         virtual std::vector<vsi_nn_tensor_attr_t> inputShapes() override;
 
+        //! Hailo-only get input stream infos
+        std::vector<hailo_vstream_info_t> inputInfos() const;
+        
         //! Get shapes of all output tensors
         virtual std::vector<vsi_nn_tensor_attr_t> outputShapes() override;
  
+        //! Hailo-only get input stream infos, can be used to post-process quantized outputs
+        std::vector<hailo_vstream_info_t> outputInfos() const;
+
       protected:
         //! Load from disk
         void load() override;

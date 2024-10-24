@@ -30,8 +30,11 @@ namespace jevois
     /*! This is the last step in a deep neural network processing Pipeline. \ingroup dnn */
     class PostProcessorDetect : public PostProcessor,
                                 public Parameter<postprocessor::classoffset, postprocessor::classes, postprocessor::nms,
-                                                 postprocessor::detecttype, postprocessor::maxnbox,
-                                                 postprocessor::cthresh, postprocessor::dthresh>
+                                                 postprocessor::nmsperclass, postprocessor::detecttype,
+                                                 postprocessor::maxnbox, postprocessor::cthresh,
+                                                 postprocessor::dthresh, postprocessor::sigmoid,
+                                                 postprocessor::boxclamp, postprocessor::namedonly,
+                                                 postprocessor::serialreport, postprocessor::masksmooth>
     {
       public:
         
@@ -51,6 +54,13 @@ namespace jevois
         void report(jevois::StdModule * mod, jevois::RawImage * outimg = nullptr,
                     jevois::OptGUIhelper * helper = nullptr, bool overlay = true, bool idle = false) override;
 
+        //! Get the latest detections, use with caution, not thread-safe
+        /*! This returns a reference to our internal vector of detections. That vector will get overwritten every time
+            process() is called. It is ok to use this after you have called process() on a given frame, or, if using a
+            Pipeline, after you have called Pipeline::process(). Do not hold this ref past the end of the current video
+            frame. If you need to keep a persistent copy of the data, make a deep copy of the vector. */
+        std::vector<ObjDetect> const & latestDetections() const;
+        
       protected:
         void onParamChange(postprocessor::detecttype const & param, postprocessor::DetectType const & val) override;
         void onParamChange(postprocessor::classes const & param, std::string const & val) override;

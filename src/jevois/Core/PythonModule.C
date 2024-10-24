@@ -405,12 +405,18 @@ void jevois::GUIhelperPython::drawCircle(float x, float y, float r, ImU32 col, b
   itsGUIhelper->drawCircle(x, y, r, col, filled);
 }
 
+// ##############################################################################################################
+void jevois::GUIhelperPython::drawEllipse(float x, float y, float rx, float ry, float rot, ImU32 col, bool filled)
+{
+  itsGUIhelper->drawEllipse(x, y, rx, ry, rot, col, filled);
+}
+
 // ####################################################################################################
 void jevois::GUIhelperPython::drawText(float x, float y, char const * txt, ImU32 col)
 {
   itsGUIhelper->drawText(x, y, txt, col);
 }
-
+ 
 // ####################################################################################################
 ImVec2 jevois::GUIhelperPython::iline(int line, char const * name)
 {
@@ -526,7 +532,9 @@ void jevois::PythonModule::postUninit()
 
 // ####################################################################################################
 jevois::PythonModule::~PythonModule()
-{ }
+{
+  engine()->unRegisterPythonComponent(this);
+}
 
 // ####################################################################################################
 void jevois::PythonModule::process(InputFrame && inframe, OutputFrame && outframe)
@@ -649,7 +657,7 @@ void jevois::dnn::PostProcessorDetectYOLOforPython::freeze(bool doit)
 boost::python::tuple
 jevois::dnn::PostProcessorDetectYOLOforPython::yolo(boost::python::list outs, int nclass,
                                                     float boxThreshold, float confThreshold,
-                                                    int bw, int bh, int fudge, int maxbox)
+                                                    int bw, int bh, int fudge, int maxbox, bool sigmo)
 {
   std::vector<cv::Mat> const outvec = jevois::python::pyListToVec<cv::Mat>(outs);
 
@@ -658,7 +666,7 @@ jevois::dnn::PostProcessorDetectYOLOforPython::yolo(boost::python::list outs, in
   std::vector<cv::Rect> boxes;
   
   itsYOLO->yolo(outvec, classIds, confidences, boxes, nclass, boxThreshold, confThreshold,
-                cv::Size(bw, bh), fudge, maxbox);
+                cv::Size(bw, bh), fudge, maxbox, sigmo);
 
   boost::python::list ids = jevois::python::pyVecToList(classIds);
   boost::python::list conf = jevois::python::pyVecToList(confidences);

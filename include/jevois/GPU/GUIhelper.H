@@ -226,36 +226,49 @@ namespace jevois
       ImVec2 i2ds(float x, float y, char const * name = nullptr);
 
       //! Draw line over an image
-      /*! Coordinates used should be image coordinates, as this function internally calls i2d(). */
+      /*! Coordinates used should be image coordinates, as this function internally calls i2d().
+          Color order is IMCOL_32(R,G,B,A). */
       void drawLine(float x1, float y1, float x2, float y2, ImU32 col = IM_COL32(128,255,128,255));
       
       //! Draw rectangular box over an image
-      /*! Coordinates used should be image coordinates, as this function internally calls i2d(). */
+      /*! Coordinates used should be image coordinates, as this function internally calls i2d().
+          Color order is IMCOL_32(R,G,B,A). */
       void drawRect(float x1, float y1, float x2, float y2, ImU32 col = IM_COL32(128,255,128,255), bool filled = true);
 
       //! Draw polygon over an image
-      /*! Coordinates used should be image coordinates, as this function internally calls i2d(). */
+      /*! Coordinates used should be image coordinates, as this function internally calls i2d().
+          Color order is IMCOL_32(R,G,B,A). */
       void drawPoly(std::vector<cv::Point> const & pts, ImU32 col = IM_COL32(128,255,128,255), bool filled = true);
       
       //! Draw polygon over an image
-      /*! Coordinates used should be image coordinates, as this function internally calls i2d(). */
+      /*! Coordinates used should be image coordinates, as this function internally calls i2d().
+          Color order is IMCOL_32(R,G,B,A). */
       void drawPoly(std::vector<cv::Point2f> const & pts, ImU32 col = IM_COL32(128,255,128,255), bool filled = true);
 
       //! Draw polygon over an image
       /*! For N vertices, pts should be either CV_32F and 2xN or Nx2 for x,x,x,x,... y,y,y,y,..., or 1x2N or 2Nx1 for
-          x,y,x,y,x,y...; or CV_32FC2 and 1xN or Nx1. If N < 2, nothing is drawn. Other shapes are illegal. */
+          x,y,x,y,x,y...; or CV_32FC2 and 1xN or Nx1. If N < 2, nothing is drawn. Other shapes are illegal.
+          Color order is IMCOL_32(R,G,B,A). */
       void drawPoly(cv::Mat const & pts, ImU32 col = IM_COL32(128,255,128,255), bool filled = true);
 
       //! Draw circle over an image
-      /*! Coordinates used should be image coordinates, as this function internally calls i2d(). */
+      /*! Coordinates used should be image coordinates, as this function internally calls i2d().
+          Color order is IMCOL_32(R,G,B,A). */
       void drawCircle(float x, float y, float r, ImU32 col = IM_COL32(128,255,128,255), bool filled = true);
-      
-      //! Draw text over an image
+
+      //! Draw ellipse over an image
       /*! Coordinates used should be image coordinates, as this function internally calls i2d(). */
+      void drawEllipse(float x, float y, float rx, float ry, float rot = 0.0F,
+                       ImU32 col = IM_COL32(128,255,128,255), bool filled = true);
+     
+      //! Draw text over an image
+      /*! Coordinates used should be image coordinates, as this function internally calls i2d().
+          Color order is IMCOL_32(R,G,B,A). */
       void drawText(float x, float y, char const * txt, ImU32 col = IM_COL32(128,255,128,255));
       
       //! Draw text over an image
-      /*! Coordinates used should be image coordinates, as this function internally calls i2d(). */
+      /*! Coordinates used should be image coordinates, as this function internally calls i2d().
+          Color order is IMCOL_32(R,G,B,A). */
       void drawText(float x, float y, std::string const & txt, ImU32 col = IM_COL32(128,255,128,255));
       
       //! Get coordinates of the start of a given line of text to be drawn as overlay on top of an image
@@ -266,12 +279,14 @@ namespace jevois
 
       //! Draw some overlay text on top of an image
       /* If line is -1, we will increment over the last time this function was called (use with caution). Line number is
-         reset to 0 when drawImage() or drawInputFrame(), etc are called. If col is not given, use overlaycolor. */
+         reset to 0 when drawImage() or drawInputFrame(), etc are called. If col is not given, use overlaycolor.  Color
+         order is IMCOL_32(R,G,B,A). */
       void itext(char const * txt, ImU32 const & col = IM_COL32_BLACK_TRANS, int line = -1);
       
       //! Draw some overlay text on top of an image
       /* If line is -1, we will increment over the last time this function was called (use with caution). Line number is
-         reset to 0 when drawImage() or drawInputFrame(), etc are called. If col is not given, use overlaycolor. */
+         reset to 0 when drawImage() or drawInputFrame(), etc are called. If col is not given, use overlaycolor. Color
+         order is IMCOL_32(R,G,B,A). */
       void itext(std::string const & txt, ImU32 const & col = IM_COL32_BLACK_TRANS, int line = -1);
 
       //! Display processing and video info at bottom of screen

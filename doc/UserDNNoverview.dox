@@ -65,9 +65,11 @@ factory for three sub-components:
   on the live camera video after running an object detection network.\n
   Available variants:
   + PostProcessorClassify
-  + PostProcessorDetect
-  + PostProcessorSegment (semantic segmentation)
-  + PostProcessorYuNet (for face detection boxes + markers on eyes, nose, and mouth)
+  + PostProcessorDetect (bounding box detection, also supports semantic segmentation of detected objects)
+  + PostProcessorDetectOBB (oriented bounding box detection, using rotated rectangles)
+  + PostProcessorPose (human pose skeleton detection)
+  + PostProcessorSegment (whole-image semantic segmentation)
+  + PostProcessorYuNet (face detection boxes + markers on eyes, nose, and mouth)
   + PostProcessorStub (useful to test a model for speed before you write your own preprocessor)
   + write your own using the interface in PostProcessor, PostProcessorPython and the example in \ref PyPostClassify.py
 

@@ -1,7 +1,7 @@
 /*! \page UserDNNtips Tips for running custom neural networks
 
-Tips for YAML zoo files
------------------------
+Tips for JeVois YAML zoo files
+==============================
 
 - keys supported in the YAML files: each one is documented in the classes that use them, in the
   `JEVOIS_DECLARE_PARAMETER(...)` directives at the beginning of each header file:
@@ -9,6 +9,9 @@ Tips for YAML zoo files
   + jevois::dnn::Network
   + jevois::dnn::PostProcessor
   + jevois::dnn::Pipeline
+
+- Or you can also run one of the built-in networks and inspect the available parameters in the GUI, under the
+  **Parameters** tab.
 
 - If you create a custom python pre-processor, network, or post-processor and define JeVois parameters in there, you can
   set those parameters in your YAML file too.
@@ -29,8 +32,28 @@ Tips for YAML zoo files
   the default for \p rgb is true). This will make your YAML file more concise.
 
 Tips for pre-processing
------------------------
+=======================
 
+- \p mean and \p stdev values should be in the same order as your model's input images (RGB or BGR, as specified by the
+  \p rgb parameter).
+
+Tips for post-processing
+========================
+
+- If your network produces outputs that are close to what the post-processor wants, but not quite, you can try to apply
+  transforms to the outputs. Supported transforms are:
+  + re-order tensors
+  + transpose along any axis
+  + change shape without changing data (e.g., from 1x1x10x20 to 1x200)
+  + split one tensor into several
+  + concatenate several tensors into one.
+   
+  Output transformes are specified in the YAML zoo file using `outransforms:` and a sequence of transforms; for example:
+  \code{.py}
+outtransform: "split(*,1,80,64); order(1,0,3,2,5,4)"
+  \endcode
+  See Network.H and Network.C for the exact syntax.
+  
 - \p classes is optional. If you just want to check how fast a model will run on your JeVois camera but don't have the
   class list handy, just remove the \p classes parameter from your YAML. JeVois will just display class numbers instead
   of class names.
@@ -38,12 +61,6 @@ Tips for pre-processing
 - for \p classoffset: likely you have a computer keyboard around, and those tend to be easily recognized by models
   trained on ImageNet. So just point your camera to the keyboard and play with \p classoffset in the JeVois GUI until
   you get "computer keyboard" as output.
-
-- \p mean and \p stdev values should be in the same order as your model's input images (RGB or BGR, as specified by the
-  \p rgb parameter).
-
-Tips for post-processing
-------------------------
 
 - Classification is the easiest case. Detection usually requires more work, as a suitable post-processor is needed to
   decode the network outputs into boxes than can be drawn on screen. JeVois provides standard post-processors for the
@@ -58,7 +75,7 @@ for x in 1.3221, 1.73145, 3.19275, 4.00944, 5.05587, 8.09892, 9.47112, 4.84053, 
   See https://medium.com/nerd-for-tech/yolo-v2-configuration-file-explained-879e2219191 for some details.
  
 Tips for model conversion
--------------------------
+=========================
 
 - When converting a model, we may have some questions: Is our model using NCHW or NHWC? What are the names of the inputs
   and output layers? We can answer those using Lutz Roeder's great [Netron](https://netron.app/) online model inspection
@@ -68,6 +85,58 @@ Tips for model conversion
   + upload your model
   + click on the boxes for the input and output layers to see some info about them
   
+- With quantized models, we prefer to use split outputs as they will give better quantized accuracy, with one output
+  tensor for each type and scale (stride) of outputs. Use Netron to find their names. For example, for YOLOv8 / YOLOv9 /
+  YOLOv10 / YOLO11:
+  
+  + for detection: 3 pairs (for 3 strides) of 2 outputs (raw boxes before DFL, class scores)
+  + for instance segmentation: 3 pairs of 3 outputs (raw boxes, class scores, mask coefficients), plus 1 mask prototype
+  + for pose detection: 3 pairs of 3 outputs (raw boxes, class scores, skeleton keypoints)
+  + for oriented bounding boxes: 3 pairs (for 3 strides) of 3 outputs (raw boxes, class scores, box angles)
+  
+  Check out the many models that ship with JeVois-Pro, and also our script
+  [jevoispro-npu-convert.sh](https://github.com/jevois/jevois/blob/master/scripts/jevoispro-npu-convert.sh)
+
+- YOLOv8 post-processors have two versions: normal and transposed. This is so that we do not waste time at runtime
+  trying to figure out which one to use. Usually, networks converted for NPU will use the normal version (YOLOv8, for
+  detection, pose, OBB, etc), and networks converted for Hailo-8 will use the transposed version (VOLOv8t). If one does
+  not work for your model, try the other. Also see the following files for exactly what tensor shapes a given
+  postprocessor expects:
+  
+  + PostProcessorClassify.C
+  + PostProcessorDetect.C
+  + PostProcessorDetectOBB.C
+  + PostProcessorPose.C
+  + PostProcessorSegment.C
+  + PostProcessorYuNet.C
+  
+  Have a look at the models in \ref JeVoisProBenchmarks for many examples of the kinds of outputs we extract
+  from various models to work with our C++ or Python post-processors.
+  
+- If you are having problems with unsupported operations, you can use ONNX to truncate your model. For example, in a
+  python interpreter:
+  \code{.py}
+import onnx
+
+ins=['images']
+
+outs=['/model.23/cv2.0/cv2.0.2/Conv_output_0', '/model.23/cv3.0/cv3.0.2/Conv_output_0', '/model.23/cv2.1/cv2.1.2/Conv_output_0', '/model.23/cv3.1/cv3.1.2/Conv_output_0', '/model.23/cv2.2/cv2.2.2/Conv_output_0', '/model.23/cv3.2/cv3.2.2/Conv_output_0']
+
+onnx.utils.extract_model('yolo11m.onnx', 'yolo11m-truncated.onnx', ins, outs)
+  \endcode
+
+- ONNX can also presumably convert ir_version, but we have had no success in running this to try to convert from
+  ir_version 9 to 8:
+  
+  \code{.py}
+import onnx
+from onnx import version_converter, helper
+
+model = onnx.load('yolo11m-truncated.onnx')
+converted = version_converter.convert_version(model, 8)
+  \endcode
+  
+  We always get an error.
 
 */
 

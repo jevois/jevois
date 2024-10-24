@@ -20,6 +20,7 @@
 #include <jevois/DNN/NetworkHailo.H>
 #include <jevois/Util/Utils.H>
 #include <jevois/DNN/Utils.H>
+#include <jevois/Core/Engine.H>
 
 #include <hailo/hailort.h>
 #include <hailo/hailort.hpp>
@@ -57,8 +58,24 @@ std::vector<vsi_nn_tensor_attr_t> jevois::dnn::NetworkHailo::inputShapes()
 { return itsInAttrs; }
 
 // ####################################################################################################
+std::vector<hailo_vstream_info_t> jevois::dnn::NetworkHailo::inputInfos() const
+{ 
+  std::vector<hailo_vstream_info_t> ret;
+  for (auto const & vs : itsInStreams) ret.emplace_back(vs.get_info());
+  return ret;
+}
+
+// ####################################################################################################
 std::vector<vsi_nn_tensor_attr_t> jevois::dnn::NetworkHailo::outputShapes()
 { return itsOutAttrs; }
+
+// ####################################################################################################
+std::vector<hailo_vstream_info_t> jevois::dnn::NetworkHailo::outputInfos() const
+{ 
+  std::vector<hailo_vstream_info_t> ret;
+  for (auto const & vs : itsOutStreams) ret.emplace_back(vs.get_info());
+  return ret;
+}
 
 // ####################################################################################################
 jevois::dnn::NetworkHailo::~NetworkHailo()
@@ -79,49 +96,66 @@ void jevois::dnn::NetworkHailo::freeze(bool doit)
 // ####################################################################################################
 void jevois::dnn::NetworkHailo::load()
 {
-  // We can only load once...
-  if (itsDevice) LFATAL("Network already loaded... restart the module to load a new one.");
+  bool success = false; bool first_time = true;
+  do
+  {
+    // We can only load once...
+    if (itsDevice) LFATAL("Network already loaded... restart the module to load a new one.");
 
-  // Create a device and load the HEF network file:
-  auto dev = hailort::Device::create_pcie();
-  if (!dev) LFATAL("Failed to create PCIe device:" << dev.status());
-  itsDevice = dev.release();
+    // Create a device and load the HEF network file:
+    auto dev = hailort::Device::create_pcie();
+    if (!dev) LFATAL("Failed to create PCIe device:" << dev.status());
+    itsDevice = dev.release();
   
-  /*
-  // FIXME: looks like there may be a memory leak in the Hailo PCIe driver. It may not always deallocate all DMA
-  // coherent memory. Try a reset each time we load a new network:
-  itsDevice->reset(HAILO_RESET_DEVICE_MODE_FORCED_SOFT);
-  itsDevice.reset();
-  std::this_thread::sleep_for(std::chrono::milliseconds(20));
-  (void)jevois::system("/usr/sbin/rmmod hailo_pci");
-  std::this_thread::sleep_for(std::chrono::milliseconds(20));
-  (void)jevois::system("/usr/sbin/modprobe hailo_pci");
-  std::this_thread::sleep_for(std::chrono::milliseconds(20));
+    // Load the network from HEF:
+    std::string const m = jevois::absolutePath(dataroot::get(), model::get());
+    LINFO("Loading HEF file " << m << " ...");
+    auto hef = hailort::Hef::create(m);
+    HAILO_CHECK(hef, "Failed to load HEF file " << m);
 
-  // After reset we need a new Device object:
-  auto dev2 = hailort::Device::create_pcie();
-  if (!dev2) LFATAL("Failed to create PCIe device:" << dev2.status());
-  itsDevice = dev2.release();
-  */
+    std::vector<std::string> ngn = hef->get_network_groups_names();
+    for (std::string const & n : ngn) LINFO("Network Group: " <<  n);
+    if (ngn.size() != 1) LERROR("More than one network groups in HEF -- USING FIRST ONE");
+
+    auto configure_params = hef->create_configure_params(HAILO_STREAM_INTERFACE_PCIE);
+    HAILO_CHECK(configure_params, "Could not configure params from HEF file " << m);
+    
+    auto network_groups = itsDevice->configure(hef.value(), configure_params.value());
+    if (!network_groups)
+    {
+      // If we already tried a Hailo reset, we are toast:
+      if (first_time == false)
+      {
+        engine()->reportError("Hailo PCIe driver failure uncorrectable by soft reset -- Reloading JeVois module");
+        engine()->requestSetFormat(-1); // reload current module
+        HAILO_CHECK(network_groups, "Could not configure device"); // this will LFATAL()
+      }
+
+      // Try to reset the device and unload/reload the driver:
+      LERROR("Could not configure device: " << network_groups.status() << " [" <<
+             hailo_get_status_message(network_groups.status()) << "] -- RESETTING HAILO DRIVER");
+      
+      // FIXME: looks like there may be a memory leak in the Hailo PCIe driver. It may not always deallocate all DMA
+      // coherent (CMA) memory. Try a reset:
+      itsDevice->reset(HAILO_RESET_DEVICE_MODE_FORCED_SOFT);
+      itsDevice.reset();
+
+      // Sometimes works, but can still sometimes run out of CMA memory after loading a bunch of nets...
+      (void)jevois::system("/usr/bin/systemctl stop jevoispro-fan");
+      (void)jevois::system("/usr/sbin/rmmod hailo_pci");
+      (void)jevois::system("/usr/sbin/modprobe hailo_pci");
+      (void)jevois::system("/usr/bin/systemctl start jevoispro-fan");
+
+      first_time = false; success = false;
+      continue; // try again from the beginning...
+    }
+
+    if (network_groups->empty()) LFATAL("HEF file " << m << " does not contain any network groups");
+    itsNetGroup = std::move(network_groups->at(0)); // use the first network group
+    success = true;
+    
+  } while (success == false);
   
-  // Load the network from HEF:
-  std::string const m = jevois::absolutePath(dataroot::get(), model::get());
-  LINFO("Loading HEF file " << m << " ...");
-  auto hef = hailort::Hef::create(m);
-  HAILO_CHECK(hef, "Failed to load HEF file " << m);
-
-  std::vector<std::string> ngn = hef->get_network_groups_names();
-  for (std::string const & n : ngn) LINFO("Network Group: " <<  n);
-  if (ngn.size() != 1) LERROR("More than one network groups in HEF -- USING FIRST ONE");
-
-  auto configure_params = hef->create_configure_params(HAILO_STREAM_INTERFACE_PCIE);
-  HAILO_CHECK(configure_params, "Could not configure params from HEF file " << m);
-
-  auto network_groups = itsDevice->configure(hef.value(), configure_params.value());
-  HAILO_CHECK(network_groups, "Could not configure device");
-  if (network_groups->empty()) LFATAL("HEF file " << m << " does not contain any network groups");
-  itsNetGroup = std::move(network_groups->at(0)); // use the first network group
-
   // Configure the input and output virtual streams:
   constexpr bool QUANTIZED = true;
   constexpr hailo_format_type_t FORMAT_TYPE = HAILO_FORMAT_TYPE_AUTO;

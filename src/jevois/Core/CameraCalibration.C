@@ -27,6 +27,7 @@ void jevois::CameraCalibration::load(std::string const & fname)
   std::string str;
   fs["sensor"] >> str; sensor = jevois::from_string<jevois::CameraSensor>(str);
   fs["lens"] >> str; lens = jevois::from_string<jevois::CameraLens>(str);
+  fs["fisheye"] >> fisheye;
   fs["image_width"] >> w;
   fs["image_height"] >> h;
   fs["camera_matrix"] >> camMatrix;
@@ -49,6 +50,7 @@ void jevois::CameraCalibration::save(std::string const & fname) const
   fs << "calibration_time" << buf;
   fs << "sensor" << jevois::to_string(sensor);
   fs << "lens" << jevois::to_string(lens);
+  fs << "fisheye" << fisheye;
   fs << "image_width" << w;
   fs << "image_height" << h;
   fs << "camera_matrix" << camMatrix;

@@ -35,6 +35,8 @@ namespace jevois
   {
     public:
       //! Constructor
+      /*! If loglevel is -1 then nothing will be logged and stop() will return the average/min/max time instead of
+          frames/s and CPU usage. */
       Timer(char const * prefix, size_t interval = 100, int loglevel = LOG_INFO);
 
       //! Start a time measurement period

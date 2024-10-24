@@ -1,0 +1,93 @@
+/*! \page Change121log Changes and new features in JeVois 1.21
+
+JeVois 1.21 brings the following new features:
+
+- Major upgrade to Ubuntu 24.04 (noble) for development and also running in JeVois-Pro. JeVois-A33 maintains its custom
+  embedded operating system based on buildroot. This sets us at the forefront of the newest long-term-support (LTS)
+  Ubuntu version, which means more years of updated packages ahead (official support until April, 2029).
+
+- Updates to OpenCV 4.10.0, Python 3.12 (on JeVois-Pro only), Numpy 1.26, Mediapipe 0.10.14 custom patched and compiled
+  for noble/python 3.12, onnxruntime 1.18.0, Hailo 1.17, NPU ovxlib 1.37.0, updated and patched and recompiled pycoral
+  and tflite-runtime for Python 3.12, and more. JeVois-Pro now runs Ubuntu 24.04 aarch64 with many available latest
+  packages.
+
+- JeVois-Pro: Ubuntu noble does not like to allow users to install python packages with pip globally as they may
+  conflict with packages installed via apt-get. Hence, now running jevoispro-daemon in a virtual env in /root/jvenv/
+
+- New docker images and scripts to recompile the whole operating system and/or machine vision modules (JeVois-A33 and
+  JeVois-Pro), or emulate the JeVois-Pro aarch64 O.S. Note that these images run Ubuntu 24.04 and there may be
+  compatibility issues with older hosts.
+
+- New module \jvmod{CalibrateCamera} for camera calibration using a variety of calibration boards (chessboard, ChArUco,
+  etc). Reworked camera calibration file naming as calibration-sensor-WxH-lens.yaml, new helper function to load/save
+  calibration data transparently for a given video mapping, without having to compute the file name of reach the file
+  manually.
+
+- JeVois-Pro: New serial monitors allow one to see serial communications that are not directed to the console (e.g.,
+  monitor traffic between a micro-controller and JeVois over the 4-pin hardware serial port). Very useful for debugging
+  micro-controller code.
+
+- JeVois-Pro: Updated to using g++-14 with support for C++-26.
+
+- JeVois-Pro: New \jvmod{PyLLM} module allows you to run mobile-friendly large language models (LLMs) in a simple Python
+  module. Okay performance with tinydolphin (1.1 Billion parameters). Support for vision language models (VLMs) also
+  added, though more research is needed to reduce their size and CPU demands (moondream with 1.7 Billion parameters is
+  pre-installed but too slow to be seriously usable at this stage). New ChatBox widget to facilitate user interaction
+  with LLMs, written in C++ with python bindings.
+
+- JeVois-Pro: New post-processors and hardware-accelerated networks for YOLOv8-segmentation, YOLOv10, etc.
+
+- JeVois-Pro: New ability to peek into neural network output data, which is useful to debug neural nets converted to
+  various hardware accelerators. Helped us during the conversion of YOLOv10 for NPU.
+
+- JeVois-Pro: Now also creating a script with each new module to recompile it from the command-line. Useful if a code
+  change gives rise to a hard crash (e.g., segmentation fault) which would previously make it impossible to edit the
+  code in the JeVois-Pro GUI.
+
+- JeVois-Pro: New AprilTag module written in Python to detect April Tags using the apriltag library, as a possible
+  alternative to using the OpenCV ArUco module (which also supports several AprilTag dictionaries).
+
+- DNN: removed support for pre/net/post types Custom; instead, provided an example \jvmod{CustomDNN} of how to create
+  derived classes to support customized DNN processing in C++. \jvmod{CustomDNN} implements a derived Post-Processor
+  class, which extracts a high-resolution region of interest (ROI) from each detection box when running YOLO or similar;
+  it then processes each ROI (for tutorial purposes, just extracting edges) and displays the results super-imposed on
+  top of the original ROIs.
+
+- Reworked serial inputs to avoid possible buffer overflow in the Linux kernel, which could eventually corrupt a running
+  NPU deep net.
+
+- JeVois-A33: Updated a few buildroot packages for compatibility.
+
+- JeVois-A33: Simplified the module installation process as it was quite confusing with the staging, microSD, or live
+  targets. We now always compile and install into /var/lib/jevois-microsd (for later flashing using jevois-flash-card)
+  and to .jvpkg packages (which can be copied to microSD and will be unpacked by the camera on next reboot).
+
+- Fixed a bug in GPUimage which would lead to corrupted display if an image changed size from one video frame to the
+  next.
+
+- JeVois-Pro: Rework of drawPoly() for better drawing of polygons in the JeVois-Pro GUI.
+
+- Updated handling of Python exceptions for Python 3.12.
+
+- Added shorthand version of itext() for Python, leading to much lighter syntax to display information messages from
+  python modules.
+
+- New script in jevoispro-sdk to install non-deb dependencies for host, such as pip packages, ollama, etc. Those are all
+  pre-installed on platform, so this script is to help development on host.
+
+- Simplified logic for jevois::Parameter::freeze(), now only one function with a bool arg.
+
+- New scripts to download and install the jevois and jevoisbase third-party contrib packages directly in pre-compiled
+  binary form, which may eliminate possible issues while trying to recompile them from source (especially tensorflow
+  using bazel, which tends to have lots of possible compilation problems).
+
+- JeVois-Pro: Changed all GPU shaders to use highp precision, thereby eliminating all aliasing issues previously
+  observed with some image resolutions.
+
+- JeVois-A33: jevois-flash-card can now create a disk image, as opposed to only flashing to physical microSD card.
+
+- Miscellaneous bug fixes and performance improvements.
+
+- Many doc updates.
+
+*/

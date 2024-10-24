@@ -724,13 +724,7 @@ void TextEditor::HandleKeyboardInputs()
 		io.WantCaptureKeyboard = true;
 		io.WantTextInput = true;
 
-		if (!IsReadOnly() && ctrl && !shift && !alt &&
-#ifdef JEVOIS_PLATFORM
-            ImGui::IsKeyPressed(KEY_S)
-#else
-            ImGui::IsKeyPressed(SDL_SCANCODE_S)
-#endif
-            )
+		if (!IsReadOnly() && ctrl && !shift && !alt && ImGui::IsKeyPressed(ImGuiKey_S))
         { if (mSaveCallback) mSaveCallback(); } // JEVOIS
 		else if (!IsReadOnly() && !ctrl && !shift && alt && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Backspace)))
             Undo();

@@ -30,6 +30,7 @@ namespace jevois
     public:
       jevois::CameraSensor sensor = jevois::CameraSensor::any; //!< Camera sensor
       jevois::CameraLens lens = jevois::CameraLens::standard;  //!< Camera lens
+      bool fisheye;                                            //!< True for fisheye lens, requires different correction
       int w = 0, h = 0;                                        //!< Image width and height (camera resolution)
       cv::Mat camMatrix = cv::Mat::eye(3, 3, CV_64F);          //!< 3x3 camera matrix
       cv::Mat distCoeffs = cv::Mat::zeros(5, 1, CV_64F);       //!< 5x1 distortion coefficients

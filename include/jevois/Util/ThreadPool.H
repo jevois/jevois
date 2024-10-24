@@ -36,6 +36,7 @@
 #include "concurrentqueue/concurrentqueue.h"
 
 #include <sched.h>
+#include <opencv2/core/parallel/parallel_backend.hpp>
 
 namespace jevois
 {
@@ -69,6 +70,44 @@ namespace jevois
       std::mutex _mtx;
       bool _exit;
   };
+
+//! A parallel API to make OpenCV use our thread pool
+/*! The goal is to avoid over-subscribing our cores by having several disjoint parallelization mechanisms: our JeVois
+    ThreadPool, and OpenCV's parallel_for backend (which may be TBB, OpenMP, etc). We can also enforce here that OpenCV
+    tasks will only run on big cores, while the default OpenCV behavior is to use all cores. This can lead to bad delays
+    if little A53 cores are chosen for tome tasks, as they are much slower than the big A73 cores. \ingroup utils */
+  class ParallelForAPIjevois : public cv::parallel::ParallelForAPI
+  {
+    public:
+      //! Constructor from an existing ThreadPool
+      ParallelForAPIjevois(ThreadPool * tp);
+      
+      //! Virtual destructor for save inheritance
+      virtual ~ParallelForAPIjevois();
+
+      //typedef void (CV_API_CALL *FN_parallel_for_body_cb_t)(int start, int end, void* data);
+
+      //! Run a parallelized OpenCV task
+      virtual void parallel_for(int tasks, cv::parallel::ParallelForAPI::FN_parallel_for_body_cb_t body_callback,
+                                void * callback_data) override;
+
+      //! Get some index for the current thread
+      virtual int getThreadNum() const override;
+
+      //! Get number of threads for concurrency (always 4 on JeVois-Pro, unless changed by setNumThreads() here)
+      virtual int getNumThreads() const override;
+
+      //! Set number of threads for OpenCV. NOTE: currently does nothing, we always use 4 big A73 threads
+      virtual int setNumThreads(int nThreads) override;
+
+      //! Get the name: 'jevois'
+      virtual char const * getName() const override;
+
+    protected:
+      ThreadPool * itsThreadpool;
+      int itsNumThreads;
+};
+
 
 }
 

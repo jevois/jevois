@@ -286,7 +286,11 @@ namespace jevois
       
       //! Draw circle over an image
       void drawCircle(float x, float y, float r, ImU32 col = IM_COL32(128,255,128,255), bool filled = true);
-      
+
+      //! Draw ellipse over an image
+      void drawEllipse(float x, float y, float rx, float ry, float rot = 0.0F,
+                       ImU32 col = IM_COL32(128,255,128,255), bool filled = true);
+     
       //! Draw text over an image
       void drawText(float x, float y, char const * txt, ImU32 col = IM_COL32(128,255,128,255));
       
@@ -466,7 +470,7 @@ namespace jevois
         /*! The returned tuple has 3 elements: list of int for classIds, list of float for confidences, and list of
             4-element tuples of floats for boxes (x, y, w, h). */
         boost::python::tuple yolo(boost::python::list outs, int nclass, float boxThreshold,
-                                  float confThreshold, int bw, int bh, int fudge, int maxbox);
+                                  float confThreshold, int bw, int bh, int fudge, int maxbox, bool sigmo);
 
       private:
         std::shared_ptr<PostProcessorDetectYOLO> itsYOLO;

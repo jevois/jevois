@@ -57,18 +57,10 @@ void jevois::dnn::PostProcessorDetectYOLO::freeze(bool doit)
 }
 
 // ####################################################################################################
-// Helper code from the detect_library of the NPU
-namespace
-{
-  inline float logistic_activate(float x)
-  { return 1.0F/(1.0F + expf(-x)); }
-}
-
-// ####################################################################################################
 void jevois::dnn::PostProcessorDetectYOLO::yolo(std::vector<cv::Mat> const & outs, std::vector<int> & classIds,
                                                 std::vector<float> & confidences, std::vector<cv::Rect> & boxes,
                                                 size_t nclass, float boxThreshold, float confThreshold,
-                                                cv::Size const & bsiz, int fudge, size_t const maxbox)
+                                                cv::Size const & bsiz, int fudge, size_t const maxbox, bool sigmo)
 {
   if (nclass == 0) nclass = 1; // Assume 1 class if no list of classes was given
   size_t const nouts = outs.size();
@@ -97,7 +89,6 @@ void jevois::dnn::PostProcessorDetectYOLO::yolo(std::vector<cv::Mat> const & out
   }
   
   // Run each scale in a thread:
-  bool sigmo = sigmoid::get();
   float scale_xy = scalexy::get();
   std::vector<std::future<void>> fvec;
   
@@ -172,7 +163,7 @@ void jevois::dnn::PostProcessorDetectYOLO::yolo_one(cv::Mat const & out, std::ve
       {
         // Apply logistic activation to box score:
         float box_score = ptr[coords * stride];
-        if (sigmo) box_score = logistic_activate(box_score);
+        if (sigmo) box_score = jevois::dnn::sigmoid(box_score);
         
         if (box_score > boxThreshold)
         {
@@ -181,7 +172,7 @@ void jevois::dnn::PostProcessorDetectYOLO::yolo_one(cv::Mat const & out, std::ve
           size_t maxidx = 0; float prob = 0.0F;
           for (size_t k = 0; k < ncs; k += stride)
             if (ptr[class_index + k] > prob) { prob = ptr[class_index + k]; maxidx = k; }
-          if (sigmo) prob = logistic_activate(prob);
+          if (sigmo) prob = jevois::dnn::sigmoid(prob);
 
           // Combine box and class scores:
           prob *= box_score;
@@ -198,10 +189,10 @@ void jevois::dnn::PostProcessorDetectYOLO::yolo_one(cv::Mat const & out, std::ve
               float bx = ptr[0 * stride], by = ptr[1 * stride], bw = ptr[2 * stride], bh = ptr[3 * stride];
               if (sigmo)
               {
-                bx = logistic_activate(bx);
-                by = logistic_activate(by);
-                bw = logistic_activate(bw);
-                bh = logistic_activate(bh);
+                bx = jevois::dnn::sigmoid(bx);
+                by = jevois::dnn::sigmoid(by);
+                bw = jevois::dnn::sigmoid(bw);
+                bh = jevois::dnn::sigmoid(bh);
               }
               
               b.width = bw * bw * 4.0f * biases[2*nn] * bfac * bsiz.width / w + 0.499F;
@@ -214,8 +205,8 @@ void jevois::dnn::PostProcessorDetectYOLO::yolo_one(cv::Mat const & out, std::ve
               // Old-style coordinates, as in YOLOv2/3/4:
               b.width = expf(ptr[2 * stride]) * biases[2*nn] * bfac * bsiz.width / w + 0.499F;
               b.height = expf(ptr[3 * stride]) * biases[2*nn+1] * bfac * bsiz.height / h + 0.499F;
-              b.x = (col + logistic_activate(ptr[0 * stride])) * bsiz.width / w + 0.499F - b.width / 2;
-              b.y = (row + logistic_activate(ptr[1 * stride])) * bsiz.height / h + 0.499F - b.height / 2;
+              b.x = (col + jevois::dnn::sigmoid(ptr[0 * stride])) * bsiz.width / w + 0.499F - b.width / 2;
+              b.y = (row + jevois::dnn::sigmoid(ptr[1 * stride])) * bsiz.height / h + 0.499F - b.height / 2;
             }
             
             std::lock_guard<std::mutex> _(itsOutMtx);

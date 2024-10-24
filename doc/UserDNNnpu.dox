@@ -40,7 +40,7 @@ Procedure
   network.
 
 - You need to download and install the Amlogic NPU SDK to convert/quantize your model on a desktop computer running
-  Linux Ubuntu 20.04.
+  Linux Ubuntu 20.04 or later.
 
 - Everything you need at runtime (NPU runtime libraries) is pre-installed on your JeVois-Pro microSD.
 
@@ -49,7 +49,13 @@ Procedure
 - Obtain some parameters about the model (e.g., pre-processing mean, stdev, scale, expected input image size, RGB or
   BGR, packed (NWHC) or planar (NCHW) pixels, etc).
 
-- Copy model to JeVois-Pro microSD card under JEVOIS[PRO]:/share/dnn/custom/
+- Obtain a sample dataset that will be used for quantization, to determine the range of values experienced on each layer
+  of the network during inference, and to set the quantization parameters accordingly. The dataset should be
+  representative, i.e., it should contain the objects you want to detect, along with other things you want to ignore.
+
+- Convert and quantize the model using the NPU SDK.
+
+- Copy the converted model to JeVois-Pro microSD card under JEVOIS[PRO]:/share/dnn/custom/
 
 - Create a JeVois model zoo entry for your model, where you specify the model parameters and the location where you
   copied your model files. Typically this is a YAML file under JEVOIS[PRO]:/share/dnn/custom/
@@ -61,20 +67,208 @@ Procedure
 Setting up the NPU SDK
 ======================
 
-\note Everything below is to be run on a fast x86_64 desktop computer running Ubuntu 20.04 Linux, not on your JeVois-Pro
-camera. At the end, we will copy the converted model to microSD and then run inference on JeVois-Pro with that model.
+\note Everything below is to be run on a fast x86_64 desktop computer running Ubuntu 20.04 Linux or later, not on your
+JeVois-Pro camera. At the end, we will copy the converted model to microSD and then run inference on JeVois-Pro with
+that model.
 
 The Amlogic/VeriSilicon NPU SDK is distributed by Khadas, which manufactures a development board that uses the same
 Amlogic A311D processor as \jvpro.
 
 \code{.py}
+git lfs install
 git lfs clone --recursive https://github.com/khadas/aml_npu_sdk.git
-cd aml_npu_sdk/acuity-toolkit/demo
+cd aml_npu_sdk/acuity-toolkit/
 \endcode
 
 No need to install Ubuntu packages or Python wheels, everything is included in that git repo.
 
-There are 3 scripts in there that will need to be edited and then run in sequence on your desktop:
+Getting a sample dataset for quantization
+=========================================
+
+- To quantize a model, we need to know the expected range of values experienced at each layer of the network.  For that,
+  we need a representative sample dataset, which typically would be about 1000 images from your training or validation
+  set. This is very important as it will set the quantization parameters. The images should contain some of the targets
+  you want to detect, and also more things that your camera may see (whether or not you do not want to detect those).
+
+- The dataset is just a folder containing some images, plus a text file that contains a list of the image paths, one per
+  line.
+
+- The sample models we convert below were trained on the [COCO dataset](https://cocodataset.org). Let's download the
+  [2017 validation set](http://images.cocodataset.org/zips/val2017.zip):
+  
+  \code{.py}
+wget http://images.cocodataset.org/zips/val2017.zip
+unzip val2017.zip
+  \endcode
+
+- If you have retrained the model on a custom dataset, use that dataset instead.
+
+- val2017 has 5,000 images which is more than we need. The unix command `shuf` can randomly shuffle a list of names and
+  take the first \p n, so let's use it to grab 1000 random images from the dataset. We save a list of those file paths
+  to <b>dataset.txt</b> that will be used for quantization:
+  
+  \code{.py}
+ls /path/to/val2017/*.jpg | shuf -n 1000 > dataset.txt
+  \endcode
+
+- **dataset.txt** should now contain 1000 lines (your results will vary since shuf is random):
+  \code{.unparsed}
+/path/to/val2017/000000382030.jpg
+/path/to/val2017/000000436617.jpg
+/path/to/val2017/000000138550.jpg
+/path/to/val2017/000000226154.jpg
+/path/to/val2017/000000319369.jpg
+...
+  \endcode
+
+- you will use this dataset during model conversion.
+
+APPROACH 1 (simplest): For YOLOv8 / YOLOv9 / YOLOv10 / YOLO11 models
+====================================================================
+
+For best accuracy, we want the quantized network to output separate tensors for class probabilities, bounding box
+coordinates, segmentation masks, etc. This is because these tensors have very different ranges of values; hence, it is
+better to quantize each one separately, instead of combining them into one big tensor for post-processing (see \ref
+UserDNNconv for more details).
+
+We provide a script
+[jevoispro-npu-convert.sh](https://github.com/jevois/jevois/blob/master/scripts/jevoispro-npu-convert.sh) to make
+converting YOLOv8 and later models. It supports all variants: detection, instance segmentation, pose/skeleton, oriented
+bounding boxes (OBB), and classification. Use it as follows:
+
+1. Get the model and export to ONNX
+-----------------------------------
+
+- Here, we just get a standard yolov8n model for example, which we resize to 1024x576 resolution (same aspect ratio as
+  our camera's native video frames). If you have a retrained model, provide its name below instead of yolov8n.pt:
+
+- Everything we run here should be from inside **aml_npu_sdk/acuity-toolkit/python/**
+  
+  \code{.py}
+cd aml_npu_sdk/acuity-toolkit/python/
+
+pip install ultralytics
+
+yolo export model=yolov8n.pt format=onnx imgsz=576,1024 opset=12 optimize simplify
+mv yolov8n.onnx yolov8n-1024x576-custom.onnx
+  \endcode
+
+- If you want to retrain the model on a custom dataset first, see our tutorial: \ref UserYolo
+
+2. Convert for NPU using our script
+-----------------------------------
+
+- The script just determines the correct output tensors to use for various YOLO variants and various tasks, for
+  compatibility with the JeVois post-processors. It works as follows:
+  \code{.unformatted}
+USAGE: jevoispro-npu-convert.sh <base><version><size>[-task]-<suffix>.onnx [dataset.txt] [iterations]
+
+Where:
+
+- base: yolo (will add more later)
+- version: v8, v9, v10, 11
+- size: n (nano, fastest but less accurate), t (tiny), s (small), m (medium), etc
+- task: none or -det for detection
+        -seg (detection + semantic intance segmentation)
+        -pose (detection + pose/skeleton estimation)
+        -obb (detection with oriented bounding boxes)
+        -cls (classification)
+- suffix: something that makes your model name different than the existing ones, e.g.,
+    yolov8n-1024x576-test.onnx, yolo11s-pose-custom.onnx
+- dataset.txt: a text file containing a list of images to use for quantization. These should be part of the validation
+    set used to train the model. Typically 1000 images or so. If no dataset file is given, will try to use
+    dataset-<task>.txt in the current directory.
+- iterations: number of images from dataset.txt to use for quantization, or use all if not given.
+  \endcode
+
+  \note It is not completely clear from the NPU SDK docs how adding more iterations may improve model accuracy. On your
+  first try converting a model, you may just want to use 1 iteration, which will be fast. Then if the model runs
+  correctly on \jvpro, you can convert it again with more iterations and see whether the accuracy improves.
+
+- So we just run the script as follows:
+  \code{.py}
+jevoispro-npu-convert.sh yolov8n-1024x576-custom.onnx dataset.txt 1
+  \endcode
+
+- We obtain 3 results in outputs/yolov8n-1024x576-custom/
+  \code{.py}
+libnn_yolov8n-1024x576-custom.so # runtime library for JeVois-Pro that will load the model
+yolov8n-1024x576-custom.nb       # model weights
+yolov8n-1024x576-custom.yml      # JeVois model zoo file
+  \endcode
+
+- Copy all 3 files to your microSD into **JEVOISPRO:/share/dnn/custom/**
+
+- Start your \jvpro camera
+
+- Select the \jvmod{DNN} machine vision module
+
+- Set the \p pipe parameter to **NPU:Detect:yolov8n-1024x576-custom**
+
+\youtube{JvtHmPux0C0}
+
+APPROACH 2 (easy): Using the Khadas conversion script
+=====================================================
+
+- The NPU SDK contains a (closed-source) conversion script that can be used not only for YOLO variants, but for any
+  supported model. See docs on [the Khadas web site](https://docs.khadas.com/products/sbc/vim3/npu/ksnn/ksnn-convert).
+
+- Using the same yolov8n-1024x576-custom.onnx as in approach 1, we can convert the model as follows:
+  
+  \code{.py}
+cd aml_npu_sdk/acuity-toolkit/python/
+
+./convert --model-name yolov8n-1024x576-custom \
+            --platform onnx \
+            --model yolov8n-1024x576-custom.onnx \
+            --mean-values '0 0 0 0.00392156' \
+            --quantized-dtype asymmetric_affine \
+            --source-files dataset.txt \
+            --batch-size 1 \
+            --iterations 1 \
+            --kboard VIM3 --print-level 1
+  \endcode
+
+- We obtain 2 results in outputs/yolov8n-1024x576-custom/
+  \code{.py}
+libnn_yolov8n-1024x576-custom.so # runtime library for JeVois-Pro that will load the model
+yolov8n-1024x576-custom.nb       # model weights
+  \endcode
+
+- For \jvpro to run this model, we need to create a YAML zoo file **yolov8n-1024x576-custom.yml** as follows:
+\code{.unformatted}
+%YAML 1.0
+---
+
+yolov8n-1024x576-custom:
+  preproc: Blob
+  mean: "0 0 0"
+  scale: 0.003921568393707275
+  nettype: NPU
+  model: "dnn/custom/yolov8n-1024x576-custom.nb"
+  library: "dnn/custom/libnn_yolov8n-1024x576-custom.so"
+  comment: "Converted using JeVois NPU SDK and Asymmetric Affine quant"
+  postproc: Detect
+  detecttype: YOLOv8
+  # Create a text file with your own class names:
+  classes: "dnn/labels/coco-labels.txt"
+\endcode
+
+- Copy all 3 files to your microSD into **JEVOISPRO:/share/dnn/custom/**
+
+- Start your \jvpro camera
+
+- Select the \jvmod{DNN} machine vision module
+
+- Set the \p pipe parameter to **NPU:Detect:yolov8n-1024x576-custom**
+
+- You may want to try the conversion again with more iterations and see whether the resulting model is more accurate.
+
+APPROACH 3 (most step-by-step): Using the NPU SDK conversion scripts
+====================================================================
+
+The NPU SDK provides 3 scripts in **aml_npu_sdk/acuity-toolkit/demo/** that will need to be edited and then run in
+sequence on your desktop:
 
 - **0_import_model.sh**: Converts from the source framework (Caffe, TensorFlow, etc) to an intermediate representation,
     and then computes some stats about the ranges of values encountered on each layer on a sample dataset. These ranges
@@ -88,16 +282,13 @@ There are 3 scripts in there that will need to be edited and then run in sequenc
     provides its own code that directly links the model to the camera sensor and to the GUI. However, we will inspect it
     so we can get input and output specifications for our YAML zoo file.
 
-For step 2, we need a representative sample dataset, which typically would be about 100 images from your
-training or validation set. This is very important as it will set the quantization parameters.
-
-Example: Object Detection using YOLOv7-tiny
-===========================================
+Check out some more docs about this [here](https://docs.khadas.com/products/sbc/vim3/npu/npu-sdk).
 
 We choose YOLOv7-tiny for this tutorial because:
 
-- It is available in Darknet format, using only operations and layers supported by the NPU
-- JeVois already provides a post-processor for it
+- It is available in Darknet format, using only operations and layers supported by the NPU.
+- JeVois already provides a post-processor for it.
+- It cnnot be handled by the simpler approaches shown above.
 
 1. Get the model
 ----------------
@@ -118,29 +309,7 @@ wget https://raw.githubusercontent.com/AlexeyAB/darknet/master/cfg/yolov7-tiny.c
 2. Get a sample dataset
 -----------------------
 
-- This model was trained on the [COCO dataset](https://cocodataset.org). Let's download the [2017 validation
-  set](http://images.cocodataset.org/zips/val2017.zip):
-  \code{.py}
-wget http://images.cocodataset.org/zips/val2017.zip
-unzip val2017.zip
-  \endcode
-
-- That's 5,000 images which is more than we need. The unix command `shuf` can randomly shuffle a list of names and take
-  the first \p n, so let's use it to grab 100 random images from the dataset. We save a list of those file paths to
-  <b>dataset.txt</b> that will be used by **0_import_model.sh**:
-  \code{.py}
-ls ./val2017/*.jpg | shuf -n 100 > dataset.txt
-  \endcode
-
-- **dataset.txt** should now contain 100 lines (your results will vary since shuf is random):
-  \code{.unparsed}
-./val2017/000000382030.jpg
-./val2017/000000436617.jpg
-./val2017/000000138550.jpg
-./val2017/000000226154.jpg
-./val2017/000000319369.jpg
-...
-  \endcode
+Do as above in Approach 1.
 
 3. Edit and run 0_import_model.sh
 ---------------------------------
@@ -183,9 +352,9 @@ $pegasus generate inputmeta \
 	--channel-mean-value "0 0 0 0.0039215686" \    # JEVOIS edited
 	--source-file dataset.txt
   \endcode
-
-\note Do not cut and paste the '# JEVOIS edited' comments above, they will break the code, remove them.
-
+  
+  \note Do not cut and paste the '# JEVOIS edited' comments above, they will break the code, remove them.
+  
 - Run it, it should complete with no errors:
   \code{.py}
 ./0_import_model.sh
@@ -195,8 +364,8 @@ $pegasus generate inputmeta \
   description of the model graph.
 
 - If this steps yields errors, maybe some operations are not supported, which may happen towards the end of the
-  network. In such case, examine the network in Netron and look at which layer failed to convert, then add
-  **--outputs /some/layer** to truncate the network to that layer.
+  network. In such case, examine the network in Netron and look at which layer failed to convert, then add a parameter
+  for **--outputs /some/layer** to truncate the network to that layer.
 
 4. Edit and run 1_quantize_model.sh
 -----------------------------------
@@ -291,8 +460,8 @@ rm *.data *.quantize *.json *_inputmeta.yml
 6. Create YAML zoo file
 -----------------------
 
-- We start with the **YoloV4** entry from zoo file npu.yml already in the JeVois microSD (and available in the Config
-  tab of the GUI).
+- We start with the **YoloV4** entry from zoo file `/jevoispro/share/dnn/npu.yml` already in the JeVois microSD (and
+  available in the Config tab of the GUI).
 
 - To get the specs of the quantized input and outputs, we inspect yolov7-tiny_nbg_unify/vnn_yolov7tiny.c and look for
   tensor definitions. We find this (comments added to explain the next step):
@@ -347,13 +516,13 @@ rm *.data *.quantize *.json *_inputmeta.yml
   \endcode
 
   So we have one input and three outputs (for 3 YOLO scales), and we derive their JeVois specs from the above generated
-  code as follows (see \ref UserDNNconv):
+  code as follows (see \ref UserDNNconv for syntax of JeVois tensor specs):
   \code{.py}
 intensors: "NCHW:8U:1x3x416x416:AA:0.003921568393707275:0"
 outtensors: "8U:1x255x52x52:AA:0.0038335032295435667:0, 8U:1x255x26x26:AA:0.0038371747359633446:0, 8U:1x255x13x13:AA:0.003918845672160387:0"
   \endcode
 
-- For YOLO post-processing, we need definitions of anchors. We just get those from yolov7-tiny.cfg:
+- For YOLO post-processing (until VOLOv7), we need definitions of anchors. We just get those from yolov7-tiny.cfg:
   \code{.py}
 anchors = 10,13, 16,30, 33,23, 30,61, 62,45, 59,119, 116,90, 156,198, 373,326
   \endcode
@@ -414,10 +583,8 @@ Tips
 - Khadas has their own docs which you may want to check out since their VIM3 board uses the same Amlogic A311D processor
   as JeVois-Pro. But note that on JeVois we skip using the generated C code as JeVois-Pro already provides all the code
   we need to run NPU models.
-  + https://docs.khadas.com/linux/vim3/NPUSDK.html
-  + https://docs.khadas.com/linux/vim3/ConvertToUseNPU.html
-  + https://docs.khadas.com/linux/vim3/NPUPerformanceUsage.html
-  + https://docs.khadas.com/linux/vim3/NPUOperationTimes.html
+  + https://docs.khadas.com/products/sbc/vim3/npu/start
+  + https://docs.khadas.com/products/sbc/vim3/npu/npu-sdk
 
 - When converting from pyTorch, if you get some strange error like
   \verbatim
@@ -476,10 +643,23 @@ Another example: Object Detection using YOLOv10n
   which is 1x3024x84 for inputs 1x3x288x512, both 4 box coordinates (which can vary within 512x288, and more in case
   boxes partially go outside the input image), and 80 class confidences (in [0..1]), were concatenated. That means that
   with 8 bits of quantization, any class confidence in [0..1] would always map to the same number (the zero-point of
-  quantization)...
+  quantization):
+  + 0 quantized maps to -108.24 dequantized
+  + 1 quantized maps to -105.43 dequantized (quantization step is (611.29+108.24)/256 = 2.81)
+  + ...
+  + 255 quantized maps to 611.29 dequantized
 
+  So with a quantization step of 2.81, we cannot discriminate values in the [0..1] range.
+  
 - So we changed the quantization to dynamic_fixed_point and int16. The results used 5 bits for the decimal portion,
-  which should be enough to represent class accuracies reasonably well.
+  which should be enough to represent class accuracies reasonably well. Another approach, which we use for YOLOv8 and
+  later, is to output separate tensors for class probabilities and bounding boxes. This is what we did in Approach 1 and
+  Approach 2.
 
-- This worked well, and YOLOv10n for NPU now included in the JeVois distribution and microSD image.  */
+- This worked well, and YOLOv10n for NPU now included in the JeVois distribution and microSD image.
+
+- However, a 16-bit quantized model is slower than 8-bit quantized. This is why we now prefer to output raw tensors
+  before concatenation, as we have done above in Approach 1 above.
+
+*/
 

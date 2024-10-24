@@ -62,7 +62,7 @@ network and the range of values processed at every layer will be recorded).
 
 JeVois supports the following quantization methods:
 
-Affine asymmetric (AA)
+Asymmetric affine (AA)
 ----------------------
 
 Weights are represented as an unsigned 8-bit value [0..255], plus scale and zero-point attributes that describe how
@@ -136,7 +136,7 @@ JeVois uses the following specification to describe input and output tensors of 
 
 - **Type:** value type, e.g., 32F for float32, 8U for uint8, etc.
 
-- NxCxHxW (replacing N, C, H, W by values, e.g., 1x3x224x224) or NxHxWxC or any other specification of tensor size
+- **NxCxHxW** (replacing N, C, H, W by values, e.g., 1x3x224x224) or NxHxWxC or any other specification of tensor size
 
 - **QNT:** Quantization type: can be \p NONE (no quantization, assumed if no quantization spec is given), \p DFP:fl
   (dynamic fixed point, with \p fl bits for the decimal part; e.g., int8 with DFP:7 can represent numbers in [-0.99
@@ -213,6 +213,61 @@ Post-processing hence will do two things:
 
 Sometimes, dequantization is not necessary; for example, semantic segmentation networks often just output a single array
 of uint8 values, where the values are directly the assigned object class number for every pixel in the input image.
+
+Using raw split output tensors
+==============================
+
+When using quantized networks, one may face two problems:
+
+- Unsupported operations: Neural accelerators excel at convolutions but may not support more exotic operations, which in
+  any case might run slower than they would on our CPU. However, most modern neural nets try to do as much
+  post-processing in the network, including things like scaling bounding boxes, applying non-maximum suppression to
+  cleanup overlapping boxes, etc. When converting a network for \jvpro, we typically want to skip all these operations
+  and get the last Conv outputs instead. We will then perform all post-processing on the faster JeVois-Pro CPU.
+
+- Quantization issues when several disparate tensors are merged in a network. Recent YOLO architectures detect bounding
+  boxes and class probabilities in different branches of the network. They then concatenate both into just one big
+  tensor. When using quantized networks, this is a problem:
+  
+  + say box coordinates are in [0 .. 1024[
+  + and class probabilities in [0.0 .. 1.0[
+  
+  If we concatenate both, the final dynamic range is [0 .. 1024[. Representing that in a quantized network with 8-bit
+  precision would call for a quantization zero point of 0 and scale of 4, such that [0 .. 1024[ is represented by
+  quantized values [0 .. 256[. With a scale of 4, however, we cannot distinguish numbers in [0.0 .. 1.0] for class
+  probabilities:
+  
+  + all original float values in [0.0 .. 3.999] map to quantized 0 
+  + all original float values in [4.0 .. 7.999] map to quantized 1
+  + ...
+  + all original float values in [1020.0 .. 1023.999] map to quantized 255
+
+  In particular, all original float values in [0.0 .. 1.0[ map to quantized 0, so we cannot recover class probabilities
+  form the quantized tensor, they will all always be 0.
+
+- Because of these two problems, usually we will want quantized networks to output seperate tensors for each kind of
+  data (box coordinates, class probabilities, segmentation mask coefficients, etc), and we will skip all subsequent
+  layers that merge and post-process those raw, separate outputs. Instead, we will decode the raw outputs on CPU.
+
+- Let's have a look at the bottom of YOLOv8n-512x288 in Netron (input size is 1x3x288x512):
+  \jvimg{yolov8n1.png, 15%}
+  (click on image to enlarge)
+
+  We have 3 detection branches for 3 different scales or 'strides', with resolutions 36x64, 18x32, and 9x16. Then they
+  all get concatenated and some post-processing is applied.
+
+  Zooming in on the 36x64 branch:
+  \jvimg{yolov8n2.png, 20%}
+  (click on image to enlarge)
+  
+  We see that two Conv outputs are concatenated: 1x64x36x64 (these are the raw boxes, before decoding of the Distributed
+  Focal Loss representation), and 1x80x36x64 (these are the class probabilities for 80 classes on the COCO dataset).
+
+  For quantized operation, we want to get these two Conv outputs before the concatenation as two separate output
+  tensors, and likewise for the 2 other strides. Total 6 outputs. We bypass the post-processing entirely and will run it
+  on CPU. Have a look at the models in \ref JeVoisProBenchmarks for many examples of the kinds of outputs we extract
+  from various models to work with our C++ or Python post-processors.
+
 
 Network conversion procedures
 =============================

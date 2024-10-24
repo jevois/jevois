@@ -21,6 +21,7 @@
 #include <opencv2/core/core.hpp>
 #include <jevois/GPU/GUIhelper.H>
 #include <jevois/Types/Enum.H>
+#include <jevois/Types/PoseSkeleton.H>
 
 namespace jevois
 {
@@ -55,9 +56,16 @@ namespace jevois
       
       //! Parameter \relates jevois::dnn::PostProcessorDetect
       JEVOIS_DECLARE_PARAMETER(maxnbox, unsigned int, "Max number of top-scoring boxes to report (for YOLO flavors, "
-                               "this is the max for each scale)",
+                               "this is the max for each scale), or 0 for no limit",
                                500, ParamCateg);
-      
+
+      //! Parameter \relates jevois::dnn::PostProcessorDetect
+      JEVOIS_DECLARE_PARAMETER(namedonly, bool, "When true, only report (on display and to serial ports) results "
+                               "for which we have a class name defined in the class file. This can allow one "
+                               "to skip some of the results by simply commenting out their name in the class file "
+                               "(make sure your class file then contains class-ID numbers for each named class).",
+                               false, ParamCateg);
+ 
       //! Parameter \relates jevois::dnn::PostProcessorClassify
       JEVOIS_DECLARE_PARAMETER(cthresh, float, "Classification threshold (in percent confidence) above which "
                                "predictions will be reported",
@@ -69,7 +77,11 @@ namespace jevois
                                "many only use one threshold confidence threshold (cthresh parameter). The YOLO "
                                "family is an example that uses both box and classification confidences",
                                15.0F, jevois::Range<float>(0.0F, 100.0F), ParamCateg);
-      
+
+      //! Parameter \relates jevois::dnn::PostProcessorPose
+      JEVOIS_DECLARE_PARAMETER(jthresh, float, "Joint confidence threshold for pose detection",
+                               50.0F, jevois::Range<float>(0.0F, 100.0F), ParamCateg);
+  
       //! Parameter \relates jevois::dnn::PostProcessorClassify
       JEVOIS_DECLARE_PARAMETER(softmax, bool, "Apply a softmax to classification outputs",
                                false, ParamCateg);
@@ -81,7 +93,8 @@ namespace jevois
                                1.0F, ParamCateg);
       
       //! Enum \relates jevois::dnn::PostProcessorDetect
-      JEVOIS_DEFINE_ENUM_CLASS(DetectType, (FasterRCNN) (YOLO) (SSD) (TPUSSD) (RAWYOLO) (YOLOv10) (YOLOv10pp) );
+      JEVOIS_DEFINE_ENUM_CLASS(DetectType, (FasterRCNN) (YOLO) (SSD) (TPUSSD) (RAWYOLO) (YOLOv10) (YOLOv10pp)
+                               (YOLOX) (YOLOv8) (YOLOv8t) (YOLOv8seg) (YOLOv8segt) );
       
       //! Parameter \relates jevois::dnn::PostProcessorDetect
       JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(detecttype, DetectType, "Type of detection output format",
@@ -90,6 +103,12 @@ namespace jevois
       //! Parameter \relates jevois::dnn::PostProcessorDetect
       JEVOIS_DECLARE_PARAMETER(nms, float, "Non-maximum suppression intersection-over-union threshold in percent",
                                45.0F, jevois::Range<float>(0.0F, 100.0F), ParamCateg);
+
+      //! Parameter \relates jevois::dnn::PostProcessorDetect
+      JEVOIS_DECLARE_PARAMETER(nmsperclass, bool, "When true, apply non-maximum suppression (NMS) separately for each "
+                               "object class, rather than globally. This will allow overlapping boxes as long as "
+                               "they belong to different classes",
+                               false, ParamCateg);
 
       //! Parameter \relates jevois::dnn::PostProcessorDetect
       JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(anchors, std::string, "For YOLO-type detection models with raw outputs, "
@@ -101,8 +120,28 @@ namespace jevois
                                "", ParamCateg);
 
       //! Parameter \relates jevois::dnn::PostProcessorDetect
+      JEVOIS_DECLARE_PARAMETER(masksmooth, bool, "When true, extract smoother instance segmentation masks, "
+                               "which may be marginally slower.",
+                               true, ParamCateg);
+      
+      //! Parameter \relates jevois::dnn::PostProcessorDetect
       JEVOIS_DECLARE_PARAMETER(alpha, unsigned char, "Alpha channel value for drawn results",
                                64, ParamCateg);
+
+      //! Enum \relates jevois::dnn::PostProcessorDetectOBB
+      JEVOIS_DEFINE_ENUM_CLASS(DetectTypeOBB, (YOLOv8) (YOLOv8t) );
+      
+      //! Parameter \relates jevois::dnn::PostProcessorDetectOBB
+      JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(detecttypeobb, DetectTypeOBB, "Type of oriented bounding box detection "
+                                             "output format",
+                                             DetectTypeOBB::YOLOv8, DetectTypeOBB_Values, ParamCateg);
+      
+      //! Parameter \relates jevois::dnn::PostProcessorClassify
+      JEVOIS_DECLARE_PARAMETER(boxclamp, bool, "Clamp detection boxes to fit within the input image. Good to avoid "
+                               "having boxes that extend beyond the display and to be able to see object labels "
+                               "even on boxes that start at negative coordinates; but will artificially reduce "
+                               "the size of detections that extend beyond the display",
+                               true, ParamCateg);
 
       //! Parameter \relates jevois::dnn::PostProcessorSegment
       JEVOIS_DECLARE_PARAMETER(bgid, unsigned char, "Class ID for the background, will show as fully transparent in "
@@ -133,11 +172,29 @@ namespace jevois
                                "but check the yolo layer in the model's .cfg file)",
                                0.0F, ParamCateg);
 
-      //! Parameter \relates jevois::dnn::PostProcessorDetectYOLO
+      //! Parameter \relates jevois::dnn::PostProcessorDetect
       JEVOIS_DECLARE_PARAMETER(sigmoid, bool, "Apply sigmoid to raw YOLO outputs, use when the last conv layers "
                                "just before yolo/detection/region layers have linear activation (most "
                                "YOLOv2/v3/v4 models, but not YOLOv5/v7 which have logistic activation on their "
                                "last conv)",
+                               true, ParamCateg);
+
+      //! Enum \relates jevois::dnn::PostProcessorPose
+      JEVOIS_DEFINE_ENUM_CLASS(PoseType, (YOLOv8HAILO) (YOLOv8) (YOLOv8t) );
+      
+      //! Parameter \relates jevois::dnn::PostProcessorPose
+      JEVOIS_DECLARE_PARAMETER(posetype, PoseType, "Type of pose output format",
+                               PoseType::YOLOv8HAILO, PoseType_Values, ParamCateg);
+
+      //! Parameter \relates jevois::dnn::PostProcessorPose
+      JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(skeleton, std::string, "YAML file name for definition of pose skeleton. "
+                                             "Defines number of joints and links, their names, and their "
+                                             "colors for drawing. If file name is relative, it will be with respect "
+                                             "to " JEVOIS_SHARE_PATH,
+                                             "dnn/skeletons/Coco17.yml", ParamCateg);
+
+      //! Parameter \relates jevois::dnn::PostProcessorClassify
+      JEVOIS_DECLARE_PARAMETER(serialreport, bool, "Send classification or detection results to serial port",
                                true, ParamCateg);
     }
 

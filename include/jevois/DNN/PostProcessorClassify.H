@@ -29,7 +29,8 @@ namespace jevois
     class PostProcessorClassify : public PostProcessor,
                                   public Parameter<postprocessor::classoffset, postprocessor::classes,
                                                    postprocessor::top, postprocessor::cthresh, postprocessor::softmax,
-                                                   postprocessor::scorescale>
+                                                   postprocessor::scorescale, postprocessor::namedonly,
+                                                   postprocessor::serialreport>
     {
       public:
         
@@ -48,6 +49,13 @@ namespace jevois
         //! Report what happened in last process() to console/output video/GUI
         void report(jevois::StdModule * mod, jevois::RawImage * outimg = nullptr,
                     jevois::OptGUIhelper * helper = nullptr, bool overlay = true, bool idle = false) override;
+
+        //! Get the latest recognition results, use with caution, not thread-safe
+        /*! This returns a reference to our internal vector of recognitions. That vector will get overwritten every time
+            process() is called. It is ok to use this after you have called process() on a given frame, or, if using a
+            Pipeline, after you have called Pipeline::process(). Do not hold this ref past the end of the current video
+            frame. If you need to keep a persistent copy of the data, make a deep copy of the vector. */
+        std::vector<ObjReco> const & latestRecognitions() const;
 
       protected:
         void onParamChange(postprocessor::classes const & param, std::string const & val) override;

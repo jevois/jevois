@@ -24,7 +24,7 @@ set(JEVOIS_VENDOR "JeVois")
 ########################################################################################################################
 # Project version:
 set(JEVOIS_VERSION_MAJOR 1)
-set(JEVOIS_VERSION_MINOR 21)
+set(JEVOIS_VERSION_MINOR 22)
 set(JEVOIS_VERSION_PATCH 0)
 set(JEVOIS_SOVERSION "${JEVOIS_VERSION_MAJOR}.${JEVOIS_VERSION_MINOR}.${JEVOIS_VERSION_PATCH}" )
 
@@ -206,7 +206,7 @@ if (JEVOIS_PRO)
   if (JEVOIS_PLATFORM)
     # nothing extra here
   else ()
-    target_sources(${JEVOIS} PRIVATE Contrib/imgui/backends/imgui_impl_sdl.cpp)
+    target_sources(${JEVOIS} PRIVATE Contrib/imgui/backends/imgui_impl_sdl2.cpp)
   endif()
 
   # Flags for imgui:
@@ -435,7 +435,7 @@ libopencore-amrwb-dev, libtheora-dev, libvorbis-dev, libxvidcore-dev, x264, v4l-
 libgtk-3-dev, libturbojpeg, libsdl2-dev, libopenblas-dev, libopenblas-openmp-dev, liblapacke-dev, \
 python${JEVOIS_HOST_PYTHON_MAJOR}.${JEVOIS_HOST_PYTHON_MINOR}-dev, python${JEVOIS_HOST_PYTHON_MAJOR}-numpy, \
 python${JEVOIS_HOST_PYTHON_MAJOR}-pil, python-dev-is-python3, pipx, \
-${JEVOIS}-opencv (>=${JEVOIS_OPENCV_VERSION}), libglm-dev, libx11-dev")
+${JEVOIS}-opencv (>=${JEVOIS_OPENCV_VERSION}), libglm-dev, libx11-dev, xtensor-dev")
                                                                                   
 # Add cross-compiler dependencies on jevois-pro-host; on jevois-a33 it is provided by buildroot:
 if (JEVOIS_PRO)

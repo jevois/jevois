@@ -18,6 +18,7 @@
 #include <jevois/DNN/PreProcessorPython.H>
 #include <jevois/Core/PythonSupport.H>
 #include <jevois/Core/PythonModule.H>
+#include <jevois/Core/Engine.H>
 #include <jevois/DNN/Utils.H>
 
 // ####################################################################################################
@@ -25,7 +26,7 @@ namespace jevois
 {
   namespace dnn
   {
-    class PreProcessorPythonImpl : public jevois::Component, public PythonWrapper
+    class PreProcessorPythonImpl : public Component, public PythonWrapper
     {
       public:
         using Component::Component;
@@ -43,7 +44,9 @@ namespace jevois
 // ####################################################################################################
 // ####################################################################################################
 jevois::dnn::PreProcessorPythonImpl::~PreProcessorPythonImpl()
-{ }
+{
+  engine()->unRegisterPythonComponent(this);
+}
 
 // ####################################################################################################
 void jevois::dnn::PreProcessorPythonImpl::freeze(bool doit)
@@ -67,6 +70,9 @@ std::vector<cv::Mat> jevois::dnn::PreProcessorPythonImpl::process(cv::Mat const 
                                                                   std::vector<vsi_nn_tensor_attr_t> const & attrs,
                                                                   std::vector<cv::Rect> & crops)
 {
+  if (jevois::python::hasattr(PythonWrapper::pyinst(), "process") == false)
+    LFATAL("No process() method provided. It is required, please add it to your Python pre-processor.");
+
   // Convert the attrs to a list of strings:
   boost::python::list alist;
   for (vsi_nn_tensor_attr_t const & a : attrs) alist.append(jevois::dnn::attrstr(a));
@@ -110,6 +116,9 @@ std::vector<cv::Mat> jevois::dnn::PreProcessorPythonImpl::process(cv::Mat const 
 void jevois::dnn::PreProcessorPythonImpl::report(jevois::StdModule *, jevois::RawImage * outimg,
                                                  jevois::OptGUIhelper * helper, bool overlay, bool idle)
 {
+  if (jevois::python::hasattr(PythonWrapper::pyinst(), "report") == false)
+    LFATAL("No process() method provided. It is required, please add it to your Python pre-processor.");
+
   // default constructed boost::python::object is None on the python side
   if (outimg)
   {

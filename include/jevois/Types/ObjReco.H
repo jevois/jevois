@@ -20,6 +20,7 @@
 namespace jevois
 {
   //! A trivial struct to store object recognition results
+  /*! \ingroup types */
   struct ObjReco
   {
       float score = 0.0F;

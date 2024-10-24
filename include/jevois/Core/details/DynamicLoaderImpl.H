@@ -15,6 +15,7 @@
 // ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /*! \file */
 
+#pragma once
 
 // ##############################################################################################################
 inline jevois::DynamicLoader::DynamicLoader(std::string const & filename, bool closeOnDestroy) :
@@ -35,7 +36,7 @@ inline jevois::DynamicLoader::DynamicLoader(std::string const & filename, bool c
 }
 
 // ##############################################################################################################
-std::string const & jevois::DynamicLoader::sopath() const
+inline std::string const & jevois::DynamicLoader::sopath() const
 { return itsFilename; }
 
 // ##############################################################################################################

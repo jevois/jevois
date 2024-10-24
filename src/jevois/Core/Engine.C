@@ -233,6 +233,11 @@ jevois::Engine::Engine(std::string const & instance) :
 #endif
 
   jevois::engine::frameNumber.store(0);
+
+  // Setup custom API for cv::parallel_for using our threadpool:
+  //Need to experiment more before we activate this....
+  //itsOpenCVparallelAPI.reset(new jevois::ParallelForAPIjevois(&jevois::details::ThreadpoolBig));
+  //cv::parallel::setParallelForBackend(itsOpenCVparallelAPI);
 }
 
 // ####################################################################################################
@@ -251,6 +256,11 @@ jevois::Engine::Engine(int argc, char const* argv[], std::string const & instanc
 #endif
 
   jevois::engine::frameNumber.store(0);
+
+  // Setup custom API for cv::parallel_for using our threadpool:
+  //Need to experiment more before we activate this....
+  //itsOpenCVparallelAPI.reset(new jevois::ParallelForAPIjevois(&jevois::details::ThreadpoolBig));
+  //cv::parallel::setParallelForBackend(itsOpenCVparallelAPI);
 }
 
 // ####################################################################################################
@@ -680,7 +690,7 @@ void jevois::Engine::postInit()
   }
 #endif
   camerasens::freeze(true);
-  LINFO("Using camera sensor: " << camsens);
+  LINFO("Using camera sensor: " << camsens << " with lens: " << cameralens::get());
   
   // Check iw we want to use GUI mode:
   bool usegui = false;
@@ -3020,3 +3030,14 @@ jevois::Component * jevois::Engine::getPythonComponent(void * pyinst) const
   if (itr == itsPythonRegistry.end()) LFATAL("Python instance not registered -- ABORT");
   return itr->second;
 }
+
+#ifdef JEVOIS_PRO
+
+// ####################################################################################################
+void jevois::Engine::setOpenCVthreading(char const * name)
+{
+  if (strncmp(name, "jevois", 6) == 0) cv::parallel::setParallelForBackend(itsOpenCVparallelAPI);
+  else cv::parallel::setParallelForBackend(name);
+}
+
+#endif

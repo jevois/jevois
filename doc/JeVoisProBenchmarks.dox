@@ -4,7 +4,7 @@
 JeVois-Pro neural network backends
 ==================================
 
-The measurements below were made on a \jvpro smart camera running \jvversion{1.18.0} (September 2022).
+The measurements below were made on a \jvpro smart camera running \jvversion{1.22.0} (October 2024).
 
 - **OpenCV:** network loaded by OpenCV DNN framework and running on CPU.
 - **ORT:** network loaded by ONNX Runtime framework and running on CPU.
@@ -35,7 +35,7 @@ Benchmarking conditions
 
 - <b>These benchmarks are for JeVois-Pro only and not meant to be representative of a particular accelerator's peak
   performance.</b> In particular:
-  
+
   + The Myriad-X VPU used was a USB dongle connected to JeVois-Pro over a 480 Mbit/s USB 2.0 link. The dongle supports
     5 GBit/s USB 3.0 but the JeVois-Pro CPU has no available USB 3.0 port.
     
@@ -60,10 +60,19 @@ Benchmarking conditions
     quantization to the network's desired data type.
 
   + The \a Network inference time includes data transfer from main memory to device, on-chip inference, data transfer of
-    outputs back to main memory, and possibly dequantization to float32.
+    outputs back to main memory, possibly dequantization to float32, and possible output transforms
+    (split/merge/re-order/transpose output tensors). **Dequantization and any output transforms can add significant time
+    which would often be counted as post-processing in other benchmarks.** When running NPU networks, you can see the
+    detailed timing for each step.
 
   + The \a PostProc time includes decoding of network outputs (e.g., decoding YOLO boxes from raw YOLO layer outputs),
     and drawing results using OpenGL.
+
+- For more reliable results, we run the benchmark in `Sync` processing mode (sequential PreProc, Network, and
+  PostProc). This is what you should also do for pipelines that run at more than 30 fps. For slower pipelines, however,
+  the lower inference rate would also slow down the \jvpro GUI. For this reason, the default mode that ships with the
+  camera is `ASync` (network inference runs in the background while the GUI can still refresh at 30 fps). You can change
+  processing mode using the `processing` parameter of the Pipeline component.
 
 Benchmark results
 =================
@@ -71,9 +80,14 @@ Benchmark results
 <table>
 <tr><th>Pipeline</th><th>Input</th><th>Output</th><th>PreProc</th><th>Network</th><th>PostProc</th><th>Total</th><th>FPS</th></tr>
 
-\htmlinclude benchmarks-1.19.0.html
+\htmlinclude benchmarks-1.22.0.html
 
 </table>
+
+YOLOv8 / v9 / v10 / 11 demo
+===========================
+
+\youtube{JvtHmPux0C0}
 
 Older benchmarks
 ================
@@ -83,6 +97,11 @@ OpenCV backend should get faster over time as more optimized kernels are added t
 accelerators tend to remain the same. Pre and Post processing are under our control and we strive to make those faster
 over time as well, though sometimes adding more features may decrease speed slightly.
 
+\note In the newer benchmarks, we are getting more variability in pre-processing time although that code has not
+changed. We attribute this to new, more aggressive post-processing, which may occur in parallel with the pre-processing
+when running the network in Async mode.
+
+- \subpage JeVoisProBenchmarks119
 - \subpage JeVoisProBenchmarks118
 
 */

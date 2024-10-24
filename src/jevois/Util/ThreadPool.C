@@ -25,7 +25,9 @@
 //          https://www.boost.org/LICENSE_1_0.txt)
 
 #include <jevois/Util/ThreadPool.H>
+#include <jevois/Util/Async.H>
 #include <jevois/Debug/Log.H>
+#include <pthread.h>
 
 // ##############################################################################################################
 jevois::ThreadPool::ThreadPool(unsigned int threads, bool little) :
@@ -118,4 +120,58 @@ auto jevois::ThreadPool::getPoolSize() -> size_t
   return _pool.size();
 }
 
+// ##############################################################################################################
+// ##############################################################################################################
+// ##############################################################################################################
+jevois::ParallelForAPIjevois::ParallelForAPIjevois(jevois::ThreadPool * tp) : itsThreadpool(tp), itsNumThreads(4)
+{ }
+
+// ##############################################################################################################
+jevois::ParallelForAPIjevois::~ParallelForAPIjevois()
+{ }
+
+// ##############################################################################################################
+void jevois::ParallelForAPIjevois::parallel_for(int tasks,
+                                                cv::parallel::ParallelForAPI::FN_parallel_for_body_cb_t body_callback,
+                                                void * callback_data)
+{
+  LDEBUG("Called with " << tasks << " tasks");
+  
+  // Dispatch several groups of parallel threads; assumes all tasks take the same time...
+  for (int group = 0; group < tasks; group += itsNumThreads)
+  {
+    std::vector<std::future<void>> fvec;
+    int const last = std::min(tasks, group + itsNumThreads);
+
+    for (int i = group; i < last; ++i)
+      fvec.emplace_back(itsThreadpool->execute(body_callback, i, i+1, callback_data));
+
+    // Wait until all tasks done, throw a single exception if any task threw:
+    jevois::joinall(fvec);
+  }
+}
+
+// ##############################################################################################################
+int jevois::ParallelForAPIjevois::getThreadNum() const
+{
+  return (int)(size_t)(void*)pthread_self(); // no zero-based indexing
+}
+
+// ##############################################################################################################
+int jevois::ParallelForAPIjevois::getNumThreads() const
+{ return itsNumThreads; }
+
+// ##############################################################################################################
+int jevois::ParallelForAPIjevois::setNumThreads(int nThreads)
+{
+  if (nThreads != 4) LERROR("Only 4 threads supported -- IGNORED request to set " << nThreads);
+  itsNumThreads = nThreads;
+  return nThreads;
+}
+
+// ##############################################################################################################
+char const * jevois::ParallelForAPIjevois::getName() const
+{ return "jevois"; }
+
 #endif // JEVOIS_PRO
+

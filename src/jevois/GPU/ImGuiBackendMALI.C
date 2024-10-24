@@ -49,12 +49,31 @@ namespace
   // ##############################################################################################################
   static std::string clipboardText;
   
-  char const * ImGui_ImplMALI_GetClipboardText(void *)
+  char const * ImGui_ImplMALI_GetClipboardText(ImGuiContext *)
   { return clipboardText.c_str(); }
   
-  void ImGui_ImplMALI_SetClipboardText(void *, char const * text)
+  void ImGui_ImplMALI_SetClipboardText(ImGuiContext *, char const * text)
   { clipboardText = text; }
-  
+
+  void ImGui_ImplMALI_PlatformSetImeData(ImGuiContext*, ImGuiViewport*, ImGuiPlatformImeData* data)
+  {
+    if (data->WantVisible)
+    {
+      // This gets called each time we click into a text entry widget
+      
+      //LERROR("IME (input method editor) not yet supported");
+
+      /* here is the code from the SDL2 backend:
+      SDL_Rect r;
+      r.x = (int)data->InputPos.x;
+      r.y = (int)data->InputPos.y;
+      r.w = 1;
+      r.h = (int)data->InputLineHeight;
+      SDL_SetTextInputRect(&r);
+      */
+    }
+  }
+
   // Code from https://github.com/bingmann/evdev-keylogger/blob/master/keymap.c
   
   /* *******************************************************************************
@@ -432,16 +451,14 @@ void jevois::ImGuiBackendMALI::init(unsigned short w, unsigned short h, bool ful
 
   // Setup Dear ImGui context:
   IMGUI_CHECKVERSION();
+
   ImGui::CreateContext();
   ImGuiIO & io = ImGui::GetIO();
-  // io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+  //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
   //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
-  
-  // First setup the imgui context:
   //io.BackendFlags |= ImGuiBackendFlags_HasMouseCursors;  // We can honor GetMouseCursor() values (optional)
   //io.BackendFlags |= ImGuiBackendFlags_HasSetMousePos;   // We can honor io.WantSetMousePos requests (optional)
-  //io.BackendPlatformName = "imgui_impl_jevoispro";
-  io.BackendPlatformName = "imgui_impl_sdl";
+  io.BackendPlatformName = "imgui_impl_jevois";
 
   // Keyboard mapping. ImGui will use those indices to peek into the io.KeysDown[] array.
   io.KeyMap[ImGuiKey_Tab] = KEY_TAB;
@@ -459,25 +476,32 @@ void jevois::ImGuiBackendMALI::init(unsigned short w, unsigned short h, bool ful
   io.KeyMap[ImGuiKey_Space] = KEY_SPACE;
   io.KeyMap[ImGuiKey_Enter] = KEY_ENTER;
   io.KeyMap[ImGuiKey_Escape] = KEY_ESC;
-  io.KeyMap[ImGuiKey_KeyPadEnter] = KEY_KPENTER;
+  io.KeyMap[ImGuiKey_KeypadEnter] = KEY_KPENTER;
   io.KeyMap[ImGuiKey_A] = KEY_A;
   io.KeyMap[ImGuiKey_C] = KEY_C;
   io.KeyMap[ImGuiKey_V] = KEY_V;
   io.KeyMap[ImGuiKey_X] = KEY_X;
   io.KeyMap[ImGuiKey_Y] = KEY_Y;
   io.KeyMap[ImGuiKey_Z] = KEY_Z;
+  io.KeyMap[ImGuiKey_S] = KEY_S;
   
-  io.SetClipboardTextFn = ImGui_ImplMALI_SetClipboardText;
-  io.GetClipboardTextFn = ImGui_ImplMALI_GetClipboardText;
-  io.ClipboardUserData = NULL;
+  ImGuiPlatformIO & platform_io = ImGui::GetPlatformIO();
+  platform_io.Platform_SetClipboardTextFn = ImGui_ImplMALI_SetClipboardText;
+  platform_io.Platform_GetClipboardTextFn = ImGui_ImplMALI_GetClipboardText;
+  platform_io.Platform_ClipboardUserData = nullptr;
+  platform_io.Platform_SetImeDataFn = ImGui_ImplMALI_PlatformSetImeData;
 
+  // Set platform dependent data in viewport
+  static int windowID = 0; // Only one window when using MALI fbdev
+  ImGuiViewport* main_viewport = ImGui::GetMainViewport();
+  main_viewport->PlatformHandle = (void*)(intptr_t)windowID;
+  main_viewport->PlatformHandleRaw = nullptr;
+  
   // Tell imgui to draw a mouse cursor (false at init time):
   io.MouseDrawCursor = false;
   
   // Setup Dear ImGui style:
   ImGui::StyleColorsDark();
-  //ImGui::StyleColorsClassic();
-
   io.FontGlobalScale = scale;
   ImGui::GetStyle().ScaleAllSizes(scale);
 
@@ -501,6 +525,9 @@ void jevois::ImGuiBackendMALI::init(unsigned short w, unsigned short h, bool ful
 
   // Do an initial scan for input event devices:
   //scanDevices();
+
+  // Weird ID conflict with column separators in GUIhelper::drawParameters() reported by ImGui, disable the warning:
+  io.ConfigDebugHighlightIdConflicts = false;
 
   itsInitialized = true; // will be used to close ImGui if needed
 }

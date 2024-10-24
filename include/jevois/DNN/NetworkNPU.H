@@ -25,13 +25,15 @@
 
 namespace jevois
 {
+  class DynamicLoader;
+  
   namespace dnn
   {
     //! Wrapper around a DNN neural network running on Amlogic A311D NPU accelerator (Verisilicon)
     /*! \ingroup dnn */
     class NetworkNPU : public jevois::dnn::Network,
                        public jevois::Parameter<network::intensors, network::outtensors, network::dataroot,
-                                                network::model, network::dequant, network::verifygraph,
+                                                network::model, network::library, network::dequant, network::verifygraph,
                                                 network::ovxver>
     {
       public:
@@ -63,6 +65,7 @@ namespace jevois
         
         vsi_nn_context_t itsCtx = 0;
         vsi_nn_graph_t * itsGraph = nullptr;
+        std::shared_ptr<jevois::DynamicLoader> itsLibLoader;
     };
     
   } // namespace dnn

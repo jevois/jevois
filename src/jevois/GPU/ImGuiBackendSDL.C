@@ -20,7 +20,7 @@
 #include <jevois/GPU/ImGuiBackendSDL.H>
 #include <jevois/Debug/Log.H>
 
-#include <imgui_impl_sdl.h>
+#include <imgui_impl_sdl2.h>
 #include <imgui_impl_opengl3.h>
 #include <imgui.h>
 #include <jevois/GPU/OpenGL.H>
@@ -50,11 +50,11 @@ void jevois::ImGuiBackendSDL::init(unsigned short, unsigned short, bool)
 void jevois::ImGuiBackendSDL::init(unsigned short w, unsigned short h, bool fullscreen, float scale, bool)
 {
   if (itsSDLwin) { LERROR("Already initialized -- IGNORED"); return; }
-  
+
   // Setup SDL:
-  if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER))
+  if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER)) // This is slow on noble: | SDL_INIT_GAMECONTROLLER))
     LFATAL("SDL initialization error: " <<  SDL_GetError());
-   
+
   // Decide GL+GLSL versions
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
@@ -76,21 +76,19 @@ void jevois::ImGuiBackendSDL::init(unsigned short w, unsigned short h, bool full
   // Setup Dear ImGui context
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
-  ImGuiIO & io = ImGui::GetIO(); (void)io;
+  ImGuiIO & io = ImGui::GetIO();
   io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
   io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
-  
+
   // Setup Dear ImGui style
   ImGui::StyleColorsDark();
-  //ImGui::StyleColorsClassic();
-
   io.FontGlobalScale = scale;
   ImGui::GetStyle().ScaleAllSizes(scale);
-  
+
   // Setup Platform/Renderer backends
   ImGui_ImplSDL2_InitForOpenGL(itsSDLwin, itsSDLctx);
   ImGui_ImplOpenGL3_Init("#version 300 es");
-  
+
   // Load Fonts
   // - If no fonts are loaded, dear imgui will use the default font. You can also load multiple fonts and use ImGui::PushFont()/PopFont() to select them.
   // - AddFontFromFileTTF() will return the ImFont* so you can store it if you need to select the font among multiple.
@@ -109,6 +107,9 @@ void jevois::ImGuiBackendSDL::init(unsigned short w, unsigned short h, bool full
   // Show OpenGL-ES version:
   LINFO(glGetString(GL_VERSION) <<' '<< glGetString(GL_VENDOR) << " (" << glGetString(GL_RENDERER) <<')');
   //LINFO("OpenGL extensions: " << glGetString(GL_EXTENSIONS));
+
+  // Weird ID conflict with column separators in GUIhelper::drawParameters() reported by ImGui, disable the warning:
+  io.ConfigDebugHighlightIdConflicts = false;
 }
 
 // ##############################################################################################################
@@ -135,7 +136,7 @@ void jevois::ImGuiBackendSDL::newFrame()
 {
   glClear(GL_COLOR_BUFFER_BIT);
   ImGui_ImplOpenGL3_NewFrame();
-  ImGui_ImplSDL2_NewFrame(itsSDLwin);
+  ImGui_ImplSDL2_NewFrame();
   ImGui::NewFrame();
 }
 

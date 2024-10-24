@@ -61,6 +61,21 @@ std::string jevois::to_string(T const & val)
 }
 
 // ####################################################################################################
+template <typename T> inline
+std::string jevois::join(std::vector<T> const & tokens, std::string const & delimiter)
+{
+  if (tokens.empty()) return "";
+  if (tokens.size() == 1) return std::to_string(tokens[0]);
+
+  std::string ret; size_t const szm1 = tokens.size() - 1;
+
+  for (size_t i = 0; i < szm1; ++i) ret += std::to_string(tokens[i]) + delimiter;
+  ret += std::to_string(tokens[szm1]);
+
+  return ret;
+}
+
+// ####################################################################################################
 template <typename dest_type, typename source_type> inline
 dest_type jevois::clamped_convert(source_type source)
 {

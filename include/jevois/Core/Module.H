@@ -323,6 +323,11 @@ namespace jevois
           is sent if the vector is empty. See sendSerialImg2D() for info about the object box. */
       void sendSerialObjDetImg2D(unsigned int camw, unsigned int camh, ObjDetect const & det);
      
+      //! Send a standardized oriented bounding box (OBB) object detection + recognition message
+      /*! res should be a list of scores and category names, in descending order of scores. Note that no message
+          is sent if the vector is empty. */
+      void sendSerialObjDetImg2D(unsigned int camw, unsigned int camh, ObjDetectOBB const & det);
+     
     protected:
       friend class jevois::Engine;
       

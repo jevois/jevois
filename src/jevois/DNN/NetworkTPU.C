@@ -20,6 +20,7 @@
 #include <jevois/DNN/NetworkTPU.H>
 #include <jevois/DNN/Utils.H>
 #include <jevois/Util/Utils.H>
+
 #include <edgetpu_c.h>
 
 #include <tensorflow/lite/builtin_op_data.h>
@@ -234,8 +235,8 @@ std::vector<cv::Mat> jevois::dnn::NetworkTPU::doprocess(std::vector<cv::Mat> con
         if (output == nullptr) LFATAL("Network produced Null output tensor data " << o);
         cv::Mat const cvi(cvdims, CV_8U, (void *)output);
         cv::Mat cvout; cvi.convertTo(cvout, CV_32F);
-        cvout -= otensor->params.zero_point;
-        cvout *= otensor->params.scale;
+        if (otensor->params.zero_point) cvout -= otensor->params.zero_point;
+        if (otensor->params.scale != 1.0F) cvout *= otensor->params.scale;
         info.emplace_back("- Dequantized " + otname + " output tensor " + std::to_string(o) + " to FLOAT32");
         outs.emplace_back(cvout);
         notdone = false;

@@ -46,8 +46,9 @@ namespace jevois
     std::map<int, std::string> readLabelsFile(std::string const & fname);
 
     //! Get a label from an id
-    /*! If no entry is found in the map, return the id as a string. */
-    std::string getLabel(std::map<int, std::string> const & labels, int id);
+    /*! If no entry is found in the map, return the id as a string (if namedonly is false) or an empty string (if
+        namedonly is true). */
+    std::string getLabel(std::map<int, std::string> const & labels, int id, bool namedonly = false);
 
     //! Compute a color from a label name
     int stringToRGBA(std::string const & label, unsigned char alpha = 128);
@@ -57,6 +58,12 @@ namespace jevois
 
     //! Get a string of the form: "nD AxBxC... TYPE" from an n-dimensional cv::Mat with data type TYPE
     std::string shapestr(cv::Mat const & m);
+
+    //! Get a string of the form: "nD AxBxC... TYPE" from an n-dimensional size vector and OpenCV data type TYPE
+    std::string shapestr(std::vector<size_t> dims, int typ);
+
+    //! Get a string of the form: "nD AxBxC... TYPE" from an n-dimensional size vector and OpenCV data type TYPE
+    std::string shapestr(std::vector<int> dims, int typ);
 
     //! Get a string of the form: "nD AxBxC... TYPE" from an n-dimensional TfLiteTensor with data type TYPE
     std::string shapestr(TfLiteTensor const * t);
@@ -108,12 +115,26 @@ namespace jevois
     //! Get tensor shape and type attributes for a TensorFlow Lite tensor
     vsi_nn_tensor_attr_t tensorattr(TfLiteTensor const * t);
 
+    //! Compute fast exponential using approximation formula
+    /*! From https://github.com/Qengineering/YoloV8-ncnn-Raspberry-Pi-4/blob/main/yoloV8.cpp */
+    float fastexp(float x);
+
+    //! Compute sigmoid using fastexp
+    float sigmoid(float x);
+    
+    //! Compute sigmoid using fastexp on every pixel of a Mat of type CV_32F, in-place
+    void sigmoid(cv::Mat & m);
+    
     //! Apply softmax to a float vector
     /*! n is the number of elements to process, stride is the increment in the arrays from one element to the next. So
         the arrays should have size n * stride. Returns the index in [0..n*stride[ of the highest scoring element. If
         maxonly is true, only output[returned index] is valid. */
     size_t softmax(float const * input, size_t const n, size_t const stride, float const fac, float * output,
                    bool maxonly);
+
+    //! Compute softmax and return DFL distance
+    /*! src should have size n * stride. Note: even if stride > 1, dst should always have size n */
+    float softmax_dfl(float const * src, float * dst, size_t const n, size_t const stride = 1);
 
     //! Quantize from float32 to fixed-point according to the quantization spec in attr
     /*! m should be float32, typically normalized to [0..1[ or [-1..1[ already. attr is the desired quantized type and
@@ -135,6 +156,10 @@ namespace jevois
         all have the same number of dimensions, same pixel type, and sizes must match for all dimensions except the one
         that is being concatenated. */
     cv::Mat concatenate(std::vector<cv::Mat> const & tensors, int axis);
+
+    //! Split a tensor into several, along a given axis
+    /*! The sum of all given sizes must equal the original size along the selected axis. */
+    std::vector<cv::Mat> split(cv::Mat const & tensor, int axis, std::vector<int> const & sizes);
     
 #ifdef JEVOIS_PRO
     //! Get a string of the form: "nD AxBxC... TYPE" from an n-dimensional Hailo tensor with data type TYPE
@@ -168,3 +193,6 @@ namespace jevois
 
   } // namespace dnn
 } // namespace jevois
+
+// Inlcude inlined functions implementation
+#include <jevois/DNN/details/UtilsImpl.H>

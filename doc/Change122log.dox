@@ -1,0 +1,71 @@
+/*! \page Change122log Changes and new features in JeVois 1.22
+
+JeVois 1.22 brings the following new features:
+
+- New post-processors for YOLOv8 / v9/ v10 / 11, for: detection, semantic segmentation, pose/skeleton, and oriented
+  bounding boxes. Also new post-processor for YOLOX networks.
+  
+  \youtube{JvtHmPux0C0}
+  
+- JeVois-Pro NPU: support for KSNN network conversion framework, which eliminates the need to specify input and output
+  tensor shapes in the JeVois model zoo.
+
+- JeVois-Pro NPU: one-line script to convert yolo-family networks for NPU:
+  
+  \code{.py}
+jevoispro-npu-convert.sh yolov8n-pose-1024x576-custom.onnx /path/to/sample-dataset.txt
+  \endcode
+  
+  parses the model name to determine how to convert it and what post-processor to use, then converts and quantizes the
+  model, and creates a weight file for NPU, a dynamic library to load the weights, and a JeVois zoo yaml file to
+  describe the model. Just copy these 3 files to /jevoispro/share/snn/custom/ on microSD and you can run your model
+  without further editing or configuring.
+  
+- JeVois-Pro: New docs and tutorials to convert YOLOv8-compatible networks for NPU and SPU (see \ref UserDNNnpu,
+  \ref UserDNNspu, \ref UserYolo)
+
+- Faster dequantization and image resizing using parallel code.
+
+- The Network class can now apply optional transforms to the output tensors:
+        - `dequant`: dequantize the output tensors
+        - `outtransform`: apply a semicolon-separated sequence (from left to right) of transforms to the
+          outputs. Outputs are numbered starting at 0. Available transforms are:
+          + `shape(outnum, AxBxC...)` to reshape an output to a given new shape. Does not change or move any tensor
+            data. Total number of data elements must remain the same. Useful to squeeze/unsqueeze tensors.
+          + `transpose(outnum, oldaxisA, oldaxisB, ...)` where transposed new axis 0 (the outermost dimension, typically
+            batch size) will be from oldaxisA, new axis 1 from oldaxisB, etc. If outnum is *, transpose all outputs.
+          + `order(oldidx0, oldidx1, ...)` where the new ordering of the output tensors will be: new tensor 0: old
+            tensor oldidx0 (which is zero-based); new tensor 1: old tensor oldidx1, etc. It is ok to have duplicated or
+            missing entries.
+          + `split(outnum, axis, newsize1, ..., newsizeN)` where axis 0 is the outtermost dimension (typically, batch
+            size), and newsize1 + ... + newsizeN must be equal to the original size of that axis. If outnum is *, split
+            all outputs.
+          + `merge(axis, outnum1, ..., outnumN)` where axis 0 is the outermost dimension (typically, batch size) and
+            outnum1, ..., outnumN are the outputs to merge along that axis. All the outputs to be merged must have
+            matching number of dimensions, and matching sizes on all other axes.  The merged tensor will replace the
+            first output listed in the merge, and the other listed will be removed. Outputs to merge must be listed in
+            ascending order (use an order() transform first if needed)
+        See the model zoo files in /jevoispro/share/dnn/ for examples. For instance:
+        \code{.py}
+outtransform: "split(*,1,80,64); order(1,0,3,2,5,4); transpose(*,0,2,3,1)"
+        \endcode
+
+- JeVois-Pro: Updated Hailo libraries to 4.19, ImGui 1.91.2 which adds more graphics primitives for JeVois-Pro.
+
+- JeVois-Pro: Updated to Ollama 0.3.14 with new qwen2.5:0.5b which is quite reasonable in our tests.
+
+- JeVois-Pro: new Pipeline parameter to skip models marked as 'extramodel', to try to keep the list of models shorter.
+
+- JeVois-Pro: slow SDL_Init() on host fixed by disabling game controllers
+
+- JeVois-Pro: added access functions to latest postproc results, except yunet
+
+- JeVois-Pro: Added fixes to deal with bogus always-NCHW tensors produced by the Khadas KSNN conversion tool for NPU
+
+- Added log level '-1' for Timer, added timers for network extra inputs and dequantize (npu only for now)
+
+- Miscellaneous bug fixes and performance improvements.
+
+- Many doc updates.
+
+*/

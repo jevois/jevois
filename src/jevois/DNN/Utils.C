@@ -65,10 +65,14 @@ std::map<int, std::string> jevois::dnn::readLabelsFile(std::string const & fname
 }
 
 // ##############################################################################################################
-std::string jevois::dnn::getLabel(std::map<int, std::string> const & labels, int id)
+std::string jevois::dnn::getLabel(std::map<int, std::string> const & labels, int id, bool namedonly)
 {
   auto itr = labels.find(id);
-  if (itr == labels.end()) return std::to_string(id);
+  if (itr == labels.end())
+  {
+    if (namedonly) return std::string();
+    else return std::to_string(id);
+  }
   return itr->second;
 }
 
@@ -108,6 +112,26 @@ std::string jevois::dnn::shapestr(cv::Mat const & m)
   std::string ret = std::to_string(nd) + "D ";
   for (int i = 0; i < nd; ++i) ret += std::to_string(ms[i]) + (i < nd-1 ? "x" : "");
   ret += ' ' + jevois::cvtypestr(m.type());
+  return ret;
+}
+
+// ##############################################################################################################
+std::string jevois::dnn::shapestr(std::vector<size_t> dims, int typ)
+{
+  int const nd = int(dims.size());
+  std::string ret = std::to_string(nd) + "D ";
+  for (int i = 0; i < nd; ++i) ret += std::to_string(dims[i]) + (i < nd-1 ? "x" : "");
+  ret += ' ' + jevois::cvtypestr(typ);
+  return ret;
+}
+
+// ##############################################################################################################
+std::string jevois::dnn::shapestr(std::vector<int> dims, int typ)
+{
+  int const nd = int(dims.size());
+  std::string ret = std::to_string(nd) + "D ";
+  for (int i = 0; i < nd; ++i) ret += std::to_string(dims[i]) + (i < nd-1 ? "x" : "");
+  ret += ' ' + jevois::cvtypestr(typ);
   return ret;
 }
 
@@ -513,14 +537,15 @@ std::string jevois::dnn::attrstr(vsi_nn_tensor_attr_t const & attr)
 {
   std::string ret;
 
-  // Dimension ordering:
-  switch (attr.dtype.fmt)
-  {
-  case VSI_NN_DIM_FMT_NCHW: ret += "NCHW:"; break;
-  case VSI_NN_DIM_FMT_NHWC: ret += "NHWC:"; break;
-  default: break;
-  }
-
+  // Dimension ordering, only relevant for 3D and higher:
+  if (attr.dim_num > 2)
+    switch (attr.dtype.fmt)
+    {
+    case VSI_NN_DIM_FMT_NCHW: ret = "NCHW:"; break;
+    case VSI_NN_DIM_FMT_NHWC: ret = "NHWC:"; break;
+    default: break;
+    }  
+  
   // Value type:
   switch (attr.dtype.vx_type)
   {
@@ -665,6 +690,29 @@ vsi_nn_tensor_attr_t jevois::dnn::tensorattr(hailo_vstream_info_t const & vi)
 #endif
 
 // ##############################################################################################################
+namespace
+{
+  struct ParallelSigmoid : public cv::ParallelLoopBody
+  {
+      ParallelSigmoid(float * ptr) : p(ptr)
+      { }
+      
+      virtual void operator()(cv::Range const & r) const
+      { for (int i = r.start; i != r.end; ++i) p[i] = jevois::dnn::sigmoid(p[i]); }
+      
+    private:
+      float *p;
+  };
+}
+
+void jevois::dnn::sigmoid(cv::Mat & m)
+{
+  if (m.type() != CV_32F) LFATAL("Can only apply to CV_32F tensors");
+  
+  cv::parallel_for_(cv::Range(0, m.total()), ParallelSigmoid((float *)m.data));
+}
+
+// ##############################################################################################################
 size_t jevois::dnn::softmax(float const * input, size_t const n, size_t const stride, float const fac, float * output,
                             bool maxonly)
 {
@@ -679,14 +727,14 @@ size_t jevois::dnn::softmax(float const * input, size_t const n, size_t const st
   if (fac == 1.0F)
     for (size_t i = 0; i < ns; i += stride)
     {
-      float const e = expf(input[i] - largest);
+      float const e = jevois::dnn::fastexp(input[i] - largest);
       sum += e;
       output[i] = e;
     }
   else    
     for (size_t i = 0; i < ns; i += stride)
     {
-      float const e = expf(input[i]/fac - largest/fac);
+      float const e = jevois::dnn::fastexp(input[i]/fac - largest/fac);
       sum += e;
       output[i] = e;
     }
@@ -698,6 +746,39 @@ size_t jevois::dnn::softmax(float const * input, size_t const n, size_t const st
   }
   
   return largest_idx;
+}
+
+// ##############################################################################################################
+float jevois::dnn::softmax_dfl(float const * src, float * dst, size_t const n, size_t const stride)
+{
+  // inspired from https://github.com/trinhtuanvubk/yolo-ncnn-cpp/blob/main/yolov8/yolov8.cpp
+  size_t const ns = n * stride;
+
+  float alpha = -FLT_MAX;
+  for (size_t c = 0; c < ns; c += stride)
+  {
+    float score = src[c];
+    if (score > alpha) alpha = score;
+  }
+
+  float denominator = 0;
+  float dis_sum = 0;
+  float * dp = dst;
+
+  for (size_t i = 0; i < ns; i += stride)
+  {
+    *dp = jevois::dnn::fastexp(src[i] - alpha);
+    denominator += *dp++;
+  }
+
+  if (denominator == 0.0F) return 0.0F;
+  
+  for (size_t i = 0; i < n; ++i)
+  {
+    dst[i] /= denominator;
+    dis_sum += i * dst[i];
+  }
+  return dis_sum;
 }
 
 // ##############################################################################################################
@@ -755,8 +836,7 @@ cv::Mat jevois::dnn::quantize(cv::Mat const & m, vsi_nn_tensor_attr_t const & at
       m.convertTo(ret, tt, 1 << attr.dtype.fl, 0.0);
       return ret;
     }
-    default:
-      break;
+    default: break; // will LFATAL() below
     }
     break;
   }
@@ -773,8 +853,7 @@ cv::Mat jevois::dnn::quantize(cv::Mat const & m, vsi_nn_tensor_attr_t const & at
       return ret;
     }
     
-    default:
-      break;
+    default: break; // will LFATAL() below
     }
     break;
   }
@@ -782,8 +861,7 @@ cv::Mat jevois::dnn::quantize(cv::Mat const & m, vsi_nn_tensor_attr_t const & at
   case  VSI_NN_QNT_TYPE_AFFINE_PERCHANNEL_SYMMETRIC:
     LFATAL("Affine per-channel symmetric not supported yet");
     
-  default:
-    break;
+  default: break; // will LFATAL() below
   }
   
   LFATAL("Quantization to " << jevois::dnn::shapestr(attr) << " not yet supported");
@@ -814,9 +892,9 @@ cv::Mat jevois::dnn::dequantize(cv::Mat const & m, vsi_nn_tensor_attr_t const & 
   case VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC: // same value as VSI_NN_QNT_TYPE_AFFINE_SYMMETRIC:
   {
     cv::Mat ret;
-    m.convertTo(ret, CV_32F);
-    if (attr.dtype.zero_point) ret -= attr.dtype.zero_point;
-    if (attr.dtype.scale != 1.0F) ret *= attr.dtype.scale;
+    double const alpha = attr.dtype.scale;
+    double const beta = - alpha * attr.dtype.zero_point;
+    m.convertTo(ret, CV_32F, alpha, beta);
     return ret;
   }
 
@@ -844,7 +922,7 @@ cv::Mat jevois::dnn::concatenate(std::vector<cv::Mat> const & tensors, int axis)
   if (tensors.empty()) return cv::Mat();
   if (tensors.size() == 1) return tensors[0];
 
-  cv::MatSize ms = tensors[0].size;
+  cv::MatSize const & ms = tensors[0].size;
   int const ndims = ms.dims();
   auto const typ = tensors[0].type();
   
@@ -877,14 +955,15 @@ cv::Mat jevois::dnn::concatenate(std::vector<cv::Mat> const & tensors, int axis)
           LFATAL("Mismatched size for axis " << a << ": tensors[0] has " << ms[a] << " while tensors[" <<
                  i << "] has " << tensors[i].size[a]);
 
-  // Ready to go:
-  ms[axis] = newsize;
-  cv::Mat ret(ndims, ms.p, typ);
+  // Ready to go. Caution: copying a cv::MatSize does not copy its array of dims:
+  int newdims[ndims]; for (int i = 0; i < ndims; ++i) newdims[i] = ms.p[i];
+  newdims[axis] = newsize;
+  cv::Mat ret(ndims, newdims, typ);
   unsigned char * optr = ret.data;
-
+  
   size_t numcopy = 1; for (int a = 0; a < axis; ++a) numcopy *= ms[a];
   size_t elemsize = jevois::cvBytesPerPix(typ); for (int a = axis + 1; a < ndims; ++a) elemsize *= ms[a];
-  
+
   for (size_t n = 0; n < numcopy; ++n)
     for (size_t i = 0; i < tensors.size(); ++i)
     {
@@ -893,7 +972,66 @@ cv::Mat jevois::dnn::concatenate(std::vector<cv::Mat> const & tensors, int axis)
       std::memcpy(optr, sptr, elemsize * axsize);
       optr += elemsize * axsize;
     }
-  
+
   return ret;
 }
 
+// ##############################################################################################################
+std::vector<cv::Mat> jevois::dnn::split(cv::Mat const & tensor, int axis, std::vector<int> const & sizes)
+{
+  cv::MatSize const & ms = tensor.size;
+  int const ndims = ms.dims();
+  auto const typ = tensor.type();
+  int const nsplit = sizes.size();
+  
+  // Convert negative axis to positive and check within bounds:
+  if (axis < - ndims || axis >= ndims)
+    LFATAL("Incorrect axis " << axis << ": must be in [" << -ndims << " ... " << ndims - 1 <<
+           " for given tensor " << jevois::dnn::shapestr(tensor));
+  if (axis < 0) axis = ndims - axis;
+
+  // Handle trivial cases:
+  std::vector<cv::Mat> ret;
+  if (nsplit == 0) return ret;
+  if (nsplit == 1)
+  {
+    if (sizes[0] == ms[axis]) { ret.emplace_back(tensor); return ret; }
+    else LFATAL("Desired new size " << sizes[0] << " for axis " << axis << " with only one output tensor must match "
+                "source size for that axis, but source is " << jevois::dnn::shapestr(tensor));
+  }
+
+  // Check that all given sizes add up, allocate mats, sizes, out pointers:
+  unsigned char * optr[nsplit]; size_t copysize[nsplit];
+  int sum = 0;
+  size_t numcopy = 1; for (int a = 0; a < axis; ++a) numcopy *= ms[a];
+  size_t elemsize = jevois::cvBytesPerPix(typ); for (int a = axis + 1; a < ndims; ++a) elemsize *= ms[a];
+
+  // Caution: copying a cv::MatSize does not copy its array of dims
+  int newdims[ndims]; for (int i = 0; i < ndims; ++i) newdims[i] = ms.p[i];
+
+  // Do the split:
+  for (int i = 0; i < nsplit; ++i)
+  {
+    int const s = sizes[i];
+    newdims[axis] = s; ret.emplace_back(cv::Mat(ndims, newdims, typ));
+    optr[i] = ret.back().data;
+    copysize[i] = s * elemsize;
+    sum += s;
+  }
+  
+  if (sum != ms[axis])
+    LFATAL("Given sizes [" << jevois::join(sizes, ", ") << "] do not add up to original size of axis " <<
+           axis << " for tensor " << jevois::dnn::shapestr(tensor));
+
+  // Good to go, split it, we have at least 2 output tensors at this point:
+  unsigned char const * sptr = tensor.data;
+  for (size_t n = 0; n < numcopy; ++n)
+    for (int j = 0; j < nsplit; ++j)
+    {
+      size_t const cs = copysize[j];
+      std::memcpy(optr[j], sptr, cs);
+      sptr += cs; optr[j] += cs;
+    }
+
+  return ret;
+}

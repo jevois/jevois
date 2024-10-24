@@ -25,8 +25,7 @@ namespace jevois
   {
     //! Post-Processor sub-component for raw YOLO decoding
     class PostProcessorDetectYOLO : public Component,
-                                    public Parameter<postprocessor::anchors, postprocessor::scalexy,
-                                                     postprocessor::sigmoid>
+                                    public Parameter<postprocessor::anchors, postprocessor::scalexy>
     {
       public:
         //! Inherited constructor ok
@@ -41,7 +40,7 @@ namespace jevois
         //! Generic raw YOLO processing
         void yolo(std::vector<cv::Mat> const & outs, std::vector<int> & classIds, std::vector<float> & confidences,
                   std::vector<cv::Rect> & boxes, size_t nclass, float boxThreshold, float confThreshold,
-                  cv::Size const & bsiz, int fudge, size_t const maxbox);
+                  cv::Size const & bsiz, int fudge, size_t const maxbox, bool sigmo);
 
       private:
         void onParamChange(postprocessor::anchors const & param, std::string const & val);

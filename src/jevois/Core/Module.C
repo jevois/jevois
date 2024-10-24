@@ -603,3 +603,35 @@ void jevois::StdModule::sendSerialObjDetImg2D(unsigned int camw, unsigned int ca
 {
   sendSerialObjDetImg2D(camw, camh, det.tlx, det.tly, det.brx - det.tlx, det.bry - det.tly, det.reco);
 }
+
+// ####################################################################################################
+void jevois::StdModule::sendSerialObjDetImg2D(unsigned int camw, unsigned int camh, jevois::ObjDetectOBB const & det)
+{
+  std::vector<jevois::ObjReco> const & res = det.reco;
+  if (res.empty()) return;
+
+  std::string best, extra; std::string * ptr = &best;
+  std::string fmt = "%s:%." + std::to_string(serprec::get()) + "f";
+  
+  for (auto const & r : res)
+  {
+    switch (serstyle::get())
+    {
+    case jevois::modul::SerStyle::Terse:
+      (*ptr) += jevois::replaceWhitespace(r.category);
+      break;
+      
+    default:
+      (*ptr) += jevois::sformat(fmt.c_str(), jevois::replaceWhitespace(r.category).c_str(), r.score);
+    }
+    if (ptr == &extra) (*ptr) += ' ';
+    ptr = &extra;
+  }
+
+  // Remove last space:
+  if (extra.empty() == false) extra = extra.substr(0, extra.length() - 1);
+
+  std::vector<cv::Point2f> pts; det.rect.points(pts);
+  sendSerialContour2D(camw, camh, pts, best, extra);
+}
+

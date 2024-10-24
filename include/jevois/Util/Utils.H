@@ -80,7 +80,13 @@ namespace jevois
   std::vector<std::string> split(std::string const & input, std::string const & regex = "\\s+");
 
   //! Concatenate a vector of tokens into a string
-  std::string join(std::vector<std::string> const & strings, std::string const & delimiter);
+  /*! Internally, we use std::to_string to convert each token to string, which may throw */
+  template <typename T>
+  std::string join(std::vector<T> const & tokens, std::string const & delimiter);
+
+  //! Concatenate a vector of string tokens into a string
+  template <>
+  std::string join<std::string>(std::vector<std::string> const & tokens, std::string const & delimiter);
 
   //! Return true if str starts with prefix (including if both strings are equal)
   /*! Note that if str is shorter than prefix, return is false (like in strncmp()). */ 

@@ -36,14 +36,8 @@ void jevois::dnn::PostProcessorClassify::freeze(bool doit)
 // ####################################################################################################
 void jevois::dnn::PostProcessorClassify::onParamChange(postprocessor::classes const &, std::string const & val)
 {
-  if (val.empty()) return;
-
-  // Get the dataroot of our network. We assume that there is a sub-component named "network" that is a sibling of us:
-  std::vector<std::string> dd = jevois::split(Component::descriptor(), ":");
-  dd.back() = "network"; dd.emplace_back("dataroot");
-  std::string const dataroot = engine()->getParamStringUnique(jevois::join(dd, ":"));
-
-  itsLabels = jevois::dnn::readLabelsFile(jevois::absolutePath(dataroot, val));
+  if (val.empty()) { itsLabels.clear(); return; }
+  itsLabels = jevois::dnn::readLabelsFile(jevois::absolutePath(JEVOIS_SHARE_PATH, val));
 }
 
 // ####################################################################################################
@@ -70,14 +64,18 @@ void jevois::dnn::PostProcessorClassify::process(std::vector<cv::Mat> const & ou
   }
   else jevois::dnn::topK((float const *)out.data, fMaxProb, MaxClass, sz, topk);
 
-  // Collect the top-k results that are also above threshold:
-  float const t = cthresh::get(); float const fac = 100.0F * scorescale::get();
+  // Collect the top-k results that are also above threshold, and, possibly that are named in the class file:
+  float const t = cthresh::get(); float const fac = 100.0F * scorescale::get(); bool namonly = namedonly::get();
   
   for (uint32_t i = 0; i < topk; ++i)
   {
     if (fMaxProb[i] * fac < t) break;
-    jevois::ObjReco o { fMaxProb[i] * fac, jevois::dnn::getLabel(itsLabels, MaxClass[i] + fudge) };
-    itsObjRec.push_back(o);
+    std::string const label = jevois::dnn::getLabel(itsLabels, MaxClass[i] + fudge, namonly);
+    if (namonly == false || label.empty() == false) // if namedonly desired, skip when class name is empty
+    {
+      jevois::ObjReco o { fMaxProb[i] * fac, label };
+      itsObjRec.emplace_back(o);
+    }
   }
 }
 
@@ -129,5 +127,9 @@ void jevois::dnn::PostProcessorClassify::report(jevois::StdModule * mod, jevois:
 #endif
   
   // If desired, send results to serial port:
-  if (mod) mod->sendSerialObjReco(itsObjRec);
+  if (mod && serialreport::get()) mod->sendSerialObjReco(itsObjRec);
 }
+
+// ####################################################################################################
+std::vector<jevois::ObjReco> const & jevois::dnn::PostProcessorClassify::latestRecognitions() const
+{ return itsObjRec; }

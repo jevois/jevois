@@ -19,8 +19,8 @@
 
 // for demo
 #include <math.h>
-#include <imgui.h>
 #define IMGUI_DEFINE_MATH_OPERATORS // Access to math operators
+#include <imgui.h>
 #include <imgui_internal.h>
 #include <algorithm> // for tweak demo
 
@@ -34,8 +34,6 @@
 #include <jevois/Util/Utils.H>
 #include <jevois/DNN/Utils.H>
 #include <jevois/Debug/PythonException.H>
-#include <imgui.h>
-#include <imgui_internal.h>
 #include <glm/gtc/matrix_transform.hpp> // glm::translate, glm::rotate, glm::scale, glm::perspective
 #include <glm/gtx/euler_angles.hpp>
 #include <fstream>
@@ -484,8 +482,10 @@ void jevois::GUIhelper::drawRect(float x1, float y1, float x2, float y2, ImU32 c
   ImVec2 const br = i2d(x2, y2);
 
   if (filled) dlb->AddRectFilled(tl, br, applyFillAlpha(col));
+  ImDrawFlags constexpr flags = ImDrawFlags_None; // ImDrawFlags_RoundCornersAll
+  float constexpr rounding = 0.0F;
 
-  dlb->AddRect(tl, br, col, 0.0F, ImDrawCornerFlags_All, linethick::get());
+  dlb->AddRect(tl, br, col, rounding, flags, linethick::get());
 }
 
 // ##############################################################################################################
@@ -605,6 +605,19 @@ void jevois::GUIhelper::drawCircle(float x, float y, float r, ImU32 col, bool fi
   if (filled) dlb->AddCircleFilled(center, rad, applyFillAlpha(col), 0);
 
   dlb->AddCircle(center, rad, col, 0, linethick::get());
+}
+
+// ##############################################################################################################
+void jevois::GUIhelper::drawEllipse(float x, float y, float rx, float ry, float rot, ImU32 col, bool filled)
+{
+  auto dlb = ImGui::GetBackgroundDrawList();
+
+  ImVec2 const center = i2d(x, y);
+  ImVec2 const rad = i2ds(rx, ry);
+
+  if (filled) dlb->AddEllipseFilled(center, rad, applyFillAlpha(col), rot, 0 /* auto num segments */);
+
+  dlb->AddEllipse(center, rad, col, rot, 0 /* auto num segments */, linethick::get());
 }
 
 // ##############################################################################################################
@@ -1012,7 +1025,7 @@ void jevois::GUIhelper::drawModuleSelect()
 
   // Refresh the list of modules if needed:
   ImGui::AlignTextToFramePadding();
-  ImGui::Text("Module:");
+  ImGui::TextUnformatted("Module:");
   ImGui::SameLine();
   ImGui::SetNextItemWidth(6 * ImGui::GetFontSize() + 5);
   if (ImGui::Combo("##typemachinevisionmodule", &itsVideoMappingListType, "Pro/GUI\0Legacy\0Headless\0\0")
@@ -1288,11 +1301,11 @@ void jevois::GUIhelper::drawParameters()
   c->foreachParam([this, &psm, &pnames, &ambig](std::string const &, jevois::ParameterBase * p) {
                     jevois::ParameterSummary psum = p->summary();
                     if (pnames.insert(psum.name).second == false) ambig.insert(psum.name);
-                    psm[psum.category].push_back(std::move(psum)); } );
+                    psm[psum.category].emplace_back(psum); } );
   
   // Stop here if no params to display:
-  if (psm.empty()) { ImGui::Text("This module has no parameters."); return; }
-  
+  if (psm.empty()) { ImGui::TextUnformatted("This module has no parameters."); return; }
+
   // Create a collapsing header for each parameter category:
   int widgetnum = 0; // we need a unique ID for each widget
   float maxlen = 0.0f;
@@ -1468,7 +1481,7 @@ void jevois::GUIhelper::drawParameters()
         // Possibly add a reset button:
         if (rst)
         {
-          static char rname[18]; snprintf(rname, 18, "Reset##%d", widgetnum);
+          static char rname[24]; snprintf(rname, 24, "Reset##%d", widgetnum);
           ImGui::SameLine();
           if (ImGui::Button(rname)) setparstr(ps.descriptor, ps.defaultvalue);
         }
@@ -1485,7 +1498,7 @@ void jevois::GUIhelper::drawParameters()
       }
 
       // Back to single column before the next param categ:
-      ImGui::Columns(1);
+      ImGui::EndColumns();
     }
   }
 
@@ -1495,7 +1508,7 @@ void jevois::GUIhelper::drawParameters()
     ImGui::SetColumnWidth(0, maxlen + ImGui::CalcTextSize("XX").x);
     ImGui::SetColumnWidth(1, ImGui::CalcTextSize(" (?) ").x);
     ImGui::SetColumnWidth(2, 2000);
-    ImGui::Columns(1);
+    ImGui::EndColumns();
   }
 }
 
@@ -1515,7 +1528,7 @@ void jevois::GUIhelper::drawConsole()
   case jevois::engine::SerPort::USB: slusb = true; slhard = false; break;
   }
   ImGui::AlignTextToFramePadding();
-  ImGui::Text("Log messages:"); ImGui::SameLine();
+  ImGui::TextUnformatted("Log messages:"); ImGui::SameLine();
   if (itsUSBserial == false) // grey out USB button if no driver
   {
     ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
@@ -1525,10 +1538,18 @@ void jevois::GUIhelper::drawConsole()
     ImGui::PopStyleVar();
 #ifdef JEVOIS_PLATFORM
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
-    { ImGui::BeginTooltip(); ImGui::Text("Disabled - enable USB serial in the System tab"); ImGui::EndTooltip(); }
+    {
+      ImGui::BeginTooltip();
+      ImGui::TextUnformatted("Disabled - enable USB serial in the System tab");
+      ImGui::EndTooltip();
+    }
 #else
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
-    { ImGui::BeginTooltip(); ImGui::Text("Disabled - not available on host"); ImGui::EndTooltip(); }
+    {
+      ImGui::BeginTooltip();
+      ImGui::TextUnformatted("Disabled - not available on host");
+      ImGui::EndTooltip();
+    }
 #endif
   }
   else if (toggleButton("USB##serlogu", &slusb)) schanged = true;
@@ -1546,7 +1567,7 @@ void jevois::GUIhelper::drawConsole()
   case jevois::engine::SerPort::Hard: sousb = false; sohard = true; break;
   case jevois::engine::SerPort::USB: sousb = true; sohard = false; break;
   }
-  ImGui::Text("Module output:"); ImGui::SameLine();
+  ImGui::TextUnformatted("Module output:"); ImGui::SameLine();
   if (itsUSBserial == false) // grey out USB button if no driver
   {
     ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
@@ -1556,10 +1577,18 @@ void jevois::GUIhelper::drawConsole()
     ImGui::PopStyleVar();
 #ifdef JEVOIS_PLATFORM
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
-    { ImGui::BeginTooltip(); ImGui::Text("Disabled - enable USB serial in the System tab"); ImGui::EndTooltip(); }
+    {
+      ImGui::BeginTooltip();
+      ImGui::TextUnformatted("Disabled - enable USB serial in the System tab");
+      ImGui::EndTooltip();
+    }
 #else
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
-    { ImGui::BeginTooltip(); ImGui::Text("Disabled - not available on host"); ImGui::EndTooltip(); }
+    {
+      ImGui::BeginTooltip();
+      ImGui::Text("Disabled - not available on host");
+      ImGui::EndTooltip();
+    }
 #endif
   }
   else if (toggleButton("USB##seroutu", &sousb)) schanged = true;
@@ -1727,9 +1756,9 @@ void jevois::GUIhelper::drawSystem()
     fan = jevois::getFanSpeed();
   }
   ImGui::Text("JeVois-Pro v%s -- %s", JEVOIS_VERSION_STRING, ver.c_str());
-  ImGui::Text(cpu.c_str());
-  ImGui::Text(mem.c_str());
-  ImGui::Text("NPU: %d, TPU: %d, VPU: %d, SPU: %d. Fan: %d%%", npu, tpu, vpu, spu, fan);
+  ImGui::TextUnformatted(cpu.c_str());
+  ImGui::TextUnformatted(mem.c_str());
+  ImGui::Text("NPU: %zu, TPU: %zu, VPU: %zu, SPU: %zu. Fan: %d%%", npu, tpu, vpu, spu, fan);
   ImGui::Separator();
   
   // #################### Create new module:
@@ -1755,7 +1784,7 @@ void jevois::GUIhelper::drawSystem()
   if (showping)
   {
     ImGui::SameLine();
-    ImGui::Text(pingstr.c_str());
+    ImGui::TextUnformatted(pingstr.c_str());
     --showping;
   }
 
@@ -1776,12 +1805,12 @@ void jevois::GUIhelper::drawSystem()
   switch (state)
   {
   case 0:
-    ImGui::Text(" ");
+    ImGui::TextUnformatted(" ");
     break;
 
   case 1:
   {
-    ImGui::Text("-- Downloading...");
+    ImGui::TextUnformatted("-- Downloading...");
     zip = std::string(buf) + ".zip";
     itsDnnGetFut =
       jevois::async_little([]()
@@ -1796,7 +1825,7 @@ void jevois::GUIhelper::drawSystem()
   case 2:
   {
     if (itsDnnGetFut.valid() == false) { reportError("Unknown error while loading custom DNN"); state = 0; break; }
-    ImGui::Text("-- Downloading...");
+    ImGui::TextUnformatted("-- Downloading...");
     if (itsDnnGetFut.wait_for(std::chrono::microseconds(100)) == std::future_status::ready)
     {
       itsDnnGetFut.get();
@@ -1823,7 +1852,7 @@ void jevois::GUIhelper::drawSystem()
   case 3:
   {
     if (itsDnnGetFut.valid() == false) { reportError("Unknown error while unpacking custom DNN"); state = 0; break; }
-    ImGui::Text("-- Installing...");
+    ImGui::TextUnformatted("-- Installing...");
     if (itsDnnGetFut.wait_for(std::chrono::microseconds(100)) == std::future_status::ready)
     {
       std::string ret = itsDnnGetFut.get();
@@ -1839,12 +1868,12 @@ void jevois::GUIhelper::drawSystem()
   break;
   
   case 200:
-    ImGui::Text(" ");
+    ImGui::TextUnformatted(" ");
     state = 0;
     break;
     
   default:
-    ImGui::Text(donestr.c_str());
+    ImGui::TextUnformatted(donestr.c_str());
     ++state;
   }
   ImGui::Separator();
@@ -1853,7 +1882,7 @@ void jevois::GUIhelper::drawSystem()
   // #################### boot mode:
   static int bootmode = 0;
   ImGui::AlignTextToFramePadding();
-  ImGui::Text("On boot, start:");
+  ImGui::TextUnformatted("On boot, start:");
   ImGui::SameLine();
   if (ImGui::Combo("##onboot", &bootmode, "(no change)\0JeVois-Pro\0Ubuntu Console\0Ubuntu Graphical\0\0"))
   {
@@ -2061,7 +2090,7 @@ void jevois::GUIhelper::drawNewModuleForm()
       static jevois::VideoMapping m;
       
       ImGui::AlignTextToFramePadding();
-      ImGui::Text("Fill out the details below, or clone from");
+      ImGui::TextUnformatted("Fill out the details below, or clone from");
       ImGui::SameLine();
 
       static std::map<std::string, size_t> mods;
@@ -2179,17 +2208,17 @@ void jevois::GUIhelper::drawNewModuleForm()
       ImGui::SetNextItemWidth(fontw * 4.0F);
       ImGui::InputInt("##NewModow", &ow, 0, 0, ImGuiInputTextFlags_CharsDecimal | oflags);
       ImGui::SameLine();
-      ImGui::Text("x");
+      ImGui::TextUnformatted("x");
       ImGui::SameLine();
       ImGui::SetNextItemWidth(fontw * 4.0F);
       ImGui::InputInt("##NewModoh", &oh, 0, 0, ImGuiInputTextFlags_CharsDecimal | oflags);
       ImGui::SameLine();
-      ImGui::Text("@");
+      ImGui::TextUnformatted("@");
       ImGui::SameLine();
       ImGui::SetNextItemWidth(fontw * 4.0F);
       ImGui::InputFloat("##NewModofps", &ofps, 0.0F, 0.0F, "%.1f", ImGuiInputTextFlags_CharsDecimal | oflags);
       ImGui::SameLine();
-      ImGui::Text("fps");
+      ImGui::TextUnformatted("fps");
       ImGui::NextColumn();
       
       if (templ != 1)
@@ -2232,17 +2261,17 @@ void jevois::GUIhelper::drawNewModuleForm()
       ImGui::SetNextItemWidth(fontw * 4.0F);
       ImGui::InputInt("##NewModcw", &cw, 0, 0, ImGuiInputTextFlags_CharsDecimal);
       ImGui::SameLine();
-      ImGui::Text("x");
+      ImGui::TextUnformatted("x");
       ImGui::SameLine();
       ImGui::SetNextItemWidth(fontw * 4.0F);
       ImGui::InputInt("##NewModch", &ch, 0, 0, ImGuiInputTextFlags_CharsDecimal);
       ImGui::SameLine();
-      ImGui::Text("@");
+      ImGui::TextUnformatted("@");
       ImGui::SameLine();
       ImGui::SetNextItemWidth(fontw * 4.0F);
       ImGui::InputFloat("##NewModcfps", &cfps, 0.0F, 0.0F, "%.1f", ImGuiInputTextFlags_CharsDecimal);
       ImGui::SameLine();
-      ImGui::Text("fps");
+      ImGui::TextUnformatted("fps");
       ImGui::NextColumn();
       
       // Camera second frame video mapping:
@@ -2265,7 +2294,7 @@ void jevois::GUIhelper::drawNewModuleForm()
       ImGui::SetNextItemWidth(fontw * 4.0F);
       ImGui::InputInt("##NewModc2w", &c2w, 0, 0, ImGuiInputTextFlags_CharsDecimal | c2flags);
       ImGui::SameLine();
-      ImGui::Text("x");
+      ImGui::TextUnformatted("x");
       ImGui::SameLine();
       ImGui::SetNextItemWidth(fontw * 4.0F);
       ImGui::InputInt("##NewModc2h", &c2h, 0, 0, ImGuiInputTextFlags_CharsDecimal | c2flags);
@@ -2654,7 +2683,7 @@ void jevois::GUIhelper::drawErrorPopup()
   if (ImGui::Begin("Error detected!", &show, window_flags))
   {
     ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
-    ImGui::Text("Error detected!");
+    ImGui::TextUnformatted("Error detected!");
 
     auto itr = itsErrors.begin();
     while (itr != itsErrors.end())
@@ -2683,7 +2712,7 @@ void jevois::GUIhelper::drawErrorPopup()
 void jevois::GUIhelper::helpMarker(char const * msg, char const * msg2, char const * msg3)
 {
   //ImGui::TextDisabled("(?)");
-  ImGui::Text("(?)");
+  ImGui::TextUnformatted("(?)");
   if (ImGui::IsItemHovered())
   {
     ImGui::BeginTooltip();
@@ -2919,11 +2948,11 @@ void jevois::GUIhelper::compileModule()
       if (ImGui::Button("Edit CMakeLists.txt"))
       { itsCodeEditor->loadFile(itsNewMapping.cmakepath()); show_modal = true; }
 
-      ImGui::SameLine(); ImGui::Text("    "); ImGui::SameLine();
+      ImGui::SameLine(); ImGui::TextUnformatted("    "); ImGui::SameLine();
       if (ImGui::Button(("Edit " + itsNewMapping.modulename + ".C").c_str()))
       { itsCodeEditor->loadFile(itsNewMapping.srcpath()); show_modal = true; }
 
-      ImGui::SameLine(); ImGui::Text("    "); ImGui::SameLine();
+      ImGui::SameLine(); ImGui::TextUnformatted("    "); ImGui::SameLine();
       if (ImGui::Button("Compile again")) itsCompileState = CompilationState::Start;
 
       ImGui::Separator();

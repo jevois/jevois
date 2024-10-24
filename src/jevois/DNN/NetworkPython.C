@@ -17,6 +17,7 @@
 
 #include <jevois/DNN/NetworkPython.H>
 #include <jevois/Core/PythonSupport.H>
+#include <jevois/Core/Engine.H>
 #include <jevois/DNN/Utils.H>
 
 // ####################################################################################################
@@ -24,7 +25,7 @@ namespace jevois
 {
   namespace dnn
   {
-    class NetworkPythonImpl : public jevois::Component, public PythonWrapper
+    class NetworkPythonImpl : public Component, public PythonWrapper
     {
       public:
         using Component::Component;
@@ -40,7 +41,9 @@ namespace jevois
 // ####################################################################################################
 // ####################################################################################################
 jevois::dnn::NetworkPythonImpl::~NetworkPythonImpl()
-{ }
+{
+  engine()->unRegisterPythonComponent(this);
+}
 
 // ####################################################################################################
 void jevois::dnn::NetworkPythonImpl::freeze(bool doit)
@@ -62,13 +65,16 @@ void jevois::dnn::NetworkPythonImpl::loadpy(std::string const & pypath)
 // ####################################################################################################
 void jevois::dnn::NetworkPythonImpl::load()
 {
-  PythonWrapper::pyinst().attr("load")();
+  if (jevois::python::hasattr(PythonWrapper::pyinst(), "load")) PythonWrapper::pyinst().attr("load")();
+  else LFATAL("No load() method provided. It is required, please add it to your Python network processor.");
 }
 
 // ####################################################################################################
 std::vector<cv::Mat> jevois::dnn::NetworkPythonImpl::doprocess(std::vector<cv::Mat> const & blobs,
                                                                std::vector<std::string> & info)
 {
+  if (jevois::python::hasattr(PythonWrapper::pyinst(), "process") == false)
+    LFATAL("No process() method provided. It is required, please add it to your Python network processor.");
   boost::python::list bloblst = jevois::python::pyVecToList(blobs);
   boost::python::object ret = PythonWrapper::pyinst().attr("process")(bloblst);
 

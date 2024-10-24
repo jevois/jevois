@@ -172,14 +172,16 @@ td.jvnetin {
     color: #006000;
     vertical-align: middle;
     text-align: left;
-    white-space: nowrap;
+    /*white-space: nowrap;*/
+    word-wrap:break-word;
 }
 
 td.jvnetout {
     color: #006000;
     vertical-align: middle;
     text-align: left;
-    white-space: nowrap;
+    /*white-space: nowrap;*/
+    word-wrap:break-word;
 }
 
 td.jvprestats {

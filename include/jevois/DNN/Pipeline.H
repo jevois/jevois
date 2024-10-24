@@ -21,6 +21,10 @@
 #include <jevois/GPU/GUIhelper.H>
 #include <jevois/Debug/Timer.H>
 #include <jevois/Types/Enum.H>
+#include <jevois/Types/ObjReco.H>
+#include <jevois/Types/ObjDetect.H>
+#include <jevois/Types/PoseSkeleton.H>
+
 #include <ovxlib/vsi_nn_pub.h> // for data types and quantization types
 
 namespace jevois
@@ -83,7 +87,7 @@ namespace jevois
                                              "automatically by selecting a pipeline from the zoo file",
                                              NetType::OpenCV, NetType_Values, ParamCateg);
       //! Enum \relates jevois::dnn::Pipeline
-      JEVOIS_DEFINE_ENUM_CLASS(PostProc, (Classify) (Detect) (Segment) (YuNet) (Python) (Stub) );
+      JEVOIS_DEFINE_ENUM_CLASS(PostProc, (Classify) (Detect) (DetectOBB) (Segment) (YuNet) (Pose) (Python) (Stub) );
 
       //! Parameter \relates jevois::dnn::Pipeline
       JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(postproc, PostProc, "Post-Processor to use, usually set automatically "
@@ -119,6 +123,12 @@ namespace jevois
                                              "for each, run it for a while and append pre/net/post timing statistics "
                                              "in HTML table format to " JEVOIS_SHARE_PATH "/benchmark.html",
                                              false, ParamCateg);
+
+      //! Parameter \relates jevois::dnn::Pipeline
+      JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(extramodels, bool, "If true, show all available models, including older "
+                                             "ones, in the pipe list; otherwise, only those not marked 'extramodel' "
+                                             "in their model zoo definition",
+                                             false, ParamCateg);
     }
     
     //! Neural processing pipeline
@@ -134,7 +144,7 @@ namespace jevois
                      public jevois::Parameter<pipeline::zooroot, pipeline::zoo, pipeline::filter, pipeline::pipe,
                                               pipeline::processing, pipeline::preproc, pipeline::nettype,
                                               pipeline::postproc, pipeline::overlay, pipeline::paramwarn,
-                                              pipeline::statsfile, pipeline::benchmark>
+                                              pipeline::statsfile, pipeline::benchmark, pipeline::extramodels>
     {
       public:
         //! Constructor
@@ -155,6 +165,34 @@ namespace jevois
         //! Freeze/unfreeze parameters that users should not change while running
         void freeze(bool doit);
 
+        //! Get the latest recognition results, use with caution, not thread-safe
+        /*! This returns a reference to our internal vector of recognitions. That vector will get overwritten every time
+            process() is called. It is ok to use this after you have called process() on the current frame, but do not
+            hold this ref past the end of the current video frame. If you need to keep a persistent copy of the data,
+            make a deep copy of the vector. Throws if the post-processor is not of type Classify. */
+        std::vector<ObjReco> const & latestRecognitions() const;
+
+        //! Get the latest detection results, use with caution, not thread-safe
+        /*! This returns a reference to our internal vector of detections. That vector will get overwritten every time
+            process() is called. It is ok to use this after you have called process() on the current frame, but do not
+            hold this ref past the end of the current video frame. If you need to keep a persistent copy of the data,
+            make a deep copy of the vector. Throws if the post-processor is not of type Detect or Pose. */
+        std::vector<ObjDetect> const & latestDetections() const;
+
+        //! Get the latest oriented bounded box (OBB) detection results, use with caution, not thread-safe
+        /*! This returns a reference to our internal vector of detections. That vector will get overwritten every time
+            process() is called. It is ok to use this after you have called process() on the current frame, but do not
+            hold this ref past the end of the current video frame. If you need to keep a persistent copy of the data,
+            make a deep copy of the vector. Throws if the post-processor is not of type Detect or Pose. */
+        std::vector<ObjDetectOBB> const & latestDetectionsOBB() const;
+
+        //! Get the latest skeletons, use with caution, not thread-safe
+        /*! This returns a reference to our internal vector of skeletons. That vector will get overwritten every time
+            process() is called. It is ok to use this after you have called process()  on the current frame, but do not
+            hold this ref past the end of the current video frame. If you need to keep a persistent copy of the data,
+            make a deep copy of the vector. Throws if the post-processor is not of type Pose. */
+        std::vector<PoseSkeleton> const & latestSkeletons() const;
+
       protected:
         void postInit() override;
         void preUninit() override;
@@ -171,6 +209,7 @@ namespace jevois
         void onParamChange(pipeline::preproc const & param, pipeline::PreProc const & val) override;
         void onParamChange(pipeline::postproc const & param, pipeline::PostProc const & val) override;
         void onParamChange(pipeline::benchmark const & param, bool const & val) override;
+        void onParamChange(pipeline::extramodels const & param, bool const & val) override;
 
         void showInfo(std::vector<std::string> const & info, jevois::StdModule * mod,
                       jevois::RawImage * outimg, jevois::OptGUIhelper * helper, bool ovl, bool idle);

@@ -103,6 +103,11 @@ std::string const & jevois::PythonWrapper::constructionError() const
 // ####################################################################################################
 jevois::PythonWrapper::~PythonWrapper()
 {
+  // This does not work, the dynamic cast fails. Looks like it is too late here to do it, see
+  // https://stackoverflow.com/questions/59973782/dynamic-cast-in-destructor
+
+  // Our parent class will have to do the un-registering...
+  /*
   std::lock_guard<std::mutex> _(itsMtx);
 
   // If we are sibling of a Component, unregister our instance with Engine:
@@ -111,4 +116,5 @@ jevois::PythonWrapper::~PythonWrapper()
     jevois::Component * comp = dynamic_cast<jevois::Component *>(this);
     if (comp) comp->engine()->unRegisterPythonComponent(comp);
   }
+  */
 }

@@ -145,6 +145,12 @@ namespace jevois
             convert detected boxes back into original input coordinates. */
         void b2i(float & x, float & y, cv::Size const & bsiz, bool letterboxed);
 
+        //! Convert box size from blob back to original image
+        void b2is(float & sx, float & sy, size_t blobnum = 0);
+
+        //! Convert box size from blob back to original image, given a known blob size
+        void b2is(float & sx, float & sy, cv::Size const & bsiz, bool letterboxed);
+
         //! Get unscaled crop rectangle in image coordinates
         /*! This is useful to display an image overlay on top of the input image. */
         cv::Rect getUnscaledCropRect(size_t blobnum = 0);

@@ -1,0 +1,12 @@
+/*! \page JeVoisProBenchmarks119 JeVois-Pro Deep Neural Network Benchmarks on older JeVois 1.19.0 software
+
+See \ref JeVoisProBenchmarks for the latest version.
+
+<table>
+<tr><th>Pipeline</th><th>Input</th><th>Output</th><th>PreProc</th><th>Network</th><th>PostProc</th><th>Total</th><th>FPS</th></tr>
+
+\htmlinclude benchmarks-1.19.0.html
+
+</table>
+
+*/

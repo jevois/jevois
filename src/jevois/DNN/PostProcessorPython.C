@@ -18,6 +18,7 @@
 #include <jevois/DNN/PostProcessorPython.H>
 #include <jevois/Core/PythonModule.H>
 #include <jevois/Core/PythonSupport.H>
+#include <jevois/Core/Engine.H>
 #include <jevois/DNN/PreProcessorPython.H>
 
 // ####################################################################################################
@@ -25,7 +26,7 @@ namespace jevois
 {
   namespace dnn
   {
-    class PostProcessorPythonImpl : public jevois::Component, public PythonWrapper
+    class PostProcessorPythonImpl : public Component, public PythonWrapper
     {
       public:
         using Component::Component;
@@ -42,7 +43,9 @@ namespace jevois
 // ####################################################################################################
 // ####################################################################################################
 jevois::dnn::PostProcessorPythonImpl::~PostProcessorPythonImpl()
-{ }
+{
+  engine()->unRegisterPythonComponent(this);
+}
 
 // ####################################################################################################
 void jevois::dnn::PostProcessorPythonImpl::freeze(bool doit)
@@ -65,6 +68,9 @@ void jevois::dnn::PostProcessorPythonImpl::loadpy(std::string const & pypath)
 void jevois::dnn::PostProcessorPythonImpl::process(std::vector<cv::Mat> const & outs,
                                                    jevois::dnn::PreProcessor * preproc)
 {
+  if (jevois::python::hasattr(PythonWrapper::pyinst(), "process") == false)
+    LFATAL("No process() method provided. It is required, please add it to your Python post-processor.");
+
   boost::python::list lst = jevois::python::pyVecToList(outs);
   PythonWrapper::pyinst().attr("process")(lst, boost::python::ptr(preproc->getPreProcForPy().get()));
 }
@@ -73,6 +79,9 @@ void jevois::dnn::PostProcessorPythonImpl::process(std::vector<cv::Mat> const & 
 void jevois::dnn::PostProcessorPythonImpl::report(jevois::StdModule *, jevois::RawImage * outimg,
                                                   jevois::OptGUIhelper * helper, bool overlay, bool idle)
 {
+  if (jevois::python::hasattr(PythonWrapper::pyinst(), "report") == false)
+    LFATAL("No process() method provided. It is required, please add it to your Python post-processor.");
+
   // default constructed boost::python::object is None on the python side
   if (outimg)
   {

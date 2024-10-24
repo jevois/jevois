@@ -78,6 +78,35 @@ void jevois::dnn::PreProcessor::b2i(float & x, float & y, cv::Size const & bsiz,
 }
 
 // ####################################################################################################
+void jevois::dnn::PreProcessor::b2is(float & sx, float & sy, size_t blobnum)
+{
+  if (blobnum >= itsCrops.size())
+    LFATAL("Invalid blob number " << blobnum << ", only have " << itsCrops.size() << " crops");
+
+  cv::Rect const & r = itsCrops[blobnum];
+  b2is(sx, sy, blobsize(blobnum), (r.x != 0 || r.y != 0));
+}
+
+// ####################################################################################################
+void jevois::dnn::PreProcessor::b2is(float & sx, float & sy, cv::Size const & bsiz, bool letterboxed)
+{
+  if (bsiz.width == 0 || bsiz.height == 0) LFATAL("Cannot handle zero blob width or height");
+
+  if (letterboxed)
+  {
+    // We did letterbox and crop, so we need to apply scale:
+    float const fac = std::min(itsImageSize.width / float(bsiz.width), itsImageSize.height / float(bsiz.height));
+    sx *= fac;
+    sy *= fac;
+  }
+  else
+  {
+    sx *= itsImageSize.width / float(bsiz.width);
+    sy *= itsImageSize.height / float(bsiz.height);
+  }
+}
+
+// ####################################################################################################
 cv::Rect jevois::dnn::PreProcessor::getUnscaledCropRect(size_t num)
 {
   if (num >= itsCrops.size()) LFATAL("Invalid blob number " << num << ", only have " << itsCrops.size() << " blobs");

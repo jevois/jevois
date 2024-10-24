@@ -117,6 +117,8 @@
 
 #endif // JEVOIS_PLATFORM
 
+namespace cv { namespace parallel { class ParallelForAPI; } }
+
 namespace jevois
 {
   class VideoInput;
@@ -146,7 +148,7 @@ namespace jevois
                              JEVOIS_CAMERASENS_DEFAULT, CameraSensor_Values, ParamCateg);
 
     //! Parameter \relates jevois::Engine
-    JEVOIS_DECLARE_PARAMETER(cameralens, CameraLens, "Camera lens. Users should usually not set this parameter "
+    JEVOIS_DECLARE_PARAMETER(cameralens, CameraLens, "Camera lens. Users should usually set this parameter "
                              "using the global JeVois params.cfg config file.",
                              CameraLens::standard, CameraLens_Values, ParamCateg);
 
@@ -556,6 +558,14 @@ namespace jevois
 
       //! When in demo mode, abort demo mode
       void abortDemo();
+
+      //! Set OpenCV parallel threading framework
+      /*! The default OpenCV threading uses all cores, which may sometimes give slow results if an image operation is
+          split across big and little cores, as we will end up waiting for the little cores to finish. However, using
+          all cores may be beneficial for deep nets. Hence, current polity is to use JeVois Big threadpool unless one
+          wants to use the default OpenCV threadpool by calling this function, which NetworkOpenCV does. Valid values
+          here are "jevois" (to only use big A73 cores and the JeVois ThreadPool), "tbb", "openmp", "pthreads" */
+      void setOpenCVthreading(char const * name = "jevois");
 #endif
       
     protected:
@@ -698,6 +708,11 @@ namespace jevois
       // PythonWrapper.
       std::map<void *, Component *> itsPythonRegistry;
       mutable std::mutex itsPyRegMtx;
+
+#ifdef JEVOIS_PRO
+      // Custom threading for OpenCV on JeVois-Pro
+      std::shared_ptr<cv::parallel::ParallelForAPI> itsOpenCVparallelAPI;
+#endif
   };
 } // namespace jevois
   

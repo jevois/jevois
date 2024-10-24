@@ -277,15 +277,16 @@ std::vector<std::string> jevois::split(std::string const & input, std::string co
 }
 
 // ####################################################################################################
-std::string jevois::join(std::vector<std::string> const & strings, std::string const & delimiter)
+template <>
+std::string jevois::join<std::string>(std::vector<std::string> const & tokens, std::string const & delimiter)
 {
-  if (strings.empty()) return "";
-  if (strings.size() == 1) return strings[0];
+  if (tokens.empty()) return "";
+  if (tokens.size() == 1) return tokens[0];
 
-  std::string ret; size_t const szm1 = strings.size() - 1;
+  std::string ret; size_t const szm1 = tokens.size() - 1;
 
-  for (size_t i = 0; i < szm1; ++i) ret += strings[i] + delimiter;
-  ret += strings[szm1];
+  for (size_t i = 0; i < szm1; ++i) ret += tokens[i] + delimiter;
+  ret += tokens[szm1];
 
   return ret;
 }

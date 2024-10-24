@@ -36,10 +36,12 @@
 
 #include <jevois/DNN/PostProcessorClassify.H>
 #include <jevois/DNN/PostProcessorDetect.H>
+#include <jevois/DNN/PostProcessorDetectOBB.H>
 #include <jevois/DNN/PostProcessorSegment.H>
 #include <jevois/DNN/PostProcessorYuNet.H>
 #include <jevois/DNN/PostProcessorPython.H>
 #include <jevois/DNN/PostProcessorStub.H>
+#include <jevois/DNN/PostProcessorPose.H>
 
 #include <opencv2/core/utils/filesystem.hpp>
 
@@ -158,6 +160,45 @@ jevois::dnn::Pipeline::~Pipeline()
 }
 
 // ####################################################################################################
+std::vector<jevois::ObjReco> const & jevois::dnn::Pipeline::latestRecognitions() const
+{
+  if (auto pp = dynamic_cast<jevois::dnn::PostProcessorClassify *>(itsPostProcessor.get()))
+    return pp->latestRecognitions();
+
+  LFATAL("Cannot get recognition results if post-processor is not of type Classify");
+}
+
+// ####################################################################################################
+std::vector<jevois::ObjDetect> const & jevois::dnn::Pipeline::latestDetections() const
+{
+  if (auto pp = dynamic_cast<jevois::dnn::PostProcessorDetect *>(itsPostProcessor.get()))
+    return pp->latestDetections();
+
+  if (auto pp = dynamic_cast<jevois::dnn::PostProcessorPose *>(itsPostProcessor.get()))
+    return pp->latestDetections();
+
+  LFATAL("Cannot get detection results if post-processor is not of type Detect or Pose");
+}
+
+// ####################################################################################################
+std::vector<jevois::ObjDetectOBB> const & jevois::dnn::Pipeline::latestDetectionsOBB() const
+{
+  if (auto pp = dynamic_cast<jevois::dnn::PostProcessorDetectOBB *>(itsPostProcessor.get()))
+    return pp->latestDetectionsOBB();
+
+  LFATAL("Cannot get detection results if post-processor is not of type DetectOBB");
+}
+
+// ####################################################################################################
+std::vector<jevois::PoseSkeleton> const & jevois::dnn::Pipeline::latestSkeletons() const
+{
+  if (auto pp = dynamic_cast<jevois::dnn::PostProcessorPose *>(itsPostProcessor.get()))
+    return pp->latestSkeletons();
+
+  LFATAL("Cannot get pose skeleton results if post-processor is not of type Pose");
+}
+
+// ####################################################################################################
 void jevois::dnn::Pipeline::asyncNetWait()
 {
   // If we were currently doing async processing, wait until network is done:
@@ -206,19 +247,26 @@ void jevois::dnn::Pipeline::onParamChange(pipeline::benchmark const &, bool cons
 }
 
 // ####################################################################################################
+void jevois::dnn::Pipeline::onParamChange(pipeline::extramodels const &, bool const & val)
+{
+  // Reload the zoo on changed extramodels value:
+  if (val != extramodels::get()) itsZooChanged = true;
+}
+
+// ####################################################################################################
 void jevois::dnn::Pipeline::onParamChange(pipeline::zoo const &, std::string const & val)
 {
-  // Just nuke everything:
-  itsPreProcessor.reset();
-  itsNetwork.reset();
-  itsPostProcessor.reset();
-  // Will get instantiated again when pipe param is set.
+  // Mark the zoo as not changed anymore:
+  itsZooChanged = false;
 
   // Load zoo file:
   std::vector<std::string> pipes;
   scanZoo(jevois::absolutePath(zooroot::get(), val), filter::strget(), pipes, "");
   LINFO("Found a total of " << pipes.size() << " valid pipelines.");
 
+  // If no pipes found under desired filter, reject:
+  if (pipes.empty()) LFATAL("No pipeline available with zoo file " << val << " and filter " << filter::strget());
+  
   // Update the parameter def of pipe:
   jevois::ParameterDef<std::string> newdef("pipe", "Pipeline to use, determined by entries in the zoo file and "
                                            "by the current filter",
@@ -227,9 +275,6 @@ void jevois::dnn::Pipeline::onParamChange(pipeline::zoo const &, std::string con
 
   // Just changing the def does not change the param value, so change it now:
   pipe::set(pipes[0]);
-
-  // Mark the zoo as not changed anymore, unless we are just starting the module and need to load a first net:
-  itsZooChanged = false;
 }
 
 // ####################################################################################################
@@ -238,7 +283,8 @@ void jevois::dnn::Pipeline::scanZoo(std::filesystem::path const & zoofile, std::
 {
   LINFO(indent << "Scanning model zoo file " << zoofile << " with filter [" << filt << "]...");
   int ntot = 0, ngood = 0;
-
+  bool skipextra = (extramodels::get() == false);
+  
   bool has_vpu = false;
   auto itr = itsAccelerators.find("VPU");
   if (itr != itsAccelerators.end() && itr->second > 0) has_vpu = true;
@@ -283,6 +329,18 @@ void jevois::dnn::Pipeline::scanZoo(std::filesystem::path const & zoofile, std::
     // Map type (model definition):
     else
     {
+      // Skip this pipe if it is marked 'extramodel' and extramodels is false:
+      if (skipextra)
+      {
+        std::string const isextrastr = ph.pget(item, "extramodel");
+        if (isextrastr.empty() == false)
+        {
+          bool isextra; jevois::paramStringToVal(isextrastr, isextra);
+          if (isextra) continue;
+        }
+      }
+
+      // We have one more model:
       ++ntot;
       
       // As a prefix, we use OpenCV for OpenCV models on CPU/OpenCL backends, and VPU for InferenceEngine backend with
@@ -466,10 +524,6 @@ bool jevois::dnn::Pipeline::selectPipe(std::string const & zoofile, std::vector<
   itsNetwork.reset(); removeSubComponent("network", false);
   itsPostProcessor.reset(); removeSubComponent("postproc", false);
 
-  // Then set all the global parameters of the current file:
-  //for (auto const & pp : ph.params)
-  //  setZooParam(pp.first, pp.second, zoofile, fs.root());
-  
   // Then iterate over all pipeline params and set them: first update our table, then set params from the whole table:
   for (cv::FileNodeIterator fit = node.begin(); fit != node.end(); ++fit)
     ph.set(*fit, zoofile, node);
@@ -502,6 +556,9 @@ bool jevois::dnn::Pipeline::selectPipe(std::string const & zoofile, std::vector<
 void jevois::dnn::Pipeline::setZooParam(std::string const & k, std::string const & v,
                                         std::string const & zf, cv::FileNode const & node)
 {
+  // Skip a few reserved YAML-only params:
+  if (k == "extramodel") return; // whether a pipe was marked as 'extramodel' in the zoo
+  
   // The zoo file may contain extra params, like download URL, etc. To ignore those while still catching invalid
   // values on our parameters, we first check whether the parameter exists, and, if so, try to set it:
   bool hasparam = false;
@@ -616,11 +673,17 @@ void jevois::dnn::Pipeline::onParamChange(pipeline::postproc const &, pipeline::
   case jevois::dnn::pipeline::PostProc::Detect:
     itsPostProcessor = addSubComponent<jevois::dnn::PostProcessorDetect>("postproc");
     break;
+  case jevois::dnn::pipeline::PostProc::DetectOBB:
+    itsPostProcessor = addSubComponent<jevois::dnn::PostProcessorDetectOBB>("postproc");
+    break;
   case jevois::dnn::pipeline::PostProc::Segment:
     itsPostProcessor = addSubComponent<jevois::dnn::PostProcessorSegment>("postproc");
     break;
   case jevois::dnn::pipeline::PostProc::YuNet:
     itsPostProcessor = addSubComponent<jevois::dnn::PostProcessorYuNet>("postproc");
+    break;
+  case jevois::dnn::pipeline::PostProc::Pose:
+    itsPostProcessor = addSubComponent<jevois::dnn::PostProcessorPose>("postproc");
     break;
   case jevois::dnn::pipeline::PostProc::Python:
     itsPostProcessor = addSubComponent<jevois::dnn::PostProcessorPython>("postproc");
@@ -828,10 +891,23 @@ void jevois::dnn::Pipeline::process(jevois::RawImage const & inimg, jevois::StdM
       {
         static std::vector<std::string> pipelines;
         static bool statswritten = false;
+        static bool write_separator = false;
         static size_t benchpipe = 0;
+        size_t constexpr numwarmup = 25;
+        size_t constexpr numbench = 100;
         
         if (benchmark::get())
         {
+#ifdef JEVOIS_PRO
+          if (helper && ImGui::Begin("Benchmarking in progress"))
+          {
+            ImGui::TextUnformatted(pipe::strget().c_str());
+            if (itsStatsWarmup) ImGui::Text("Warmup %zu / %zu", itsPreStats.size(), numwarmup);
+            else ImGui::Text("Iteration %zu / %zu", itsPreStats.size(), numbench);
+            ImGui::End();
+          }
+#endif
+          
           if (pipelines.empty())
           {
             // User just turned on benchmark mode. List all pipes and start iterating over them:
@@ -843,35 +919,29 @@ void jevois::dnn::Pipeline::process(jevois::RawImage const & inimg, jevois::StdM
             benchpipe = 0;
             statswritten = false;
             pipe::set(pipelines[benchpipe]);
-#ifdef JEVOIS_PRO
-            if (helper)
-            {
-              helper->reportError("Starting DNN benchmark...");
-              helper->reportError("Benchmarking: " +pipelines[benchpipe]);
-            }
-#endif
+            processing::freeze(false);
+            processing::set(jevois::dnn::pipeline::Processing::Sync); // run Sync for benchmarking
           }
           else
           {
             // Switch to the next pipeline after enough stats have been written:
             if (statswritten)
             {
+              std::string oldaccel = pipelines[benchpipe].substr(0, pipelines[benchpipe].find(':'));
               ++benchpipe;
               statswritten = false;
               if (benchpipe >= pipelines.size())
               {
                 pipelines.clear();
                 benchmark::set(false);
-#ifdef JEVOIS_PRO
-                if (helper) helper->reportError("DNN benchmark complete.");
-#endif
+                LINFO("Benchmark complete.");
               }
               else
               {
+                if (oldaccel != pipelines[benchpipe].substr(0, pipelines[benchpipe].find(':'))) write_separator = true;
                 pipe::set(pipelines[benchpipe]);
-#ifdef JEVOIS_PRO
-                if (helper) helper->reportError("Benchmarking: " +pipelines[benchpipe]);
-#endif
+                processing::freeze(false);
+                processing::set(jevois::dnn::pipeline::Processing::Sync); // run Sync for benchmarking
               }
             }
           }
@@ -883,10 +953,10 @@ void jevois::dnn::Pipeline::process(jevois::RawImage const & inimg, jevois::StdM
         itsPstStats.push_back(itsProcSecs[2]);
         
         // Discard data for a few warmup frames after we start a new net:
-        if (itsStatsWarmup && itsPreStats.size() == 200)
+        if (itsStatsWarmup && itsPreStats.size() == numwarmup)
         { itsStatsWarmup = false; itsPreStats.clear(); itsNetStats.clear(); itsPstStats.clear(); }
         
-        if (itsPreStats.size() == 500)
+        if (itsPreStats.size() == numbench)
         {
           // Compute totals:
           std::vector<double> tot;
@@ -898,6 +968,12 @@ void jevois::dnn::Pipeline::process(jevois::RawImage const & inimg, jevois::StdM
           std::ofstream ofs(fn, std::ios_base::app);
           if (ofs.is_open())
           {
+            if (write_separator)
+            {
+              ofs << "<tr><td colspan=8></td></tr><tr><td colspan=8></td></tr>" << std::endl;
+              write_separator = false;
+            }
+            
             ofs << "<tr><td class=jvpipe>" << pipe::get() << " </td>";
             
             std::vector<std::string> insizes;

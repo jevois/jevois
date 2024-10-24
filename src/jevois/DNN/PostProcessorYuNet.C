@@ -285,6 +285,6 @@ void jevois::dnn::PostProcessorYuNet::report(jevois::StdModule * mod, jevois::Ra
     
     // If desired, send results to serial port:
     (void)mod;
-    //FIXME if (mod) mod->sendSerialObjDetImg2D(itsImageSize.width, itsImageSize.height, o);
+    //FIXME if (mod && serreport::get()) mod->sendSerialObjDetImg2D(itsImageSize.width, itsImageSize.height, o);
   }
 }
