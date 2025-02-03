@@ -25,6 +25,7 @@ namespace jevois
   namespace dnn
   {
     class PostProcessorDetectYOLO;
+    class YOLOjevois;
     
     //! Post-Processor for neural network pipeline
     /*! This is the last step in a deep neural network processing Pipeline. \ingroup dnn */
@@ -32,6 +33,7 @@ namespace jevois
                                 public Parameter<postprocessor::classoffset, postprocessor::classes, postprocessor::nms,
                                                  postprocessor::nmsperclass, postprocessor::detecttype,
                                                  postprocessor::maxnbox, postprocessor::cthresh,
+                                                 postprocessor::perclassthresh,
                                                  postprocessor::dthresh, postprocessor::sigmoid,
                                                  postprocessor::boxclamp, postprocessor::namedonly,
                                                  postprocessor::serialreport, postprocessor::masksmooth>
@@ -46,7 +48,7 @@ namespace jevois
 
         //! Freeze/unfreeze parameters that users should not change while running
         void freeze(bool doit) override;
-        
+
         //! Process outputs and draw/send some results
         void process(std::vector<cv::Mat> const & outs, PreProcessor * preproc) override;
 
@@ -60,14 +62,30 @@ namespace jevois
             Pipeline, after you have called Pipeline::process(). Do not hold this ref past the end of the current video
             frame. If you need to keep a persistent copy of the data, make a deep copy of the vector. */
         std::vector<ObjDetect> const & latestDetections() const;
+
+#ifdef JEVOIS_PRO
+        //! Draw a GUI window to allow one to modify per-class thresholds (YOLO-World) and class names (YOLO-JeVois)
+        /*! Caller must ensure that helper is valid */
+        void drawWorldGUI(jevois::GUIhelper * helper, bool idle);
+#endif
         
       protected:
         void onParamChange(postprocessor::detecttype const & param, postprocessor::DetectType const & val) override;
         void onParamChange(postprocessor::classes const & param, std::string const & val) override;
+        void onParamChange(postprocessor::perclassthresh const & param, std::string const & val) override;
         std::map<int, std::string> itsLabels; //!< Mapping from object ID to class name
         std::vector<ObjDetect> itsDetections;
         cv::Size itsImageSize;
         std::shared_ptr<PostProcessorDetectYOLO> itsYOLO;
+        std::vector<float> itsPerClassThreshs; //!< Per-class confidence thresholds, in ]0..1]
+        
+#ifdef JEVOIS_PRO
+        std::shared_ptr<YOLOjevois> itsYOLOjevois;
+        jevois::ImGuiImage itsHoverImage;
+        bool itsYOLOjevoisIsSetup = false;
+        size_t itsLastProcessedNum = 0;
+        size_t itsWaitingForYOLOjevoisNum = 0;
+#endif
     };
     
   } // namespace dnn

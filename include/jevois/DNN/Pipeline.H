@@ -183,7 +183,7 @@ namespace jevois
         /*! This returns a reference to our internal vector of detections. That vector will get overwritten every time
             process() is called. It is ok to use this after you have called process() on the current frame, but do not
             hold this ref past the end of the current video frame. If you need to keep a persistent copy of the data,
-            make a deep copy of the vector. Throws if the post-processor is not of type Detect or Pose. */
+            make a deep copy of the vector. Throws if the post-processor is not of type DetectOBB. */
         std::vector<ObjDetectOBB> const & latestDetectionsOBB() const;
 
         //! Get the latest skeletons, use with caution, not thread-safe
@@ -192,6 +192,9 @@ namespace jevois
             hold this ref past the end of the current video frame. If you need to keep a persistent copy of the data,
             make a deep copy of the vector. Throws if the post-processor is not of type Pose. */
         std::vector<PoseSkeleton> const & latestSkeletons() const;
+
+        //! Get access to the settings that were loaded from the zoo
+        std::vector<std::pair<std::string /* name */, std::string /* value */>> const & zooSettings() const;
 
       protected:
         void postInit() override;
@@ -239,6 +242,7 @@ namespace jevois
         bool selectPipe(std::string const & zoofile, std::vector<std::string> const & tok);
         void setZooParam(std::string const & name, std::string const & value, std::string const & zf,
                          cv::FileNode const & node);
+        std::vector<std::pair<std::string /* name */, std::string /* value */>> itsSettings;
         int itsOutImgY = 0;
 
         std::map<std::string, size_t> itsAccelerators;

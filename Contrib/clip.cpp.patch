@@ -1,0 +1,202 @@
+diff --git a/clip.cpp b/clip.cpp
+index ff1f5ca..b9666c9 100644
+--- a/clip.cpp
++++ b/clip.cpp
+@@ -14,8 +14,9 @@
+ #include "clip.h"
+ #include "ggml/ggml.h"
+ 
+-#define STB_IMAGE_IMPLEMENTATION
+-#include "stb_image.h"
++//#define STB_IMAGE_IMPLEMENTATION
++//#include "stb_image.h"
++#include <stdarg.h>
+ 
+ // #define CLIP_DEBUG
+ 
+@@ -92,13 +93,13 @@ int get_key_idx(const gguf_context * ctx, const char * key) {
+     return i;
+ }
+ 
+-const uint32_t get_u32(const gguf_context * ctx, std::string key) {
++/*const*/ uint32_t get_u32(const gguf_context * ctx, std::string key) {
+     const int i = get_key_idx(ctx, key.c_str());
+ 
+     return gguf_get_val_u32(ctx, i);
+ }
+ 
+-const float get_f32(const gguf_context * ctx, std::string key) {
++/*const*/ float get_f32(const gguf_context * ctx, std::string key) {
+     const int i = get_key_idx(ctx, key.c_str());
+ 
+     return gguf_get_val_f32(ctx, i);
+@@ -251,6 +252,8 @@ struct clip_ctx {
+     struct gguf_context * ctx_gguf;
+     struct clip_buffer buf_compute;
+ };
++bool clip_model_has_text_encoder(const struct clip_ctx * ctx) { return ctx->has_text_encoder; }
++bool clip_model_has_vision_encoder(const struct clip_ctx * ctx) { return ctx->has_vision_encoder; }
+ 
+ //
+ // memory allocation and management
+@@ -652,7 +655,7 @@ bool clip_tokenize(const clip_ctx * ctx, const char * text, struct clip_tokens *
+             continue;
+         }
+ 
+-        for (int i = 0; i < word.size();) {
++        for (int i = 0; i < int(word.size());) {
+             for (int j = word.size() - 1; j >= i; j--) {
+                 auto cand = word.substr(i, j - i + 1);
+                 auto it = ctx->vocab.token_to_id.find(cand);
+@@ -661,7 +664,7 @@ bool clip_tokenize(const clip_ctx * ctx, const char * text, struct clip_tokens *
+                     i = j + 1;
+                     break;
+                 } else if (j == i) { // word.substr(i, 1) has no matching
+-                    fprintf(stderr, "%s: unknown token '%s'\n", __func__, word.substr(i, 1).data());
++                  fprintf(stderr, "%s: unknown token '%s' in '%s'\n", __func__, word.substr(i, 1).data(), word.c_str());
+                     i++;
+                 }
+             }
+@@ -706,6 +709,7 @@ void clip_image_f32_free(clip_image_f32* res) {
+     delete res;
+ }
+ 
++/*
+ bool clip_image_load_from_file(const char * fname, clip_image_u8 * img) {
+     int nx, ny, nc;
+     auto data = stbi_load(fname, &nx, &ny, &nc, 3);
+@@ -724,6 +728,7 @@ bool clip_image_load_from_file(const char * fname, clip_image_u8 * img) {
+ 
+     return true;
+ }
++*/
+ 
+ // normalize: x = (x - mean) / std
+ // TODO: implement bicubic interpolation instead of linear.
+@@ -828,7 +833,7 @@ void clip_image_batch_preprocess(const clip_ctx * ctx, const int n_threads, cons
+ 
+     if (num_threads == 1) {
+         // Single-threaded case
+-        for (i = 0; i < img_inputs->size; i++) {
++        for (i = 0; i < int(img_inputs->size); i++) {
+             clip_image_preprocess(ctx, &img_inputs->data[i], &imgs_resized->data[i]);
+         }
+     } else {
+@@ -876,13 +881,13 @@ bool clip_text_encode(const clip_ctx * ctx, const int n_threads, const clip_toke
+     const auto & hparams = model.hparams;
+     const size_t N = tokens->size;
+ 
+-    const int n_vocab = hparams.n_vocab;
+-    const int num_positions = hparams.num_positions;
++    //const int n_vocab = hparams.n_vocab;
++    //const int num_positions = hparams.num_positions;
+     const int hidden_size = hparams.hidden_size;
+     const int n_head = hparams.n_head;
+     const int d_head = hidden_size / n_head;
+     const int n_layer = hparams.n_layer;
+-    const int n_intermediate = hparams.n_intermediate;
++    //const int n_intermediate = hparams.n_intermediate;
+     const int projection_dim = hparams.projection_dim;
+     const float eps = hparams.eps;
+ 
+@@ -904,7 +909,7 @@ bool clip_text_encode(const clip_ctx * ctx, const int n_threads, const clip_toke
+     memcpy(input_ids->data, tokens->data, N * ggml_element_size(input_ids));
+ 
+     struct ggml_tensor * positions = ggml_new_tensor_1d(ctx0, GGML_TYPE_I32, N);
+-    for (int i = 0; i < N; i++) {
++    for (int i = 0; i < int(N); i++) {
+         ggml_set_i32_1d(positions, i, i);
+     }
+ 
+@@ -1115,7 +1120,7 @@ bool clip_image_batch_encode(const clip_ctx * ctx, const int n_threads, const cl
+     const int n_head = hparams.n_head;
+     const int d_head = hidden_size / n_head;
+     const int n_layer = hparams.n_layer;
+-    const int n_intermediate = hparams.n_intermediate;
++    //const int n_intermediate = hparams.n_intermediate;
+     const int projection_dim = hparams.projection_dim;
+     const float eps = hparams.eps;
+     int batch_size = imgs->size;
+@@ -1139,7 +1144,7 @@ bool clip_image_batch_encode(const clip_ctx * ctx, const int n_threads, const cl
+     {
+         float * data = (float *)ggml_get_data(inp_raw);
+ 
+-        for (int b = 0; b < imgs->size; b++) {
++        for (int b = 0; b < int(imgs->size); b++) {
+             const int nx = imgs->data[b].nx;
+             const int ny = imgs->data[b].ny;
+             GGML_ASSERT(nx == image_size && ny == image_size);
+@@ -1194,7 +1199,7 @@ bool clip_image_batch_encode(const clip_ctx * ctx, const int n_threads, const cl
+     for (int il = 0; il < n_layer; il++) {
+         struct ggml_tensor * cur = embeddings; // embeddings = residual, cur = hidden_states
+ 
+-        const size_t nb_q_w = model.layers[il].q_w->nb[0];
++        //const size_t nb_q_w = model.layers[il].q_w->nb[0];
+ 
+         ggml_set_scratch(ctx0, {0, scr0_size, scr0});
+ 
+@@ -1496,7 +1501,7 @@ bool clip_zero_shot_label_image(struct clip_ctx * ctx, const int n_threads, cons
+     float txt_vec[vec_dim];
+     float similarities[n_labels];
+ 
+-    for (int i = 0; i < n_labels; i++) {
++    for (int i = 0; i < int(n_labels); i++) {
+         const auto & text = labels[i];
+         clip_tokens tokens;
+         clip_tokenize(ctx, text, &tokens);
+@@ -1603,7 +1608,7 @@ bool clip_model_quantize(const char * fname_inp, const char * fname_out, const i
+                 if (conv_buf.size() < n_elms) {
+                     conv_buf.resize(n_elms);
+                 }
+-                for (int j = 0; j < n_elms; ++j) {
++                for (int j = 0; j < int(n_elms); ++j) {
+                     conv_buf[j] = ggml_fp16_to_fp32(((ggml_fp16_t *)cur->data)[j]);
+                 }
+                 f32_data = (float *)conv_buf.data();
+@@ -1642,7 +1647,7 @@ bool clip_model_quantize(const char * fname_inp, const char * fname_out, const i
+             }
+             }
+ 
+-            for (int j = 0; j < hist_cur.size(); ++j) {
++            for (int j = 0; j < int(hist_cur.size()); ++j) {
+                 hist_all[j] += hist_cur[j];
+             }
+         } else {
+@@ -1657,7 +1662,7 @@ bool clip_model_quantize(const char * fname_inp, const char * fname_out, const i
+         gguf_set_tensor_data(ctx_out, name.c_str(), new_data, new_size);
+         fout.write((const char *)new_data, new_size);
+         size_t pad = GGML_PAD(new_size, gguf_get_alignment(ctx_out)) - new_size;
+-        for (int j = 0; j < pad; ++j) {
++        for (int j = 0; j < int(pad); ++j) {
+             fout.put(0);
+         }
+ 
+diff --git a/clip.h b/clip.h
+index 183b22d..e64e222 100644
+--- a/clip.h
++++ b/clip.h
+@@ -84,7 +84,7 @@ void clip_image_f32_clean(struct clip_image_f32 * res);
+ void clip_image_u8_free(struct clip_image_u8 * img);
+ void clip_image_f32_free(struct clip_image_f32 * res);
+ 
+-bool clip_image_load_from_file(const char * fname, struct clip_image_u8 * img);
++  //bool clip_image_load_from_file(const char * fname, struct clip_image_u8 * img);
+ bool clip_image_preprocess(const struct clip_ctx * ctx, const struct clip_image_u8 * img, struct clip_image_f32 * res);
+ 
+ bool clip_text_encode(const struct clip_ctx * ctx, const int n_threads, const struct clip_tokens * tokens, float * vec,
+@@ -108,6 +108,9 @@ bool clip_zero_shot_label_image(struct clip_ctx * ctx, const int n_threads, cons
+ 
+ bool clip_model_quantize(const char * fname_inp, const char * fname_out, const int itype);
+ 
++bool clip_model_has_text_encoder(const struct clip_ctx * ctx);
++bool clip_model_has_vision_encoder(const struct clip_ctx * ctx);
++  
+ #ifdef __cplusplus
+ }
+ #endif
+diff --git a/ggml b/ggml
+--- a/ggml
++++ b/ggml
+@@ -1 +1 @@
+-Subproject commit c3ae31e5a090a6259c674b18983de53ac4538aa6
++Subproject commit c3ae31e5a090a6259c674b18983de53ac4538aa6-dirty

@@ -1,0 +1,79 @@
+/*! \page Change123log Changes and new features in JeVois 1.23
+
+JeVois 1.23 brings the following new features:
+
+- JeVois-Pro: New open-vocabulary object detection using YOLO-World (which required offline model reparameterization and
+  quantization), and new YOLO-JeVois which can use user-defined object classes at runtime. Detecting new object classes
+  is now as simple as typing their names into the JeVois-Pro GUI. Defining classes by image is also supported: just drag
+  a bounding box around a live view the desired object, and the contents of that box will define the new object
+  class. Running on NPU only for now.
+  
+  + YOLO-World: To handle new classes, this model needs so-called re-parameterization (offline), which computes some
+    constant tensors for the user-defined classes, which are then embedded into the YOLO network. At runtime, these
+    constant tensors are combined with partially-processed data from the live video stream, to detect the desired object
+    classes. Pre-computing these tensors makes YOLO-World fast at runtime. However, once the constant tensors have been
+    modified, the network needs to be quantized again and exported to JeVois-Pro NPU again. This process is slow.
+  
+  + YOLO-JeVois: Our new custom YOLO variant avoids the need to quantize and convert YOLO-World to NPU each time class
+    definitions are changed. We first compute CLIP embeddings for each new class definition. CLIP is a special network
+    (from OpenAI research) that can convert raw text into a 512D vector, such that similar things are represented by
+    nearby vectors in the 512D embedding space. YOLO-JeVois then is a stripped version of YOLO-World where the constant
+    tensors have been replaced by new inputs into the network. We created two variants:
+    
+    - YOLO-JeVois with one extra input for the CLIP embeddings for all classes. This network works well on NPU but only
+      when quantized to 16-bit. Accuracy with 8-bit quantization is not good. But 16-bit is slower (about 10fps).
+    
+    - YOLO-JeVois-split with 5 extra inputs for partially-processed CLIP embeddings. In this variant, we process as much
+      as we can from the embedding branch (which does not yet include information from the live video stream) in an
+      auxliary network (which is just ONNX running on CPU; it only needs to run when class definitions are changed, and
+      takes less than a second). The aux network processes the embeddings until they get combined (via matrix
+      multiplication) with the processing of the live video stream; this combination happens in 5 places within
+      YOLO-World, with 5 different tensors that are derived from the embeddings. We changed these 5 tensors into 5
+      new inputs and then quantized the network for NPU. This works well with 8-bit quantization and is faster
+      (15fps). YOLO-JeVois is still slower than YOLOv8s on which it is based because of the extra operations needed to
+      combine the constant tensors derived from CLIP with the live video data processing.
+  
+  With YOLO-JeVois, one still needs to choose a number of classes during export and quantization. We hence provide
+  pre-quantized models for NPU with 1, 8, 16, 32 and 64 classes, both for 16-bit quantization (DPF16 for YOLO-JeVois)
+  and 8-bit quantization (AA for YOLO-JeVois-split). A sample of the Objects365 dataset was used during quantization.
+
+- JeVois-Pro DNN: Added support for running quantized CLIP models on CPU using clip.cpp and the ggml library. CLIP can
+  co mpute both text embeddings and image embeddings. These embeddings are used by YOLO-World and YOLO-JeVois to define
+  object detection classes at runtime. CLIP runs fast enough that running it on CPU is no problem so far. We may
+  accelerate it for NPU in the future.
+
+- DNN: Added support for per-class detection thresholds. This is used by YOLO-JeVois and YOLO-World, where different
+  custom classes may require vary different threshold values.
+
+- DNN: Added ability to externally set extra inputs to a network (in addition to a live video feed input). This was
+  previously available in network config files with the `extraintensors` parameter, where extra inputs were constant and
+  the values were provided directly in the config file. Those extra inputs can now be set via Network::setExtraInput()
+  of Network::setExtraInputFromFloat32(), and the exraintensors in the config file should then be declared `external` as
+  opposed to providing a list of values.
+
+- DNN PostProcessor: Support for YOLO-World and YOLO-JeVois post-processing. Includes a new window in the JeVois-Pro GUI
+  which allows one to adjust per-class thresholds (YOLO-World and YOLO-JeVois), and to modify classes by typing text or
+  grabbing regions of interest from live video (YOLO-JeVois only). Users can save their adjusted settings and class
+  definitions as a new JeVois pipeline for later re-use.
+
+- JeVois-Pro: Updated to Ollama 0.5.7 which supports mew LLM models.
+
+- JeVois-Pro PyLLM: Support for Deepseek-R1:1.5b and allow user to start a new chat (erasing previous chat history from
+  the chat context).
+
+- Python support: Python parameters can now support valid values from a list, which shows up as a combo box in the GUI.
+
+- JeVois: Added flag to possibly hide parameters of components. Hidden parameters can still be used but will not show up
+  in the GUI or help message. We use this to hide all the parameters of the aux ONNX network used by YOLO-JeVois to
+  process CLIP embeddings. See Parameter::hide(bool) and Component::hideAllParams(bool)
+
+- JeVois-Pro: added `reportInfo()` which works like `reportError()` to report errors in the GUI as a red pop-up
+  window. Info messages are now on a green background while error messages are on a red background.
+
+- JeVois-Pro: added support for changing mouse cursor shape.
+
+- Miscellaneous bug fixes and performance improvements.
+
+- Many doc updates.
+
+*/

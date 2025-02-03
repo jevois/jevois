@@ -42,7 +42,7 @@ void jevois::dnn::PostProcessorDetectOBB::freeze(bool doit)
 void jevois::dnn::PostProcessorDetectOBB::onParamChange(postprocessor::classes const &, std::string const & val)
 {
   if (val.empty()) { itsLabels.clear(); return; }
-  itsLabels = jevois::dnn::readLabelsFile(jevois::absolutePath(JEVOIS_SHARE_PATH, val));
+  itsLabels = jevois::dnn::getClassLabels(val);
 }
 
 // ####################################################################################################

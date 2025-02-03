@@ -82,3 +82,19 @@ void jevois::python::PyParHelper<T>::setCallback(boost::python::object const & c
   }
   catch (...) { jevois::warnAndRethrowException(); }
 }
+
+// ####################################################################################################
+template <typename T> inline
+void jevois::python::PyParHelper<T>::setValidValues(boost::python::list const & vv)
+{
+  try
+  {
+    std::vector<T> valvec;
+    for (ssize_t i = 0; i < boost::python::len(vv); ++i) valvec.emplace_back(boost::python::extract<T>(vv[i]));
+
+    jevois::ParameterDef<T> newdef(itsParam->name(), itsParam->def().description(), itsParam->def().defaultValue(), 
+                                   valvec, itsParam->def().category());
+    itsParam->changeParameterDef(newdef);
+  }
+  catch (...) { jevois::warnAndRethrowException(); }
+}

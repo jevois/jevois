@@ -113,6 +113,9 @@ namespace jevois
 
       //! Flag that indicates whether parameter is frozen
       bool frozen;
+
+      //! Flag that indicates whether parameter is hidden
+      bool hidden;
   };
 
   // ######################################################################
@@ -150,13 +153,20 @@ namespace jevois
 
       //! Returns whether parameter is frozen
       bool frozen() const;
+
+      //! Hide or un-hide a parameter; hidden params will not show up in GUI or help message, but still work normally
+      void hide(bool doit);
+      
+      //! Returns whether parameter is hidden
+      bool hidden() const;
       
       //! Reset this parameter to its default value
       virtual void reset() = 0;
       
     protected:
       mutable boost::shared_mutex itsMutex; //!< Mutex to protect the parameter value
-      volatile bool itsFrozen; //!< When true, parameter is frozen (read-only, does not show up in help message)
+      volatile bool itsFrozen; //!< When true, parameter is frozen (read-only)
+      volatile bool itsHidden; //!< When true, parameter is hidden (not visible in GUI or help message)
       bool itsVirgin; //!< Param has not yet been explicitly set, need to call the callback (if any) at init time
 
     private:

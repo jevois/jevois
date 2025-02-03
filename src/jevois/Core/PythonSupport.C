@@ -552,6 +552,7 @@ BOOST_PYTHON_MODULE(libjevois)
     .def("draw", &jevois::ChatBox::draw)
     .def("freeze", &jevois::ChatBox::freeze)
     .def("clear", &jevois::ChatBox::clear)
+    .def("wasCleared", &jevois::ChatBox::wasCleared)
     ;
 #endif
   
@@ -578,8 +579,11 @@ BOOST_PYTHON_MODULE(libjevois)
     .def("strset", &jevois::PythonParameter::strset)
     .def("freeze", &jevois::PythonParameter::freeze)
     .def("frozen", &jevois::PythonParameter::frozen)
+    .def("hide", &jevois::PythonParameter::hide)
+    .def("hidden", &jevois::PythonParameter::hidden)
     .def("reset", &jevois::PythonParameter::reset)
     .def("setCallback", &jevois::PythonParameter::setCallback)
+    .def("setValidValues", &jevois::PythonParameter::setValidValues)
     ;
 
   // #################### Allow python code to access dnn::PreProcessor helper functions:

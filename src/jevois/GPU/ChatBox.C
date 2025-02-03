@@ -39,6 +39,15 @@ jevois::ChatBox::~ChatBox()
 void jevois::ChatBox::clear()
 {
   itsData.clear();
+  itsWasCleared = true;
+}
+
+// ##############################################################################################################
+bool jevois::ChatBox::wasCleared()
+{
+  bool ret = itsWasCleared;
+  itsWasCleared = false;
+  return ret;
 }
 
 // ##############################################################################################################
@@ -65,7 +74,7 @@ void jevois::ChatBox::writeString(std::string const & str)
   
   // If our last data was from the bot, start a new entry for the user:
   if (itsData.back().first) itsData.emplace_back(std::make_pair(false, std::string()));
-  
+
   // Concatenate to last line or create a new one?
   size_t idx = str.find('\n');
   if (idx == str.npos)
@@ -73,16 +82,20 @@ void jevois::ChatBox::writeString(std::string const & str)
   else
   {
     auto tok = jevois::split(str, "\\n");
-    for (auto const & t : tok) itsData.emplace_back(std::make_pair(false, t));
+
+    for (auto const & t : tok)
+      if (itsData.back().first) itsData.emplace_back(std::make_pair(false, t)); // start of a response
+      else { itsData.back().second += t; itsData.emplace_back(std::make_pair(false, std::string())); } // end of response
   }
   
   while (itsData.size() > 10000) itsData.pop_front();
 }
 
 // ##############################################################################################################
-void jevois::ChatBox::freeze(bool doit)
+void jevois::ChatBox::freeze(bool doit, std::string const & waitmsg)
 {
   itsFrozen = doit;
+  itsWaitMsg = waitmsg;
 }
 
 // ##############################################################################################################
@@ -145,7 +158,7 @@ void jevois::ChatBox::draw()
     {
       int ndots = itsWaitState < 10 ? itsWaitState : 20 - itsWaitState;
       std::string msg = std::string(10-ndots, ' ') + std::string(ndots, '.') +
-        " Working " + std::string(ndots, '.');
+        ' ' + itsWaitMsg + ' ' + std::string(ndots, '.');
       ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.3f, 0.3f, 1.0f));
       ImGui::TextUnformatted(msg.c_str());
       ImGui::PopStyleColor();
@@ -204,7 +217,10 @@ void jevois::ChatBox::draw()
       ImGui::PopItemFlag();
       ImGui::PopStyleVar();
     }
-        
+
+    ImGui::SameLine();
+    if (ImGui::Button("Clear chat")) clear();
+    
     // Auto-focus on window apparition
     ImGui::SetItemDefaultFocus();
     if (reclaim_focus) ImGui::SetKeyboardFocusHere(-1); // Auto focus previous widget

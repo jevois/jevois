@@ -1407,6 +1407,15 @@ void jevois::Engine::reportError(std::string const & err)
 }
 
 // ####################################################################################################
+void jevois::Engine::reportInfo(std::string const & info)
+{
+#ifdef JEVOIS_PRO
+  if (itsGUIhelper) itsGUIhelper->reportError(info);
+#endif
+  LINFO(info);
+}
+
+// ####################################################################################################
 void jevois::Engine::clearErrors()
 {
 #ifdef JEVOIS_PRO

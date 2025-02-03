@@ -155,9 +155,21 @@ bool jevois::PythonParameter::frozen() const
 { return itsPyPar->par()->frozen(); }
 
 // ####################################################################################################
+void jevois::PythonParameter::hide(bool doit)
+{ itsPyPar->par()->hide(doit); }
+
+// ####################################################################################################
+bool jevois::PythonParameter::hidden() const
+{ return itsPyPar->par()->hidden(); }
+
+// ####################################################################################################
 void jevois::PythonParameter::reset()
 { itsPyPar->par()->reset(); }
 
 // ####################################################################################################
 void jevois::PythonParameter::setCallback(boost::python::object const & cb)
 { itsPyPar->setCallback(cb); }
+
+// ####################################################################################################
+void jevois::PythonParameter::setValidValues(boost::python::list const & vv)
+{ itsPyPar->setValidValues(vv); }

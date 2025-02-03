@@ -37,7 +37,7 @@ void jevois::dnn::PostProcessorClassify::freeze(bool doit)
 void jevois::dnn::PostProcessorClassify::onParamChange(postprocessor::classes const &, std::string const & val)
 {
   if (val.empty()) { itsLabels.clear(); return; }
-  itsLabels = jevois::dnn::readLabelsFile(jevois::absolutePath(JEVOIS_SHARE_PATH, val));
+  itsLabels = jevois::dnn::getClassLabels(val);
 }
 
 // ####################################################################################################

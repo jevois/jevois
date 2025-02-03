@@ -268,9 +268,8 @@ void jevois::dnn::Pipeline::onParamChange(pipeline::zoo const &, std::string con
   if (pipes.empty()) LFATAL("No pipeline available with zoo file " << val << " and filter " << filter::strget());
   
   // Update the parameter def of pipe:
-  jevois::ParameterDef<std::string> newdef("pipe", "Pipeline to use, determined by entries in the zoo file and "
-                                           "by the current filter",
-                                           pipes[0], pipes, jevois::dnn::pipeline::ParamCateg);
+  jevois::ParameterDef<std::string> newdef(pipe::name(), pipe::def().description(),
+                                           pipes[0], pipes, pipe::def().category());
   pipe::changeParameterDef(newdef);
 
   // Just changing the def does not change the param value, so change it now:
@@ -432,6 +431,9 @@ bool jevois::dnn::Pipeline::selectPipe(std::string const & zoofile, std::vector<
   // Clear any old stats:
   itsPreStats.clear(); itsNetStats.clear(); itsPstStats.clear();
   itsStatsWarmup = true; // warmup before computing new stats
+
+  // Also reset our remembered settings:
+  itsSettings.clear();
   
   // Open the zoo file:
   cv::FileStorage fs(zoofile, cv::FileStorage::READ);
@@ -549,9 +551,17 @@ bool jevois::dnn::Pipeline::selectPipe(std::string const & zoofile, std::vector<
     processing::freeze(true);
   }
 
+  // Success, keep a copy of the settings for possible later access:
+  itsSettings = std::move(ph.params);
+  
   return true;
 }
-  
+
+// ####################################################################################################
+std::vector<std::pair<std::string /* name */, std::string /* value */>> const &
+jevois::dnn::Pipeline::zooSettings() const
+{ return itsSettings; }
+
 // ####################################################################################################
 void jevois::dnn::Pipeline::setZooParam(std::string const & k, std::string const & v,
                                         std::string const & zf, cv::FileNode const & node)

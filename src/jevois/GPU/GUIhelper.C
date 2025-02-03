@@ -334,6 +334,8 @@ void jevois::GUIhelper::drawImage(char const * name, cv::Mat const & img, bool r
 void jevois::GUIhelper::drawInputFrame(char const * name, jevois::InputFrame const & frame, int & x, int & y,
                                        unsigned short & w, unsigned short & h, bool noalias, bool casync)
 {
+  itsInputFrame = &frame; // May be used before endFrame() to get access to the image
+  
   // We will use one image per v4l2 buffer:
   jevois::RawImage const img = frame.get(casync);
   std::string const imgname = name + std::to_string(img.bufindex);
@@ -382,6 +384,14 @@ void jevois::GUIhelper::drawInputFrame2(char const * name, jevois::InputFrame co
   itsLastDrawnImage = & im;
   itsUsingScaledImage = false;
   itsLastDrawnTextLine = -1;
+}
+
+// ##############################################################################################################
+jevois::InputFrame const * jevois::GUIhelper::getInputFrame() const
+{
+  if (itsInputFrame == nullptr)
+    LFATAL("Input frame not available -- only accessible between drawInputFrame() and endFrame()");
+  return itsInputFrame;
 }
 
 // ##############################################################################################################
@@ -834,6 +844,7 @@ void jevois::GUIhelper::endFrame()
   // Render everything and swap buffers:
   itsBackend.render();
 
+  itsInputFrame = nullptr; // invalidated until next drawInputFrame()
   itsEndFrameCalled = true;
 }
 
@@ -1296,12 +1307,13 @@ void jevois::GUIhelper::drawParameters()
   // Record any ambiguous parameter names, so we can prefix them by component name:
   std::set<std::string> pnames, ambig;
 
-  // Get all the parameter summaries:
+  // Get all the parameter summaries, except for hidden params:
   std::map<std::string /* categ */, std::vector<jevois::ParameterSummary>> psm;
   c->foreachParam([this, &psm, &pnames, &ambig](std::string const &, jevois::ParameterBase * p) {
-                    jevois::ParameterSummary psum = p->summary();
-                    if (pnames.insert(psum.name).second == false) ambig.insert(psum.name);
-                    psm[psum.category].emplace_back(psum); } );
+    if (p->hidden()) return;
+    jevois::ParameterSummary psum = p->summary();
+    if (pnames.insert(psum.name).second == false) ambig.insert(psum.name);
+    psm[psum.category].emplace_back(psum); } );
   
   // Stop here if no params to display:
   if (psm.empty()) { ImGui::TextUnformatted("This module has no parameters."); return; }
@@ -1718,6 +1730,54 @@ bool jevois::GUIhelper::combo(std::string const & name, std::vector<std::string>
                         return true;
                       },
                       const_cast<void *>(static_cast<void const *>(&items)), items.size());
+}
+
+// ##############################################################################################################
+bool jevois::GUIhelper::selectImageBox(int & state, ImVec2 & tl, ImVec2 & br, ImU32 col)
+{
+  if (ImGui::GetMouseCursor() != ImGuiMouseCursor_ResizeAll) ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeAll);
+
+  switch (state)
+  {
+  case 0: // Wait for mouse down
+    if (ImGui::IsMouseClicked(0))
+    {
+      tl = ImGui::GetMousePos();
+      state = 1;
+    }
+    break;
+    
+  case 1: // Draw a rectangle and check for mouse up
+  {
+    br = ImGui::GetMousePos();
+    auto dlb = ImGui::GetBackgroundDrawList();
+    dlb->AddRectFilled(tl, br, applyFillAlpha(col));
+    ImDrawFlags constexpr flags = ImDrawFlags_None; // ImDrawFlags_RoundCornersAll
+    float constexpr rounding = 0.0F;
+    dlb->AddRect(tl, br, col, rounding, flags, linethick::get());
+    
+    if (ImGui::IsMouseReleased(0))
+    {
+      // Normalize our points so that they actually are top-left and bottom-right:
+      int xmin = std::min(tl.x, br.x), xmax = std::max(tl.x, br.x);
+      int ymin = std::min(tl.y, br.y), ymax = std::max(tl.y, br.y);
+
+      if (xmax - xmin < 10 || ymax - ymin < 10)
+        state = 0; // too small
+      else
+      {
+        tl.x = xmin; tl.y = ymin; br.x = xmax; br.y = ymax;
+        state = -1; // as a courtesy to the caller, for next time
+        ImGui::SetMouseCursor(ImGuiMouseCursor_Arrow);
+        return true;
+      }
+    }
+  }
+  break;
+    
+  default: LFATAL("Unknown state reached -- make sure you initialize state to 0 when starting a selection");
+  }
+  return false;
 }
 
 // ##############################################################################################################
@@ -2603,7 +2663,17 @@ void jevois::GUIhelper::drawTweaks()
 
 // ##############################################################################################################
 void jevois::GUIhelper::reportError(std::string const & err)
+{ reportErrorOrInfo(err, false); }
+
+// ##############################################################################################################
+void jevois::GUIhelper::reportInfo(std::string const & err)
+{ reportErrorOrInfo(err, true); }
+
+// ##############################################################################################################
+void jevois::GUIhelper::reportErrorOrInfo(std::string const & err, bool is_info)
 {
+  //if (is_info) LINFO(err); else LERROR(err);
+  
   auto now = std::chrono::steady_clock::now();
 
   std::lock_guard<std::mutex> _(itsErrorMtx);
@@ -2615,13 +2685,13 @@ void jevois::GUIhelper::reportError(std::string const & err)
   if (itsErrors.size() > 10) return;
   else if (itsErrors.size() == 10)
   {
-    ErrorData d { "Too many errors -- TRUNCATING", now, now };
+    ErrorData d { "Too many errors -- TRUNCATING", now, now, false };
     itsErrors.emplace(itsErrors.end(), std::move(d));
     return;
   }
   
   // It's a new error, push a new entry into our list:
-  ErrorData d { err, now, now };
+  ErrorData d { err, now, now, is_info };
   itsErrors.emplace(itsErrors.end(), std::move(d));
 
   // drawErrorPopup() will clear old entries
@@ -2671,41 +2741,73 @@ void jevois::GUIhelper::drawErrorPopup()
 {
   std::lock_guard<std::mutex> _(itsErrorMtx);
   if (itsErrors.empty()) return;
-
-  ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize |
-    ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoNav;
-
-  ImGui::SetNextWindowPos(ImVec2(10.0f, 10.0f), ImGuiCond_Always);
-  ImGui::PushStyleColor(ImGuiCol_WindowBg, 0xc0e0e0ff);
-
-  static bool show = true;
   
-  if (ImGui::Begin("Error detected!", &show, window_flags))
+  bool err_hovered = false, inf_hovered = false;
+  
+  // Split into errors vs info:
+  std::vector<char const *> errors, infos;
+  for (auto const & e : itsErrors)
+    if (e.is_info) infos.push_back(e.err.c_str());
+    else errors.push_back(e.err.c_str());
+  
+  ImGuiWindowFlags constexpr window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings |
+    ImGuiWindowFlags_NoNav | ImGuiWindowFlags_AlwaysAutoResize;
+  ImGui::SetNextWindowPos(ImVec2(10.0f, 10.0f), ImGuiCond_Always);
+  bool show = true;
+  float const wrappos = ImGui::GetFontSize() * 35.0f;
+  
+  // First draw the errors:
+  if (errors.empty() == false)
   {
-    ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
-    ImGui::TextUnformatted("Error detected!");
-
-    auto itr = itsErrors.begin();
-    while (itr != itsErrors.end())
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, 0xc0e0e0ff);
+    if (ImGui::Begin("Error popup", &show, window_flags))
     {
-      // Clear the error after a while, unless mouse cursor is on it:
-      std::chrono::duration<float> d = std::chrono::steady_clock::now() - itr->lasttime;
-      std::chrono::duration<float> d2 = std::chrono::steady_clock::now() - itr->firsttime;
-      if (d.count() >= 1.0f && d2.count() >= 10.0f && ImGui::IsWindowHovered() == false)
-        itr = itsErrors.erase(itr);
-      else
-      {
-        // Show this error:
-        ImGui::Separator();
-        ImGui::TextUnformatted(itr->err.c_str());
-        ++itr;
-      }
+      ImGui::PushTextWrapPos(wrappos);
+      ImGui::TextUnformatted("Error detected!                                             ");
+      for (char const * e : errors) { ImGui::Separator(); ImGui::TextUnformatted(e); }
+      ImGui::PopTextWrapPos();
     }
-    ImGui::PopTextWrapPos();
-
+    err_hovered = ImGui::IsWindowHovered();
+    ImGui::SetNextWindowPos(ImVec2(10.0f, 15.0f + ImGui::GetWindowSize().y), ImGuiCond_Always);
     ImGui::End();
+    ImGui::PopStyleColor();
   }
-  ImGui::PopStyleColor();
+
+  // Then the infos:
+  if (infos.empty() == false)
+  {
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, 0xc0d0ffe0);
+    if (ImGui::Begin("Info popup", &show, window_flags))
+    {
+      ImGui::PushTextWrapPos(wrappos);
+      ImGui::TextUnformatted("Info message                                                ");
+      for (char const * e : infos) { ImGui::Separator(); ImGui::TextUnformatted(e); }
+      ImGui::PopTextWrapPos();
+    }
+    inf_hovered = ImGui::IsWindowHovered();
+    ImGui::End();
+    ImGui::PopStyleColor();
+  }
+  
+  // Age the messages:
+  auto itr = itsErrors.begin();
+  while (itr != itsErrors.end())
+  {
+    // Clear the error after a while, unless mouse cursor is on it:
+    std::chrono::duration<float> d = std::chrono::steady_clock::now() - itr->lasttime;
+    std::chrono::duration<float> d2 = std::chrono::steady_clock::now() - itr->firsttime;
+    
+    if (itr->is_info)
+    {
+      if (d.count() >= 1.0f && d2.count() >= 3.0F && inf_hovered == false) itr = itsErrors.erase(itr);
+      else ++itr;
+    }
+    else
+    {
+      if (d.count() >= 1.0f && d2.count() >= 10.0F && err_hovered == false) itr = itsErrors.erase(itr);
+      else ++itr;
+    }
+  }
 }
 
 // ##############################################################################################################

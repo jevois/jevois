@@ -40,6 +40,11 @@ namespace jevois
         Amlogic A311D NPU. */
     
     /*! @{ */ // **********************************************************************
+
+    //! Get class labels from either a list or a file
+    /*! If arg corresponds to a file that exists (either absolute path or relative to JEVOIS_SHARE_PATH), then load the
+        classes from that file. Otherwise, set them from arg, which should then be a comma-separated list of values. */
+    std::map<int, std::string> getClassLabels(std::string const & arg);
     
     //! Read a label file
     /*! Two formats are allowed: one class name per line, or one class number followed by one class name per file.*/

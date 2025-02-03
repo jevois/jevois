@@ -43,6 +43,9 @@ namespace jevois
         //! Set the parameter's callback
         virtual void setCallback(boost::python::object const & cb) = 0;
 
+        //! Set valid values that the parameter may take from a list
+        virtual void setValidValues(boost::python::list const & vv) = 0;
+
         //! Access the associated C++ base Parameter
         virtual std::shared_ptr<jevois::ParameterBase> par() const = 0;
 
@@ -79,6 +82,9 @@ namespace jevois
 
         //! Set the parameter's callback
         void setCallback(boost::python::object const & cb) override;
+
+        //! Set valid values that the parameter may take from a list
+        void setValidValues(boost::python::list const & vv) override;
 
         //! Access the associated C++ base parameter, used to forward strget(), strset(), freeze(), etc to it
         std::shared_ptr<jevois::ParameterBase> par() const override;
@@ -131,7 +137,13 @@ namespace jevois
 
       //! Returns whether parameter is frozen
       bool frozen() const;
+
+      //! Hide or un-hide a parameter; hidden params will not show up in GUI or help message, but still work normally
+      void hide(bool doit);
       
+      //! Returns whether parameter is hidden
+      bool hidden() const;
+
       //! Reset this parameter to its default value
       void reset();
 
@@ -150,6 +162,9 @@ namespace jevois
           current value of the parameter). */
       void setCallback(boost::python::object const & cb);
 
+      //! Set valid values that the parameter may take from a list
+      void setValidValues(boost::python::list const & vv);
+      
     private:
       std::shared_ptr<jevois::python::PyParHelperBase> itsPyPar;
   };

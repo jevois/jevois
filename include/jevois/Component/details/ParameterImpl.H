@@ -23,7 +23,7 @@
 
 // ######################################################################
 inline jevois::ParameterBase::ParameterBase() :
-    itsFrozen(false), itsVirgin(true)
+    itsFrozen(false), itsHidden(false), itsVirgin(true)
 { }
 
 // ######################################################################
@@ -40,6 +40,14 @@ inline bool jevois::ParameterBase::frozen() const
 // ######################################################################
 inline void jevois::ParameterBase::freeze(bool doit)
 { itsFrozen = doit; }
+
+// ######################################################################
+inline bool jevois::ParameterBase::hidden() const
+{ return itsHidden; }
+
+// ######################################################################
+inline void jevois::ParameterBase::hide(bool doit)
+{ itsHidden = doit; }
 
 // ######################################################################
 template <typename T> inline
@@ -204,6 +212,7 @@ jevois::ParameterSummary const jevois::ParameterCore<T>::summary() const
   ps.category = itsDef.category().name;
   ps.categorydescription = itsDef.category().description;
   ps.frozen = itsFrozen;
+  ps.hidden = itsHidden;
   
   return ps;
 }

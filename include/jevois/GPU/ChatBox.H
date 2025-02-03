@@ -63,10 +63,13 @@ namespace jevois
       void draw();
 
       //! Freeze/unfreeze the input box, typically to prevent new inputs until current reply is done
-      void freeze(bool doit);
+      void freeze(bool doit, std::string const & waitmsg);
       
       //! Clear all displayed text:
       void clear();
+
+      //! Returns true once after the user clicked the "Clear chat" button
+      bool wasCleared();
       
     protected:
       std::deque<std::pair<bool /* user/jevois */, std::string> > itsData;
@@ -77,9 +80,11 @@ namespace jevois
       std::string const itsTitle;
       bool itsFrozen = false;
       int itsWaitState = 10; // number of dots to display while frozen, in [0..20]
+      std::string itsWaitMsg;
       
     public:
       int callback(ImGuiInputTextCallbackData * data);
+      bool itsWasCleared = false;
   };
   
 } // namespace jevois

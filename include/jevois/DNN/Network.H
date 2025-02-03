@@ -108,8 +108,11 @@ namespace jevois
       //! Parameter \relates jevois::dnn::Network
       JEVOIS_DECLARE_PARAMETER(extraintensors, std::string, "Specification of extra fixed input tensors that will be "
                                "added after the regular intensors. Format is: "
-                               "<type>:<shape>:val1 val2 ... valN, <type>:<shape>:val1 ... valN. For example, for "
-                               "URetinex-Net: 32F:1x1x1:3.0",
+                               "<type>:<shape>:val1 val2 ... valN, <type>:<shape>:val1 ... valN. The values "
+                               "are usually listed in the parameter when the tensor is small. Otherwise, they "
+                               "should be listed as 'external' and set by calling jevois::Network::setExtraInput(). "
+                               "For example, for URetinex-Net which takes a single float value as second input: "
+                               "32F:1x1x1:3.0",
                                "", ParamCateg);
 
       //! Parameter \relates jevois::dnn::Network
@@ -124,14 +127,7 @@ namespace jevois
                                              "operations is separated by semicolons, and applied from left to right. "
                                              "Operations specified here are applied after any de-quantization.",
                                              "", ParamCateg);
-      //"Specification of reshaped output tensors; "
-      //"sometimes useful to re-interpret tensors to what a post-processor expects; for "
-      //"example, TPU YoloV4-Int-VOC outputs 5D tensors 32F:1x52x52x3x85, 32F:1x26x26x3x85, "
-      //"32F:1x13x13x3x85 but the YOLO post-processor expects 4D, which would be specified here "
-      //"as 32F:1x52x52x255, 32F:1x26x26x255, 32F:1x13x13x255. Note that this only changes "
-      //"the description of dimensions, but does not move any pixel data around (e.g., cannot "
-      //"convert from NCHW to NHWC, convert data types, etc). Use sparingly and with caution.",
-      
+
       //! Parameter \relates jevois::dnn::Network
       JEVOIS_DECLARE_PARAMETER(dequant, bool, "Dequantize output tensors to float32 from their native quantized type",
                                true, ParamCateg);
@@ -171,8 +167,8 @@ namespace jevois
     }
     
     //! Abstract class to represent a neural network
-    /*! Derived classes provide implementation via OpenCV (on CPU, OpenCL, or OpenVino/Myriad-X), Amlogic/Vivante NPU,
-        Hailo-8, Python, or Google Coral TPU.
+    /*! Derived classes provide implementation via OpenCV (on CPU, OpenCL, or OpenVino/Myriad-X), ONNX-Runtime,
+        Amlogic/Vivante NPU, Hailo-8, Python, or Google Coral TPU.
 
         The Network class can apply optional transforms to the output tensors:
 
@@ -241,7 +237,17 @@ namespace jevois
         /*! Note: derived classes can freeze their own params by overriding this function, and should remember to still
             call the base class jevois::dnn::Network::freeze(doit) */
         virtual void freeze(bool doit);
-        
+
+        //! Set an extra input tensor, or remove it if given Mat is empty
+        /*! The input will not be pre-processed. Its data type and size must match what the network expects. The number
+            passed here is the overall network's input number, including the regular inputs that start at 0. */
+        void setExtraInput(size_t num, cv::Mat const & in);
+
+        //! Set an extra input tensor from a given F32 tensor, or remove it if given Mat is empty
+        /*! The input will not be pre-processed. Its data type and size must match what the network expects. The number
+            passed here is the overall network's input number, including the regular inputs that start at 0. */
+        void setExtraInputFromFloat32(size_t num, cv::Mat const & in);
+      
       protected:
         //! Load from disk
         virtual void load() = 0;
@@ -266,6 +272,9 @@ namespace jevois
             std::vector<int> newvals; // New values (operator-dependent: could be new output orders, new tensor dims)
         };
         std::vector<Oper> itsOps;
+
+        std::map<size_t, cv::Mat> itsExtraInputs;
+        std::mutex itsExtraInputsMtx;
     };
     
   } // namespace dnn

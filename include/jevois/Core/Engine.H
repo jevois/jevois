@@ -545,6 +545,12 @@ namespace jevois
           is still running just fine. */
       void reportError(std::string const & err);
 
+      // Report an info message to console and JeVois-Pro GUI
+      /*! Try to minimize the use of this function, and normally use LINFO() instead. This is mainly to report info
+          messages that may go unnoticed in the JeVois-Pro GUI if one is not looking at the console tab, e.g., notices
+          that a file was loaded or saved. */
+      void reportInfo(std::string const & info);
+
       //! Clear all errors currently displayed in the JeVois-Pro GUI
       /*! In the JevoisPro GUI, errors reported via reportError() remain displayed for a few seconds, but sometimes we
           want to clear them right away, e.g., after DNN pipeline threw, if the user selects another one, we want the

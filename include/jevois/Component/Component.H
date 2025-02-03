@@ -416,6 +416,12 @@ namespace jevois
       //! Freeze all parameters
       void freezeAllParams(bool doit);
 
+      //! Hide/unhide a parameter, by name, see ParameterBase::hide()
+      void hideParam(std::string const & paramdescriptor, bool doit);
+
+      //! Hide all parameters
+      void hideAllParams(bool doit);
+
       //! Get our full descriptor (including all parents) as [Instancename]:[...]:[...]
       std::string descriptor() const;
 

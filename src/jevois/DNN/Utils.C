@@ -22,6 +22,23 @@
 #include <cstring> // for std::memcpy()
 
 // ##############################################################################################################
+std::map<int, std::string> jevois::dnn::getClassLabels(std::string const & arg)
+{
+  // First try to interpret arg as a file name:
+  auto p = jevois::absolutePath(JEVOIS_SHARE_PATH, arg);
+  std::ifstream ifs(p);
+  if (ifs.is_open()) { ifs.close(); return jevois::dnn::readLabelsFile(p); }
+
+  // Otherwise, assume comma-separated list of classes:
+  auto tok = jevois::split(arg, "\\s*,\\s*");
+  int classid = 0;
+  std::map<int, std::string> ret;
+  for (auto c : tok) ret[classid++] = c;
+
+  return ret;
+}
+
+// ##############################################################################################################
 std::map<int, std::string> jevois::dnn::readLabelsFile(std::string const & fname)
 {
   std::ifstream ifs(fname);

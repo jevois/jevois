@@ -46,7 +46,9 @@ namespace jevois
                                0, ParamCateg);
       
       //! Parameter \relates jevois::dnn::PostProcessorClassify
-      JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(classes, std::string, "Path to text file with names of object classes",
+      JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(classes, std::string, "Path to text file with names of object classes, or "
+                                             "comma-separated list of class names. If path is relative, that is to "
+                                             JEVOIS_SHARE_PATH,
                                              "", ParamCateg);
       
       //! Parameter \relates jevois::dnn::PostProcessorClassify
@@ -72,6 +74,15 @@ namespace jevois
                                20.0F, jevois::Range<float>(0.0F, 100.0F), ParamCateg);
 
       //! Parameter \relates jevois::dnn::PostProcessorDetect
+      JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(perclassthresh, std::string, "Per-class thresholds (in percent "
+                                             "confidence) above which predictions will be reported, one value for "
+                                             "each class, separated by spaces and/or commas. This is used to override "
+                                             "'cthresh' when different thresholds are needed for different classes, "
+                                             "e.g., for YOLO-World. Only supported by YOLOv8 and YOLOv8t "
+                                             "post-processors. All values must be strictly >0",
+                                             "", ParamCateg);
+
+      //! Parameter \relates jevois::dnn::PostProcessorDetect
       JEVOIS_DECLARE_PARAMETER(dthresh, float, "Detection box threshold (in percent confidence) above which "
                                "predictions will be reported. Not all networks use a separate box threshold, "
                                "many only use one threshold confidence threshold (cthresh parameter). The YOLO "
@@ -94,7 +105,7 @@ namespace jevois
       
       //! Enum \relates jevois::dnn::PostProcessorDetect
       JEVOIS_DEFINE_ENUM_CLASS(DetectType, (FasterRCNN) (YOLO) (SSD) (TPUSSD) (RAWYOLO) (YOLOv10) (YOLOv10pp)
-                               (YOLOX) (YOLOv8) (YOLOv8t) (YOLOv8seg) (YOLOv8segt) );
+                               (YOLOX) (YOLOv8) (YOLOv8t) (YOLOv8seg) (YOLOv8segt) (YOLOjevois) (YOLOjevoist) );
       
       //! Parameter \relates jevois::dnn::PostProcessorDetect
       JEVOIS_DECLARE_PARAMETER_WITH_CALLBACK(detecttype, DetectType, "Type of detection output format",

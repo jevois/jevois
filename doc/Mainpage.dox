@@ -4,7 +4,7 @@
 
 New users, be sure to check out [JeVois Start](/start/start.html).
 
-\jvimg{jevois-philosophy.png, 60%}
+\jvimg{jevois-philosophy.png, 54%}
 
 Unlike a traditional camera that relies on a human viewer to interpret the contents of what it sees, JeVois runs
 powerful machine vision and deep learning algorithms right inside the camera. This allows you to directly connect
@@ -44,6 +44,24 @@ of hardware accelerators for deep neural networks. Because it is a full computer
 an HDMI display. There is no need for a host computer, as one can directly connect keyboard, mouse, and display to
 JeVois-Pro.
 
+\section whyjevois Why JeVois?
+
+\jvimg{jevois-pro-comparison.png, 50%}
+
+\jva33 and \jvpro run out of the box with all hardware and software pre-installed and pre-configured!
+
+You may be able to piece together an equivalent system from parts, but it would likely be larger, heavier, and
+ugly/unreliable, with some loose parts such as a camera sensor or an accelerometer (IMU) hanging from some wires. This
+would also require a lot of work, both on the hardware side, and especially on the software side. As we have learned
+over the years, it is quite difficult to make all the hardware and software components inside JeVois-A33 and JeVois-Pro
+work seemlessly together.
+
+A recent example is MediaPipe, a great library for deep networks that can detect hands, facial landmarks, etc. It
+required older dependencies and an older version of Python than other software libraries we also run. We had to update
+their source code, to reconfigure it, and to recompile it from source to make it work, which was far from easy. Likewise
+for Ollama (generative AI framework), PyCoral (Python libraries for Google Coral EdgeTPU), and many more. Getting all of
+those to work on one machine is indeed a feat!
+
 \section features Common features
 
 For ease of programming and configuration, all of the operating system, core JeVois software, and any necessary data
@@ -58,7 +76,7 @@ communications (UART with TTL levels at 3.3V or 5V). Users or micro-controllers 
 the smart camera over the serial ports.
 
 The JeVois software framework combines custom Linux kernel drivers for camera sensor and for USB output, written in C,
-and a custom high-level vision processing framework, written in C++-17. This framework is designed for easy integration
+and a custom high-level vision processing framework, written in C++-26. This framework is designed for easy integration
 with other open-source libraries, including tiny-dnn, OpenCV, boost, zBar, Eigen, turbojpeg, etc. The JeVois operating
 system infrastructure is built using the buildroot framework, for which hundreds of libraries and modules are already
 available, and adding new libraries or modules is relatively easy. The core JeVois software is managed by cmake, which

@@ -198,6 +198,49 @@ bool jevois::dnn::Network::ready()
 }
 
 // ####################################################################################################
+void jevois::dnn::Network::setExtraInput(size_t num, cv::Mat const & in)
+{
+  // Lock so that we don't change inputs on the network that may be running async:
+  std::lock_guard<std::mutex> _(itsExtraInputsMtx);
+  
+  if (in.empty()) itsExtraInputs.erase(num);
+  else itsExtraInputs[num] = in;
+}
+
+// ####################################################################################################
+void jevois::dnn::Network::setExtraInputFromFloat32(size_t num, cv::Mat const & in)
+{
+  size_t const numin = inputShapes().size(); // normal inputs + extra inputs
+  if (num >= numin)
+    LFATAL("Cannot set input " << num << ": network only has " << numin << " inputs");
+
+  std::vector<std::string> extrains = jevois::split(extraintensors::get(), ",\\s*");
+  size_t const numextra = extrains.size();
+  if (numextra > numin)
+    LFATAL(numextra << " extra inputs specified, but net only has " << numin << " total inputs");
+  if (num + numextra < numin)
+    LFATAL("Cannot set input " << num << " (net has " << numin << " inputs, including " << numextra << " extra ones)");
+
+  std::string const & ein = extrains[num + numextra - numin];
+  std::vector<std::string> tok = jevois::split(ein, ":");
+  if (tok.size() != 3) LFATAL("Malformed extra tensor, need <type>:<shape>:external");
+
+  // Decode type and convert the tensor:
+  cv::Mat cvtin;
+  if (tok[0] == "8U") in.convertTo(cvtin, CV_8U);
+  else if (tok[0] == "8S") in.convertTo(cvtin, CV_8S);
+  else if (tok[0] == "16U") in.convertTo(cvtin, CV_16U);
+  else if (tok[0] == "16S") in.convertTo(cvtin, CV_16S);
+  else if (tok[0] == "16F") in.convertTo(cvtin, CV_16F);
+  else if (tok[0] == "32S") in.convertTo(cvtin, CV_32S);
+  else if (tok[0] == "32F") cvtin = in;
+  else if (tok[0] == "64F") in.convertTo(cvtin, CV_64F);
+  else throw std::range_error("Unsupported extra input tensor type [" + tok[0] + "] in " + ein);
+
+  setExtraInput(num, cvtin);
+}
+
+// ####################################################################################################
 std::vector<cv::Mat> jevois::dnn::Network::process(std::vector<cv::Mat> const & blobs,
                                                    std::vector<std::string> & info)
 {
@@ -212,6 +255,9 @@ std::vector<cv::Mat> jevois::dnn::Network::process(std::vector<cv::Mat> const & 
   std::string const extra = extraintensors::get();
   if (extra.empty() == false)
   {
+    // Lock so that we don't change extra inputs on the network that may be running async:
+    std::lock_guard<std::mutex> _(itsExtraInputsMtx);
+
     eitimer.start();
     
     std::vector<cv::Mat> newblobs = blobs;
@@ -246,75 +292,86 @@ std::vector<cv::Mat> jevois::dnn::Network::process(std::vector<cv::Mat> const & 
       attr.dtype.fmt = VSI_NN_DIM_FMT_AUTO;
       cv::Mat b = jevois::dnn::attrmat(attr);
 
-      // Populate the values:
-      std::vector<std::string> vals = jevois::split(tok[2], "\\s+");
-      size_t const nvals = vals.size();
-      if (nvals != b.total())
-        LFATAL("Extra in tensor needs " << b.total() << " values, but " << nvals << " given in [" << in << ']');
-      switch (attr.dtype.vx_type)
+      // If values are specified as "external", look for the appropriate extra tensor; since that may come from a
+      // post-processor like YOLOjevois, provide an empty tensor if we don't have it yet:
+      if (tok[2] == "external")
       {
-      case VSI_NN_TYPE_UINT8:
+        auto itr = itsExtraInputs.find(newblobs.size());
+        if (itr == itsExtraInputs.end()) newblobs.emplace_back(std::move(b)); // default blank mat of correct size
+        else newblobs.push_back(itr->second);
+      }
+      else
       {
-        uint8_t * ptr = reinterpret_cast<uint8_t *>(b.data);
-        for (std::string const & v : vals) *ptr++ = std::stoi(v);
+        // Populate the values from the parameter:
+        std::vector<std::string> vals = jevois::split(tok[2], "\\s+");
+        size_t const nvals = vals.size();
+        if (nvals != b.total())
+          LFATAL("Extra in tensor needs " << b.total() << " values, but " << nvals << " given in [" << in << ']');
+        switch (attr.dtype.vx_type)
+        {
+        case VSI_NN_TYPE_UINT8:
+        {
+          uint8_t * ptr = reinterpret_cast<uint8_t *>(b.data);
+          for (std::string const & v : vals) *ptr++ = std::stoi(v);
+        }
+        break;
+        
+        case VSI_NN_TYPE_INT8:
+        {
+          int8_t * ptr = reinterpret_cast<int8_t *>(b.data);
+          for (std::string const & v : vals) *ptr++ = std::stoi(v);
+        }
+        break;
+        
+        case VSI_NN_TYPE_UINT16:
+        {
+          uint16_t * ptr = reinterpret_cast<uint16_t *>(b.data);
+          for (std::string const & v : vals) *ptr++ = std::stoi(v);
+        }
+        break;
+        
+        case VSI_NN_TYPE_INT16:
+        {
+          int16_t * ptr = reinterpret_cast<int16_t *>(b.data);
+          for (std::string const & v : vals) *ptr++ = std::stoi(v);
+        }
+        break;
+        
+        case VSI_NN_TYPE_FLOAT16:
+        {
+          cv::hfloat * ptr = reinterpret_cast<cv::hfloat *>(b.data);
+          for (std::string const & v : vals) *ptr++ = cv::hfloat(std::stof(v));
+        }
+        break;
+        
+        case VSI_NN_TYPE_INT32:
+        {
+          int32_t * ptr = reinterpret_cast<int32_t *>(b.data);
+          for (std::string const & v : vals) *ptr++ = std::stoi(v);
+        }
+        break;
+        
+        case VSI_NN_TYPE_FLOAT32:
+        {
+          float * ptr = reinterpret_cast<float *>(b.data);
+          for (std::string const & v : vals) *ptr++ = std::stof(v);
+        }
+        break;
+        
+        case VSI_NN_TYPE_FLOAT64:
+        {
+          double * ptr = reinterpret_cast<double *>(b.data);
+          for (std::string const & v : vals) *ptr++ = std::stod(v);
+        }
+        break;
+        
+        default: LFATAL("internal inconsistency");
+        }
+        
+        newblobs.emplace_back(std::move(b));
       }
-      break;
-
-      case VSI_NN_TYPE_INT8:
-      {
-        int8_t * ptr = reinterpret_cast<int8_t *>(b.data);
-        for (std::string const & v : vals) *ptr++ = std::stoi(v);
-      }
-      break;
-      
-      case VSI_NN_TYPE_UINT16:
-      {
-        uint16_t * ptr = reinterpret_cast<uint16_t *>(b.data);
-        for (std::string const & v : vals) *ptr++ = std::stoi(v);
-      }
-      break;
-
-      case VSI_NN_TYPE_INT16:
-      {
-        int16_t * ptr = reinterpret_cast<int16_t *>(b.data);
-        for (std::string const & v : vals) *ptr++ = std::stoi(v);
-      }
-      break;
-      
-      case VSI_NN_TYPE_FLOAT16:
-      {
-        cv::hfloat * ptr = reinterpret_cast<cv::hfloat *>(b.data);
-        for (std::string const & v : vals) *ptr++ = cv::hfloat(std::stof(v));
-      }
-      break;
-
-      case VSI_NN_TYPE_INT32:
-      {
-        int32_t * ptr = reinterpret_cast<int32_t *>(b.data);
-        for (std::string const & v : vals) *ptr++ = std::stoi(v);
-      }
-      break;
-
-      case VSI_NN_TYPE_FLOAT32:
-      {
-        float * ptr = reinterpret_cast<float *>(b.data);
-        for (std::string const & v : vals) *ptr++ = std::stof(v);
-      }
-      break;
-
-      case VSI_NN_TYPE_FLOAT64:
-      {
-        double * ptr = reinterpret_cast<double *>(b.data);
-        for (std::string const & v : vals) *ptr++ = std::stod(v);
-      }
-      break;
-      
-      default: LFATAL("internal inconsistency");
-      }
-      
-      newblobs.emplace_back(std::move(b));
     }
-
+    
     // NOTE: Keep the code below in sync with the default case (no extra inputs). Both branches are duplicated to avoid
     // having to make a copy of blobs into newblobs in the standard case when we do not have any extra inputs:
     

@@ -434,6 +434,26 @@ void jevois::Component::freezeAllParams(bool doit)
 }
 
 // ######################################################################
+void jevois::Component::hideParam(std::string const & paramdescriptor, bool doit)
+{
+  int n = 0;
+  findParamAndActOnIt(paramdescriptor,
+                      [&n,doit](jevois::ParameterBase * param, std::string const &)
+                      { param->hide(doit); ++n; },
+
+                      [&n]() { return (n == 0); }
+                      );
+}
+
+// ######################################################################
+void jevois::Component::hideAllParams(bool doit)
+{
+  boost::shared_lock<boost::shared_mutex> lck(itsParamMtx);
+
+  for (auto const & p : itsParameterList) p.second->hide(doit);
+}
+
+// ######################################################################
 void jevois::Component::setParamsFromFile(std::string const & filename)
 {
   std::string const absfile = absolutePath(filename);
@@ -532,6 +552,7 @@ void jevois::Component::paramInfo(std::shared_ptr<UserInterface> s, std::map<std
     {
       jevois::ParameterSummary const ps = p.second->summary();
 
+      if (ps.hidden) continue;
       if (skipFrozen && ps.frozen) continue;
       
       categs[ps.category] = ps.categorydescription;
@@ -601,7 +622,7 @@ void jevois::Component::populateHelpMessage(std::string const & cname,
     {
       jevois::ParameterSummary const ps = p.second->summary();
 
-      if (ps.frozen) continue; // skip frozen parameters
+      if (ps.frozen || ps.hidden) continue; // skip frozen and/or hidden parameters
       
       std::string const key1 = ps.category + ":  "+ ps.categorydescription;
       std::string const key2 = "  --" + ps.name + " (" + ps.valuetype + ") default=[" + ps.defaultvalue + "]" +

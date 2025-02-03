@@ -15,9 +15,14 @@
 // ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /*! \file */
 
+#define IMGUI_DEFINE_MATH_OPERATORS // Access to math operators
+
 #include <jevois/DNN/PostProcessorDetect.H>
 #include <jevois/DNN/PostProcessorDetectYOLO.H>
 #include <jevois/DNN/PreProcessor.H>
+#include <jevois/DNN/Pipeline.H>
+#include <jevois/DNN/YOLOjevois.H>
+#include <jevois/DNN/Network.H>
 #include <jevois/DNN/Utils.H>
 #include <jevois/Util/Utils.H>
 #include <jevois/Image/RawImageOps.H>
@@ -25,8 +30,15 @@
 #include <jevois/Core/Module.H>
 #include <jevois/GPU/GUIhelper.H>
 
+#include <opencv2/opencv.hpp>
 #include <opencv2/dnn.hpp>
 #include <opencv2/imgproc/imgproc.hpp> // for findContours()
+#include <opencv2/imgcodecs.hpp> // for cv::imread()
+
+#ifdef JEVOIS_PRO
+#include <imgui.h>
+#include <imgui_internal.h>
+#endif
 
 // ####################################################################################################
 jevois::dnn::PostProcessorDetect::~PostProcessorDetect()
@@ -35,32 +47,64 @@ jevois::dnn::PostProcessorDetect::~PostProcessorDetect()
 // ####################################################################################################
 void jevois::dnn::PostProcessorDetect::freeze(bool doit)
 {
+  if (itsYOLO) itsYOLO->freeze(doit);
+#ifdef JEVOIS_PRO
+  if (itsYOLOjevois) itsYOLOjevois->freeze(doit);
+#endif
+  
   classes::freeze(doit);
   detecttype::freeze(doit);
-  if (itsYOLO) itsYOLO->freeze(doit);
-  if (detecttype::get() != postprocessor::DetectType::YOLOv8seg &&
-      detecttype::get() != postprocessor::DetectType::YOLOv8segt)
+  auto dtyp = detecttype::get();
+  
+  if (dtyp != postprocessor::DetectType::YOLOv8seg && dtyp != postprocessor::DetectType::YOLOv8segt)
     masksmooth::freeze(doit);
+
+  if (dtyp != postprocessor::DetectType::YOLOX && dtyp != postprocessor::DetectType::YOLO &&
+      dtyp != postprocessor::DetectType::RAWYOLO)
+    dthresh::freeze(doit);
 }
 
 // ####################################################################################################
 void jevois::dnn::PostProcessorDetect::onParamChange(postprocessor::classes const &, std::string const & val)
 {
   if (val.empty()) { itsLabels.clear(); return; }
-  itsLabels = jevois::dnn::readLabelsFile(jevois::absolutePath(JEVOIS_SHARE_PATH, val));
+  itsLabels = jevois::dnn::getClassLabels(val);
+}
+
+// ####################################################################################################
+void jevois::dnn::PostProcessorDetect::onParamChange(postprocessor::perclassthresh const &, std::string const & val)
+{
+  itsPerClassThreshs.clear();
+  if (val.empty()) { cthresh::freeze(false); return; }
+  auto tok = jevois::split(val, "\\s*[, ]\\s*");
+
+  for (std::string const & t : tok)
+    itsPerClassThreshs.emplace_back(std::max(0.0001F, jevois::from_string<float>(t) * 0.01F));
+
+  cthresh::freeze(true);
+  dthresh::freeze(true);
+  // We will check for correct number of classes in process() once we have some input tensors
 }
 
 // ####################################################################################################
 void jevois::dnn::PostProcessorDetect::onParamChange(postprocessor::detecttype const &,
                                                      postprocessor::DetectType const & val)
 {
+  if (itsYOLO) { itsYOLO.reset(); removeSubComponent("yolo", false); }
+#ifdef JEVOIS_PRO
+  if (itsYOLOjevois) { itsYOLOjevois.reset(); removeSubComponent("yolojevois", false); }
+#endif
+  
   if (val == postprocessor::DetectType::RAWYOLO)
     itsYOLO = addSubComponent<jevois::dnn::PostProcessorDetectYOLO>("yolo");
-  else
+  
+#ifdef JEVOIS_PRO
+  if (val == postprocessor::DetectType::YOLOjevois || val == postprocessor::DetectType::YOLOjevoist)
   {
-    itsYOLO.reset();
-    removeSubComponent("yolo", false);
+    itsYOLOjevois = addSubComponent<jevois::dnn::YOLOjevois>("yolojevois", itsLabels);
+    itsYOLOjevoisIsSetup = false;
   }
+#endif
 }
 
 // ####################################################################################################
@@ -69,7 +113,7 @@ void jevois::dnn::PostProcessorDetect::process(std::vector<cv::Mat> const & outs
   if (outs.empty()) LFATAL("No outputs received, we need at least one.");
   cv::Mat const & out = outs[0]; cv::MatSize const & msiz = out.size;
 
-  float const confThreshold = cthresh::get() * 0.01F;
+  float confThreshold = cthresh::get() * 0.01F;
   float const boxThreshold = dthresh::get() * 0.01F;
   float const nmsThreshold = nms::get() * 0.01F;
   bool const sigmo = sigmoid::get();
@@ -77,7 +121,7 @@ void jevois::dnn::PostProcessorDetect::process(std::vector<cv::Mat> const & outs
   int const fudge = classoffset::get();
   bool const smoothmsk = masksmooth::get();
   itsImageSize = preproc->imagesize();
-  
+
   // To draw boxes, we will need to:
   // - scale from [0..1]x[0..1] to blobw x blobh
   // - scale and center from blobw x blobh to input image w x h, provided by PreProcessor::b2i()
@@ -406,6 +450,7 @@ void jevois::dnn::PostProcessorDetect::process(std::vector<cv::Mat> const & outs
     
     // ----------------------------------------------------------------------------------------------------
     case jevois::dnn::postprocessor::DetectType::YOLOv8t:
+    case jevois::dnn::postprocessor::DetectType::YOLOjevoist:
     {
       if ((outs.size() % 2) != 0 || msiz.dims() != 4 || msiz[0] != 1)
         LTHROW("Expected several (usually 3, for 3 strides) sets of 2 blobs: 1xHxWx64 (raw boxes) "
@@ -424,6 +469,10 @@ void jevois::dnn::PostProcessorDetect::process(std::vector<cv::Mat> const & outs
         if (cls_siz.dims() != 4) LTHROW("Output " << idx << " is not 4D 1xHxWxC");
         float const * cls_data = (float const *)cls.data;
         size_t const nclass = cls_siz[3];
+
+        if (itsPerClassThreshs.empty() == false && itsPerClassThreshs.size() != nclass)
+          LTHROW("Output tensor has " << nclass << " classes but " << itsPerClassThreshs.size() <<
+                 " values given in perclassthresh -- both must match");
         
         for (int i = 1; i < 3; ++i)
           if (cls_siz[i] != bx_siz[i]) LTHROW("Mismatched HxW sizes for outputs " << idx << " .. " << idx + 1);
@@ -434,11 +483,29 @@ void jevois::dnn::PostProcessorDetect::process(std::vector<cv::Mat> const & outs
           {
             // Get the top class score:
             size_t best_idx = 0; float confidence = cls_data[0];
-            for (size_t i = 1; i < nclass; ++i)
-              if (cls_data[i] > confidence) { confidence = cls_data[i]; best_idx = i; }
 
-            // Apply sigmoid to it, if needed (output layer did not already have sigmoid activations):
-            if (sigmo) confidence = jevois::dnn::sigmoid(confidence);
+            if (itsPerClassThreshs.empty())
+            {
+              // Standard processing with a single cthresh for all classes:
+              for (size_t i = 1; i < nclass; ++i)
+                if (cls_data[i] > confidence) { confidence = cls_data[i]; best_idx = i; }
+
+              // Apply sigmoid to it, if needed (output layer did not already have sigmoid activations):
+              if (sigmo) confidence = jevois::dnn::sigmoid(confidence);
+            }
+            else
+            {
+              // Per-class thresholds: pick the class with the highest confidence relative to its thresh:
+              if (sigmo) confidence = jevois::dnn::sigmoid(confidence);
+              for (size_t i = 1; i < nclass; ++i)
+              {
+                float c = cls_data[i];
+                if (sigmo) c = jevois::dnn::sigmoid(c);
+                if (c / itsPerClassThreshs[i] > confidence / itsPerClassThreshs[best_idx])
+                { confidence = c; best_idx = i; }
+              }
+              confThreshold = itsPerClassThreshs[best_idx];
+            }
             
             if (confidence >= confThreshold)
             {
@@ -470,6 +537,7 @@ void jevois::dnn::PostProcessorDetect::process(std::vector<cv::Mat> const & outs
 
     // ----------------------------------------------------------------------------------------------------
     case jevois::dnn::postprocessor::DetectType::YOLOv8:
+    case jevois::dnn::postprocessor::DetectType::YOLOjevois:
     {
       if ((outs.size() % 2) != 0 || msiz.dims() != 4 || msiz[0] != 1)
         LTHROW("Expected several (usually 3, for 3 strides) sets of 2 blobs: 1x64xHxW (raw boxes) "
@@ -488,6 +556,10 @@ void jevois::dnn::PostProcessorDetect::process(std::vector<cv::Mat> const & outs
         if (cls_siz.dims() != 4) LTHROW("Output " << idx << " is not 4D 1xCxHxW");
         float const * cls_data = (float const *)cls.data;
         size_t const nclass = cls_siz[1];
+
+        if (itsPerClassThreshs.empty() == false && itsPerClassThreshs.size() != nclass)
+          LTHROW("Output tensor has " << nclass << " classes but " << itsPerClassThreshs.size() <<
+                 " values given in perclassthresh -- both must match");
         
         for (int i = 2; i < 4; ++i)
           if (cls_siz[i] != bx_siz[i]) LTHROW("Mismatched HxW sizes for outputs " << idx << " .. " << idx + 1);
@@ -500,11 +572,29 @@ void jevois::dnn::PostProcessorDetect::process(std::vector<cv::Mat> const & outs
           {
             // Get the top class score:
             size_t best_idx = 0; float confidence = cls_data[0];
-            for (size_t i = 1; i < nclass; ++i)
-              if (cls_data[i * step] > confidence) { confidence = cls_data[i * step]; best_idx = i; }
 
-            // Apply sigmoid to it, if needed (output layer did not already have sigmoid activations):
-            if (sigmo) confidence = jevois::dnn::sigmoid(confidence);
+            if (itsPerClassThreshs.empty())
+            {
+              // Standard processing with a single cthresh for all classes:
+              for (size_t i = 1; i < nclass; ++i)
+                if (cls_data[i * step] > confidence) { confidence = cls_data[i * step]; best_idx = i; }
+
+              // Apply sigmoid to it, if needed (output layer did not already have sigmoid activations):
+              if (sigmo) confidence = jevois::dnn::sigmoid(confidence);
+            }
+            else
+            {
+              // Per-class thresholds: pick the class with the highest confidence relative to its thresh:
+              if (sigmo) confidence = jevois::dnn::sigmoid(confidence);
+              for (size_t i = 1; i < nclass; ++i)
+              {
+                float c = cls_data[i * step];
+                if (sigmo) c = jevois::dnn::sigmoid(c);
+                if (c / itsPerClassThreshs[i] > confidence / itsPerClassThreshs[best_idx])
+                { confidence = c; best_idx = i; }
+              }
+              confThreshold = itsPerClassThreshs[best_idx];
+            }
             
             if (confidence >= confThreshold)
             {
@@ -807,13 +897,42 @@ void jevois::dnn::PostProcessorDetect::process(std::vector<cv::Mat> const & outs
       itsDetections.emplace_back(od);
     }
   }
+
+#ifdef JEVOIS_PRO
+  // Increment a counter each time we run, used during start-up of YOLOjevois:
+  ++itsLastProcessedNum;
+#endif
 }
 
 // ####################################################################################################
 void jevois::dnn::PostProcessorDetect::report(jevois::StdModule * mod, jevois::RawImage * outimg,
                                               jevois::OptGUIhelper * helper, bool overlay,
-                                              bool /*idle*/)
+                                              bool idle)
 {
+  // If running YOLOjevois, do not display garbage while the aux models are loading; and trigger the loading if needed:
+#ifdef JEVOIS_PRO
+  if (itsYOLOjevois)
+  {
+    if (itsYOLOjevoisIsSetup == false)
+    {
+      // Find our main network so that YOLOjevois can update its extra inputs later. We assume that there is a
+      // sub-component named "network" that is a sibling of us:
+      std::vector<std::string> dd = jevois::split(Component::descriptor(), ":"); dd.pop_back();
+      std::shared_ptr<jevois::Component> comp = engine()->getComponent(dd[0]); dd.erase(dd.begin());
+      for (std::string const & c : dd) { comp = comp->getSubComponent(c); if (!comp) LFATAL("Internal error"); }
+      auto net = comp->getSubComponent<jevois::dnn::Network>("network");
+
+      itsYOLOjevois->setup(itsPerClassThreshs.size(), helper, net);
+      itsYOLOjevoisIsSetup = true;
+    }
+    if (itsYOLOjevois->ready() == false) { itsWaitingForYOLOjevoisNum = itsLastProcessedNum; return; }
+
+    // Just after YOLOjevois is ready, the net might not have updated its outputs yet. So we need to wait until the main
+    // network and our process() have run one more time before we can display valid boxes:
+    if (itsLastProcessedNum < itsWaitingForYOLOjevoisNum + 2) return;
+  }
+#endif
+  
   bool const serreport = serialreport::get();
   
   for (jevois::ObjDetect const & o : itsDetections)
@@ -849,15 +968,207 @@ void jevois::dnn::PostProcessorDetect::report(jevois::StdModule * mod, jevois::R
       if (o.contour.empty() == false) helper->drawPoly(o.contour, col, false);
       helper->drawText(o.tlx + 3.0f, o.tly + 3.0f, label.c_str(), col);
     }
-#else
-    (void)helper; // keep compiler happy  
 #endif   
     
     // If desired, send results to serial port:
     if (mod && serreport) mod->sendSerialObjDetImg2D(itsImageSize.width, itsImageSize.height, o);
   }
+
+  // Possibly draw additional open-world settings window:
+#ifdef JEVOIS_PRO
+  if (helper && itsPerClassThreshs.empty() == false) drawWorldGUI(helper, idle);
+#else
+  (void)helper; (void)idle; // keep compiler happy  
+#endif
 }
 
 // ####################################################################################################
 std::vector<jevois::ObjDetect> const & jevois::dnn::PostProcessorDetect::latestDetections() const
 { return itsDetections; }
+
+#ifdef JEVOIS_PRO
+
+// ####################################################################################################
+void jevois::dnn::PostProcessorDetect::drawWorldGUI(jevois::GUIhelper * helper, bool idle)
+{
+  // Caller must guarantee that, if YOLOjevois is used, it has been setup and is ready.
+  // If YOLOjevois is not used, class names will not be editable (e.g., reparameterized YOLO-World)
+  
+  size_t const nclass = itsPerClassThreshs.size();
+  bool has_text_encoder = false, has_image_encoder = false;
+  
+  if (itsYOLOjevois)
+  {
+    has_text_encoder = (itsYOLOjevois->textEmbeddingSize() != 0);
+    has_image_encoder = (itsYOLOjevois->imageEmbeddingSize() != 0);
+  }
+
+  static int livestate = -1; static ImVec2 livetl { 0.0F, 0.0F}; static ImVec2 livebr { 0.0F, 0.0F };
+  static size_t liveclsid = 0;
+
+  // Present an interactive window if GUI is not idle:
+  if (idle == false)
+  {
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, 0xf0e0ffff);
+    ImGui::SetNextWindowSize(ImVec2(1300, 500), ImGuiCond_FirstUseEver);
+    if (ImGui::Begin("Open-World Detection settings", nullptr /* no closing */))
+    {
+      for (size_t i = 0; i < nclass; ++i)
+      {
+        ImGui::AlignTextToFramePadding();
+        ImGui::Text("Class %2zu:", i);
+        ImGui::SameLine();
+        
+        // Grey out the item if it is disabled:
+        int textflags = ImGuiInputTextFlags_EnterReturnsTrue;
+        if (has_text_encoder == false)
+        {
+          ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+          ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.8f);
+          textflags |= ImGuiInputTextFlags_ReadOnly;
+        }
+        
+        // We need a unique ID for each ImGui widget, and we will use no visible widget name:
+        static char wname[32]; snprintf(wname, 32, "##ywl%zu", i);
+        
+        // Create a text box for class name:
+        std::string const label = jevois::dnn::getLabel(itsLabels, i, false);
+        char buf[256]; strncpy(buf, label.c_str(), sizeof(buf)-1);
+        ImGui::PushItemWidth(400);
+        if (ImGui::InputText(wname, buf, sizeof(buf), textflags))
+          try { itsYOLOjevois->update(i, buf); }
+          catch (...) { helper->reportAndIgnoreException(); }
+        ImGui::PopItemWidth();
+        
+        // Show image if that class is hovered and was set by image:
+        if (ImGui::IsItemHovered())
+          try
+          {
+            cv::Mat icon = itsYOLOjevois->image(i);
+            if (icon.empty() == false)
+            {
+              itsHoverImage.load(icon, false);
+              ImVec2 const pos = ImGui::GetMousePos() + ImVec2(20, 20);
+              ImVec2 const siz(128, 128);
+              auto fdl = ImGui::GetForegroundDrawList();
+              itsHoverImage.draw(pos, siz, fdl);
+              fdl->AddRect(pos, pos+siz, 0xFF808080, 0.0F, ImDrawFlags_None, 2);
+            }
+          }
+          catch (...) { helper->reportAndIgnoreException(); }
+
+        // Restore any grey out:
+        if (has_text_encoder == false)
+        {
+          ImGui::PopItemFlag();
+          ImGui::PopStyleVar();
+        }
+        
+        // Create a slider for the confidence threshold:
+        ImGui::SameLine();
+        snprintf(wname, 32, "##yws%zu", i);
+        float v = itsPerClassThreshs[i] * 100.0F;
+        ImGui::PushItemWidth(250);
+        if (ImGui::SliderFloat(wname, &v, 0.01F, 100.0F)) itsPerClassThreshs[i] = v * 0.01F;
+        ImGui::PopItemWidth();
+        
+        // Possibly create a button for live image capture:
+        if (has_image_encoder)
+        {
+          ImGui::SameLine();
+          snprintf(wname, 32, "Live select##%d", int(i));
+          if (ImGui::Button(wname) && livestate == -1) { livestate = 0; liveclsid = i; }
+        }
+      }
+      
+      // Allow users to save as a custom pipeline:
+      ImGui::Separator();
+      ImGui::AlignTextToFramePadding();
+      static char customname[256] = "yolo-jevois-custom";
+      ImGui::TextUnformatted("Custom pipeline name: ");
+      ImGui::SameLine();
+      ImGui::PushItemWidth(450);
+      ImGui::InputText("##scp", customname, sizeof(customname));
+      ImGui::PopItemWidth();
+      ImGui::SameLine();
+
+      if (ImGui::Button("Save"))
+        try
+        {
+          // Get our parent Pipeline so we can get params from it:
+          std::vector<std::string> dd = jevois::split(Component::descriptor(), ":"); dd.pop_back();
+          std::string pipeinst = dd.back(); dd.pop_back();
+          std::shared_ptr<jevois::Component> comp = engine()->getComponent(dd[0]); dd.erase(dd.begin());
+          for (std::string const & c : dd) { comp = comp->getSubComponent(c); if (!comp) LFATAL("Internal error"); }
+          auto pipe = comp->getSubComponent<jevois::dnn::Pipeline>(pipeinst);
+
+          std::vector<std::pair<std::string /*name*/, std::string /*value*/>> const & settings = pipe->zooSettings();
+
+          std::string basename = jevois::absolutePath(JEVOIS_CUSTOM_DNN_PATH, customname);
+
+          cv::FileStorage fs(basename + ".yml", cv::FileStorage::WRITE | cv::FileStorage::FORMAT_YAML);
+          if (fs.isOpened() == false) LFATAL("Failed to write " << basename << ".yml");
+
+          fs << customname << "{";
+          
+          std::string classes;
+          for (auto const & s : settings)
+            if (s.first == "classes") classes = s.second;
+            else if (s.first != "perclassthresh") fs << s.first << s.second;
+          
+          // Save the current per-class thresholds:
+          std::vector<std::string> pcth;
+          for (float t : itsPerClassThreshs) pcth.emplace_back(jevois::sformat("%.2f", t * 100.0F));
+          fs << "perclassthresh" << ('"' + jevois::join(pcth, " ") + '"');
+          
+          // If using CLIP, save the current class names or images:
+          if (itsYOLOjevois)
+          {
+            std::vector<std::string> cls;
+            for (size_t i = 0; i < nclass; ++i)
+              if (itsYOLOjevois->image(i).empty())
+              {
+                // Save the text class description:
+                cls.push_back(itsLabels[i]);
+              }
+              else
+              {
+                // Save the grabbed image for that class:
+                std::string const imgname = basename + "-cls" + std::to_string(i) + ".png";
+                cv::Mat img_bgr; cv::cvtColor(itsYOLOjevois->image(i), img_bgr, cv::COLOR_RGB2BGR);
+                cv::imwrite(imgname, img_bgr);
+                cls.emplace_back("imagefile:" + imgname);
+              }
+            fs << "classes" << ('"' + jevois::join(cls, ", ") + '"');
+          }
+          else if (classes.empty() == false)
+            fs << "classes" << classes;
+          
+          fs << "}";
+          helper->reportInfo("Custom model definition saved to " + basename + ".yml");
+        }
+        catch (...) { helper->reportAndIgnoreException(); }
+    }
+    ImGui::End();
+    ImGui::PopStyleColor();
+  }
+  
+  // Are we doing a live selection?
+  if (livestate != -1 && helper->selectImageBox(livestate, livetl, livebr))
+  {
+    // Selection complete. First convert coords from display to image:
+    ImVec2 tl = helper->d2i(livetl, "c");
+    ImVec2 br = helper->d2i(livebr, "c");
+
+    // Extract ROI from our high-res input frame:
+    jevois::InputFrame const * inframe = helper->getInputFrame();
+    cv::Mat hdimg = inframe->getCvRGB();
+    cv::Rect r(cv::Point(tl.x, tl.y), cv::Point(br.x, br.y));
+    cv::Mat roi = hdimg(r).clone();
+    
+    // Compute CLIP image embedding and main network:
+    itsYOLOjevois->update(liveclsid, roi);
+  }
+}
+
+#endif

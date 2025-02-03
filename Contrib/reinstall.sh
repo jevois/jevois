@@ -68,7 +68,7 @@ fi
 
 ###################################################################################################
 # Cleanup:
-/bin/rm -rf tensorflow threadpool tflite include lib
+/bin/rm -rf tensorflow threadpool tflite include lib clip.cpp
 
 ###################################################################################################
 # Get the jevois version:
@@ -107,6 +107,9 @@ get_github tensorflow tensorflow ${tc//\"/}
 
 # C++20 thread pool (we actually implement our own ThreadPool.H/C but need the dependencies):
 get_github mzjaworski threadpool f45dab47af20247949ebc43b429c742ef4c1219f
+
+# clip.cpp for CLIP text and image embedding
+get_github monatis clip.cpp f4ee24b
 
 ###################################################################################################
 # Patching:

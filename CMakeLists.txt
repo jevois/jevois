@@ -24,7 +24,7 @@ set(JEVOIS_VENDOR "JeVois")
 ########################################################################################################################
 # Project version:
 set(JEVOIS_VERSION_MAJOR 1)
-set(JEVOIS_VERSION_MINOR 22)
+set(JEVOIS_VERSION_MINOR 23)
 set(JEVOIS_VERSION_PATCH 0)
 set(JEVOIS_SOVERSION "${JEVOIS_VERSION_MAJOR}.${JEVOIS_VERSION_MINOR}.${JEVOIS_VERSION_PATCH}" )
 
@@ -215,6 +215,24 @@ if (JEVOIS_PRO)
   # Install imgui fonts:
   file(GLOB TOINSTALL "Contrib/imgui/misc/fonts/*.ttf")
   install(FILES ${TOINSTALL} DESTINATION "${JEVOIS_MODULES_ROOT}/share/fonts" COMPONENT bin)
+endif ()
+
+########################################################################################################################
+# Setup clip.cpp on JeVois-Pro:
+if (JEVOIS_PRO)
+  include_directories(Contrib/clip.cpp/ggml/include Contrib/clip.cpp/ggml/include/ggml Contrib/clip.cpp/ggml/src)
+
+  install(DIRECTORY Contrib/clip.cpp
+    DESTINATION "${JEVOIS_MODULES_ROOT}/include"
+    COMPONENT bin
+    PATTERN ".git" EXCLUDE)
+
+  add_definitions(-D_GNU_SOURCE -DGGML_USE_METAL=0 -DCLIP_NATIVE=ON)
+
+  target_sources(${JEVOIS} PRIVATE Contrib/clip.cpp/clip.cpp
+    Contrib/clip.cpp/ggml/src/ggml.c
+    Contrib/clip.cpp/ggml/src/ggml-alloc.c)
+#    Contrib/clip.cpp/ggml/src/ggml-opencl.cpp)
 endif ()
 
 ########################################################################################################################

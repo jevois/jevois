@@ -197,6 +197,11 @@ namespace jevois
       void drawInputFrame2(char const * name, InputFrame const & frame, int & x, int & y,
                            unsigned short & w, unsigned short & h, bool noalias = false, bool casync = false);
 
+      //! Get access to the InputFrame last drawn with drawInputFrame()
+      /*! Throws a fatal error unless called after drawInputFrame() and before endFrame(), useful to get access to the
+          pixel data of the current input frame, for example to extract an ROI. */
+      InputFrame const * getInputFrame() const;
+      
       //! Convert coordinates of a point from within a rendered image to on-screen
       /*! If name is nullptr, the last image used by drawImage() or drawInputFrame() is used. In such case, if
           drawInputFrame() was called on a frame that also had a second, scaled image, assume that we have displayed the
@@ -322,6 +327,9 @@ namespace jevois
       //! Report an error in an overlay window
       void reportError(std::string const & err);
 
+      //! Report a transient info message in an overlay window
+      void reportInfo(std::string const & inf);
+
       //! Report current exception in a modal dialog, then ignore it
       void reportAndIgnoreException(std::string const & prefix = "");
 
@@ -365,6 +373,17 @@ namespace jevois
       /*! Note that selected_index is read-write: the passed value is used to display the current item in the combobox,
           and, when a new item is selected, its index is returned in selected_index and true is returned. */
       bool combo(std::string const & name, std::vector<std::string> const & items, int & selected_index);
+
+      //! Helper to select a rectangular box by dragging the mouse over the display
+      /*! Once started, this function should be called on every video frame until the box is done. To start a selection,
+          set state to 0, and make sure its value and the values of tl and br are remembered across frames (e.g., using
+          static variables or class member variables). The value of state will change over time as the user presses the
+          mouse button down, then drags, then releases the button. Callers do not need to worry about this and just
+          preserve that value across frames. When selection is complete, true will be returned, the two corners tl and
+          br will be updated, and state will be set to -1. Otherwise, false will be returned (state, tl, and br may be
+          changed and should be preserved for the next call). Box corners are in Display coordinates; use d2i() and
+          related functions to convert to input image coordinates, processing image coordinates, etc. */
+      bool selectImageBox(int & state, ImVec2 & tl, ImVec2 & br, ImU32 col = IM_COL32(128,255,128,255));
       
       //! Show a message that we are running headless
       void headlessDisplay();
@@ -418,6 +437,7 @@ namespace jevois
     protected:
       std::map<std::string /* name */, GPUimage> itsImages, itsImages2;
       GPUimage * itsLastDrawnImage = nullptr;
+      InputFrame const * itsInputFrame = nullptr; //! caution, is nullptr except between drawInputFrame() and endFrame()
       int itsLastDrawnTextLine = -1;
       bool itsUsingScaledImage = false;
       float itsScaledImageFacX = 1.0F, itsScaledImageFacY = 1.0F;
@@ -433,6 +453,7 @@ namespace jevois
           std::string err;
           std::chrono::time_point<std::chrono::steady_clock> firsttime;
           std::chrono::time_point<std::chrono::steady_clock> lasttime;
+          bool is_info; // true if this is an info message rather than a true error
       };
       std::list<ErrorData> itsErrors;
       
@@ -515,6 +536,8 @@ namespace jevois
       bool compileCommand(std::string const & cmd, std::string & msg); // true on success, false in progress, throws
       std::array<std::string, 4> itsCompileMessages; // messages for the compilation steps
       void runNewModule(); // install and load up the module defined in itsNewMapping
+
+      void reportErrorOrInfo(std::string const & err, bool is_info);
 
       // Banner stuff:
       std::string itsBannerTitle, itsBannerMsg;
