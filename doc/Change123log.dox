@@ -36,6 +36,8 @@ JeVois 1.23 brings the following new features:
   With YOLO-JeVois, one still needs to choose a number of classes during export and quantization. We hence provide
   pre-quantized models for NPU with 1, 8, 16, 32 and 64 classes, both for 16-bit quantization (DPF16 for YOLO-JeVois)
   and 8-bit quantization (AA for YOLO-JeVois-split). A sample of the Objects365 dataset was used during quantization.
+  
+  \youtube{4tXeAV2QwAA}
 
 - JeVois-Pro DNN: Added support for running quantized CLIP models on CPU using clip.cpp and the ggml library. CLIP can
   co mpute both text embeddings and image embeddings. These embeddings are used by YOLO-World and YOLO-JeVois to define
