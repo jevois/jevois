@@ -11,8 +11,9 @@ JeVois 1.23 brings the following new features:
   + YOLO-World: To handle new classes, this model needs so-called re-parameterization (offline), which computes some
     constant tensors for the user-defined classes, which are then embedded into the YOLO network. At runtime, these
     constant tensors are combined with partially-processed data from the live video stream, to detect the desired object
-    classes. Pre-computing these tensors makes YOLO-World fast at runtime. However, once the constant tensors have been
-    modified, the network needs to be quantized again and exported to JeVois-Pro NPU again. This process is slow.
+    classes. Pre-computing these tensors makes YOLO-World fast at runtime. However, each the constant tensors are
+    modified (by changing class names), the network needs to be quantized again and exported to JeVois-Pro NPU
+    again. This process is slow.
   
   + YOLO-JeVois: Our new custom YOLO variant avoids the need to quantize and convert YOLO-World to NPU each time class
     definitions are changed. We first compute CLIP embeddings for each new class definition. CLIP is a special network
@@ -33,9 +34,10 @@ JeVois 1.23 brings the following new features:
       (15fps). YOLO-JeVois is still slower than YOLOv8s on which it is based because of the extra operations needed to
       combine the constant tensors derived from CLIP with the live video data processing.
   
-  With YOLO-JeVois, one still needs to choose a number of classes during export and quantization. We hence provide
-  pre-quantized models for NPU with 1, 8, 16, 32 and 64 classes, both for 16-bit quantization (DPF16 for YOLO-JeVois)
-  and 8-bit quantization (AA for YOLO-JeVois-split). A sample of the Objects365 dataset was used during quantization.
+  The extra inputs are cached, so that CLIP is only invoked when the user changes class definitions. With YOLO-JeVois,
+  one still needs to choose a number of classes during export and quantization. We hence provide pre-quantized models
+  for NPU with 1, 8, 16, 32 and 64 classes, both for 16-bit quantization (DPF16 for YOLO-JeVois) and 8-bit quantization
+  (AA for YOLO-JeVois-split). A sample of the Objects365 dataset was used during quantization.
   
   \youtube{4tXeAV2QwAA}
   
