@@ -84,7 +84,7 @@ if [ "X$REPLY" != "Xn" ]; then
     tar jxvf contrib-binary-${ver}.tbz
     /bin/rm -f contrib-binary-${ver}.tbz
     echo "All done."
-    trap finish EXIT
+    trap - EXIT
     exit 0
 fi
 
@@ -212,4 +212,4 @@ mkdir -p include/arm64/onnxruntime
 # Keep track of the last installed release:
 echo $release > .installed
 echo "JeVois contribs installation success."
-trap finish EXIT
+trap - EXIT
