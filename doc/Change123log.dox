@@ -3,10 +3,10 @@
 JeVois 1.23 brings the following new features:
 
 - JeVois-Pro: New open-vocabulary object detection using YOLO-World (which required offline model reparameterization and
-  quantization), and new YOLO-JeVois which can use user-defined object classes at runtime. Detecting new object classes
-  is now as simple as typing their names into the JeVois-Pro GUI. Defining classes by image is also supported: just drag
-  a bounding box around a live view the desired object, and the contents of that box will define the new object
-  class. Running on NPU only for now.
+  quantization), and new YOLO-JeVois which can update user-defined object classes at runtime. Detecting new object
+  classes is now as simple as typing their names into the JeVois-Pro GUI. Defining classes by image is also supported:
+  just drag a bounding box around a live view the desired object, and the contents of that box will define the new
+  object class. Running on NPU only for now.
   
   + YOLO-World: To handle new classes, this model needs so-called re-parameterization (offline), which computes some
     constant tensors for the user-defined classes, which are then embedded into the YOLO network. At runtime, these
@@ -38,11 +38,15 @@ JeVois 1.23 brings the following new features:
   and 8-bit quantization (AA for YOLO-JeVois-split). A sample of the Objects365 dataset was used during quantization.
   
   \youtube{4tXeAV2QwAA}
+  
+  In the JeVois-Pro GUI, you can find these models under the `pipe` parameter of the Pipeline component of the
+  \jvmod{DNN} module, as `yolov8s-jevois-xxx` (with DFP suffix for slower 16-bit quantized and AA suffix for faster
+  8-bit quantized).
 
-- JeVois-Pro DNN: Added support for running quantized CLIP models on CPU using clip.cpp and the ggml library. CLIP can
-  co mpute both text embeddings and image embeddings. These embeddings are used by YOLO-World and YOLO-JeVois to define
-  object detection classes at runtime. CLIP runs fast enough that running it on CPU is no problem so far. We may
-  accelerate it for NPU in the future.
+- JeVois-Pro DNN: Added support for running quantized CLIP models on CPU using clip.cpp and the ggml library, with
+  support for various quantization schemes (we use 4-bit by default). CLIP can compute both text embeddings and image
+  embeddings. These embeddings are used by YOLO-JeVois to define object detection classes at runtime. CLIP runs fast
+  enough that running it on CPU is no problem so far. We may accelerate it for NPU in the future.
 
 - DNN: Added support for per-class detection thresholds. This is used by YOLO-JeVois and YOLO-World, where different
   custom classes may require vary different threshold values.
@@ -59,6 +63,12 @@ JeVois 1.23 brings the following new features:
   definitions as a new JeVois pipeline for later re-use.
 
 - JeVois-Pro: Updated to Ollama 0.5.7 which supports mew LLM models.
+
+- JeVois: Added support for constraining parameter values to a list in Python, using `param.setValidValues(list)`. A
+  parameter with values from a list will appear as a combo-box in the GUI.
+
+- JeVois-Pro PyLLM: Now getting a list of installed models and allowing users to select one of those, as opposed to
+  typing in a model name.
 
 - JeVois-Pro PyLLM: Support for Deepseek-R1:1.5b and allow user to start a new chat (erasing previous chat history from
   the chat context).
