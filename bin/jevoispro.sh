@@ -15,7 +15,8 @@ if [ "X${gserial}" = "X1" ] ; then
 fi
 
 # Activate python virtual environment if found:
-if [ "X$VIRTUAL_ENV" = "X" -a -d /root/jvenv ]; then source /root/jvenv/bin/activate; fi
+export HOME="/root" # needed by ollama
+if [ "X${VIRTUAL_ENV}" = "X" -a -d ${HONE}/jvenv ]; then source ${HOME}/jvenv/bin/activate; fi
 
 # Launch jevois software:
 /usr/bin/jevoispro-daemon ${extra} $@
@@ -25,7 +26,7 @@ rc=$?
 /usr/bin/jevoispro-restore-console
 
 # Deactivate virtual env if we used it:
-if [ "X$VIRTUAL_ENV" != "X" ]; then deactivate; fi
+if [ "X${VIRTUAL_ENV}" != "X" ]; then deactivate; fi
 
 # Return whatever jevoispro-daemon returned:
 exit $rc
