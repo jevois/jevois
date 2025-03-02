@@ -18,6 +18,7 @@
 #pragma once
 
 #include <jevois/Core/VideoMapping.H>
+#include <jevois/Core/Serial.H>
 #include <jevois/Component/Manager.H>
 #include <jevois/Types/Enum.H>
 #include <jevois/Image/RawImage.H>
@@ -501,6 +502,10 @@ namespace jevois
           link, for example in cases one is running a ArUco detector and a large number of ArUco tags are present in the
           field of view of JeVois. */
       void sendSerial(std::string const & str, bool islog = false);
+      
+      //! Retrieve a pointer to the hardware serial interface
+      /*! \note  Returns nullptr if none is available */
+      Serial* getHardwareSerial();
 
       //! Get a pointer to our current module (may be null)
       std::shared_ptr<Module> module() const;

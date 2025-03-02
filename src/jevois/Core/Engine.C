@@ -1537,6 +1537,16 @@ void jevois::Engine::saveCameraCalibration(jevois::CameraCalibration const & cal
   LINFO("Camera calibration saved to [" << fname << ']');
 }
 
+jevois::Serial* jevois::Engine::getHardwareSerial()
+{
+  for (auto & s : itsSerials)
+  {
+    if (s->type() == jevois::UserInterface::Type::Hard)
+      return static_cast<jevois::Serial*>(s.get());
+  }
+  return nullptr;
+}
+
 // ####################################################################################################
 jevois::VideoMapping const & jevois::Engine::getCurrentVideoMapping() const
 { return itsCurrentMapping; }

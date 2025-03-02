@@ -184,6 +184,10 @@ namespace jevois
       /*! The format here is free. Just use std::endl to demarcate lines, these will be converted to the appropriate
           line endings by the serial ports. Default implementation writes "None" to os. */
       virtual void supportedCommands(std::ostream & os);
+      
+      //! Get the parent engine.
+      /*! Should not be called in the module constructor, but at the init functions (e.g. postInit) */
+      Engine* getEngine();
   };
 
   namespace modul
